@@ -1,4 +1,4 @@
-image <STAGE_WORK_DIR>/<IMG_FILENAME><IMG_SUFFIX>.img {
+image <IMAGE_DIR>/<IMAGE_NAME>.<IMAGE_SUFFIX> {
    hdimage {
       partition-table-type = "gpt"
    }
@@ -8,7 +8,6 @@ image <STAGE_WORK_DIR>/<IMG_FILENAME><IMG_SUFFIX>.img {
       image = config.vfat
       partition-type-uuid = F
       bootable = true
-      size = 32M
    }
 
    partition bootA {
@@ -16,14 +15,6 @@ image <STAGE_WORK_DIR>/<IMG_FILENAME><IMG_SUFFIX>.img {
       image = bootA.vfat
       partition-type-uuid = F
       bootable = true
-      size = <FW_SIZE>
-   }
-
-   partition rootA {
-      in-partition-table = true
-      image = rootA.ext4
-      partition-type-uuid = L
-      size = <ROOT_SIZE>
    }
 
    partition bootB {
@@ -31,31 +22,38 @@ image <STAGE_WORK_DIR>/<IMG_FILENAME><IMG_SUFFIX>.img {
       image = bootB.vfat
       partition-type-uuid = F
       bootable = true
-      size = <FW_SIZE>
+   }
+
+   partition rootA {
+      in-partition-table = true
+      image = rootA.ext4
+      partition-type-uuid = L
    }
 
    partition rootB {
       in-partition-table = true
       image = rootB.ext4
       partition-type-uuid = L
-      size = <ROOT_SIZE>
    }
 
-#   partition data {
-#      in-partition-table = true
-#      partition-type-uuid = L
-#   }
+   partition data {
+      in-partition-table = true
+      image = data.ext4
+      partition-type-uuid = L
+   }
 }
 
-#image <STAGE_WORK_DIR>/<IMG_FILENAME><IMG_SUFFIX>-sparse.img {
+#image <IMAGE_DIR>/<IMAGE_NAME>-sparse.<IMAGE_SUFFIX> {
 #   android-sparse {
-#        image = <STAGE_WORK_DIR>/<IMG_FILENAME><IMG_SUFFIX>.img
+#        image = <IMAGE_DIR>/<IMAGE_NAME>.<IMAGE_SUFFIX>
 #    }
 #}
 
 image config.vfat {
    vfat {
+      label = "BOOTFS"
       file "autoboot.txt" { image = "autoboot.txt" }
+      extraargs = "-s 1"
    }
    size = 32M
 }
@@ -98,12 +96,12 @@ image rootB.ext4 {
    exec-pre = "<SLOTP> B ROOTB"
 }
 
-#image data.ext4 {
-#   empty = true
-#   ext4 {
-#      use-mke2fs = true
-#      label = "DATA"
-#   }
-#   size = 64M
-#   mountpoint = "/data"
-#}
+image data.ext4 {
+   empty = true
+   ext4 {
+      use-mke2fs = true
+      label = "USERDATA"
+   }
+   size = 64M
+   mountpoint = "/data"
+}

@@ -9,3 +9,5 @@ mmdebstrap:
     - net-tools
     - iputils-ping
     - procps
+    - nano
+    - zstd

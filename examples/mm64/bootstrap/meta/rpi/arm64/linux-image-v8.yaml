@@ -4,3 +4,5 @@ mmdebstrap:
   packages:
     - initramfs-tools
     - linux-image-rpi-v8
+  customize-hooks:
+    - sed -i 's/^update_initramfs=.*/update_initramfs=no/' $1/etc/initramfs-tools/update-initramfs.conf

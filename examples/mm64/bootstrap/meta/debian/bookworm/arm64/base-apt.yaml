@@ -11,13 +11,17 @@ mmdebstrap:
     - deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
     - deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
   essential-hooks:
-    - echo tzdata tzdata/Areas select Europe
+    - echo tzdata tzdata/Areas select "$IGopt_TIMEZONE_AREA"
         | chroot $1 debconf-set-selections
-    - echo tzdata tzdata/Zones/Europe select London
+    - echo tzdata tzdata/Zones/$IGopt_TIMEZONE_AREA select "$IGopt_TIMEZONE_CITY"
         | chroot $1 debconf-set-selections
-    - echo locales locales/locales_to_be_generated multiselect $LOCALE_DEFAULT
+    - echo locales locales/locales_to_be_generated multiselect "$IGopt_LOCALE_DEFAULT"
         | chroot $1 debconf-set-selections
-    - echo locales locales/default_environment_locale select $LOCALE_DEFAULT
+    - echo locales locales/default_environment_locale select "$IGopt_LOCALE_DEFAULT"
+        | chroot $1 debconf-set-selections
+    - echo keyboard-configuration keyboard-configuration/variant select "$IGopt_KEYBOARD_LAYOUT"
+        | chroot $1 debconf-set-selections
+    - echo keyboard-configuration keyboard-configuration/xkb-keymap select "$IGopt_KEYBOARD_KEYMAP"
         | chroot $1 debconf-set-selections
   aptopts:
     - APT::Install-Suggests "false"
@@ -31,7 +35,4 @@ mmdebstrap:
     - path-include=/usr/share/doc/*/copyright
     - path-include=/usr/share/doc/*/changelog.Debian.*
     - path-exclude=/usr/share/{doc,info,man,omf,help,gnome/help}/*
-  customize-hooks:
-    - chroot $1 apt update
-    - chroot $1 apt-get -y dist-upgrade --auto-remove --purge
-    - chroot $1 apt-get clean
+    - path-exclude=/usr/share/lintian/*

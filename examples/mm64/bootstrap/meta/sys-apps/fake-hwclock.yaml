@@ -1,0 +1,8 @@
+---
+name: fake-hwclock
+mmdebstrap:
+  packages:
+    - fake-hwclock
+  customize-hooks:
+    - date -d "@${SOURCE_DATE_EPOCH}" > $1/etc/fake-hwclock.data
+    - $BDEBSTRAP_HOOKS/enable-units "$1" systemd-fake-hwclock

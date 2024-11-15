@@ -157,3 +157,31 @@ ensure_loopdev_partitions() {
 	udevadm settle 10
 }
 export -f ensure_loopdev_partitions
+
+read_config_section() {
+   local section=$1
+   local cfg=$2
+   local attrs=$(crudini --get --format=sh $cfg $section)
+   if [ $? -eq 0 ] ; then
+      while IFS="=" read -r key value ; do
+         eval IGconf_"${section}"_"${key}"="$value"
+      done < <(printf '%s\n' "$attrs")
+   fi
+}
+export -f read_config_section
+
+
+read_options() {
+   if [ -s "$1" ] ; then
+      local attrs=$(cat $1)
+   else
+      local attrs=$(cat)
+   fi
+   while IFS="=" read -r key value ; do
+      [[ "$key" =~ ^#.*$ ]] && continue
+      [[ "$key" =~ ^$ ]] && continue
+      [[ "$value" =~ ^$ ]] && continue
+      eval IGopt_"${key}"="$value"
+   done < <(printf '%s\n' "$attrs")
+}
+export -f read_options

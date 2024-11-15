@@ -1,0 +1,11 @@
+---
+name: apt-proxy
+mmdebstrap:
+  setup-hooks:
+    - |-
+      if [ -n "$IGopt_APT_PROXY_HTTP" ]; then
+         mkdir -p $1/etc/apt/apt.conf.d
+         echo "Acquire::http::Proxy \"$IGopt_APT_PROXY_HTTP\";" > $1/etc/apt/apt.conf.d/51cache
+      fi
+  cleanup-hooks:
+    - rm -f $1/etc/apt/apt.conf.d/51cache
