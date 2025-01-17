@@ -1,0 +1,19 @@
+#!/bin/sh
+
+case $1 in
+prereqs)
+   echo "udev"
+   exit 0
+   ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+mkdir -p $DESTDIR/lib/udev/rules.d/
+
+for rule in /etc/udev/rules.d/*-rpi-*.rules; do
+   if [ -e "$rule" ]; then
+      cp -p "$rule" $DESTDIR/lib/udev/rules.d/
+   fi
+done
+

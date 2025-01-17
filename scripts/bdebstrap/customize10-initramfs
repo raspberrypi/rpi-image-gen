@@ -2,6 +2,11 @@
 
 set -eu
 
+# Install common hooks
+if [ -d $1/etc/initramfs-tools/hooks ] ; then
+   cp ../initramfs-tools/hooks/* $1/etc/initramfs-tools/hooks
+fi
+
 # Always make sure all initramfs are updated
 if [ -s $1/etc/initramfs-tools/update-initramfs.conf ] ; then
    cp $1/etc/initramfs-tools/update-initramfs.conf $1/etc/initramfs-tools/update-initramfs.conf.bak
