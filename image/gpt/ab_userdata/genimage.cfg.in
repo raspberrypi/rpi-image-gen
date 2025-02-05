@@ -8,6 +8,7 @@ image <IMAGE_DIR>/<IMAGE_NAME>.<IMAGE_SUFFIX> {
    hdimage {
       align = 8M
       partition-table-type = "gpt"
+      gpt-location = 8M
    }
 
    partition config {
