@@ -1,0 +1,18 @@
+#!/bin/bash
+
+[[ ${IGconf_device_storage_type:?} != emmc ]] && exit 0
+
+chroot $1 apt install mmc-utils
+
+# meta/ab-initramfs has already installed initramfs-tools
+cat <<- 'EOF' > $1/etc/initramfs-tools/hooks/ab-install-files
+#!/bin/sh
+case $1 in
+   prereqs) echo ""; exit 0;;
+esac
+. /usr/share/initramfs-tools/hook-functions
+copy_exec /usr/bin/mmc
+EOF
+chmod +x $1/etc/initramfs-tools/hooks/ab-install-files
+
+install -m 0755 -D ../device/emmc-wp.sh $1/etc/initramfs-tools/scripts/init-bottom/emmc-wp
