@@ -456,7 +456,7 @@ generate_images() {
       for cfg in "${IGconf_image_outputdir}"/genimage*.cfg; do
          [[ -f $cfg ]] || continue
          runenv "${ctx[FINALENV]}" \
-            podman unshare env genimage \
+            podman unshare env PATH=/sbin:$PATH genimage \
             --rootpath   "$IGconf_target_path" \
             --tmppath    "${ctx[TMPDIR]}/genimage" \
             --inputpath  "$IGconf_image_outputdir" \

@@ -322,7 +322,7 @@ def parse_genimage_config(config_path):
     img_path = get_artefact_path(img_name, "IGconf_image_outputdir")
     try:
         res = subprocess.run(
-                ["sfdisk", "--verify", "--json", img_path],
+                ["/usr/sbin/sfdisk", "--verify", "--json", img_path],
                 capture_output=True,
                 text=True,
                 check=True
