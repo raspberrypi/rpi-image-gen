@@ -1,5 +1,5 @@
 # METABEGIN
-# X-Env-Layer-Name: example-mydevice
+# X-Env-Layer-Name: onprem-demo-mydevice
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Example device layer that performs some fine tuning using
 #  dpkg to trim files so we boot a v8 kernel on pi5 / cm5 only. Declares the

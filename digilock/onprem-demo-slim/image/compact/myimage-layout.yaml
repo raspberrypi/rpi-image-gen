@@ -1,5 +1,5 @@
 # METABEGIN
-# X-Env-Layer-Name: example-myimage
+# X-Env-Layer-Name: onprem-demo-myimage
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Example image layer. This declares the asset dir so that
 #  hooks in there will be run.

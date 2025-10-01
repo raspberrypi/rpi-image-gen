@@ -1,0 +1,11 @@
+device:
+  layer: onprem-demo-mydevice
+  hostname: zippy
+  user1pass: Fo0bar!!
+
+image:
+  layer: onprem-demo-myimage
+  name: onprem-demo-image
+
+layer:
+  everything: onprem-demo-customisation

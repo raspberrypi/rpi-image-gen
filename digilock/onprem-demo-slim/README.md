@@ -3,9 +3,9 @@ Build a small system with minimum base packages and trimmed down packages to boo
 Contains custom device and image layers and demonstrates how to communicate the location of device and image specific assets, hooks, etc.
 
 ```text
-examples/slim/
+digilock/onprem-demo-slim/
 |-- config
-|   `-- pi5-slim.yaml
+|   `-- pi5-onprem-demo.yaml
 |-- device
 |   `-- mypi5
 |       |-- cmdline.txt
@@ -31,5 +31,5 @@ examples/slim/
 ```
 
 ```bash
-rpi-image-gen build -S ./examples/slim/ -c pi5-slim.yaml
+rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo.yaml
 ```
