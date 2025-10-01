@@ -1,0 +1,35 @@
+image <IMAGE_DIR>/<IMAGE_NAME>.<IMAGE_SUFFIX> {
+   hdimage {
+      partition-table-type = "mbr"
+   }
+
+   partition boot {
+      in-partition-table = true
+      partition-type = 0xC
+      image = boot.vfat
+      bootable = true
+   }
+
+   partition root {
+      in-partition-table = true
+      partition-type = 0x83
+      image = root.ext4
+   }
+}
+
+image boot.vfat {
+   vfat {
+      label = "BOOT"
+   }
+   size = <FW_SIZE>
+   mountpoint = "/boot/firmware"
+}
+
+image root.ext4 {
+   ext4 {
+      use-mke2fs = true
+      label = "ROOT"
+   }
+   size = <ROOT_SIZE>
+   mountpoint = "/"
+}

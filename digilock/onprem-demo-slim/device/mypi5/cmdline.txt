@@ -1,0 +1,1 @@
+console=serial0,115200 root=ROOTDEV fsck.repair=yes rootwait

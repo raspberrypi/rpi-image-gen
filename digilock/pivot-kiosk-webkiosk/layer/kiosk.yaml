@@ -1,0 +1,30 @@
+# METABEGIN
+# X-Env-Layer-Name: example-kiosk
+# X-Env-Layer-Category: example
+# X-Env-Layer-Desc: Example webkiosk layer showing how to define configuration
+#  variables, declare packages and create a start up script. We depend on the
+#  RPi user creds layer as we want to run the kiosk as the user it creates, and
+#  we depend on systemd because we install a systemd service to start the kiosk.
+# X-Env-Layer-Requires: rpi-user-credentials,systemd-net-min
+#
+# X-Env-VarPrefix: kiosk
+#
+# X-Env-Var-url: https://example.com
+# X-Env-Var-url-Desc: Default URL the web kiosk will load at startup.
+# X-Env-Var-url-Required: n
+# X-Env-Var-url-Valid: regex:^https://[a-zA-Z0-9.-]+[a-zA-Z0-9]/?.*$
+# X-Env-Var-url-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - cage
+    - chromium
+  customize-hooks:
+    - |
+      export KIOSK_USER="$IGconf_device_user1"
+      export KIOSK_RUNDIR="/home/$IGconf_device_user1"
+      export KIOSK_URL="$IGconf_kiosk_url"
+      export KIOSK_APP="/usr/bin/chromium $KIOSK_URL https://time.is/London --kiosk --noerrdialogs --disable-infobars --no-first-run --enable-features=OverlayScrollbar --start-maximized"
+      envsubst < kiosk.service.tpl > $1/etc/systemd/system/kiosk.service
+    - $BDEBSTRAP_HOOKS/enable-units "$1" kiosk

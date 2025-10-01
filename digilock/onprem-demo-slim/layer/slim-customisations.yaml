@@ -1,0 +1,25 @@
+# METABEGIN
+# X-Env-Layer-Name: example-slim-customisation
+# X-Env-Layer-Category: example
+# X-Env-Layer-Desc: Example layer with dependency plus some customisation
+#  hooks.
+# X-Env-Layer-Requires: v8-svelte
+#
+# X-Env-VarRequires: IGconf_device_user1
+# X-Env-VarRequires-Valid: string
+#
+# X-Env-VarOptional: IGconf_device_user1pass
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - passwd
+    - libpam-runtime
+    - login
+  customize-hooks:
+    - chroot $1 sh -c "useradd -m -s /bin/bash -u 4000 $IGconf_device_user1"
+    - |-
+      if [ -n "$IGconf_device_user1pass" ] ; then
+         chroot $1 sh -c "printf '%s:%s\n' '${IGconf_device_user1}' '${IGconf_device_user1pass}' | chpasswd"
+      fi
+    - chroot $1 usermod --pass='*' root

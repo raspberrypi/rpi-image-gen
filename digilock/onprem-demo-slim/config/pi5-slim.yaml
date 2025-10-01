@@ -1,0 +1,11 @@
+device:
+  layer: example-mydevice
+  hostname: zippy
+  user1pass: Fo0bar!!
+
+image:
+  layer: example-myimage
+  name: my-slim-image
+
+layer:
+  everything: example-slim-customisation

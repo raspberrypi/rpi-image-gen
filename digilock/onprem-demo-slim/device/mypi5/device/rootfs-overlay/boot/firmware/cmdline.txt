@@ -1,0 +1,1 @@
+console=ttyAMA10,115200 root=/dev/disk/by-label/ROOT rootfstype=ext4 fsck.repair=yes rootwait

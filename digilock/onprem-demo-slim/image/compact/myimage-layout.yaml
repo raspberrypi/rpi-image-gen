@@ -1,0 +1,18 @@
+# METABEGIN
+# X-Env-Layer-Name: example-myimage
+# X-Env-Layer-Category: image
+# X-Env-Layer-Desc: Example image layer. This declares the asset dir so that
+#  hooks in there will be run.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: image-base
+# X-Env-Layer-Provides: image
+#
+# X-Env-VarPrefix: image
+#
+# X-Env-Var-assetdir: ${DIRECTORY}
+# X-Env-Var-assetdir-Desc: Image asset directory
+# X-Env-Var-assetdir-Required: n
+# X-Env-Var-assetdir-Valid: string
+# X-Env-Var-assetdir-Set: y
+#
+# METAEND

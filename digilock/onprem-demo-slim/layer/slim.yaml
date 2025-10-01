@@ -1,0 +1,10 @@
+# METABEGIN
+# X-Env-Layer-Name: v8-svelte
+# X-Env-Layer-Category: example
+# X-Env-Layer-Desc: Example layer that provides a thin base using
+#  other layers.
+# X-Env-Layer-Requires: debian-bookworm-arm64-slim,
+#  rpi-debian-bookworm,
+#  rpi-misc-skel,
+#  systemd-net-min
+# METAEND
