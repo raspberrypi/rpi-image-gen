@@ -1,6 +1,6 @@
 # METABEGIN
-# X-Env-Layer-Name: example-slim-customisation
-# X-Env-Layer-Category: example
+# X-Env-Layer-Name: onprem-demo-customisation
+# X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Example layer with dependency plus some customisation
 #  hooks.
 # X-Env-Layer-Requires: v8-svelte
@@ -16,6 +16,8 @@ mmdebstrap:
     - passwd
     - libpam-runtime
     - login
+    - docker.io
+    - docker-compose
   customize-hooks:
     - chroot $1 sh -c "useradd -m -s /bin/bash -u 4000 $IGconf_device_user1"
     - |-
@@ -23,3 +25,5 @@ mmdebstrap:
          chroot $1 sh -c "printf '%s:%s\n' '${IGconf_device_user1}' '${IGconf_device_user1pass}' | chpasswd"
       fi
     - chroot $1 usermod --pass='*' root
+    - chroot $1 usermod -aG docker $IGconf_device_user1
+    - chroot $1 systemctl enable docker
