@@ -18,6 +18,9 @@ mmdebstrap:
     - login
     - docker.io
     - docker-compose
+    # dev tools (comment out for production)
+    - nano
+    - ncurses-term
   customize-hooks:
     - chroot $1 sh -c "useradd -m -s /bin/bash -u 4000 $IGconf_device_user1"
     - |-
@@ -27,3 +30,5 @@ mmdebstrap:
     - chroot $1 usermod --pass='*' root
     - chroot $1 usermod -aG docker $IGconf_device_user1
     - chroot $1 systemctl enable docker
+    # dev tools (comment out for production)
+    - chroot $1 sh -c "echo 'export TERM=xterm' >> /etc/profile.d/term.sh"
