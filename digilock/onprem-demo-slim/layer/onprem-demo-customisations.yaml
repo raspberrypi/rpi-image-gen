@@ -16,8 +16,10 @@ mmdebstrap:
     - passwd
     - libpam-runtime
     - login
-    - docker.io
-    - docker-compose
+    # docker dependencies
+    - iptables
+    - dbus-user-session
+    - ca-certificates
     # dev tools (comment out for production)
     - nano
     - ncurses-term
@@ -28,6 +30,20 @@ mmdebstrap:
          chroot $1 sh -c "printf '%s:%s\n' '${IGconf_device_user1}' '${IGconf_device_user1pass}' | chpasswd"
       fi
     - chroot $1 usermod --pass='*' root
+    
+    # docker install from local debs
+    - mkdir -p $1/opt/docker-debs
+    - cp ${IGconf_device_assetdir}/docker-debs/*.deb $1/opt/docker-debs/
+
+    - |-
+      chroot $1 sh -c "
+      dpkg -i /opt/docker-debs/containerd.io_1.7.27-1_arm64.deb \
+        /opt/docker-debs/docker-ce_28.5.0-1~debian.12~bookworm_arm64.deb \
+        /opt/docker-debs/docker-ce-cli_28.5.0-1~debian.12~bookworm_arm64.deb \
+        /opt/docker-debs/docker-buildx-plugin_0.29.1-1~debian.12~bookworm_arm64.deb \
+        /opt/docker-debs/docker-compose-plugin_2.39.4-0~debian.12~bookworm_arm64.deb
+      "
+
     - chroot $1 usermod -aG docker $IGconf_device_user1
     - chroot $1 systemctl enable docker
     # dev tools (comment out for production)
