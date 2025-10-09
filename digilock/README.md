@@ -72,6 +72,8 @@ rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/d
 ├── redis.tar
 └── start.demo.sh
 ```
+> **Note:** . Depending on how you transferred the output files to your directory, the start.demo.sh script may have lost its executable permission (especially if copied from a Windows file system, which does not preserve Unix file permissions).
+`chmode +x rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/start.demo.sh`
 
 ---
 
