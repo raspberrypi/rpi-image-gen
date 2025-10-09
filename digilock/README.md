@@ -122,7 +122,7 @@ Then remove the jumper to re-enable normal boot and power cycle the CM5
 After booting, find the CM5 IP address:
 
 ```bash
-cat /proc/net/fib_trie | grep -A 1 "32 host"
+cat /proc/net/fib_trie
 ```
 Navigate in a browser tab to that ip address on the client device: 192.168.8.1:8080
 ---
