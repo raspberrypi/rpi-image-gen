@@ -41,7 +41,7 @@ To build the **On-Prem Demo Unit** image:
                ├── docker-compose.demo.yml
                ├── frontend.tar
                ├── nginx.tar
-               ├── nginx.conf
+               ├── nginx.demo.conf
                ├── postgres.tar
                ├── redis.tar
-               └── start.sh
+               └── start.demo.sh

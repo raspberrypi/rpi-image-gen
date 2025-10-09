@@ -7,7 +7,7 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/opt/digilink-onprem-demo/start.sh
+ExecStart=/opt/digilink-onprem-demo/start.demo.sh
 RemainAfterExit=true
 StandardOutput=journal
 StandardError=journal
