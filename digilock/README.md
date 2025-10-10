@@ -102,7 +102,8 @@ The `.img` file will appear in:
 3. Connect CM5 to the Host Pi via USB-C.
 
 #### Step 2 — Mount the eMMC
-On the build/flash Pi
+On the build/flash Raspberry Pi
+
 Run:
 ```bash
 sudo rpiboot
@@ -110,15 +111,12 @@ sudo rpiboot
 Wait for the eMMC to appear as a drive (e.g. `/dev/sda`).
 
 #### Step 3 — Flash with Raspberry Pi Imager
+
+Use the rpi-imager cli tool to flash the board:
+
 ```bash
-rpi-imager
+sudo rpi-imager --cli ./work/image-onprem-demo-image/onprem-demo-image.img /dev/sda
 ```
-- **OS:** Select “Use custom image” → choose the `.img` from `~/rpi-image-gen/output/`
-- **Storage:** Select the CM5 eMMC device
-- Click **Write**
-
-Then remove the jumper to re-enable normal boot and power cycle the CM5
-
 ---
 
 ### 5. Boot and Connect
