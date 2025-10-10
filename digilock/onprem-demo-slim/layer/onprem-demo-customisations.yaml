@@ -46,7 +46,6 @@ mmdebstrap:
         /opt/docker-debs/docker-compose-plugin_2.39.4-0~debian.12~bookworm_arm64.deb
       "
 
-    - chroot $1 usermod -aG docker $IGconf_device_user1
     - chroot $1 systemctl enable docker
     # dev tools (comment out for production)
     - chroot $1 sh -c "echo 'export TERM=xterm' >> /etc/profile.d/term.sh"
