@@ -1,0 +1,24 @@
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  boot_part_size: 200%
+  root_part_size: 300%
+  name: deb13-arm64-splash
+
+layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  # Path to your custom splash screen image (24-bit TGA, max 1920x1080, <224 colours)
+  # Leave empty or comment out to skip splash screen installation
+  # Example: /home/user/my-logo.tga
+  image_path: /mnt/nvme/rpi-image-gen/demo-splash.tga
+  
+  # Skip image validation checks (not recommended for production)
+  skip_image_checks: n
+  
+  # Automatically update /boot/firmware/cmdline.txt to enable splash
+  update_cmdline: y
