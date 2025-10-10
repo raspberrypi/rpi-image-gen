@@ -54,7 +54,9 @@ cd rpi-image-gen
 Then obtain the **output artifacts** from the following GitHub Action:  
 [NL-On-Prem-Auth – build-rpi.yml](https://github.com/SecurityPeopleInc/NL-On-Prem-Auth/actions/workflows/build-rpi.yml)
 
-Copy them into this structure:
+Transfer the tar file to the raspberry pi you will use for building the image. 
+`extract the tar file using tar -xzvf digilink-onprem-vX.X.X`
+and put them into this structure:
 
 ```
 rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/
@@ -128,3 +130,7 @@ cat /proc/net/fib_trie
 ```
 Navigate in a browser tab to that ip address on the client device: 192.168.8.1:8080
 ---
+
+### 6. Removing Old Builds
+Over time, the images in your work directory can accumulate and consume most of the available storage on your Raspberry Pi.
+To free up space for future builds, simply remove the directories ending with "-dirty" in the `rpi-image-gen/work` directory — these contain temporary or incomplete build data that are safe to delete.
