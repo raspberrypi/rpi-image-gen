@@ -1,8 +1,7 @@
 # METABEGIN
-# X-Env-Layer-Name: onprem-demo-customisation
-# X-Env-Layer-Category: image
-# X-Env-Layer-Desc: Example layer with dependency plus some customisation
-#  hooks.
+# X-Env-Layer-Name: login
+# X-Env-Layer-Category: layer
+# X-Env-Layer-Desc: Install Login, creates user and installs any dev tools
 # X-Env-Layer-Requires: v8-svelte
 #
 # X-Env-VarRequires: IGconf_device_user1
@@ -16,13 +15,10 @@ mmdebstrap:
     - passwd
     - libpam-runtime
     - login
-    # docker dependencies
-    - iptables
-    - dbus-user-session
-    - ca-certificates
     # dev tools (comment out for production)
     - nano
     - ncurses-term
+
   customize-hooks:
     - chroot $1 sh -c "useradd -m -s /bin/bash -u 4000 $IGconf_device_user1"
 
@@ -30,22 +26,8 @@ mmdebstrap:
       if [ -n "$IGconf_device_user1pass" ] ; then
          chroot $1 sh -c "printf '%s:%s\n' '${IGconf_device_user1}' '${IGconf_device_user1pass}' | chpasswd"
       fi
-    # - chroot $1 usermod --pass='*' root
+
     - chroot $1 sh -c "echo 'root:Fo0bar!!' | chpasswd"
-    
-    # docker install from local debs
-    - mkdir -p $1/opt/docker-debs
-    - cp ${IGconf_device_assetdir}/docker-debs/*.deb $1/opt/docker-debs/
 
-    - |-
-      chroot $1 sh -c "
-      dpkg -i /opt/docker-debs/containerd.io_1.7.27-1_arm64.deb \
-        /opt/docker-debs/docker-ce_28.5.0-1~debian.12~bookworm_arm64.deb \
-        /opt/docker-debs/docker-ce-cli_28.5.0-1~debian.12~bookworm_arm64.deb \
-        /opt/docker-debs/docker-buildx-plugin_0.29.1-1~debian.12~bookworm_arm64.deb \
-        /opt/docker-debs/docker-compose-plugin_2.39.4-0~debian.12~bookworm_arm64.deb
-      "
-
-    - chroot $1 systemctl enable docker
     # dev tools (comment out for production)
     - chroot $1 sh -c "echo 'export TERM=xterm' >> /etc/profile.d/term.sh"

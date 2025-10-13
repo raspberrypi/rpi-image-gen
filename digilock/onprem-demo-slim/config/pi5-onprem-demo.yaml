@@ -8,4 +8,6 @@ image:
   name: onprem-demo-image
 
 layer:
-  everything: onprem-demo-customisation
+  login: login
+  docker: docker
+  

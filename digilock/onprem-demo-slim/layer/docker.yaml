@@ -1,0 +1,30 @@
+# METABEGIN
+# X-Env-Layer-Name: docker
+# X-Env-Layer-Category: layer
+# X-Env-Layer-Desc: Installs Docker from local .deb files and enables the service
+# X-Env-Layer-Requires: login
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - iptables
+    - dbus-user-session
+    - ca-certificates
+
+  customize-hooks:
+    # Copy pre-downloaded Docker .deb packages
+    - mkdir -p $1/opt/docker-debs
+    - cp ${IGconf_device_assetdir}/docker-debs/*.deb $1/opt/docker-debs/
+
+    # Install Docker packages inside chroot
+    - |-
+      chroot $1 sh -c "
+      dpkg -i /opt/docker-debs/containerd.io_1.7.27-1_arm64.deb \
+        /opt/docker-debs/docker-ce_28.5.0-1~debian.12~bookworm_arm64.deb \
+        /opt/docker-debs/docker-ce-cli_28.5.0-1~debian.12~bookworm_arm64.deb \
+        /opt/docker-debs/docker-buildx-plugin_0.29.1-1~debian.12~bookworm_arm64.deb \
+        /opt/docker-debs/docker-compose-plugin_2.39.4-0~debian.12~bookworm_arm64.deb
+      "
+
+    # Enable Docker service
+    - chroot $1 systemctl enable docker
