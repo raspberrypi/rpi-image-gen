@@ -1,0 +1,103 @@
+# METABEGIN
+# X-Env-Layer-Name: network
+# X-Env-Layer-Category: layer
+# X-Env-Layer-Desc: Configures Ethernet + Wi-Fi network with AP mode and DHCP server on Raspberry Pi
+# X-Env-Layer-Requires: login
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - network-manager
+    - dnsmasq
+    - hostapd
+
+  customize-hooks:
+    # Enable NetworkManager at boot
+    - |-
+      chroot $1 sh -c "
+        systemctl enable NetworkManager
+      "
+
+    # Create dnsmasq configuration
+    - |-
+      cat <<'EOF' > $1/etc/dnsmasq.conf
+      interface=wlan0
+      dhcp-range=192.168.50.10,192.168.50.100,12h
+      dhcp-option=option:router,192.168.50.1
+
+      interface=eth0
+      dhcp-range=192.168.60.10,192.168.60.100,12h
+      dhcp-option=option:router,192.168.60.1
+
+      address=/digilink.lan/192.168.50.1
+      address=/config.lan/192.168.50.1
+      address=/backend.lan/192.168.50.1
+      EOF
+
+    # Create hostapd configuration
+    - |-
+      cat <<EOF > $1/etc/hostapd/hostapd.conf
+      interface=wlan0
+      driver=nl80211
+      ssid=${IGconf_network_ssid:-DigiLinkOnPremDemo}
+      hw_mode=g
+      channel=6
+      auth_algs=1
+      ignore_broadcast_ssid=0
+      EOF
+
+    # Enable IP forwarding using sysctl.d drop-in (preferred and modular)
+    - |-
+      mkdir -p $1/etc/sysctl.d
+      echo 'net.ipv4.ip_forward=1' > $1/etc/sysctl.d/99-ipforward.conf
+
+    # Add a boot-time setup script for NetworkManager connections
+    - |-
+      cat <<'EOF' > $1/usr/local/bin/setup-network.sh
+      #!/bin/bash
+      set -e
+
+      SSID=${IGconf_network_ssid:-DigiLinkOnPremDemo}
+      WLAN_IP=${IGconf_wlan_ip:-192.168.50.1}
+      ETH_IP=${IGconf_eth_ip:-192.168.60.1}
+
+      echo "[setup-network] Configuring NetworkManager..."
+
+      # Enable Wi-Fi radio
+      nmcli radio wifi on || true
+
+      # Configure Ethernet static IP
+      nmcli con add type ethernet ifname eth0 con-name eth0-ethernet-static ipv4.addresses ${ETH_IP}/24 ipv4.method manual || true
+
+      # Configure Wi-Fi Access Point
+      nmcli con add type wifi ifname wlan0 con-name wlan0-wifi-static autoconnect yes ssid "$SSID" mode ap || true
+      nmcli con modify wlan0-wifi-static ipv4.addresses ${WLAN_IP}/24 ipv4.method manual
+
+      # Enable essential services
+      systemctl unmask hostapd || true
+      systemctl enable hostapd || true
+      systemctl enable dnsmasq || true
+
+      echo "[setup-network] Done."
+      EOF
+
+      chmod +x $1/usr/local/bin/setup-network.sh
+
+    # Add a systemd one-shot service that runs setup-network.sh once on first boot
+    - |-
+      cat <<'EOF' > $1/etc/systemd/system/setup-network.service
+      [Unit]
+      Description=Initial NetworkManager configuration
+      After=NetworkManager.service
+      ConditionPathExists=!/var/lib/setup-network.done
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/setup-network.sh
+      ExecStartPost=/bin/touch /var/lib/setup-network.done
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+
+      chroot $1 sh -c "systemctl enable setup-network.service"

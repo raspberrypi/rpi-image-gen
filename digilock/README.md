@@ -115,7 +115,7 @@ Wait for the eMMC to appear as a drive (e.g. `/dev/sda`).
 Use the rpi-imager cli tool to flash the board:
 
 ```bash
-sudo rpi-imager --cli ./work/image-onprem-demo-image/onprem-demo-image.img /dev/sda
+sudo rpi-imager --cli ./work/image-onprem-demo/onprem-demo.img /dev/sda
 ```
 ---
 

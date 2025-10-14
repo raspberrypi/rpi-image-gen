@@ -5,9 +5,10 @@ device:
 
 image:
   layer: onprem-demo-myimage
-  name: onprem-demo
+  name: onprem-demo-network
 
 layer:
   login: login
   docker: docker
-  
+  network: network
+
