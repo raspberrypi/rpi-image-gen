@@ -36,7 +36,7 @@ This guide explains how to build and flash the **On-Prem Demo Unit** image using
 
 ```bash
 sudo apt update
-sudo apt install git rpi-imager usbboot jq curl -y
+sudo apt install git rpi-imager rpiboot jq curl -y
 ```
 
 ---
@@ -55,8 +55,9 @@ Then obtain the **output artifacts** from the following GitHub Action:
 [NL-On-Prem-Auth – build-rpi.yml](https://github.com/SecurityPeopleInc/NL-On-Prem-Auth/actions/workflows/build-rpi.yml)
 
 Transfer the tar file to the raspberry pi you will use for building the image. 
-`extract the tar file using tar -xzvf digilink-onprem-vX.X.X`
-and put them into this structure:
+extract the tar file using 
+`tar -xzvf digilink-onprem-vX.X.X.tar.gz`
+and put them into this structure: IMPORTANT!
 
 ```
 rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/
