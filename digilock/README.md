@@ -36,7 +36,7 @@ This guide explains how to build and flash the **On-Prem Demo Unit** image using
 
 ```bash
 sudo apt update
-sudo apt install git rpi-imager rpiboot jq curl -y
+sudo apt install rpiboot rpi-imager
 ```
 
 ---
@@ -76,7 +76,7 @@ rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/d
 └── start.demo.sh
 ```
 > **Note:** . Depending on how you transferred the output files to your directory, the start.demo.sh script may have lost its executable permission (especially if copied from a Windows file system, which does not preserve Unix file permissions).
-`chmode +x rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/start.demo.sh`
+`chmod +x rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/start.demo.sh`
 
 ---
 
