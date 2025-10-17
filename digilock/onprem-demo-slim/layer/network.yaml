@@ -10,13 +10,29 @@ mmdebstrap:
     - network-manager
     - dnsmasq
     - hostapd
+    - wpasupplicant
+    - iptables
+    - iw
+    - lsof
+    - net-tools
 
   customize-hooks:
     # Enable NetworkManager at boot
     - |-
       chroot $1 sh -c "
+        systemctl stop systemd-resolved
+        systemctl disable systemd-resolved
+        systemctl mask systemd-resolved
         systemctl enable NetworkManager
+
+        rm -f /etc/resolv.conf
+        echo 'nameserver 1.1.1.1' > /etc/resolv.conf
       "
+
+    # Update dnsmasq default config to ignore resolvconf and exclude lo
+    - |-
+      sed -i 's/#IGNORE_RESOLVCONF=yes/IGNORE_RESOLVCONF=yes/' $1/etc/default/dnsmasq
+      sed -i 's/#DNSMASQ_EXCEPT=\"lo\"/DNSMASQ_EXCEPT=\"lo\"/' $1/etc/default/dnsmasq
 
     # Create dnsmasq configuration
     - |-
@@ -39,17 +55,13 @@ mmdebstrap:
       cat <<EOF > $1/etc/hostapd/hostapd.conf
       interface=wlan0
       driver=nl80211
-      ssid=${IGconf_network_ssid:-DigiLinkOnPremDemo}
+      ssid=DigiLinkOnPremDemo
       hw_mode=g
       channel=6
       auth_algs=1
       ignore_broadcast_ssid=0
       EOF
 
-    # Enable IP forwarding using sysctl.d drop-in (preferred and modular)
-    - |-
-      mkdir -p $1/etc/sysctl.d
-      echo 'net.ipv4.ip_forward=1' > $1/etc/sysctl.d/99-ipforward.conf
 
     # Add a boot-time setup script for NetworkManager connections
     - |-
@@ -57,26 +69,25 @@ mmdebstrap:
       #!/bin/bash
       set -e
 
-      SSID=${IGconf_network_ssid:-DigiLinkOnPremDemo}
-      WLAN_IP=${IGconf_wlan_ip:-192.168.50.1}
-      ETH_IP=${IGconf_eth_ip:-192.168.60.1}
-
       echo "[setup-network] Configuring NetworkManager..."
 
       # Enable Wi-Fi radio
       nmcli radio wifi on || true
 
-      # Configure Ethernet static IP
-      nmcli con add type ethernet ifname eth0 con-name eth0-ethernet-static ipv4.addresses ${ETH_IP}/24 ipv4.method manual || true
+      # Ethernet on 192.168.60.0/24
+      nmcli con add type ethernet ifname eth0 con-name eth0-ethernet-static ipv4.addresses 192.168.60.1/24 ipv4.method manual
 
-      # Configure Wi-Fi Access Point
-      nmcli con add type wifi ifname wlan0 con-name wlan0-wifi-static autoconnect yes ssid "$SSID" mode ap || true
-      nmcli con modify wlan0-wifi-static ipv4.addresses ${WLAN_IP}/24 ipv4.method manual
+      # Wi-Fi Access Point on 192.168.50.0/24
+      nmcli con add type wifi ifname wlan0 con-name wlan0-wifi-static autoconnect yes ssid DigiLinkOnPremDemo mode ap
+      nmcli con modify wlan0-wifi-static ipv4.addresses 192.168.50.1/24 ipv4.method manual
 
       # Enable essential services
-      systemctl unmask hostapd || true
-      systemctl enable hostapd || true
-      systemctl enable dnsmasq || true
+      systemctl unmask hostapd
+      systemctl enable hostapd 
+      systemctl enable dnsmasq
+
+      sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+      sysctl -p
 
       echo "[setup-network] Done."
       EOF
