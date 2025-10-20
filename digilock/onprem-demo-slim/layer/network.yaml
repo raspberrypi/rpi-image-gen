@@ -7,32 +7,22 @@
 ---
 mmdebstrap:
   packages:
-    - network-manager
     - dnsmasq
     - hostapd
-    - wpasupplicant
     - iptables
     - iw
-    - lsof
-    - net-tools
+    - iproute2
+    - procps
 
   customize-hooks:
-    # Enable NetworkManager at boot
+    # Enable hostapd and dnsmasq
     - |-
       chroot $1 sh -c "
-        systemctl stop systemd-resolved
-        systemctl disable systemd-resolved
-        systemctl mask systemd-resolved
-        systemctl enable NetworkManager
-
-        rm -f /etc/resolv.conf
-        echo 'nameserver 1.1.1.1' > /etc/resolv.conf
+        systemctl unmask dnsmasq
+        systemctl enable dnsmasq
+        systemctl unmask hostapd
+        systemctl enable hostapd 
       "
-
-    # Update dnsmasq default config to ignore resolvconf and exclude lo
-    - |-
-      sed -i 's/#IGNORE_RESOLVCONF=yes/IGNORE_RESOLVCONF=yes/' $1/etc/default/dnsmasq
-      sed -i 's/#DNSMASQ_EXCEPT=\"lo\"/DNSMASQ_EXCEPT=\"lo\"/' $1/etc/default/dnsmasq
 
     # Create dnsmasq configuration
     - |-
@@ -58,8 +48,14 @@ mmdebstrap:
       ssid=DigiLinkOnPremDemo
       hw_mode=g
       channel=6
+      macaddr_acl=0
       auth_algs=1
       ignore_broadcast_ssid=0
+      wpa=3
+      wpa_passphrase=DigiLink
+      wpa_key_mgmt=WPA-PSK
+      wpa_pairwise=TKIP
+      rsn_pairwise=CCMP
       EOF
 
 
@@ -69,22 +65,10 @@ mmdebstrap:
       #!/bin/bash
       set -e
 
-      echo "[setup-network] Configuring NetworkManager..."
-
-      # Enable Wi-Fi radio
-      nmcli radio wifi on || true
-
-      # Ethernet on 192.168.60.0/24
-      nmcli con add type ethernet ifname eth0 con-name eth0-ethernet-static ipv4.addresses 192.168.60.1/24 ipv4.method manual
-
-      # Wi-Fi Access Point on 192.168.50.0/24
-      nmcli con add type wifi ifname wlan0 con-name wlan0-wifi-static autoconnect yes ssid DigiLinkOnPremDemo mode ap
-      nmcli con modify wlan0-wifi-static ipv4.addresses 192.168.50.1/24 ipv4.method manual
-
-      # Enable essential services
-      systemctl unmask hostapd
-      systemctl enable hostapd 
-      systemctl enable dnsmasq
+      ip link set wlan0 down
+      ip addr flush dev wlan0
+      ip link set wlan0 up
+      ip addr add 192.168.50.1/24 dev wlan0
 
       sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
       sysctl -p

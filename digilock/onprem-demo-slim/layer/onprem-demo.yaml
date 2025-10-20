@@ -6,5 +6,4 @@
 # X-Env-Layer-Requires: debian-bookworm-arm64-slim,
 #  rpi-debian-bookworm,
 #  rpi-misc-skel,
-#  systemd-net-min
 # METAEND
