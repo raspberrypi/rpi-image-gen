@@ -90,14 +90,12 @@ mmdebstrap:
     - |-
       cat <<'EOF' > $1/etc/systemd/system/setup-network.service
       [Unit]
-      Description=Initial NetworkManager configuration
+      Description=NetworkManager configuration
       After=NetworkManager.service
-      ConditionPathExists=!/var/lib/setup-network.done
 
       [Service]
-      Type=oneshot
+      Type=simple
       ExecStart=/usr/local/bin/setup-network.sh
-      ExecStartPost=/bin/touch /var/lib/setup-network.done
 
       [Install]
       WantedBy=multi-user.target
