@@ -86,7 +86,7 @@ mmdebstrap:
 
       chmod +x $1/usr/local/bin/setup-network.sh
 
-    # Add a systemd one-shot service that runs setup-network.sh once on first boot
+    # Add a systemd service that runs setup-network.sh at runtime
     - |-
       cat <<'EOF' > $1/etc/systemd/system/setup-network.service
       [Unit]
