@@ -54,10 +54,10 @@ mmdebstrap:
       macaddr_acl=0
       auth_algs=1
       ignore_broadcast_ssid=0
-      wpa=3
+      wpa=2
       wpa_passphrase=DigiLink
       wpa_key_mgmt=WPA-PSK
-      wpa_pairwise=TKIP
+      wpa_pairwise=CCMP
       rsn_pairwise=CCMP
       EOF
 
