@@ -28,16 +28,19 @@ mmdebstrap:
     - |-
       cat <<'EOF' > $1/etc/dnsmasq.conf
       interface=wlan0
-      dhcp-range=192.168.50.10,192.168.50.100,12h
-      dhcp-option=option:router,192.168.50.1
+      dhcp-range=wlan0,192.168.50.10,192.168.50.100,12h
+      dhcp-option=wlan0,option:router,192.168.50.1
 
-      interface=eth0
-      dhcp-range=192.168.60.10,192.168.60.100,12h
-      dhcp-option=option:router,192.168.60.1
+      interface=end0
+      dhcp-range=end0,192.168.60.10,192.168.60.100,12h
+      dhcp-option=end0,option:router,192.168.60.1
 
       address=/digilink.lan/192.168.50.1
       address=/config.lan/192.168.50.1
       address=/backend.lan/192.168.50.1
+
+      dhcp-authoritative
+      dhcp-leasefile=/var/lib/misc/dnsmasq.leases
       EOF
 
     # Create hostapd configuration
