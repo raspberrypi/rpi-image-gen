@@ -62,7 +62,7 @@ mmdebstrap:
       EOF
 
 
-    # Add a boot-time setup script for NetworkManager connections
+    # Script for runtime commands
     - |-
       cat <<'EOF' > $1/usr/local/bin/setup-network.sh
       #!/bin/bash
@@ -81,7 +81,7 @@ mmdebstrap:
       sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
       sysctl -p
 
-      echo "[setup-network] Done."
+      echo "Network set up complete."
       EOF
 
       chmod +x $1/usr/local/bin/setup-network.sh
