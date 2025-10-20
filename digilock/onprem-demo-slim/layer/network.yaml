@@ -73,6 +73,11 @@ mmdebstrap:
       ip link set wlan0 up
       ip addr add 192.168.50.1/24 dev wlan0
 
+      ip link set end0 down
+      ip addr flush dev end0
+      ip link set end0 up
+      ip addr add 192.168.60.1/24 dev end0
+
       sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
       sysctl -p
 
