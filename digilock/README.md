@@ -18,11 +18,7 @@ This repository supports two projects:
 
 ---
 
-## On-Prem Demo Unit Setup
-
-This guide explains how to build and flash the **On-Prem Demo Unit** image using one Raspberry Pi (the *Host*) to flash another (the *Target* Compute Module 5, or CM5).
-
----
+## Set Up Dev Environment for building images and flashing
 
 ### 1. Requirements
 
@@ -80,22 +76,41 @@ rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/d
 
 ---
 
-### 3. Build the Image
+## On-Prem Demo Unit Setup
+
+This guide explains how to build and flash the **On-Prem Demo Unit** image using one Raspberry Pi (the *Host*) to flash another (the *Target* Compute Module 5, or CM5).
+
+---
+
+### 1. Build the Image
 
 ```bash
 cd ~/rpi-image-gen
+```
+Now you have a choice between two configuration files for two different images.
+```bash
+# Standard Image that contains just the onprem-demo as a server and a minimal standard network install utilizing an external DHCP server and no DNS.  
 ./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo.yaml
+```
+OR
+```bash
+# This build uses the custom network to create an access point and have the pi act as a dns server and dhcp server for connecting a controller and tablet without the need for an external network. Creates an access point with SSID DigiLinkOnPremDemo
+./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo-network.yaml
+
 ```
 
 The `.img` file will appear in:
 
-```
-~/rpi-image-gen/work/image-onprem-demo-image
+```bash
+~/rpi-image-gen/work/image-onprem-demo/onprem-demo.img
 ```
 
+```bash
+~/rpi-image-gen/work/image-onprem-demo-network/onprem-demo-network.img
+```
 ---
 
-###  4. Flash the Compute Module 5
+###  2. Flash the Compute Module 5
 
 #### Step 1 — Connect
 1. Power off the CM5.
@@ -118,9 +133,13 @@ Use the rpi-imager cli tool to flash the board:
 ```bash
 sudo rpi-imager --cli ./work/image-onprem-demo/onprem-demo.img /dev/sda
 ```
+OR
+```bash
+sudo rpi-imager --cli ./work/image-onprem-demo-network/onprem-demo-network.img /dev/sda
+```
 ---
 
-### 5. Boot and Connect
+### 3. Boot and Connect
 
 After booting, find the CM5 IP address:
 
@@ -130,6 +149,6 @@ cat /proc/net/fib_trie
 Navigate in a browser tab to that ip address on the client device: 192.168.8.1:8080
 ---
 
-### 6. Removing Old Builds
+### 4. Removing Old Builds
 Over time, the images in your work directory can accumulate and consume most of the available storage on your Raspberry Pi.
 To free up space for future builds, simply remove the directories ending with "-dirty" in the `rpi-image-gen/work` directory — these contain temporary or incomplete build data that are safe to delete.
