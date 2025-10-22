@@ -29,8 +29,8 @@ layer:
 splash:
   # Path to your custom splash screen image (24-bit TGA, max 1920x1080, <224 colours)
   # Leave empty or comment out to skip splash screen installation
-  # Example: /home/user/my-logo.tga
-  image_path: /mnt/nvme/rpi-image-gen/demo-splash.tga
+  # Can be absolute or relative to the project root
+  image_path: examples/splash-screen/demo-splash.tga
   
   # Skip image validation checks (not recommended for production)
   skip_image_checks: n

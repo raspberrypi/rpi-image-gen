@@ -62,12 +62,12 @@ mmdebstrap:
       # Run the configure-splash script inside the chroot
       echo "Configuring splash screen from $SPLASH_IMAGE" >&2
       
-      # Build command arguments
-      if $IGconf_splash_skip_image_checks && ! $IGconf_splash_update_cmdline ; then
+      # Build command arguments based on boolean config values
+      if [ "$IGconf_splash_skip_image_checks" = "y" ] && [ "$IGconf_splash_update_cmdline" != "y" ]; then
         chroot $1 /usr/bin/configure-splash --skip-image-checks --no-cmdline $TEMP_IMAGE
-      elif $IGconf_splash_skip_image_checks ; then
+      elif [ "$IGconf_splash_skip_image_checks" = "y" ]; then
         chroot $1 /usr/bin/configure-splash --skip-image-checks $TEMP_IMAGE
-      elif ! $IGconf_splash_update_cmdline ; then
+      elif [ "$IGconf_splash_update_cmdline" != "y" ]; then
         chroot $1 /usr/bin/configure-splash --no-cmdline $TEMP_IMAGE
       else
         chroot $1 /usr/bin/configure-splash $TEMP_IMAGE
