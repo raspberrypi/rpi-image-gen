@@ -1,0 +1,8 @@
+# METABEGIN
+# X-Env-Layer-Name: net-min
+# X-Env-Layer-Category: foundation
+# X-Env-Layer-Desc: Minimal networking layer using systemd-networkd
+#  (based on systemd-net-min)
+# X-Env-Layer-Requires: systemd-net-min
+# METAEND
+---

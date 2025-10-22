@@ -10,4 +10,5 @@ image:
 layer:
   login: login
   docker: docker
+  network: net-min
   
