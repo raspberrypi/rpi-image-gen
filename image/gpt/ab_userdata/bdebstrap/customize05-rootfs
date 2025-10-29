@@ -30,9 +30,11 @@ sed -i \
    -e "s|<CRYPT_UUID>|$CRYPT_UUID|g" ${IGconf_image_outputdir}/provisionmap.json
 
 
-# Generate slot map. IDP currently doesn't preserve GPT labels so
-# add the map as a fallback so a provisioned image boots.
-pmap -f "${IGconf_image_outputdir}/provisionmap.json" -s > "$1/boot/slot.map"
+# Generate slot map. IDP does preserve GPT labels but this has yet make it to
+# mainline. Add the map as a fallback so a provisioned image boots.
+pmap --schema "$IGconf_image_pmap_schema" \
+     --file "${IGconf_image_outputdir}/provisionmap.json" \
+     --slotvars > "$1/boot/slot.map"
 
 
 # Hint to initramfs-tools we have an ext4 rootfs

@@ -47,7 +47,7 @@
          "A": {
             "partitions": [
                {
-                  "image": "system_b",
+                  "image": "system_a",
                   "static": {
                      "uuid": "<SYSTEM_UUID>",
                      "role": "system"

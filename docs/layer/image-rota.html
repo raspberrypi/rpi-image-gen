@@ -123,7 +123,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v4.0.0</span>
+        <span class="badge">v4.1.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -488,9 +488,9 @@
                 <tr>
                     <td><code>IGconf_image_pmap</code></td>
                     <td>Provisioning Map type for this image layout.
- All partitions will be provisioned unencrypted (clear).
- System partitions will be provisioned encrypted (crypt).
- System B will be provisioned encrypted (hybrid). Development only.</td>
+ clear: All partitions will be provisioned unencrypted.
+ crypt: All partitions except <slot>:boot will be provisioned encrypted.
+ hybrid: B:system will be provisioned encrypted (development only).</td>
                     <td>
                        
                            
@@ -498,7 +498,7 @@
                            
                        
                     </td>
-                    <td>Must be one of: clear, hybrid</td>
+                    <td>Must be one of: clear, crypt, hybrid</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>

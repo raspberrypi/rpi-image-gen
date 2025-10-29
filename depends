@@ -21,6 +21,7 @@ uuidgen:uuid-runtime
 fdisk
 python3-yaml
 python3-debian
+python3-jsonschema
 # doc gen only
 # python3-markdown
 # asciidoctor

@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
 #  boot/system redundancy, and a shared persistent data partition.
-# X-Env-Layer-Version: 4.0.0
+# X-Env-Layer-Version: 4.1.0
 # X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
 # X-Env-Layer-Provides: image
 #
@@ -38,11 +38,11 @@
 #
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Desc: Provisioning Map type for this image layout.
-#  All partitions will be provisioned unencrypted (clear).
-#  System partitions will be provisioned encrypted (crypt).
-#  System B will be provisioned encrypted (hybrid). Development only.
+#  clear: All partitions will be provisioned unencrypted.
+#  crypt: All partitions except <slot>:boot will be provisioned encrypted.
+#  hybrid: B:system will be provisioned encrypted (development only).
 # X-Env-Var-pmap-Required: n
-# X-Env-Var-pmap-Valid: clear,hybrid
+# X-Env-Var-pmap-Valid: clear,crypt,hybrid
 # X-Env-Var-pmap-Set: y
 #
 # X-Env-Var-ptable_protect: $( [ "${IGconf_device_storage_type:-}" = "emmc" ] && echo y || echo n )
