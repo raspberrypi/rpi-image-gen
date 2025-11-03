@@ -144,7 +144,7 @@ If you are using the onprem-demo-network.img (static IP),  Navigate to the stati
 
 If you are using the onprem-demo.img (DHCP), Navigate the IP address the Pi was assigned in a browser tab on the client device; You should see DigiLink running.
 
-If you want to manually determine the IP address of the RPI from DHCP, login to the Pi using the credentials defined in `digilock/onprem-demo-slim/config` and run: 
+If you want to manually determine the IP address of the RPI from DHCP, login to the Pi using the credentials defined in `digilock/onprem-demo-slim/config` (default logins are u: zippy p: Fo0bar!! & u: root p: Fo0bar!!) and run: 
 
 ```bash
 cat /proc/net/fib_trie
