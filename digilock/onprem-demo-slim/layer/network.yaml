@@ -78,6 +78,10 @@ mmdebstrap:
       ip link set end0 up
       ip addr add 192.168.60.1/24 dev end0
 
+      MAC_SUFFIX=$(tr -d ':' </sys/class/net/end0/address | tail -c 5 | tr 'a-f' 'A-F')
+      sed -i "s/^ssid=.*/ssid=DigiLinkOnPremDemo-${MAC_SUFFIX}/" /etc/hostapd/hostapd.conf
+      systemctl restart hostapd
+
       sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
       sysctl -p
 
