@@ -34,6 +34,16 @@ This repository supports two projects:
 sudo apt update
 sudo apt install rpiboot rpi-imager
 ```
+> Note: You may also need to install the following additional dependencies:  
+`genimage`, `mtools`, `mmdebstrap`, `bdebstrap`, `podman`, `pv`, `uidmap`, `btrfs-progs`, `dctrl-tools`, `uuid-runtime`, and `python3-debian`.  
+
+You can install them on Debian-based systems by running:  
+
+```bash
+sudo apt update
+sudo apt install -y genimage mtools mmdebstrap bdebstrap podman pv uidmap btrfs-progs dctrl-tools uuid-runtime python3-debian
+
+```
 
 ---
 
@@ -73,6 +83,8 @@ rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/d
 ```
 > **Note:** . Depending on how you transferred the output files to your directory, the start.demo.sh script may have lost its executable permission (especially if copied from a Windows file system, which does not preserve Unix file permissions).
 `chmod +x rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/start.demo.sh`
+
+> You might need read and write permissions to run the images. You can use `sudo chown -R "$USER":"$USER" rpi-image-gen` and `chmod -R u+rwX rpi-image-gen` to give permissions to your user.
 
 ---
 
