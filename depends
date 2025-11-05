@@ -8,7 +8,7 @@ curl
 genimage
 mtools
 mmdebstrap
-bdebstrap
+# bdebstrap - installed from source in dependencies.sh
 podman
 zstd
 pv
