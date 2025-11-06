@@ -36,7 +36,7 @@ mmdebstrap:
       dhcp-option=end0,option:router,192.168.60.1
 
       address=/digilink.lan/192.168.50.1
-      address=/config.lan/192.168.50.1
+      address=/auth.lan/192.168.50.1
       address=/backend.lan/192.168.50.1
 
       dhcp-authoritative
