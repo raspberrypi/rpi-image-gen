@@ -1,0 +1,77 @@
+# METABEGIN
+# X-Env-Layer-Name: login-banner
+# X-Env-Layer-Category: layer
+# X-Env-Layer-Desc: Displays device Info on login screen (runtime generated)
+# X-Env-Layer-Requires: login
+# METAEND
+---
+mmdebstrap:
+  packages: []
+
+  customize-hooks:
+    - |-
+      mkdir -p $1/usr/local/sbin
+      mkdir -p $1/etc/systemd/system
+      mkdir -p $1/etc/issue.d
+
+      # Create runtime generator script
+      cat > $1/usr/local/sbin/generate-login-banner.sh <<'EOF'
+      #!/bin/sh
+      set -e
+
+      # Detect WiFi interface
+      WIFI_IF="$(ls /sys/class/net 2>/dev/null | grep -E '^wl|^wlan' | head -n1)"
+      [ -z "$WIFI_IF" ] && WIFI_IF="wlan0"
+
+      # Detect Ethernet interface
+      ETH_IF="$(ls /sys/class/net 2>/dev/null | grep -E '^en|^eth' | head -n1)"
+      [ -z "$ETH_IF" ] && ETH_IF="eth0"
+
+      # Read MACs safely
+      WIFI_MAC="N/A"
+      ETH_MAC="N/A"
+      [ -e "/sys/class/net/$WIFI_IF/address" ] && WIFI_MAC=$(cat /sys/class/net/$WIFI_IF/address)
+      [ -e "/sys/class/net/$ETH_IF/address" ] && ETH_MAC=$(cat /sys/class/net/$ETH_IF/address)
+
+      # Banner output
+      cat > /etc/issue.d/10-info.issue <<EOF2
+      ───────────────────────────────────────────────
+      Device Information
+      Hostname: \n
+      Arch:     \m
+      Kernel:   \r
+      ───────────────────────────────────────────────
+      Network Interfaces
+        Wi-Fi    ($WIFI_IF): \4{$WIFI_IF}
+        Ethernet ($ETH_IF):  \4{$ETH_IF}
+      ───────────────────────────────────────────────
+      MAC Addresses
+        Wi-Fi    ($WIFI_IF): $WIFI_MAC
+        Ethernet ($ETH_IF):  $ETH_MAC
+      ───────────────────────────────────────────────
+      EOF2
+      EOF
+
+      chmod +x $1/usr/local/sbin/generate-login-banner.sh
+
+      # Systemd service
+      cat > $1/etc/systemd/system/generate-login-banner.service <<'EOF'
+      [Unit]
+      Description=Generate dynamic login banner
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/sbin/generate-login-banner.sh
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+
+      mkdir -p $1/etc/systemd/system/multi-user.target.wants
+      ln -s ../generate-login-banner.service \
+        $1/etc/systemd/system/multi-user.target.wants/generate-login-banner.service
+
+      # Minimal placeholder
+      echo "Generating device info on first boot..." > $1/etc/issue.d/10-info.issue

@@ -11,4 +11,5 @@ layer:
   login: login
   docker: docker
   network: net-min
+  banner: login-banner
   
