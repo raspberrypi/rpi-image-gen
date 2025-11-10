@@ -42,12 +42,12 @@ mmdebstrap:
       Kernel:   \r
       ───────────────────────────────────────────────
       Network Interfaces
-        Wi-Fi    ($WIFI_IF): \4{$WIFI_IF}
         Ethernet ($ETH_IF):  \4{$ETH_IF}
+        Wi-Fi    ($WIFI_IF): \4{$WIFI_IF}
       ───────────────────────────────────────────────
       MAC Addresses
-        Wi-Fi    ($WIFI_IF): $WIFI_MAC
         Ethernet ($ETH_IF):  $ETH_MAC
+        Wi-Fi    ($WIFI_IF): $WIFI_MAC
       ───────────────────────────────────────────────
       EOF2
       EOF

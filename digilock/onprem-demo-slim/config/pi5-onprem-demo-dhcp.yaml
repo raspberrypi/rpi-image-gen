@@ -1,17 +1,17 @@
 device:
   layer: onprem-demo-mydevice
-  hostname: DigiLinkOnPremDemoNetwork-INTERNAL
+  hostname: DigiLinkOnPremDemoDHCP-INTERNAL
   user1pass: Fo0bar!!
   production: false
   wifipass: DigiLink
-
+  
 image:
   layer: onprem-demo-myimage
-  name: onprem-demo-network-INTERNAL
+  name: onprem-demo-dhcp-INTERNAL
 
 layer:
   login: login
   docker: docker
-  network: network
+  network: net-min
   banner: login-banner
-
+  

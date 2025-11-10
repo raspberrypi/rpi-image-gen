@@ -143,18 +143,18 @@ Wait for the eMMC to appear as a drive (e.g. `/dev/sda`).
 Use the rpi-imager cli tool to flash the board:
 
 ```bash
-sudo rpi-imager --cli ./work/image-onprem-demo-network/onprem-demo-network.img /dev/sda
+sudo rpi-imager --cli ./work/image-onprem-demo-network-INTERNAL/onprem-demo-network-INTERNAL.img /dev/sda
 ```
 OR
 ```bash
-sudo rpi-imager --cli ./work/image-onprem-demo/onprem-demo.img /dev/sda
+sudo rpi-imager --cli ./work/image-onprem-demo-INTERNAL/onprem-demo-dhcp-INTERNAL.img /dev/sda
 ```
 ---
 
 ### 3. Boot and Connect
 If you are using the onprem-demo-network.img (static IP),  Navigate to the static IP (192.168.8.1) in a browser tab on the client device: 192.168.8.1:8080; You should see DigiLink running.
 
-If you are using the onprem-demo.img (DHCP), Navigate the IP address the Pi was assigned in a browser tab on the client device; You should see DigiLink running.
+If you are using the onprem-demo-dhcp.img (DHCP), Navigate the IP address the Pi was assigned in a browser tab on the client device; You should see DigiLink running.
 
 If you want to manually determine the IP address of the RPI from DHCP, login to the Pi using the credentials defined in `digilock/onprem-demo-slim/config` (default logins are u: zippy p: Fo0bar!! & u: root p: Fo0bar!!) and run: 
 
