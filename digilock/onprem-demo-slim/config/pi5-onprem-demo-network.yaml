@@ -1,6 +1,6 @@
 device:
   layer: onprem-demo-mydevice
-  hostname: DigiLinkOnPremDemoNetwork-INTERNAL
+  hostname: OnPremDemoNetwork-INTERNAL
   user1pass: Fo0bar!!
   production: false
   wifipass: DigiLink

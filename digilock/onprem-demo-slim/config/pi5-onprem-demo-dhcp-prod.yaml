@@ -1,6 +1,6 @@
 device:
   layer: onprem-demo-mydevice
-  hostname: DigiLinkOnPremDemoDHCP-v0.0.4
+  hostname: OnPremDemoDHCP-v0.0.4
   user1pass: DigilockFo0bar!!
   production: true
   wifipass: DigiLink

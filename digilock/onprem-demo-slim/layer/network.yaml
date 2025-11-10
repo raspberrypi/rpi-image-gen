@@ -3,6 +3,7 @@
 # X-Env-Layer-Category: layer
 # X-Env-Layer-Desc: Configures Ethernet + Wi-Fi network with AP mode and DHCP server on Raspberry Pi
 # X-Env-Layer-Requires: login
+# X-Env-VarRequires: IGconf_device_wifipass
 # METAEND
 ---
 mmdebstrap:
@@ -44,7 +45,11 @@ mmdebstrap:
       EOF
 
     # Create hostapd configuration
+    # Note: ssid is overwritten to append last 4 digits of MAC Address
     - |-
+      WIFI_PASS=${IGconf_device_wifipass}
+      echo "Using Wi-Fi password: $WIFI_PASS"
+
       cat <<EOF > $1/etc/hostapd/hostapd.conf
       interface=wlan0
       driver=nl80211
@@ -55,7 +60,7 @@ mmdebstrap:
       auth_algs=1
       ignore_broadcast_ssid=0
       wpa=2
-      wpa_passphrase=DigiLink
+      wpa_passphrase=${WIFI_PASS}
       wpa_key_mgmt=WPA-PSK
       wpa_pairwise=CCMP
       rsn_pairwise=CCMP
