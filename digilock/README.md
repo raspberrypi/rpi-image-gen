@@ -114,7 +114,7 @@ OR
 The `.img` file will appear in:
 
 ```bash
-~/rpi-image-gen/work/image-onprem-demo/onprem-demo.img
+~/rpi-image-gen/work/image-onprem-demo-dhcp/onprem-demo-dhcp.img
 ```
 
 ```bash
