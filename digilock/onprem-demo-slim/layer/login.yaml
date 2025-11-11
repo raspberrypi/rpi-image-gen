@@ -7,7 +7,8 @@
 # X-Env-VarRequires: IGconf_device_user1
 # X-Env-VarRequires-Valid: string
 #
-# X-Env-VarOptional: IGconf_device_user1pass
+# X-Env-VarRequires: IGconf_device_user1pass
+# X-Env-VarRequires: IGconf_device_production
 # METAEND
 ---
 mmdebstrap:
@@ -15,19 +16,29 @@ mmdebstrap:
     - passwd
     - libpam-runtime
     - login
-    # dev tools (comment out for production)
+    # Dev tools
     - nano
     - ncurses-term
 
   customize-hooks:
-    - chroot $1 sh -c "useradd -m -s /bin/bash -u 4000 $IGconf_device_user1"
-
     - |-
-      if [ -n "$IGconf_device_user1pass" ] ; then
-         chroot $1 sh -c "printf '%s:%s\n' '${IGconf_device_user1}' '${IGconf_device_user1pass}' | chpasswd"
+      # Always create the main user
+      chroot $1 sh -c "useradd -m -s /bin/bash -u 4000 $IGconf_device_user1"
+
+      # Set user password if provided
+      if [ -n "$IGconf_device_user1pass" ]; then
+        chroot $1 sh -c "printf '%s:%s\n' '${IGconf_device_user1}' '${IGconf_device_user1pass}' | chpasswd"
       fi
 
-    - chroot $1 sh -c "echo 'root:Fo0bar!!' | chpasswd"
+      # Only set root password in non-production mode
+      if [ "$IGconf_device_production" != "true" ] && [ -n "$IGconf_device_user1pass" ]; then
+        chroot $1 sh -c "printf '%s:%s\n' 'root' '${IGconf_device_user1pass}' | chpasswd"
+      fi
 
-    # dev tools (comment out for production)
+      # If production mode, disable root
+      if [ "$IGconf_device_production" = "true" ]; then
+        chroot $1 usermod --pass='*' root
+      fi
+
+    # dev tools
     - chroot $1 sh -c "echo 'export TERM=xterm' >> /etc/profile.d/term.sh"
