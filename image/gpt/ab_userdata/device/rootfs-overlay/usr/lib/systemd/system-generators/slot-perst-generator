@@ -1,0 +1,69 @@
+#!/bin/sh
+# systemd generator to bind per-slot /var based on GPT PARTLABEL
+
+set -eu
+
+OUT_DIR="/run/systemd/generator"
+PERSIST_LABEL="${PERSIST_LABEL:-PERSISTENT}"     # label of the shared persistent partition
+
+mkdir -p "$OUT_DIR"
+
+
+# 1) Determine current slot
+SLOT=""
+ROOT_DEV="$(findmnt -no SOURCE / || true)"
+if [ -n "$ROOT_DEV" ]; then
+  PARTLABEL="$(blkid -s PARTLABEL -o value -- "$ROOT_DEV" 2>/dev/null || true)"
+  case "$(printf '%s' "$PARTLABEL" | tr '[:upper:]' '[:lower:]')" in
+    system_a) SLOT="system_a" ;;
+    system_b) SLOT="system_b" ;;
+  esac
+fi
+
+# Optional fallback if label is missing/unexpected
+: "${SLOT:=${SLOT_FALLBACK:-system_a}}"
+
+VAR_SRC="/persistent/slots/${SLOT}/var"
+
+
+# 2) Emit persistent.mount (mount the shared persistent partition by label)
+#
+# Mount with:
+# noatime: avoids atime writes entirely (better than relatime)
+# lazytime: defer inode timestamps to memory, flushed with fsync/mtime changes / 24h.
+# commit=60: batches journal commits (fewer writes, risk up to 60s metadata loss on power loss).
+# errors=remount-ro: safer failure mode
+cat >"$OUT_DIR/persistent.mount" <<EOF
+[Unit]
+Description=Persistent data partition
+Before=local-fs.target
+Conflicts=umount.target
+
+[Mount]
+What=/dev/disk/by-label/${PERSIST_LABEL}
+Where=/persistent
+Type=ext4
+Options=rw,noatime,lazytime,commit=60,errors=remount-ro
+
+[Install]
+WantedBy=local-fs.target
+EOF
+
+# 3) Emit var.mount (bind per-slot /var)
+cat >"$OUT_DIR/var.mount" <<EOF
+[Unit]
+Description=Per-slot /var for ${SLOT}
+Requires=persistent.mount
+After=persistent.mount
+Before=local-fs.target
+ConditionPathExists=${VAR_SRC}
+
+[Mount]
+What=${VAR_SRC}
+Where=/var
+Type=none
+Options=bind
+
+[Install]
+WantedBy=local-fs.target
+EOF

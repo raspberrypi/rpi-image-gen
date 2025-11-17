@@ -1,0 +1,83 @@
+= image-rota
+
+== Immutable root and mount points
+
+This system uses an A/B, read‑only root with all writable state on a single persistent partition.
+
+[cols="1,3,1,4", options="header"]
+|===
+| Mount point | Backing | Type | Notes
+
+| / | /dev/disk/by-slot/active/system | ext4 | Read‑only system root (active slot A or B)
+| /boot/firmware | /dev/disk/by-slot/active/boot | vfat | Boot files (active slot A or B)
+| /bootfs | BOOTFS | vfat | Boot metadata
+| /persistent | PERSISTENT | ext4 | Shared persistent storage
+
+| /var | /persistent/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
+| /home | /persistent/home | bind | User data shared across slots
+| /var/log/journal | /persistent/log/journal | bind | Single log directory used by both slots
+|===
+
+* **Rationale (immutable root + A/B)**
+   ** Supports delta/incremental OTA updates by treating root as a static image.
+   ** Reliable rollbacks: slot can be flipped if a new root fails health checks.
+   ** Reduced write amplification and storage wear, clearer separation of state.
+   ** Predictable per‑slot state in `/var`.
+   ** Shared `/home` for slot agnostic user storage.
+   ** Shared journalling: centralised point for device logging.
+   ** Preserves SBOM accuracy: executing software matches the manifest exactly.
+   ** Blocks on-device package installs, preventing SBOM drift.
+   ** Enables auditable, reproducible releases and stronger supply-chain assurances.
+
+* **Logging**
+   ** A single persistent journal directory at `/persistent/log/journal` stores logs from either slot.
+   ** Journaling is configured for endurance and reliability.
+
+* **Machine Identity (systemd)**
+   ** `/etc/machine-id` is synchronised early with `/persistent/common/etc/machine-id` using a oneshot unit.
+
+
+[WARNING]
+====
+Slot partition GPT labels are mandatory to associate the immutable root with its matching persistent storage.
+
+- Root slots must have stable PARTLABELs: e.g. `system_a` and `system_b`.
+- At boot, a generator reads the root slot’s `PARTLABEL` to select `/persistent/slots/<slot>/var`.
+
+If slot GPT labels are missing/duplicated, `/var` binding will fail.
+
+If slot GPT labels can’t be guaranteed, this layout is not suitable for your device.
+====
+
+
+== Slot Selection (run-time)
+
+Handled entirely by layer `rpi-ab-slot-mapper`.
+
+== Slot Pairing (build-time)
+
+=== Definition
+
+This layer generates an image which has bit-for-bit identical A/B slot members:
+
+- Both `a.boot` and `b.boot` contain the exact same vfat filesystem.
+- Both `a.system` and `b.system` contain the exact same ext4 filesystem.
+- Filesystem UUIDs are intentionally identical across slots.
+- GPT partition GUIDs (PARTUUID) are unique per partition.
+- GPT partition labels (PARTLABEL) are unique per partition.
+
+=== Rationale and benefits
+
+- Faster image creation: only a single slot pair is produced.
+- Simpler updates: only a single slot pair is built, tested, and distributed.
+- Update generation: operating on a single slot pair is unambiguous.
+- Smaller CI/storage footprint: fewer images to store.
+
+=== Requirements and constraints
+
+- Does not use `UUID=` anywhere. Duplicate filesystem UUIDs make `/dev/disk/by-uuid/*` ambiguous.
+- Uses stable identifiers instead, e.g. `/dev/disk/by-slot/{active,other}/{boot,system}`.
+
+=== Encrypted (LUKS) Provisioning Map layouts
+
+- Identical content inside LUKS is supported. Slot mapping can use GPT labels or static map triplets to identify `mapper:<name>:<part>` slot components.

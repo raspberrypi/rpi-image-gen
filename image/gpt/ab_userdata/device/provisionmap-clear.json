@@ -1,13 +1,14 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.1.0",
+         "PMAPversion": "1.3.0",
          "system_type": "slotted"
       }
    },
    {
       "partitions": [
          {
+            "comment": "boot configuration",
             "image": "config"
          }
       ]
@@ -17,9 +18,10 @@
          "A": {
             "partitions": [
                {
-                  "image": "bootA",
+                  "comment": "kernel + device tree + initramfs slot A",
+                  "image": "boot_a",
                   "static": {
-                     "uuid": "<BOOTA_UUID>",
+                     "uuid": "<BOOT_UUID>",
                      "role": "boot"
                   }
                }
@@ -32,9 +34,10 @@
          "B": {
             "partitions": [
                {
-                  "image": "bootB",
+                  "comment": "kernel + device tree + initramfs slot B",
+                  "image": "boot_b",
                   "static": {
-                     "uuid": "<BOOTB_UUID>",
+                     "uuid": "<BOOT_UUID>",
                      "role": "boot"
                   }
                }
@@ -47,9 +50,10 @@
          "A": {
             "partitions": [
                {
-                  "image": "systemA",
+                  "comment": "root filesystem slot A",
+                  "image": "system_a",
                   "static": {
-                     "uuid": "<SYSTEMA_UUID>",
+                     "uuid": "<SYSTEM_UUID>",
                      "role": "system"
                   }
                }
@@ -62,9 +66,10 @@
          "B": {
             "partitions": [
                {
-                  "image": "systemB",
+                  "comment": "root filesystem slot B",
+                  "image": "system_b",
                   "static": {
-                     "uuid": "<SYSTEMB_UUID>",
+                     "uuid": "<SYSTEM_UUID>",
                      "role": "system"
                   }
                }
@@ -75,7 +80,8 @@
    {
       "partitions": [
          {
-            "image": "data"
+            "comment": "user data - shared between slots",
+            "image": "persistent"
          }
       ]
    }

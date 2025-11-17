@@ -39,6 +39,20 @@
 # X-Env-Var-apt_keydir-Valid: string-or-empty
 # X-Env-Var-apt_keydir-Set: y
 #
+# X-Env-Var-workroot: $(realpath --canonicalize-missing ./work)
+# X-Env-Var-workroot-Desc: The root work directory. Depending on the system(s)
+#  being built, this directory can amount to a substantial amount of consumed
+#  disk space.
+# X-Env-Var-workroot-Required: n
+# X-Env-Var-workroot-Valid: string
+# X-Env-Var-workroot-Set: y
+#
+# X-Env-Var-cachedir: ${IGconf_sys_workroot}/cache
+# X-Env-Var-cachedir-Desc: Global cache root directory for all operations.
+# X-Env-Var-cachedir-Required: n
+# X-Env-Var-cachedir-Valid: string
+# X-Env-Var-cachedir-Set: y
+#
 # X-Env-Var-apt_cachedir:
 # X-Env-Var-apt_cachedir-Desc: Cache directory for APT operations.
 #  Use this to specify the root directory APT uses when downloading packages.
@@ -51,13 +65,19 @@
 # X-Env-Var-apt_cachedir-Valid: string-or-empty
 # X-Env-Var-apt_cachedir-Set: force
 #
-# X-Env-Var-workroot: $(realpath --canonicalize-missing ./work)
-# X-Env-Var-workroot-Desc: The root work directory. Depending on the system(s)
-#  being built, this directory can amount to a substantial amount of consumed
-#  disk space.
-# X-Env-Var-workroot-Required: n
-# X-Env-Var-workroot-Valid: string
-# X-Env-Var-workroot-Set: y
+# X-Env-Var-buildroot: ${IGconf_sys_workroot}/build
+# X-Env-Var-buildroot-Desc: Global build root directory for source builds.
+# X-Env-Var-buildroot-Required: n
+# X-Env-Var-buildroot-Valid: string
+# X-Env-Var-buildroot-Set: y
+#
+# X-Env-Var-bootstrapdir: ${IGconf_sys_workroot}/bootstrap
+# X-Env-Var-bootstrapdir-Desc: Directory for bootstrap artefacts (e.g. env, layer
+#  order, metadata) used to resume the build in a containerised (or later)
+#  invocation.
+# X-Env-Var-bootstrapdir-Required: n
+# X-Env-Var-bootstrapdir-Valid: string
+# X-Env-Var-bootstrapdir-Set: y
 #
 # METAEND
 ---

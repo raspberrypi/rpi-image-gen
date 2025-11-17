@@ -46,7 +46,7 @@ IDP requires fastboot to be installed in the client. On Debian systems, this can
 
 [WARNING]
 ====
-Older versions of `genimage` can be problematic when creating sparse images. For example, `genimage` v16 currently shipping in Debian Bookworm does not create usable sparse images of _vfat_ filesystems. Raspberry Pi provisioning tools such as `rpi-sb-provisioner` (https://github.com/raspberrypi/rpi-sb-provisioner) rely on sparse image format, so it is recommended to use the most up-to-date version of `genimage` as possible (e.g. manual build and install to `/usr/local/bin/genimage`).
+Raspberry Pi provisioning tools such as `rpi-sb-provisioner` (https://github.com/raspberrypi/rpi-sb-provisioner) rely on sparse images, so rpi-image-gen ships its own up-to-date `genimage` to avoid compatibility problems seen with older distribution versions.
 ====
 
 

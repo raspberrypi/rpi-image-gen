@@ -1,0 +1,11 @@
+diff --git a/setup.py b/setup.py
+index 4370eb5..8ab7092 100755
+--- a/setup.py
++++ b/setup.py
+@@ -143,5 +143,5 @@ if __name__ == "__main__":
+         install_requires=["ruamel.yaml"],
+         scripts=["bdebstrap"],
+         py_modules=[],
+-        data_files=[("/usr/share/man/man1", MAN_PAGES), ("/usr/share/bdebstrap/hooks", HOOKS)],
++        data_files=[("share/man/man1", MAN_PAGES), ("share/bdebstrap/hooks", HOOKS)],
+     )

@@ -1,28 +1,34 @@
 # METABEGIN
 # X-Env-Layer-Name: image-rota
 # X-Env-Layer-Category: image
-# X-Env-Layer-Desc: Rotational OTA and AB support with GPT.
-#  This layout supports redundancy of os and system slot components and
-#  provides seperate boot and user data partitions.
-# X-Env-Layer-Version: 2.0.0
-# X-Env-Layer-Requires: image-base,device-base
+# X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
+#  boot/system redundancy, and a shared persistent data partition.
+# X-Env-Layer-Version: 4.1.0
+# X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
 # X-Env-Layer-Provides: image
 #
 # X-Env-VarRequires: IGconf_device_storage_type
 #
 # X-Env-VarPrefix: image
 #
-# X-Env-Var-boot_part_size: 100%
-# X-Env-Var-boot_part_size-Desc: Boot partition size per slot.
+# X-Env-Var-boot_part_size: 96M
+# X-Env-Var-boot_part_size-Desc: Boot partition size per-slot.
 # X-Env-Var-boot_part_size-Required: n
 # X-Env-Var-boot_part_size-Valid: size
 # X-Env-Var-boot_part_size-Set: y
 #
-# X-Env-Var-system_part_size: 100%
-# X-Env-Var-system_part_size-Desc: System partition size per slot.
+# X-Env-Var-system_part_size: 512M
+# X-Env-Var-system_part_size-Desc: System partition size per-slot.
 # X-Env-Var-system_part_size-Required: n
 # X-Env-Var-system_part_size-Valid: size
 # X-Env-Var-system_part_size-Set: y
+#
+# X-Env-Var-data_part_size: 1G
+# X-Env-Var-data_part_size-Desc: Writable data partition retained across
+#  slot rotations.
+# X-Env-Var-data_part_size-Required: n
+# X-Env-Var-data_part_size-Valid: size
+# X-Env-Var-data_part_size-Set: y
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Image specific asset directory
@@ -32,11 +38,14 @@
 #
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Desc: Provisioning Map type for this image layout.
-#  All partitions will be provisioned unencrypted (clear).
-#  System partitions will be provisioned encrypted (crypt).
+#  clear: All partitions will be provisioned unencrypted.
+#  crypt: All non-boot partitions will be provisioned encrypted.
+#  cryptslots: Only system OS partitions will be provisioned encrypted.
+#  cryptdata: Only the data partition will be provisioned encrypted.
+#  crypthybrid: B:system OS partition will be provisioned encrypted (dev only).
 # X-Env-Var-pmap-Required: n
-# X-Env-Var-pmap-Valid: clear,crypt
-# X-Env-Var-pmap-Set: force
+# X-Env-Var-pmap-Valid: clear,crypt,cryptslots,cryptdata,crypthybrid
+# X-Env-Var-pmap-Set: y
 #
 # X-Env-Var-ptable_protect: $( [ "${IGconf_device_storage_type:-}" = "emmc" ] && echo y || echo n )
 # X-Env-Var-ptable_protect-Desc: Enable eMMC Power-On Write Protect of the partition
@@ -50,9 +59,5 @@
 ---
 mmdebstrap:
   packages:
-    - sed
-    - coreutils
-    - initramfs-tools
-    - rpi-blockutils
     - dosfstools
     - e2fsprogs

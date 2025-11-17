@@ -234,7 +234,7 @@
 <div class="sect2">
 <h3 id="_variable_naming_convention"><a class="anchor" href="#_variable_naming_convention"></a><a class="link" href="#_variable_naming_convention">Variable Naming Convention</a></h3>
 <div class="paragraph">
-<p>All configuration variables in rpi-image-gen use the <code>IGconf_</code> prefix followed by a structured naming pattern:</p>
+<p>Excluding environment keys, configuration variables in rpi-image-gen use the <code>IGconf_</code> prefix followed by a structured naming pattern:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -357,6 +357,9 @@ IGconf_device_storage_type=sd</code></pre>
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">include:
   file: base.yaml
 
+env:
+  MYVAR: UNCHANGED
+
 device:
   class: pi5
   storage_type: sd
@@ -377,6 +380,9 @@ image:
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-ini" data-lang="ini">!include base.cfg
+
+[env]
+MYVAR = UNCHANGED
 
 [device]
 class = pi5

@@ -9,7 +9,7 @@ import sys
 import subprocess
 
 
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 
 
 IMAGE_KEYS = {"IGconf_device_class",
@@ -44,9 +44,7 @@ top_template = {
 
 partition_template =  {
     "name": "default",
-    "partition-type": None,
-    "in-partition-table": "false",
-    "fstab": {}
+    "in-partition-table": "true",
 }
 
 
@@ -291,8 +289,10 @@ def parse_genimage_config(config_path):
         if "image" in pattr:
             piname = pattr["image"]
             if piname in images:
-                # Found. Merge
-                partitions[pname] = {**images[piname], **pattr}
+                # Found. Merge, initialising from template
+                base = copy.deepcopy(partition_template)
+                base["name"] = pname
+                partitions[pname] = {**base, **images[piname], **pattr}
 
                 # Tag image type
                 for t in gtypes:
@@ -318,6 +318,11 @@ def parse_genimage_config(config_path):
                     if piname == simg.get("image"):
                         partitions[pname]["simage"] = sname
 
+    # Remove filesystem attributes from all partitions
+    for part in partitions.values():
+        fs_key = str(part.get("type", "")).lower()
+        part.pop(fs_key, None)
+
     # Read the partition table from the image
     img_path = get_artefact_path(img_name, "IGconf_image_outputdir")
     try:
@@ -330,92 +335,48 @@ def parse_genimage_config(config_path):
     except Exception as e:
         raise RuntimeError(f"{e} Failed to read partition table from {img_path}")
 
-    # Nodes are don't care
     ptable = json.loads(res.stdout)
-    for p in ptable["partitiontable"]["partitions"]:
-        p.pop("node", None)
+
+    # Populate genimage partition entries with GPT attributes
+    def insert_gptattr(genimage_partitions, table_json):
+        try:
+            label = table_json.get("partitiontable", {}).get("label", "").lower()
+        except Exception:
+            label = ""
+        if label != "gpt":
+            return genimage_partitions
+
+        disk_parts = table_json.get("partitiontable", {}).get("partitions", [])
+
+        # Relies on ordering: genimage partitions are emitted in config order
+        # and sfdisk JSON lists partitions in on-disk order. In this flow they
+        # correspond positionally (1-1) provided in-partition-table != false.
+        idx = 0
+        for _pname, pdata in genimage_partitions.items():
+            if idx >= len(disk_parts):
+                break
+            # Only populate partitions that are indicated as present by genimage
+            if str(pdata.get("in-partition-table", "true")).lower() != "false":
+                gpt_name = disk_parts[idx].get("name")
+                if gpt_name:
+                    pdata["partition-label"] = gpt_name
+                gpt_uuid = disk_parts[idx].get("uuid")
+                if gpt_uuid:
+                    pdata["partition-uuid"] = gpt_uuid
+            idx += 1
+
+        return genimage_partitions
+
+    # Assign GPT attributes from the partition table probe to each genimage partition
+    partitions = insert_gptattr(partitions, ptable)
+
+    # Prune non-essential partition table info
+    pt = ptable.get("partitiontable")
+    if isinstance(pt, dict):
+        for key in ("partitions", "device", "unit", "firstlba", "lastlba", "sectorsize"):
+            pt.pop(key, None)
 
     return (disk_attr, partitions, ptable)
-
-
-# Read all fstabs and store in a dict using UUID or label if we can,
-# or a unique key if we can't.
-def parse_fstab(fstab_paths):
-    fstab_data = {}
-    fcount = 1
-    for fstab_path in fstab_paths:
-        try:
-            with open(fstab_path, "r") as f:
-                lcount = 1
-                for line in f:
-                    line = line.strip()
-                    if line.startswith("#") or line == "":
-                        continue  # skip comments or empty
-
-                    parts = line.split()
-                    if len(parts) == 4:
-                        device, mountpoint, fstype, options = parts[:4]
-                        freq = "0"
-                        passn = "0"
-                    elif len(parts) == 5:
-                        device, mountpoint, fstype, options, freq = parts[:5]
-                        passn = "0"
-                    elif len(parts) == 6:
-                        device, mountpoint, fstype, options, freq, passn = parts[:6]
-                    else:
-                        continue  # skip unusable
-
-                    mount_options = options.split(",")
-
-                    # Supported fs_spec:
-                    if device.startswith(("UUID=", "LABEL=", "PARTUUID=", "PARTLABEL=")):
-                        deviceid = device.split("=", 1)[1]
-                    elif device.startswith(("/dev/disk/by-label/", "/dev/disk/by-uuid/")):
-                        deviceid = device.rsplit("/", 1)[-1]
-                    else:
-                        deviceid = f"fstab{fcount}_{lcount}"
-
-                    # This will overwrite previous settings if the device exists in multiple fstabs
-                    # under the same uuid/label.
-                    fstab_data[deviceid] = {"fs_spec": device,
-                                            "fs_file": mountpoint,
-                                            "fs_vfstype": fstype,
-                                            "fs_mntops": mount_options,
-                                            "fs_freq": freq,
-                                            "fs_passno": passn}
-                    lcount += 1
-
-        except FileNotFoundError:
-            sys.exit('invalid fstab: %s' % fstab_path)
-
-        fcount += 1
-
-    return fstab_data
-
-
-# Try to match a genimage partition with an fstab device entry to establish mount options.
-# Try static uuid and label first, falling back to genimage mountpoint.
-# This lookup can only give guaranteed matching results if there is no duplication of
-# uuid, label or mountpoint in each fstab file provided.
-# If a match is found, the fstab section of the partition is populated.
-def merge_configs(genimage_partitions, fstab_data):
-    for pname, pdata in genimage_partitions.items():
-        label = pdata.get("fs_label")
-        uuid = pdata.get("fs_uuid")
-
-        if uuid and uuid in fstab_data:
-            pdata["fstab"] = fstab_data[uuid]
-        elif label and label in fstab_data:
-            pdata["fstab"] = fstab_data[label]
-        else:
-            pmnt = pdata.get("mountpoint")
-            if pmnt:
-                for name, contents in fstab_data.items():
-                    if pmnt == contents.get("fs_file"):
-                        pdata["fstab"] = fstab_data[name]
-
-    return genimage_partitions
-
 
 
 def get_env_vars(prefix=None):
@@ -448,11 +409,6 @@ if __name__ == '__main__':
                         help="Path to genimage config file",
                         required=True)
 
-    parser.add_argument("-f", "--fstab",
-                        help="Paths to one or more fstab files",
-                        nargs="*",
-                        required=False)
-
     parser.add_argument("-m", "--provisionmap",
                         help="Path to the JSON provisioning map",
                         type=argparse.FileType('r'),
@@ -463,14 +419,7 @@ if __name__ == '__main__':
 
     # Base info
     attributes, genimage_partitions, ptable = parse_genimage_config(genimage_file)
-
-    # fstab is optional
-    if args.fstab:
-        fstab_files = args.fstab
-        fstab_data = parse_fstab(fstab_files)
-        partition_json = merge_configs(genimage_partitions, fstab_data)
-    else:
-        partition_json = genimage_partitions
+    partition_json = genimage_partitions
 
     top_template["IGmeta"] = get_image_meta()
     top_template["attributes"]["image-name"] = os.path.basename(attributes.get("image-name"))

@@ -1,0 +1,63 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-connect
+# X-Env-Layer-Category: service
+# X-Env-Layer-Desc: Raspberry Pi Connect client with screen-sharing support and
+#  remote shell access
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: systemd-min,rpi-user-credentials
+# X-Env-Layer-Provides: rpi-connect-client
+#
+# X-Env-VarRequires: IGconf_device_user1
+# X-Env-VarRequires-Valid: string
+#
+# X-Env-VarPrefix: connect
+#
+# X-Env-Var-authkey:
+# X-Env-Var-authkey-Desc: Auth key generated via Raspberry Pi Connect account
+#  Settings. This can hold a path to the key file or the key itself.
+# X-Env-Var-authkey-Required: n
+# X-Env-Var-authkey-Valid: string
+# X-Env-Var-authkey-Set: n
+#
+# X-Env-Var-on: y
+# X-Env-Var-on-Desc: Enable Raspberry Pi Connect on system startup
+# X-Env-Var-on-Required: n
+# X-Env-Var-on-Valid: bool
+# X-Env-Var-on-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - rpi-connect
+    - wayvnc
+  customize-hooks:
+    - |-
+      set -eu
+      uchroot "$1" 'mkdir -m 0700 -p ${HOME}/.config/com.raspberrypi.connect'
+
+      # Write the authkey from file or as string
+      if [ -n "${IGconf_connect_authkey-}" ] ; then
+         if [ -f "$IGconf_connect_authkey" ]; then
+            uchroot "$1" 'umask 077; cat > "$HOME/.config/com.raspberrypi.connect/auth.key"' \
+            < "$IGconf_connect_authkey"
+         else
+            printf '%s' "$IGconf_connect_authkey" | \
+            uchroot "$1" 'umask 077; cat > "$HOME/.config/com.raspberrypi.connect/auth.key"'
+         fi
+         echo "Raspberry Pi Connect Auth key installed"
+      fi
+
+      # Enable units
+      if [ "$IGconf_connect_on" = "y" ]; then
+         uchroot "$1" 'set -e
+         base="$HOME/.config/systemd/user"
+         mkdir -p "$base/default.target.wants" "$base/rpi-connect.service.wants"
+         ln -sf /usr/lib/systemd/user/rpi-connect.service "$base/default.target.wants/rpi-connect.service"
+         ln -sf /usr/lib/systemd/user/rpi-connect-signin.path "$base/rpi-connect.service.wants/rpi-connect-signin.path"
+         ln -sf /usr/lib/systemd/user/rpi-connect-wayvnc.service "$base/rpi-connect.service.wants/rpi-connect-wayvnc.service"'
+         echo "Raspberry Pi Connect enabled for system startup"
+      fi
+
+      # Write linger marker to trigger auto start via logind
+      install -d -m 0755 "$1/var/lib/systemd/linger"
+      install -m 0644 /dev/null "$1/var/lib/systemd/linger/$IGconf_device_user1"

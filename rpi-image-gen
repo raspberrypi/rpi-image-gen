@@ -26,6 +26,7 @@ readonly IGTOP=$(rootpath)
 source "$IGTOP/lib/cli.sh"
 source "$IGTOP/lib/common.sh"
 source "$IGTOP/lib/dependencies.sh"
+source "$IGTOP/lib/tools.sh"
 
 
 # Global context
@@ -48,6 +49,7 @@ path_refresh()
 {
    # Defaults
    ctx[EXEC_PATH]="$IGTOP/bin:$PATH"
+   ctx[PYTHON_PATH]="${PYTHONPATH:-}"
    ctx[LAYER_PATH]="$IGTOP/device:$IGTOP/image:$IGTOP/layer"
    ctx[CONFIG_PATH]="$IGTOP/config"
 
@@ -130,6 +132,8 @@ parameter_assembly()
    if dpkg-architecture >/dev/null 2>&1; then
       DEB_BUILD_ARCH="${DEB_BUILD_ARCH:-$(dpkg-architecture -qDEB_BUILD_ARCH)}"
       DEB_HOST_ARCH="${DEB_HOST_ARCH:-$(dpkg-architecture -a${ARCH:-arm64} -qDEB_HOST_ARCH)}"
+      DEB_BUILD_GNU_TYPE="${DEB_BUILD_GNU_TYPE:-$(dpkg-architecture -a"$DEB_BUILD_ARCH" -qDEB_BUILD_GNU_TYPE)}"
+      DEB_HOST_GNU_TYPE="${DEB_HOST_GNU_TYPE:-$(dpkg-architecture -a"$DEB_HOST_ARCH" -qDEB_HOST_GNU_TYPE)}"
 
       if [ "$DEB_BUILD_ARCH" = "$DEB_HOST_ARCH" ]; then
          TOOLCHAIN_MODE="native"
@@ -139,9 +143,11 @@ parameter_assembly()
 
       printf 'DEB_BUILD_ARCH="%s"\n' "$DEB_BUILD_ARCH" >> "${ctx[IGENVF]}"
       printf 'DEB_HOST_ARCH="%s"\n' "$DEB_HOST_ARCH" >> "${ctx[IGENVF]}"
+      printf 'DEB_BUILD_GNU_TYPE="%s"\n' "$DEB_BUILD_GNU_TYPE" >> "${ctx[IGENVF]}"
+      printf 'DEB_HOST_GNU_TYPE="%s"\n' "$DEB_HOST_GNU_TYPE" >> "${ctx[IGENVF]}"
       printf 'TOOLCHAIN_MODE="%s"\n' "$TOOLCHAIN_MODE" >> "${ctx[IGENVF]}"
    else
-      warn "dpkg-architecture not found: source build support unavailable"
+      die "dpkg-architecture not found: source build support unavailable"
    fi
 
    # Config sanity checks
@@ -225,6 +231,12 @@ collect_layers()
 
    ctx[LAYER_ORDER]="$layer_order"
    ctx[FINALENV]="$finalenv"
+
+   # Write bootstrap information
+   local bdir=$(get_var IGconf_sys_bootstrapdir "${ctx[FINALENV]}") || die
+   mkdir -p "$bdir"
+   cp "${ctx[FINALENV]}"   "${bdir}/config.env"
+   cp "${ctx[LAYER_ORDER]}" "${bdir}/layer.order"
 }
 
 
@@ -232,6 +244,7 @@ collect_layers()
 ###############################################################################
 # Stage 3: Filesystem build preparation
 #   Create output directories
+#   Build mission critical tools
 #   Initialise bdebstrap environment - apt, proxy, cache, etc
 #   Assemble compatible layers
 ###############################################################################
@@ -253,7 +266,9 @@ prepare_build_config()
          *prebuild|*postbuild|*preimage|*postimage|\
          IGconf_sbom_hook|\
          IGconf_deploy_dir|\
-         IGconf_deploy_hook)
+         IGconf_deploy_hook|\
+         IGconf_sys_workroot|\
+         IGconf_sys_cachedir)
             declare -g "$key"="$val"
             ;;
       esac
@@ -263,13 +278,12 @@ prepare_build_config()
 
    # Create output dirs
    mkdir -p "$IGconf_target_dir" \
-            "$IGconf_sys_workroot/host/bin"
+      "$IGconf_sys_workroot" \
+      "$IGconf_sys_cachedir"
    [[ -n "${IGconf_image_outputdir:-}" ]] && mkdir -p "$IGconf_image_outputdir"
 
-   # Host programs can be installed here
-   ctx[EXEC_PATH]="${IGconf_sys_workroot}/host/bin:${ctx[EXEC_PATH]}"
-   PATH=${ctx[EXEC_PATH]}
-   export PATH
+   # Build required host tools
+   bootstrap_build_tools
 
    # Create initial bdebstrap env
    _bdebstrap=( --force
@@ -543,7 +557,7 @@ main() {
          cli_parse_build ctx "$@"
          shift $?
          path_refresh
-         dependencies_check "$IGTOP/depends" || exit 1
+         dependencies_check --category all "$IGTOP/depends" || exit 1
          run_stage parameter_assembly "$@"
          run_stage collect_layers
          run_stage prepare_build_config
@@ -556,7 +570,7 @@ main() {
          cli_parse_clean ctx "$@"
          shift $?
          path_refresh
-         dependencies_check "$IGTOP/depends" || exit 1
+         dependencies_check --category all "$IGTOP/depends" || exit 1
          run_stage parameter_assembly "$@"
          run_stage collect_layers
          run_stage clean_worktree
@@ -566,21 +580,21 @@ main() {
          cli_parse_layer ctx "$@"
          shift $?
          path_refresh
-         dependencies_check "$IGTOP/depends" || exit 1
+         dependencies_check --category all "$IGTOP/depends" || exit 1
          exec "$IGTOP/bin/ig" layer --path "${ctx[LAYER_PATH]}" "$@"
          ;;
 
       metadata)
          cli_parse_metadata ctx "$@"
          shift $?
-         dependencies_check "$IGTOP/depends" || exit 1
+         dependencies_check --category all "$IGTOP/depends" || exit 1
          exec "$IGTOP/bin/ig" metadata "$@"
          ;;
 
       config)
          cli_parse_config ctx "$@"
          shift $?
-         dependencies_check "$IGTOP/depends" || exit 1
+         dependencies_check --category all "$IGTOP/depends" || exit 1
          exec "$IGTOP/bin/ig" config "$@"
          ;;
 

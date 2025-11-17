@@ -1,0 +1,54 @@
+= Raspberry Pi Connect
+
+== Installation
+
+Configuration variable `IGconf_connect_on` provided by this layer dictates whether Raspberry Pi Connect is enabled at system start up. This is equivalent to running `rpi-connect on` from the device command line.
+
+== Authentication Key
+
+To link your device to your Raspberry Pi Connect account automatically, generate an Auth key in your account Settings and set `IGconf_connect_authkey` to either:
+
+* An absolute path to a file containing the key, or
+* The key value itself
+
+Like other variables, `IGconf_connect_authkey` can be set on the command line or via the config system. For example:
+
+[source,bash]
+----
+$ rpi-image-gen build <args> -- IGconf_connect_authkey=$KEY
+----
+
+[source,yaml]
+----
+connect:
+   authkey: /path/to/file
+----
+
+[source,yaml]
+----
+connect:
+   authkey: $KEY
+----
+
+== systemd
+
+This layer enables user lingering for `IGconf_device_user1` so that Connect runs even if the user is not logged in. See https://www.freedesktop.org/software/systemd/man/latest/loginctl.html[systemd loginctl,window=_blank].
+
+== Suitability
+
+Choose the layer that matches your deployment and needs:
+
+* **rpi-connect-lite** (no screen-sharing support: remote shell only)
+   ** Headless devices or systems without a Desktop
+   ** Low-resource machines (limited CPU/RAM/disk)
+   ** Servers or remote-only nodes
+   ** When Desktop screen sharing is not required
+
+* **rpi-connect** (supports screen-sharing and remote shell)
+   ** Remote access to the Desktop is required
+   ** Need the full feature set and widest compatibility
+
+If unsure: use the full client on Desktop systems; use the lite client on headless devices.
+
+Please refer to the https://www.raspberrypi.com/documentation/services/connect.html[Raspberry Pi Connect documentation,window=_blank] for further details.
+

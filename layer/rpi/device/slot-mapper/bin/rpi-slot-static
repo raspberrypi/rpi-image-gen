@@ -1,0 +1,218 @@
+#!/bin/sh
+# shellcheck shell=sh
+
+set -u
+
+# Classify an incoming device using udev env vars and map file for udev IMPORT.
+# This script is boot critical and must be compatible with minimal shell
+# environments such as klibc, and be as POSIX compliant as possible.
+
+
+err() {
+   msg="ERROR: $*"
+   if [ -w /dev/kmsg ]; then
+      echo "$msg" > /dev/kmsg 2>/dev/null || :
+   fi
+   echo "$msg" >&2
+}
+
+die() { err "$@"; exit 1; }
+
+
+prefix=disk/by-slot
+udev_fmt=0
+
+DEVNAME=${DEVNAME-}
+DM_NAME=${DM_NAME-} # may be empty
+ID_PART_ENTRY_NUMBER=${ID_PART_ENTRY_NUMBER-}
+
+
+while getopts "d:m:p:u" opt; do
+   case $opt in
+      d) DEVNAME="$OPTARG";;
+      m) DM_NAME="$OPTARG";;
+      p) ID_PART_ENTRY_NUMBER="$OPTARG";;
+      u) udev_fmt=1;;
+      *) ;;
+   esac
+done
+
+[ -n "$DEVNAME" ] || die "missing dev"
+
+
+read_dt_u32()
+{
+   # shellcheck disable=SC2046
+   # shellcheck disable=SC2312
+   set -- $(od -An -tu1 -N4 "$1" 2>/dev/null)
+   [ $# -eq 4 ] || return 1
+   echo $(( $1*16777216 + $2*65536 + $3*256 + $4 ))
+}
+
+
+# Establish boot context
+BOOT_MODE=$(read_dt_u32 /proc/device-tree/chosen/bootloader/boot-mode) || die "no boot-mode"
+BOOT_PARTN=$(read_dt_u32 /proc/device-tree/chosen/bootloader/partition) || die "no boot-part"
+
+case $BOOT_MODE in
+   1) BOOT_DEV=mmcblk0 ;;
+   6) BOOT_DEV=nvme0n1 ;;
+   *) die "unsupported bootmode $BOOT_MODE";;
+esac
+
+BOOT_BLKDEV="/dev/${BOOT_DEV}p${BOOT_PARTN}"
+test -b "$BOOT_BLKDEV" || die "Invalid boot blkdev $BOOT_BLKDEV"
+
+
+# Parse line from slot map
+triplet2dev() {
+   val="$1"
+   kind=${val%%:*}
+   rest=${val#*:}
+   name=${rest%%:*}
+   part=${rest##*:}
+
+   case "$part" in
+      ''|*[!0-9]*) return 1 ;;
+   esac
+
+   case "$kind" in
+      '')
+         echo "/dev/${BOOT_DEV}p${part}" ;;
+      mapper)
+         [ -n "$name" ] || return 1
+         echo "/dev/mapper/${name}${part}" ;;
+      *)
+         return 1;;
+   esac
+}
+
+
+# Static map for fallback / non-GPT
+# shellcheck disable=SC2120
+read_static_map() {
+   mapfile="${1:-/boot/slot.map}"
+   a_boot_dev=""
+   a_system_dev=""
+   b_boot_dev=""
+   b_system_dev=""
+
+   parse_line() {
+      key=${1%%=*}
+      val=${1#*=}
+      dev=$(triplet2dev "$val") || { err "Bad triplet in slot map: $val" ; return 1; }
+      case "$key" in
+         a.boot)   a_boot_dev="$dev"   ;;
+         a.system) a_system_dev="$dev" ;;
+         b.boot)   b_boot_dev="$dev"   ;;
+         b.system) b_system_dev="$dev" ;;
+         *)        ;;
+      esac
+   }
+
+   if [ "$mapfile" = "-" ]; then
+      while IFS= read -r line || [ -n "$line" ]; do
+         case "$line" in ''|'#'*) continue;; esac
+         parse_line "$line"
+      done
+   elif [ -r "$mapfile" ]; then
+      while IFS= read -r line || [ -n "$line" ]; do
+         case "$line" in ''|'#'*) continue;; esac
+         parse_line "$line"
+      done < "$mapfile"
+   else
+      err "Slot map file not found"
+      return 1
+   fi
+
+   if [ -z "$a_boot_dev" ] || [ -z "$a_system_dev" ] || \
+   [ -z "$b_boot_dev" ] || [ -z "$b_system_dev" ]; then
+      err "Slots unresolved from map file"
+      return 1
+   fi
+
+   case "$BOOT_BLKDEV" in
+      "$a_boot_dev")
+         ACTIVE_BOOT="$a_boot_dev"
+         ACTIVE_SYS="$a_system_dev"
+         ALT_BOOT="$b_boot_dev"
+         ALT_SYS="$b_system_dev"
+         ;;
+      "$b_boot_dev")
+         ACTIVE_BOOT="$b_boot_dev"
+         ACTIVE_SYS="$b_system_dev"
+         ALT_BOOT="$a_boot_dev"
+         ALT_SYS="$a_system_dev"
+         ;;
+      *) return 1;;
+   esac
+}
+
+
+# Load the slot map
+read_static_map || die "Unable to load configuration from slot map"
+
+
+# Slow-path (supports DM devices)
+# Walk sysfs to check if a device is on the boot device.
+on_bootdev() {
+   dev=${1#/dev/}
+   boot=${2#/dev/}
+
+   # Try fast path
+   is_boot_kname "$dev" "$boot" && return 0
+
+   d="/sys/class/block/$dev/slaves"
+   [ -d "$d" ] || return 1
+
+   for s in "$d"/*; do
+      [ -e "$s" ] || continue
+      sname=${s##*/}
+      on_bootdev "$sname" "$boot" && return 0
+   done
+
+   return 1
+}
+
+
+# Fast-path (non-DM)
+# Check if a kernel name is a boot device partition.
+is_boot_kname() {
+   dev=${1#/dev/}
+   boot=${2#/dev/}
+
+   case "$dev" in
+      "$boot"p[0-9]*) return 0 ;;
+   esac
+   return 1
+}
+
+
+# To be considered for a slot, the incoming device must be on the boot device.
+# If a DM name is provided, construct mapper alias, else use raw device.
+alias=""
+if [ -n "$DM_NAME" ]; then
+   on_bootdev "$DEVNAME" "$BOOT_DEV" || exit 1
+   alias="/dev/mapper/${DM_NAME}"
+else
+   is_boot_kname "$DEVNAME" "$BOOT_DEV" || exit 1
+   alias="$DEVNAME"
+fi
+
+
+slot=""
+case "$alias" in
+   "$ACTIVE_BOOT") slot="active/boot" ;;
+   "$ACTIVE_SYS")  slot="active/system" ;;
+   "$ALT_BOOT")    slot="other/boot" ;;
+   "$ALT_SYS")     slot="other/system" ;;
+   *) exit 0;; # valid device but ignored
+esac
+
+if [ "$udev_fmt" -eq 1 ]; then
+   echo "SLOT=${prefix}/${slot}"
+else
+   echo "${prefix}/${slot}"
+fi
+
+exit 0

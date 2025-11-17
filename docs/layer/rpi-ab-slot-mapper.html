@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rpi-ab-slot-mapper - Layer Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .badge { display: inline-block; background: #007acc; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-right: 10px; }
+        .policy-immediate { background: #28a745; color: white; text-decoration: none; }
+        .policy-lazy { background: #ffc107; color: #212529; text-decoration: none; }
+        .policy-force { background: #dc3545; color: white; text-decoration: none; }
+        .policy-skip { background: #6c757d; color: white; text-decoration: none; }
+        .policy-immediate:hover { background: #1e7e34; }
+        .policy-lazy:hover { background: #e0a800; }
+        .policy-force:hover { background: #c82333; }
+        .policy-skip:hover { background: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+        td:nth-child(3) {
+            width: auto;
+        }
+        code { background: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: 'Monaco', monospace; font-size: 14px; }
+        code.long-default { word-break: break-all; white-space: pre-wrap; display: block; min-width: 30ch; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { text-decoration: none; color: #007acc; }
+        .deps { display: flex; flex-wrap: wrap; gap: 5px; }
+        .dep-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; text-decoration: none; }
+        .dep-badge:hover { background: #1e7e34; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        /* Companion documentation content styling */
+        .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        .companion-content p { margin: 10px 0; }
+        .companion-content ul, .companion-content ol { margin: 10px 0; padding-left: 30px; }
+        .companion-content blockquote { border-left: 4px solid #007acc; padding-left: 15px; margin: 15px 0; color: #666; background: #f8f9fa; padding: 10px 15px; }
+        .companion-content pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #007acc; }
+        .companion-content table { border: 1px solid #ddd; }
+        .companion-content th, .companion-content td { border: 1px solid #ddd; }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="index.html">← Back to Layer Index</a>
+    </div>
+
+    <div class="header">
+        <h1>rpi-ab-slot-mapper</h1>
+        <span class="badge">image</span>
+        <span class="badge">v1.0.0</span>
+        <p>Dynamic slot device management for A/B boot: udev rules and
+ helpers that create stable by-slot symlinks from GPT PARTLABELs (preferred)
+ or a static slot map (fallback), with device-mapper and initramfs support.</p>
+    </div>
+
+    
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div class="sect1">
+<h2 id="_dynamic_slot_detection_ab_overview_and_integration">Dynamic Slot Detection (A/B) – Overview and Integration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This layer creates block device alias symlinks for A/B systems under /dev/disk/by-slot/{active,other}/{boot,system} using a combination of udev rules and dedicated script helpers. It prefers GPT labels (PARTLABELs) to classify partitions and falls back to a simple static map when labels aren’t available, working with both direct block devices and device‑mapper (DM) paths. The result is a consistent, boot‑agnostic way to reference the active and alternate partitions in a slot, suitable for both runtime and initramfs.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_slotted_ab">Slotted A/B</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An A/B (slotted) system maintains two self-contained slots (A and B), each made up of a boot and system partition. One slot runs the device (“active”), while the other remains idle for staging updates or rollback. This built-in redundancy enables safe reversion (rollback) if boot validation fails, minimises downtime, and preserves a known‑good environment for recovery. It’s particularly crucial for in‑field and fleet devices where reliable, remote deployment of security fixes and critical updates can safely be applied without bricking devices. The trade‑off is modest extra storage, health checks and tryboot orchestration to decide when to promote the new slot.</p>
+</div>
+<div class="paragraph">
+<p>This layer is intended to be reusable across different A/B image layouts. It makes no assumptions about partitioning scheme, filesystem, encryption/device‑mapper layout, or update mechanism; it simply exposes stable by‑slot device links leaving policy to higher layers.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_supported_boot_devices">Supported Boot Devices</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Devices booting from SD, eMMC and NVMe are supported.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_supported_block_devices">Supported Block Devices</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Only eligible block devices are considered for slot assignment. An eligible block device is one which is 'boot‑disk–backed'. A device is considered boot‑disk–backed if its block‑device lineage (sysfs slaves chain) ultimately resolves to the boot disk’s kernel device (<code>$BOOT_DEV</code>, e.g., <code>mmcblk0</code> or <code>nvme0n1</code>). For non‑DM devices, this means the device is a partition of the boot disk. For DM devices, this means the device has the boot disk as an ancestor.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_two_schemes">Why two schemes?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hardware and images vary:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Some images set GPT labels for each slot member (preferred: simple and deterministic).</p>
+</li>
+<li>
+<p>Others cannot or do not use GPT labels (e.g., legacy layouts or devices). For those, a static slot map provides the same result.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Both paths create the same stable symlinks so higher layers do not care how a slot was identified.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_by_slot_links">by-slot links</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The layer installs a set of udev rules so that upon events, installed helper scripts allow udev to create symlinks under:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>/dev/disk/by-slot/
+  active/boot
+  active/system
+  other/boot
+  other/system</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>“active” is the slot the device booted from. “other” is the alternate slot.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scheme_1_gpt_labels_preferred">Scheme 1: GPT labels (preferred)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When a partition has a GPT PARTLABEL (e.g., <code>boot_a</code>, <code>system_a</code>, <code>boot_b</code>, <code>system_b</code>), the label helper maps it to one of the by-slot links above. No probing beyond labels is required. The active/other determination is derived from the boot partition’s label. Labels must be consistent across slot members and lower case.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scheme_2_static_slot_map_fallback">Scheme 2: Static slot map (fallback)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For unlabeled partitions, a static map provides exact device identities for each slot member. The map is evaluated against the current boot device to decide which pair is “active”.</p>
+</div>
+<div class="paragraph">
+<p>The map file should be installed as file <code><code>/boot/slot.map</code></code> in the chroot prior to image creation.</p>
+</div>
+<div class="paragraph">
+<p>Supported map format (one triplet key per line):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>a.boot=KIND:NAME:PART
+a.system=KIND:NAME:PART
+b.boot=KIND:NAME:PART
+b.system=KIND:NAME:PART</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Triplet semantics:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>KIND empty: resolves to <code>/dev/${BOOT_DEV}p${PART}</code> where BOOT_DEV is the current boot device (e.g., mmcblk0 or nvme0n1).</p>
+</li>
+<li>
+<p>KIND <code>mapper</code>: resolves to <code>/dev/mapper/${NAME}${PART}</code> (for dm‑crypt/LVM).</p>
+</li>
+<li>
+<p>PART: decimal partition number (required).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>a.boot=::2
+a.system=::4
+b.boot=::3
+b.system=mapper:cryptroot:1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The helper resolves these to absolute devices, detects which <code>*.boot</code> matches the current boot partition, and maps it to one of the by-slot links above.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tryboot">tryboot</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The helper <code>rpi-slot-tryboot</code> prints a Raspberry Pi tryboot config fragment to stdout, derived from <code>/dev/disk/by-slot/{active,other}/boot</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_initramfs">Initramfs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A script sets the root device to <code>/dev/disk/by-slot/active/system</code> at runtime. If this alias is not a block device, the system reboots immediately.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_notes">Notes</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Both DM and non‑DM devices are supported by either scheme.</p>
+</li>
+<li>
+<p>Labels take precedence. The static map is used only when labels are absent.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+        </div>
+    </div>
+    
+
+    
+    <div class="section">
+        <h2>Relationships</h2>
+        
+        
+        <p><strong>Required by:</strong></p>
+        <div class="deps">
+            
+            <a href="image-rota.html" class="dep-badge">image-rota</a>
+            
+        </div>
+        
+        
+        
+    </div>
+    
+
+    
+    <div class="section">
+        <h2>Configuration Variables</h2>
+        
+        
+        <p><strong>Declares</strong> (prefix: <code>abslot</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td><code>IGconf_abslot_overlay</code></td>
+                    <td>Directory holding filesystem assets installed to
+ support slot management and selection.</td>
+                    <td>
+                       
+                           
+                           <code>${DIRECTORY}/slot-mapper</code>
+                           
+                       
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+        
+    </div>
+    
+
+    
+    <div class="section">
+        <h2>mmdebstrap</h2>
+
+        
+
+        
+
+        
+
+        
+        
+        <h3>Packages</h3>
+        <p>Installs:</p>
+        <ul>
+            
+            <li><code>udev</code></li>
+            
+            <li><code>initramfs-tools</code></li>
+            
+            <li><code>sed</code></li>
+            
+            <li><code>coreutils</code></li>
+            
+        </ul>
+        
+
+        
+
+        
+
+        
+    </div>
+    
+
+    <div class="section">
+        <h2>Attributes</h2>
+        <p><strong>File:</strong> <code>rpi/device/ab-slots.yaml</code></p>
+        
+    </div>
+</body>
+</html>

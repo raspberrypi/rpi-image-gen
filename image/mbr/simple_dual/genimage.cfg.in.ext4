@@ -51,8 +51,8 @@ image root.ext4 {
    ext4 {
       label = "ROOT"
       use-mke2fs = true
-      mke2fs-conf = <MKE2FSCONF>
-      extraargs = "-U <ROOT_UUID>"
+      mke2fs-conf = <MKE2FS_CONF>
+      extraargs = "<MKE2FS_EXTRAARGS>"
    }
    size = <ROOT_SIZE>
    mountpoint = "/"

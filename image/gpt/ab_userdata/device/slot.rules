@@ -1,1 +1,0 @@
-SUBSYSTEM=="block", ENV{ID_FS_UUID}!="", ACTION=="add|change", IMPORT{program}="/usr/bin/rpi-slot -u %E{ID_FS_UUID}", SYMLINK+="$env{SLOT}"

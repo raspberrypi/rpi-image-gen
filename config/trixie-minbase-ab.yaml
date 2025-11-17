@@ -1,0 +1,12 @@
+device:
+  layer: rpi5
+
+image:
+  layer: image-rota
+  boot_part_size: 128M
+  system_part_size: 512M
+  data_part_size: 1G
+  name: deb13-arm64-min-ab
+
+layer:
+  base: trixie-minbase

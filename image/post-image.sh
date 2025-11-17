@@ -14,7 +14,12 @@ if [ -f ${1}/genimage.cfg ] ; then
    done
 
    pmap="${IGconf_image_outputdir}/provisionmap.json"
-   [[ -f "$pmap" ]] && opts+=('-m' "$pmap")
+   if [ -f "$pmap" ] ; then
+      # Validate pmap against the schema
+      pmap --schema "$IGconf_image_pmap_schema" --file "$pmap" ||
+         die "Installed Provisioning Map failed to validate."
+      opts+=('-m' "$pmap")
+   fi
 
    # Generate description for IDP
    image2json -g ${1}/genimage.cfg "${opts[@]}" > ${1}/image.json
