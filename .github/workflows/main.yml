@@ -3,7 +3,7 @@ on:
   workflow_dispatch: {}
 jobs:
   Explore-GitHub-Actions:
-    runs-on: ubuntu-24.04-arm
+    runs-on: rpi-github-runner
     steps:
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       - uses: actions/checkout@v5
