@@ -14,3 +14,9 @@ jobs:
       - name: Run image generator
         run: |
           ./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo-dhcp.yaml
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onprem-image
+          path: ./work/image-onprem-demo-network-v0.0.4.img
