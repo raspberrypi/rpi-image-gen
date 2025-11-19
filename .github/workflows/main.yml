@@ -3,7 +3,10 @@ on:
   workflow_dispatch: {}
 jobs:
   Create-OnPrem-Demo-Image:
-    runs-on: self-hosted
+    runs-on:
+      - self-hosted
+      - linux
+      - arm64
     steps:
       - name: Fix workspace permissions
         run: |
