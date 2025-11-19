@@ -9,8 +9,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y qemu-user-static binfmt-support debootstrap kpartx parted dosfstools
+          sudo ./install_deps.sh
 
       - name: Run image generator
         run: |
