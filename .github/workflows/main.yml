@@ -5,6 +5,10 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: self-hosted
     steps:
+      - name: Fix workspace permissions
+        run: |
+          sudo rm -rf "$GITHUB_WORKSPACE"/*
+          
       - uses: actions/checkout@v5
 
       - name: Install dependencies
