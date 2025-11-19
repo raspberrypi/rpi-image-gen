@@ -5,7 +5,6 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: self-hosted
     steps:
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       - uses: actions/checkout@v5
 
       - name: Install dependencies
@@ -15,4 +14,4 @@ jobs:
 
       - name: Run image generator
         run: |
-          ./rpi-image-gen build -S ./custom/locker-kiosk
+          ./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo-dhcp.yaml
