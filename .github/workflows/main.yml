@@ -24,3 +24,4 @@ jobs:
         with:
           name: onprem-image
           path: ./work/image-onprem-demo-network-v0.0.4/onprem-demo-network-v0.0.4.img
+          compression-level: 0
