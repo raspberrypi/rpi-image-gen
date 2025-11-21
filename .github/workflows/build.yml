@@ -25,7 +25,7 @@ jobs:
       - name: Generate dynamic config file
         run: |
           VERSION="${{ inputs.NL_On_Prem_Auth_Tag }}"
-          VERSION="${VERSION#v}"   # remove leading "v" if present
+          VERSION="${VERSION}"
 
           TEMPLATE="digilock/onprem-demo-slim/config/pi5-onprem-demo-network-prod.yaml.template"
           OUTPUT="digilock/onprem-demo-slim/config/pi5-onprem-demo-network-prod.yaml"
