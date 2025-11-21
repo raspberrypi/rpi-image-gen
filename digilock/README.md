@@ -66,7 +66,7 @@ extract the tar file using
 and put them into this structure: IMPORTANT!
 
 ```
-rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/
+rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem/
 ├── auth.tar
 ├── backend.tar
 ├── config/
@@ -82,7 +82,7 @@ rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/d
 └── start.demo.sh
 ```
 > **Note:** . Depending on how you transferred the output files to your directory, the start.demo.sh script may have lost its executable permission (especially if copied from a Windows file system, which does not preserve Unix file permissions).
-`chmod +x rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem-demo/start.demo.sh`
+`chmod +x rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem/start.demo.sh`
 
 > You might need read and write permissions to run the images. You can use `sudo chown -R "$USER":"$USER" rpi-image-gen` and `chmod -R u+rwX rpi-image-gen` to give permissions to your user.
 
