@@ -51,6 +51,42 @@ jobs:
           echo "Downloaded artifacts:"
           ls -al artifacts
 
+      # ---------------------------------------
+      # Copy, extract, and prepare rootfs files
+      # ---------------------------------------
+      - name: Place release files into rootfs-overlay
+        run: |
+          set -e
+
+          DEST="rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt"
+
+          echo "Finding downloaded tar.gz..."
+          TARFILE=$(ls artifacts/*.tar.gz | head -n 1)
+          echo "Using: $TARFILE"
+
+          echo "Copying tar.gz into destination..."
+          cp "$TARFILE" "$DEST/"
+
+          echo "Extracting..."
+          cd "$DEST"
+          tar -xzvf "$(basename "$TARFILE")"
+
+          echo "Removing original tar..."
+          rm "$(basename "$TARFILE")"
+
+          echo "Renaming extracted folder → digilink-onprem"
+          EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "digilink-onprem*" | head -n 1)
+
+          if [ -z "$EXTRACTED_DIR" ]; then
+            echo "ERROR: Could not find extracted directory"
+            exit 1
+          fi
+
+          mv "$EXTRACTED_DIR" digilink-onprem
+
+          echo "Final directory contents:"
+          ls -al "$DEST"
+
       - name: Install dependencies
         run: |
           sudo ./install_deps.sh
