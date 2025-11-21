@@ -85,7 +85,7 @@ jobs:
           mv "$EXTRACTED_DIR" digilink-onprem
 
           echo "Final directory contents:"
-          ls -al "$DEST"
+          ls
 
       - name: Install dependencies
         run: |
