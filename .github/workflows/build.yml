@@ -42,10 +42,10 @@ jobs:
           else
             echo "Using tag: $RELEASE_TAG"
             gh release download \
+              "$RELEASE_TAG" \
               --repo SecurityPeopleInc/NL-On-Prem-Auth \
               --pattern "digilink-onprem-${RELEASE_TAG#v}-arm64.tar.gz" \
-              --dir artifacts \
-              --tag "$RELEASE_TAG"
+              --dir artifacts
           fi
 
           echo "Downloaded artifacts:"
