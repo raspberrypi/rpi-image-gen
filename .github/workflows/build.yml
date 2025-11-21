@@ -22,17 +22,18 @@ jobs:
 
       - uses: actions/checkout@v5
 
-      - name: Prepare config with dynamic version
+      - name: Generate dynamic config file
         run: |
           VERSION="${{ inputs.NL_On_Prem_Auth_Tag }}"
-          VERSION="${VERSION#v}"
+          VERSION="${VERSION#v}"   # remove leading "v" if present
 
-          sed "s/__VERSION__/${VERSION}/g" \
-            pi5-onprem-demo-network.yaml.template \
-            > pi5-onprem-demo-network.yaml
+          TEMPLATE="digilock/onprem-demo-slim/config/pi5-onprem-demo-network-prod.yaml.template"
+          OUTPUT="digilock/onprem-demo-slim/config/pi5-onprem-demo-network-prod.yaml"
+
+          sed "s/__VERSION__/${VERSION}/g" "$TEMPLATE" > "$OUTPUT"
 
           echo "Generated config:"
-          cat pi5-onprem-demo-network.yaml      
+          cat "$OUTPUT" 
 
       # -------------------------------
       # Downloading the selected release
