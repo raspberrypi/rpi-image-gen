@@ -22,13 +22,25 @@ jobs:
 
       - uses: actions/checkout@v5
 
+      - name: Prepare config with dynamic version
+        run: |
+          VERSION="${{ inputs.NL_On_Prem_Auth_Tag }}"
+          VERSION="${VERSION#v}"
+
+          sed "s/__VERSION__/${VERSION}/g" \
+            pi5-onprem-demo-network.yaml.template \
+            > pi5-onprem-demo-network.yaml
+
+          echo "Generated config:"
+          cat pi5-onprem-demo-network.yaml      
+
       # -------------------------------
       # Downloading the selected release
       # -------------------------------
       - name: Download release artifact (latest or specific)
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
-          RELEASE_TAG: ${{ github.event.inputs.NL_On_Prem_Auth_Tag }}
+          RELEASE_TAG: ${{ inputs.NL_On_Prem_Auth_Tag }}
         run: |
           mkdir -p artifacts
 
@@ -99,5 +111,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: onprem-image
-          path: ./work/image-onprem-demo-network-v0.0.4/onprem-demo-network-v0.0.4.img
+          path: ./work/image-onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}/onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}.img
           compression-level: 0

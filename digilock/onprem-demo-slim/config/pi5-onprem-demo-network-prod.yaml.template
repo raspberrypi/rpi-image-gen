@@ -1,12 +1,12 @@
 device:
   layer: onprem-demo-mydevice
-  hostname: OnPremDemoNetwork-v0.0.4
+  hostname: OnPremDemoNetwork-__VERSION__
   production: true
   wifipass: DigiLink 
 
 image:
   layer: onprem-demo-myimage
-  name: onprem-demo-network-v0.0.4
+  name: onprem-demo-network-__VERSION__
 
 layer:
   login: login
