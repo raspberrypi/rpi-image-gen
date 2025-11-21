@@ -1,13 +1,14 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.1.0",
+         "PMAPversion": "1.2.0",
          "system_type": "flat"
       }
    },
    {
       "partitions": [
          {
+            "comment": "kernel + device tree + initramfs",
             "image": "boot"
          }
       ]
@@ -17,14 +18,15 @@
          "luks2": {
             "key_size": 512,
             "cipher": "aes-xts-plain64",
-            "label": "root",
+            "label": "OSROOT",
             "uuid": "<CRYPT_UUID>",
             "hash": "sha256",
-            "mname": "cryptroot",
+            "mname": "osroot_crypt",
             "etype": "raw"
          },
          "partitions": [
             {
+               "comment": "Encrypted root filesystem",
                "image": "root"
             }
          ]

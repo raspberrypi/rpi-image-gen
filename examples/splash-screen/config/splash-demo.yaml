@@ -1,0 +1,39 @@
+# Splash Screen Demo Configuration
+#
+# This example demonstrates adding a custom boot splash screen to Raspberry Pi OS.
+#
+# To build this image:
+#   ./rpi-image-gen build -c examples/splash-screen/config/splash-demo.yaml
+#
+# The image will be created at:
+#   work/image-deb13-arm64-splash/deb13-arm64-splash.img
+#
+# Before building, create your splash screen (24-bit TGA, max 1920x1080, <224 colours):
+#   ./layer/rpi/splash-screen/EXAMPLE-splash.sh "Your Text" splash.tga
+#
+# Then update the image_path below to point to your splash screen.
+
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  boot_part_size: 200%
+  root_part_size: 300%
+  name: deb13-arm64-splash
+
+layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  # Path to your custom splash screen image (24-bit TGA, max 1920x1080, <224 colours)
+  # Leave empty or comment out to skip splash screen installation
+  # Can be absolute or relative to the project root
+  image_path: examples/splash-screen/demo-splash.tga
+  
+  # Skip image validation checks (not recommended for production)
+  skip_image_checks: n
+  
+  # Automatically update /boot/firmware/cmdline.txt to enable splash
+  update_cmdline: y

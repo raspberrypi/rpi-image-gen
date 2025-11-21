@@ -1,13 +1,14 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.2.0",
+         "PMAPversion": "1.4.1",
          "system_type": "slotted"
       }
    },
    {
       "partitions": [
          {
+            "comment": "boot configuration",
             "image": "config"
          }
       ]
@@ -17,9 +18,10 @@
          "A": {
             "partitions": [
                {
-                  "image": "bootA",
+                  "comment": "kernel + device tree + initramfs slot A",
+                  "image": "boot_a",
                   "static": {
-                     "uuid": "<BOOTA_UUID>",
+                     "uuid": "<BOOT_UUID>",
                      "role": "boot"
                   }
                }
@@ -32,9 +34,10 @@
          "B": {
             "partitions": [
                {
-                  "image": "bootB",
+                  "comment": "kernel + device tree + initramfs slot B",
+                  "image": "boot_b",
                   "static": {
-                     "uuid": "<BOOTB_UUID>",
+                     "uuid": "<BOOT_UUID>",
                      "role": "boot"
                   }
                }
@@ -48,18 +51,19 @@
             "key_size": 512,
             "cipher": "aes-xts-plain64",
             "hash": "sha256",
-            "label": "root",
+            "label": "OSDATA",
             "uuid": "<CRYPT_UUID>",
-            "mname": "cryptroot",
+            "mname": "osdata_crypt",
             "etype": "partitioned"
          },
          "slots": {
             "A": {
                "partitions": [
                   {
-                     "image": "systemA",
+                     "comment": "Encrypted root filesystem slot A",
+                     "image": "system_a",
                      "static": {
-                        "uuid": "<SYSTEMA_UUID>",
+                        "uuid": "<SYSTEM_UUID>",
                         "role": "system"
                      }
                   }
@@ -68,22 +72,22 @@
             "B": {
                "partitions": [
                   {
-                     "image": "systemB",
+                     "comment": "Encrypted root filesystem slot B",
+                     "image": "system_b",
                      "static": {
-                        "uuid": "<SYSTEMB_UUID>",
+                        "uuid": "<SYSTEM_UUID>",
                         "role": "system"
                      }
                   }
                ]
             }
-         }
+         },
+         "partitions": [
+            {
+               "comment": "Encrypted user data - shared between slots",
+               "image": "persistent"
+            }
+         ]
       }
-   },
-   {
-      "partitions": [
-         {
-            "image": "data"
-         }
-      ]
    }
 ]

@@ -1,6 +1,0 @@
-#!/bin/sh
-
-# This script is boot critical and must be compatible with minimal shell
-# environments such as klibc, and be as POSIX as possible.
-
-# Begin auto-generated

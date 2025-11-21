@@ -1,0 +1,215 @@
+= rpi-splash-screen Layer
+:toc: left
+
+== Overview
+
+The `rpi-splash-screen` layer provides fullscreen splash screen support for Raspberry Pi devices. It configures the kernel and initramfs to display a custom image during boot, hiding kernel messages and providing a cleaner boot experience.
+
+== Features
+
+* **Fullscreen boot logo**: Display a custom image that covers the entire screen
+* **Early boot display**: Image appears as early as possible in the boot process
+* **Automatic configuration**: Handles initramfs and kernel command line setup
+* **Flexible validation**: Optional image checks can be skipped for testing
+* **Customisable behaviour**: Control whether cmdline.txt is automatically updated
+
+== How It Works
+
+The splash screen layer:
+
+1. Installs the `rpi-splash-screen-support` package containing the configuration tools
+2. Validates your splash image meets the technical requirements
+3. Copies the image to `/lib/firmware/logo.tga`
+4. Adds an initramfs hook to load the image early in boot
+5. Updates the kernel command line with required parameters
+6. Rebuilds the initramfs with the new configuration
+
+The splash screen uses the kernel's built-in `fullscreen_logo` functionality, which requires specific image formats and dimensions.
+
+== Technical Requirements
+
+=== Image Specifications
+
+* **Format**: TGA (Targa) image file
+* **Colour depth**: 24-bit
+* **Maximum dimensions**: 1920×1080 pixels
+* **Maximum colours**: 224 colours
+* **Compression**: Uncompressed
+
+=== Kernel Parameters
+
+The layer configures the following kernel command line parameters:
+
+* `fullscreen_logo=1`: Enable fullscreen logo display
+* `fullscreen_logo_name=logo.tga`: Specify the logo filename
+* `vt.global_cursor_default=0`: Hide the cursor
+
+== Configuration Variables
+
+The layer declares the following configuration variables with prefix `splash`:
+
+=== `image_path`
+
+* **Type**: String (path)
+* **Default**: `${DIRECTORY}/splash-screen/default-splash.tga`
+* **Required**: No (can be empty to skip installation)
+* **Description**: Path to the splash screen image file. Can be absolute or relative to the layer directory.
+
+=== `skip_image_checks`
+
+* **Type**: Boolean
+* **Default**: `n`
+* **Required**: No
+* **Description**: Skip validation of image dimensions, colour depth and colour count. Not recommended for production use.
+
+=== `update_cmdline`
+
+* **Type**: Boolean
+* **Default**: `y`
+* **Required**: No
+* **Description**: Automatically update `/boot/firmware/cmdline.txt` to enable the splash screen. Set to `n` if using custom boot configurations.
+
+== Usage Examples
+
+=== Basic Configuration
+
+[source,yaml]
+----
+layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: /home/user/my-logo.tga
+----
+
+=== Skip Splash Installation
+
+[source,yaml]
+----
+layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: ""  # Empty string skips installation
+----
+
+=== Custom Boot Configuration
+
+[source,yaml]
+----
+layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: /path/to/splash.tga
+  update_cmdline: n  # Don't modify cmdline.txt automatically
+----
+
+=== Testing with Lenient Validation
+
+[source,yaml]
+----
+layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: /path/to/test-splash.tga
+  skip_image_checks: y  # For testing only
+----
+
+== Creating Splash Images
+
+=== Using the Example Script (Quickest Method)
+
+The layer includes a helper script for quick testing:
+
+[source,bash]
+----
+# Generate a simple text-based splash screen
+./layer/rpi/splash-screen/EXAMPLE-splash.sh "Welcome to Raspberry Pi" splash.tga
+
+# The script creates a 1920×1080 black background with centred white text
+# Output is automatically in the correct TGA format
+----
+
+This is the easiest way to create a splash screen for testing or simple deployments.
+
+=== Using ImageMagick
+
+[source,bash]
+----
+# Convert and optimise an existing image
+convert input.png \
+  -resize 1920x1080 \
+  -background black \
+  -gravity center \
+  -extent 1920x1080 \
+  -depth 8 \
+  -colors 224 \
+  -type truecolor \
+  output.tga
+----
+
+=== Using GIMP
+
+1. Open your image in GIMP
+2. Scale to 1920×1080 or smaller (Image → Scale Image)
+3. Ensure RGB mode (Image → Mode → RGB)
+4. Reduce colours: Image → Mode → Indexed → Set 224 colours maximum
+5. Convert back to RGB: Image → Mode → RGB
+6. Export as TGA: File → Export As
+7. Select 24-bit, disable RLE compression
+
+== Dependencies
+
+The layer requires:
+
+* `rpi-essential-base`: Provides basic system utilities
+* `rpi-splash-screen-support`: Raspberry Pi splash screen configuration tool
+* `initramfs-tools`: For initramfs generation and hooks
+
+== Files Modified
+
+The layer modifies the following files in the target system:
+
+* `/lib/firmware/logo.tga`: The splash screen image
+* `/etc/initramfs-tools/hooks/splash-screen-hook.sh`: Initramfs hook
+* `/boot/firmware/cmdline.txt`: Kernel command line (if `update_cmdline=y`)
+* Initramfs images in `/boot/firmware/`
+
+== Troubleshooting
+
+=== Splash Screen Doesn't Appear
+
+1. Check that `/lib/firmware/logo.tga` exists in the built image
+2. Verify `/boot/firmware/cmdline.txt` contains the required parameters
+3. Ensure initramfs was rebuilt correctly
+4. Check image meets technical requirements
+
+=== Image Validation Fails
+
+1. Verify image is 24-bit TGA format
+2. Check dimensions are ≤1920×1080
+3. Reduce colour count to <224
+4. Ensure image is uncompressed
+
+=== Boot Fails After Configuration
+
+1. Set `update_cmdline: n` and configure manually
+2. Check initramfs hook installed correctly
+3. Review build logs for errors
+
+== References
+
+* https://github.com/raspberrypi/rpi-splash-screen-support[Raspberry Pi Splash Screen Support]
+* The layer includes `EXAMPLE-splash.sh` helper script for quick splash screen generation
+
+== See Also
+
+* link:../base/core-essential.adoc[Core Essential Layer]
+* link:../device/boot-firmware.adoc[Boot Firmware Layer]
+

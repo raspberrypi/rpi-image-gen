@@ -1,0 +1,23 @@
+#!/bin/sh
+# shellcheck shell=sh
+
+set -eu
+
+active_boot=$(readlink -f /dev/disk/by-slot/active/boot)
+other_boot=$(readlink -f /dev/disk/by-slot/other/boot)
+
+curr_part=$(echo "$active_boot" | sed -n 's/.*p\([0-9][0-9]*\)$/\1/p')
+alt_part=$(echo "$other_boot" | sed -n 's/.*p\([0-9][0-9]*\)$/\1/p')
+
+if [ -z "$curr_part" ] || [ -z "$alt_part" ]; then
+   echo "Failed to determine partition numbers from: $active_boot / $other_boot" >&2
+   exit 1
+fi
+
+cat <<EOF
+[all]
+tryboot_a_b=1
+boot_partition=${curr_part}
+[tryboot]
+boot_partition=${alt_part}
+EOF

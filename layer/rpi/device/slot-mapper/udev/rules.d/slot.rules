@@ -1,0 +1,28 @@
+# Boot devices with GPT label (non-DM)
+SUBSYSTEM=="block", KERNEL=="mmcblk0p*", ENV{ID_PART_ENTRY_NAME}=="?*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-slot-label -u -L $env{ID_PART_ENTRY_NAME} -d $env{DEVNAME}", \
+  SYMLINK+="$env{SLOT}"
+
+SUBSYSTEM=="block", KERNEL=="nvme0n1p*", ENV{ID_PART_ENTRY_NAME}=="?*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-slot-label -u -L $env{ID_PART_ENTRY_NAME} -d $env{DEVNAME}", \
+  SYMLINK+="$env{SLOT}"
+
+# DM with GPT label
+SUBSYSTEM=="block", KERNEL=="dm-*", ENV{ID_PART_ENTRY_NAME}=="?*", ENV{DM_NAME}=="?*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-slot-label -u -L $env{ID_PART_ENTRY_NAME} -d $env{DEVNAME} -m $env{DM_NAME}", \
+  SYMLINK+="$env{SLOT}"
+
+
+# Boot devices without GPT label (non-DM)
+SUBSYSTEM=="block", KERNEL=="mmcblk0p*", ENV{ID_PART_ENTRY_NAME}!="?*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-slot-static -u -d $env{DEVNAME}", \
+  SYMLINK+="$env{SLOT}"
+
+SUBSYSTEM=="block", KERNEL=="nvme0n1p*", ENV{ID_PART_ENTRY_NAME}!="?*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-slot-static -u -d $env{DEVNAME}", \
+  SYMLINK+="$env{SLOT}"
+
+# DM without GPT label
+SUBSYSTEM=="block", KERNEL=="dm-*", ENV{DM_NAME}=="?*", ENV{ID_PART_ENTRY_NAME}!="?*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-slot-static -u -m $env{DM_NAME} -p $env{ID_PART_ENTRY_NUMBER} -d $env{DEVNAME}", \
+  SYMLINK+="$env{SLOT}"

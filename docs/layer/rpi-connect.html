@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rpi-connect - Layer Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .badge { display: inline-block; background: #007acc; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-right: 10px; }
+        .policy-immediate { background: #28a745; color: white; text-decoration: none; }
+        .policy-lazy { background: #ffc107; color: #212529; text-decoration: none; }
+        .policy-force { background: #dc3545; color: white; text-decoration: none; }
+        .policy-skip { background: #6c757d; color: white; text-decoration: none; }
+        .policy-immediate:hover { background: #1e7e34; }
+        .policy-lazy:hover { background: #e0a800; }
+        .policy-force:hover { background: #c82333; }
+        .policy-skip:hover { background: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+        td:nth-child(3) {
+            width: auto;
+        }
+        code { background: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: 'Monaco', monospace; font-size: 14px; }
+        code.long-default { word-break: break-all; white-space: pre-wrap; display: block; min-width: 30ch; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { text-decoration: none; color: #007acc; }
+        .deps { display: flex; flex-wrap: wrap; gap: 5px; }
+        .dep-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; text-decoration: none; }
+        .dep-badge:hover { background: #1e7e34; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        /* Companion documentation content styling */
+        .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        .companion-content p { margin: 10px 0; }
+        .companion-content ul, .companion-content ol { margin: 10px 0; padding-left: 30px; }
+        .companion-content blockquote { border-left: 4px solid #007acc; padding-left: 15px; margin: 15px 0; color: #666; background: #f8f9fa; padding: 10px 15px; }
+        .companion-content pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #007acc; }
+        .companion-content table { border: 1px solid #ddd; }
+        .companion-content th, .companion-content td { border: 1px solid #ddd; }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="index.html">← Back to Layer Index</a>
+    </div>
+
+    <div class="header">
+        <h1>rpi-connect</h1>
+        <span class="badge">service</span>
+        <span class="badge">v1.0.0</span>
+        <p>Raspberry Pi Connect client with screen-sharing support and
+ remote shell access</p>
+    </div>
+
+    
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div class="sect1">
+<h2 id="_installation">Installation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Configuration variable <code>IGconf_connect_on</code> provided by this layer dictates whether Raspberry Pi Connect is enabled at system start up. This is equivalent to running <code>rpi-connect on</code> from the device command line.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authentication_key">Authentication Key</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To link your device to your Raspberry Pi Connect account automatically, generate an Auth key in your account Settings and set <code>IGconf_connect_authkey</code> to either:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An absolute path to a file containing the key, or</p>
+</li>
+<li>
+<p>The key value itself</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Like other variables, <code>IGconf_connect_authkey</code> can be set on the command line or via the config system. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen build &lt;args&gt; -- IGconf_connect_authkey=$KEY</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">connect:
+   authkey: /path/to/file</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">connect:
+   authkey: $KEY</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_systemd">systemd</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This layer enables user lingering for <code>IGconf_device_user1</code> so that Connect runs even if the user is not logged in. See <a href="https://www.freedesktop.org/software/systemd/man/latest/loginctl.html" target="_blank" rel="noopener">systemd loginctl</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_suitability">Suitability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Choose the layer that matches your deployment and needs:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>rpi-connect-lite</strong> (no screen-sharing support: remote shell only)</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Headless devices or systems without a Desktop</p>
+</li>
+<li>
+<p>Low-resource machines (limited CPU/RAM/disk)</p>
+</li>
+<li>
+<p>Servers or remote-only nodes</p>
+</li>
+<li>
+<p>When Desktop screen sharing is not required</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>rpi-connect</strong> (supports screen-sharing and remote shell)</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Remote access to the Desktop is required</p>
+</li>
+<li>
+<p>Need the full feature set and widest compatibility</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If unsure: use the full client on Desktop systems; use the lite client on headless devices.</p>
+</div>
+<div class="paragraph">
+<p>Please refer to the <a href="https://www.raspberrypi.com/documentation/services/connect.html" target="_blank" rel="noopener">Raspberry Pi Connect documentation</a> for further details.</p>
+</div>
+</div>
+</div>
+
+        </div>
+    </div>
+    
+
+    
+    <div class="section">
+        <h2>Relationships</h2>
+        
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="systemd-min.html" class="dep-badge">systemd-min</a>
+            <a href="rpi-user-credentials.html" class="dep-badge">rpi-user-credentials</a>
+        </div>
+        
+        
+        
+        <p><strong>Provides:</strong> rpi-connect-client</p>
+        
+        
+    </div>
+    
+
+    
+    <div class="section">
+        <h2>Configuration Variables</h2>
+        
+        <p><strong>References:</strong>
+        
+        <code>IGconf_device_user1</code>
+        
+        </p>
+        
+        
+        <p><strong>Declares</strong> (prefix: <code>connect</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td><code>IGconf_connect_authkey</code></td>
+                    <td>Auth key generated via Raspberry Pi Connect account
+ Settings. This can hold a path to the key file or the key itself.</td>
+                    <td>
+                       
+                           <code>&lt;disabled&gt;</code>
+                       
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td><code>IGconf_connect_on</code></td>
+                    <td>Enable Raspberry Pi Connect on system startup</td>
+                    <td>
+                       
+                           
+                           <code>y</code>
+                           
+                       
+                    </td>
+                    <td>Boolean value - accepts: true/false, 1/0, yes/no, y/n (case insensitive)</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+        
+    </div>
+    
+
+    
+    <div class="section">
+        <h2>mmdebstrap</h2>
+
+        
+
+        
+
+        
+
+        
+        
+        <h3>Packages</h3>
+        <p>Installs:</p>
+        <ul>
+            
+            <li><code>rpi-connect</code></li>
+            
+            <li><code>wayvnc</code></li>
+            
+        </ul>
+        
+
+        
+
+        
+
+        
+    </div>
+    
+
+    <div class="section">
+        <h2>Attributes</h2>
+        <p><strong>File:</strong> <code>rpi/device/services/rpi-connect.yaml</code></p>
+        
+    </div>
+</body>
+</html>

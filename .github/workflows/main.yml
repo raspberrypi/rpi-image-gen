@@ -1,0 +1,40 @@
+name: Build Images
+on: 
+  workflow_dispatch: {}
+jobs:
+  Create-OnPrem-Demo-Image:
+    runs-on:
+      - self-hosted
+      - linux
+      - arm64
+    steps:
+      - name: Fix workspace permissions
+        run: |
+          sudo rm -rf "$GITHUB_WORKSPACE"/work
+          
+      - uses: actions/checkout@v5
+
+      - name: Download release artifact from another repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download \
+            --repo SecurityPeopleInc/NL-On-Prem-Auth \
+            --latest \
+            --pattern "*.zip" \
+            --dir artifacts
+
+      - name: Install dependencies
+        run: |
+          sudo ./install_deps.sh
+
+      - name: Run image generator
+        run: |
+          ./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo-network-prod.yaml
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onprem-image
+          path: ./work/image-onprem-demo-network-v0.0.4/onprem-demo-network-v0.0.4.img
+          compression-level: 0

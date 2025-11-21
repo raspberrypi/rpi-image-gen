@@ -2,29 +2,22 @@
 
 set -eu
 
-# Install slot rules
-install -m 0644 -D ../device/slot.rules $1/etc/udev/rules.d/90-rpi-slot.rules
-
-
 # Install provision map
 if [ -f "$IGconf_image_pmapfile" ] ; then
    cp ${IGconf_image_pmapfile} ${IGconf_image_outputdir}/provisionmap.json
 else
-   die "No pmap. Unable to generate slot mapping."
+   die "No pmap. Unable to provision image."
 fi
 
 
 # Generate pre-defined UUIDs
-BOOTA_LABEL=$(uuidgen | sed 's/-.*//' | tr 'a-f' 'A-F')
-BOOTA_UUID=$(echo "$BOOTA_LABEL" | sed 's/^\(....\)\(....\)$/\1-\2/')
-BOOTB_LABEL=$(uuidgen | sed 's/-.*//' | tr 'a-f' 'A-F')
-BOOTB_UUID=$(echo "$BOOTB_LABEL" | sed 's/^\(....\)\(....\)$/\1-\2/')
-SYSTEMA_UUID=$(uuidgen)
-SYSTEMB_UUID=$(uuidgen)
+BOOT_LABEL=$(uuidgen | sed 's/-.*//' | tr 'a-f' 'A-F')
+BOOT_UUID=$(echo "$BOOT_LABEL" | sed 's/^\(....\)\(....\)$/\1-\2/')
+SYSTEM_UUID=$(uuidgen)
 CRYPT_UUID=$(uuidgen)
 
 rm -f ${IGconf_image_outputdir}/img_uuids
-for v in BOOTA_LABEL BOOTA_UUID BOOTB_LABEL BOOTB_UUID SYSTEMA_UUID SYSTEMB_UUID CRYPT_UUID; do
+for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID; do
     eval "val=\$$v"
     echo "$v=$val" >> "${IGconf_image_outputdir}/img_uuids"
 done
@@ -32,16 +25,16 @@ done
 
 # Populate PMAP UUIDs
 sed -i \
-   -e "s|<BOOTA_UUID>|$BOOTA_UUID|g" \
-   -e "s|<BOOTB_UUID>|$BOOTB_UUID|g" \
-   -e "s|<SYSTEMA_UUID>|$SYSTEMA_UUID|g" \
-   -e "s|<SYSTEMB_UUID>|$SYSTEMB_UUID|g" \
+   -e "s|<BOOT_UUID>|$BOOT_UUID|g" \
+   -e "s|<SYSTEM_UUID>|$SYSTEM_UUID|g" \
    -e "s|<CRYPT_UUID>|$CRYPT_UUID|g" ${IGconf_image_outputdir}/provisionmap.json
 
 
-# Generate slot helper
-mkslot-helper ${IGconf_image_outputdir}/provisionmap.json > $1/usr/bin/rpi-slot
-chmod +x $1/usr/bin/rpi-slot
+# Generate slot map. IDP does preserve GPT labels but this has yet make it to
+# mainline. Add the map as a fallback so a provisioned image boots.
+pmap --schema "$IGconf_image_pmap_schema" \
+     --file "${IGconf_image_outputdir}/provisionmap.json" \
+     --slotvars > "$1/boot/slot.map"
 
 
 # Hint to initramfs-tools we have an ext4 rootfs

@@ -70,11 +70,11 @@ sudo ./install_deps.sh
 
 See the `depends` file for the complete list of required packages.
 
+rpi-image-gen builds its own copies of critical host tools so it always has current, fully featured versions and supports architectures the workstation distribution might not package. Installing and running them from a private sysroot keeps the host system untouched. The trade-off is a small one-time build delay, plus additional native dependencies that most developer workstations already carry. The resulting tools live in a reusable sysroot that stays isolated from distribution packages and can be reused for every build.
+
 === Important
 
-rpi-image-gen has been developed on Raspberry Pi OS which, at the time of writing, is Debian Bookworm arm64. It heavily favours Debian-based systems and will run on non-arm64 platforms (such as x86_64) via QEMU emulation or inside container environments. However, there is currently no formal support for these non-native environments.
-
-If utilising sparse images in your workflow, e.g. with *rpi-sb-provisioner* (https://github.com/raspberrypi/rpi-sb-provisioner), please refer to the link:docs/provisioning/index.adoc[provisioning documentation] for important advice.
+rpi-image-gen is developed on Raspberry Pi OS and supports builds on Debian Bookworm and Trixie arm64 systems. It expects a Debian-based host and will run on non-arm64 platforms (such as x86_64) via QEMU emulation or in container environments, although those non-native setups aren’t formally supported.
 
 == Documentation
 
@@ -98,6 +98,7 @@ See the `examples/` directory for tips and help
 * `layer/` - Layer library
 * `layer-hooks/` - Common hooks used by layer library
 * `lib/` - Execution helpers and macros, eg CLI handling, reusable constructs
+* `package/` - Build recipes and framework for tools
 * `scripts/` - Dedicated functional hooks, eg for bdebstrap
 * `site/` - Core Python engine classes
 * `templates/` - Templating assets, eg doc generation

@@ -3,9 +3,10 @@ device:
 
 image:
   layer: image-rota
-  boot_part_size: 200%
-  system_part_size: 300%
-  name: deb12-arm64-min
+  boot_part_size: 128M
+  system_part_size: 512M
+  data_part_size: 1G
+  name: deb12-arm64-min-ab
 
 layer:
   base: bookworm-minbase

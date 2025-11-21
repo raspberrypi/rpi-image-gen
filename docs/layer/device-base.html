@@ -123,7 +123,7 @@
     <div class="header">
         <h1>device-base</h1>
         <span class="badge">device</span>
-        <span class="badge">v1.2.0</span>
+        <span class="badge">v1.3.0</span>
         <p>Device defaults.</p>
     </div>
 
@@ -275,9 +275,10 @@
                 
                 <tr>
                     <td><code>IGconf_device_sector_size</code></td>
-                    <td>Logical sector size of the device storage for which
- the image is intended. The output raw image file size will be a multiple of
- this value.</td>
+                    <td>Logical sector size (in bytes) of the target storage
+ device. Used to guide image layout decisions (e.g. alignment, padding, and
+ sector-based structure placement) so the image matches the intended media.
+ Common values: 512 (for 512n/512e) or 4096 (for 4Kn).</td>
                     <td>
                        
                            
@@ -285,7 +286,7 @@
                            
                        
                     </td>
-                    <td>Storage capacity: bytes (512+) or binary units (K, M, G, T, KiB, MiB, etc.)</td>
+                    <td>Integer value in range 512 to 512</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>

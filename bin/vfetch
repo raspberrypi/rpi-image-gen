@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# File fetch with verification and cache support
+# Usage:
+#   [IGconf_sys_cachedir=/path/to/cache] <script> <metadata.file> </path/to/output.file>
+#
+# Metadata - mirrors supported, use consistent name:
+#   <name> <algo:hex> <url or local path>
+#   algo: sha256|sha256sum|sha512|sha512sum
+
+
+msg() {
+   echo -e "$*"
+}
+
+err (){
+   >&2 msg "Error: $*"
+}
+
+die (){
+   [[ -n "$*" ]] && err "$*"
+   exit 1
+}
+
+
+meta="${1:-}"; dest="${2:-}"
+[[ -n "$meta" && -n "$dest" ]] || die "Expected args: <metadata.file> </path/to/output.file>"
+
+
+# Enforce that dest is a file path, not a directory
+if [[ -d "$dest" || "$dest" == */ ]]; then
+   die "Output path must be a file, not a directory"
+fi
+
+
+# Default cache location
+cache_dir="${IGconf_sys_cachedir:-/tmp}"
+mkdir -p -- "$cache_dir"
+
+
+# Output path is always an explicit file path
+out_path="$dest"
+out_dir="$(dirname -- "$out_path")"
+mkdir -p -- "$out_dir"
+
+
+# digest <algo> <file> -> hex
+digest()
+{
+   case "$1" in
+      sha256|sha256sum) sha256sum "$2" | sed 's/[[:space:]].*$//' ;;
+      sha512|sha512sum) sha512sum "$2" | sed 's/[[:space:]].*$//' ;;
+      *) die "Unsupported algo: $1" ;;
+   esac
+}
+
+
+# atomic file copy <src> <dst>
+atomic_install_copy()
+{
+   local src="$1" dst="$2" dstdir tmp
+   dstdir="$(dirname -- "$dst")"
+   tmp="$(mktemp -p "$dstdir" ".fetch.install.XXXXXX")"
+   cp -f -- "$src" "$tmp"
+   mv -f -- "$tmp" "$dst"
+}
+
+
+# Two-pass approach:
+# pass 1 tries cache against any candidate digest
+# pass 2 downloads per candidate
+target_name=""
+
+
+# Pass 1: determine target, verify cache against all candidate digests
+cache_path=""
+
+while IFS= read -r line || [[ -n "$line" ]]; do
+   [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+   [[ "$line" =~ ^[[:space:]]*# ]] && continue
+
+   set -- $line
+   name="${1:-}"; algo_hex="${2:-}"; src="${3:-}"
+   [[ -n "$name" && -n "$algo_hex" && -n "$src" ]] || continue
+
+   if [[ -z "$target_name" ]]; then
+      target_name="$name"
+      cache_path="${cache_dir}/${target_name}"
+   fi
+   [[ "$name" == "$target_name" ]] || continue
+
+   algo="${algo_hex%%:*}"
+   expected="${algo_hex#*:}"
+   expected="${expected,,}"
+   if [[ "$algo" == "$expected" || -z "$expected" ]]; then
+      die "Malformed metadata for $target_name: expected '<algo>:<hex>'"
+   fi
+
+   if [[ -f "$cache_path" ]]; then
+      got="$(digest "$algo" "$cache_path")"
+      if [[ "${got,,}" == "$expected" ]]; then
+         atomic_install_copy "$cache_path" "$out_path"
+         msg "Using verified cache: $cache_path -> $out_path"
+         exit 0
+      fi
+   fi
+done < "${meta}"
+
+[[ -n "${target_name}" ]] || die "No metadata entries in $meta"
+
+
+# Pass 2: download each candidate and verify with its own expected digest
+while IFS= read -r line || [[ -n "${line}" ]]; do
+   [[ "${line}" =~ ^[[:space:]]*$ ]] && continue
+   [[ "${line}" =~ ^[[:space:]]*# ]] && continue
+
+   set -- $line
+   name="${1:-}"; algo_hex="${2:-}"; src="${3:-}"
+   [[ -n "$name" && -n "$algo_hex" && -n "$src" ]] || continue
+   [[ "$name" == "$target_name" ]] || continue
+
+   algo="${algo_hex%%:*}"
+   expected="${algo_hex#*:}"
+   expected="${expected,,}"
+   if [[ "$algo" == "$expected" || -z "$expected" ]]; then
+      die "Malformed metadata for $target_name: expected '<algo>:<hex>'"
+   fi
+
+   tmp_cache="$(mktemp -p "$cache_dir" ".fetch.${target_name}.XXXXXX")"
+   if [[ "$src" == http://* || "$src" == https://* ]]; then
+      if ! curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+         --connect-timeout 30 --output "$tmp_cache" "$src"; then
+         rm -f -- "$tmp_cache"
+         continue
+      fi
+   else
+      if ! cp -f -- "$src" "$tmp_cache"; then
+         rm -f -- "$tmp_cache"
+         continue
+      fi
+   fi
+
+   got="$(digest "$algo" "$tmp_cache")"
+   if [[ "${got,,}" != "$expected" ]]; then
+      err "Checksum mismatch for ${target_name} from ${src}"
+      rm -f -- "${tmp_cache}"
+      continue
+   fi
+
+   atomic_install_copy "$tmp_cache" "$out_path"
+   mv -f -- "$tmp_cache" "$cache_path"
+   msg "Fetched: $src -> $out_path cached at $cache_path"
+   exit 0
+done < "${meta}"
+
+
+die "Failed: no verified source succeeded for ${target_name}"

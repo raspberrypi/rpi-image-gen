@@ -15,7 +15,7 @@ rpi-image-gen provides a flexible, hierarchical approach to managing build varia
 
 === Variable Naming Convention
 
-All configuration variables in rpi-image-gen use the `IGconf_` prefix followed by a structured naming pattern:
+Excluding environment keys, configuration variables in rpi-image-gen use the `IGconf_` prefix followed by a structured naming pattern:
 
 [source]
 ----
@@ -101,6 +101,9 @@ YAML provides the most flexible configuration format with native support for hie
 include:
   file: base.yaml
 
+env:
+  MYVAR: UNCHANGED
+
 device:
   class: pi5
   storage_type: sd
@@ -119,6 +122,9 @@ INI format provides traditional section-based configuration:
 [source,ini]
 ----
 !include base.cfg
+
+[env]
+MYVAR = UNCHANGED
 
 [device]
 class = pi5

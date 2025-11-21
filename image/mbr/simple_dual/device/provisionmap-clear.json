@@ -1,17 +1,19 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.0.0",
+         "PMAPversion": "1.1.0",
          "system_type": "flat"
       }
    },
    {
       "partitions": [
          {
-            "image": "boot"
+            "image": "boot",
+            "comment": "kernel + device tree + initramfs"
          },
          {
-            "image": "root"
+            "image": "root",
+            "comment": "root filesystem"
          }
       ]
    }

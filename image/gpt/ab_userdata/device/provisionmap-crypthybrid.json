@@ -1,0 +1,99 @@
+[
+   {
+      "attributes": {
+         "PMAPversion": "1.4.1",
+         "system_type": "slotted"
+      }
+   },
+   {
+      "partitions": [
+         {
+            "comment": "boot configuration",
+            "image": "config"
+         }
+      ]
+   },
+   {
+      "slots": {
+         "A": {
+            "partitions": [
+               {
+                  "comment": "kernel + device tree + initramfs slot A",
+                  "image": "boot_a",
+                  "static": {
+                     "uuid": "<BOOT_UUID>",
+                     "role": "boot"
+                  }
+               }
+            ]
+         }
+      }
+   },
+   {
+      "slots": {
+         "B": {
+            "partitions": [
+               {
+                  "comment": "kernel + device tree + initramfs slot B",
+                  "image": "boot_b",
+                  "static": {
+                     "uuid": "<BOOT_UUID>",
+                     "role": "boot"
+                  }
+               }
+            ]
+         }
+      }
+   },
+   {
+      "slots": {
+         "A": {
+            "partitions": [
+               {
+                  "comment": "root filesystem slot A",
+                  "image": "system_a",
+                  "static": {
+                     "uuid": "<SYSTEM_UUID>",
+                     "role": "system"
+                  }
+               }
+            ]
+         }
+      }
+   },
+   {
+      "slots": {
+         "B": {
+            "encrypted": {
+               "luks2": {
+                  "key_size": 512,
+                  "cipher": "aes-xts-plain64",
+                  "hash": "sha256",
+                  "label": "OSB",
+                  "uuid": "<CRYPT_UUID>",
+                  "mname": "osb_crypt",
+                  "etype": "partitioned"
+               },
+               "partitions": [
+                  {
+                     "comment": "Encrypted root filesystem slot B",
+                     "image": "system_b",
+                     "static": {
+                        "uuid": "<SYSTEM_UUID>",
+                        "role": "system"
+                     }
+                  }
+               ]
+            }
+         }
+      }
+   },
+   {
+      "partitions": [
+         {
+            "comment": "user data - shared between slots",
+            "image": "persistent"
+         }
+      ]
+   }
+]

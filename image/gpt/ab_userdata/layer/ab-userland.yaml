@@ -1,7 +1,0 @@
----
-name: ab-userland
-mmdebstrap:
-  packages:
-    - rpi-blockutils
-    - dosfstools
-    - e2fsprogs

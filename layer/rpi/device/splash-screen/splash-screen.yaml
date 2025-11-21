@@ -1,0 +1,80 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-splash-screen
+# X-Env-Layer-Desc: Raspberry Pi fullscreen splash screen support with custom image configuration.
+# X-Env-Layer-Version: 1.0.0
+#
+# X-Env-VarPrefix: splash
+#
+# X-Env-Var-image_path: ${DIRECTORY}/splash-screen/default-splash.tga
+# X-Env-Var-image_path-Desc: Path to the splash screen image file. Must be a 24-bit
+#  TGA file, smaller than 1920x1080px with fewer than 224 colours. The image will
+#  be copied to /lib/firmware/logo.tga and configured in the initramfs and kernel
+#  command line. If the path is relative, it's resolved relative to the layer
+#  directory. Set to an empty string to skip splash screen installation.
+# X-Env-Var-image_path-Required: n
+# X-Env-Var-image_path-Valid: string-or-empty
+# X-Env-Var-image_path-Set: y
+#
+# X-Env-Var-skip_image_checks: n
+# X-Env-Var-skip_image_checks-Desc: If y, skip validation of image dimensions,
+#  colour depth and colour count. This may be useful for testing or if using
+#  non-standard image formats, but the splash screen may not display correctly.
+# X-Env-Var-skip_image_checks-Required: n
+# X-Env-Var-skip_image_checks-Valid: bool
+# X-Env-Var-skip_image_checks-Set: y
+#
+# X-Env-Var-update_cmdline: y
+# X-Env-Var-update_cmdline-Desc: If y, automatically update /boot/firmware/cmdline.txt
+#  to enable the splash screen. If n, the splash screen will be installed but
+#  cmdline.txt must be manually configured. This is useful if using custom boot
+#  configurations or alternative bootloaders.
+# X-Env-Var-update_cmdline-Required: n
+# X-Env-Var-update_cmdline-Valid: bool
+# X-Env-Var-update_cmdline-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - rpi-splash-screen-support
+    - initramfs-tools
+    - file
+  customize-hooks:
+    - |-
+      set -eu
+      
+      # Skip if no image path provided
+      if [ -z "${IGconf_splash_image_path:-}" ]; then
+        echo "No splash screen image specified, skipping installation" >&2
+        exit 0
+      fi
+      
+      # Resolve the image path
+      SPLASH_IMAGE="$IGconf_splash_image_path"
+      if [ ! -f "$SPLASH_IMAGE" ]; then
+        echo "Error: Splash screen image not found: $SPLASH_IMAGE" >&2
+        exit 1
+      fi
+      
+      # Copy the image into the chroot temporarily
+      TEMP_IMAGE="/tmp/splash-screen-source.tga"
+      cp "$SPLASH_IMAGE" "$1$TEMP_IMAGE"
+      
+      # Run the configure-splash script inside the chroot
+      echo "Configuring splash screen from $SPLASH_IMAGE" >&2
+      
+      # Build command arguments based on boolean config values
+      if [ "$IGconf_splash_skip_image_checks" = "y" ] && [ "$IGconf_splash_update_cmdline" != "y" ]; then
+        chroot $1 /usr/bin/configure-splash --skip-image-checks --no-cmdline $TEMP_IMAGE
+      elif [ "$IGconf_splash_skip_image_checks" = "y" ]; then
+        chroot $1 /usr/bin/configure-splash --skip-image-checks $TEMP_IMAGE
+      elif [ "$IGconf_splash_update_cmdline" != "y" ]; then
+        chroot $1 /usr/bin/configure-splash --no-cmdline $TEMP_IMAGE
+      else
+        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE
+      fi
+      
+      # Clean up temporary file
+      rm -f "$1$TEMP_IMAGE"
+      
+      echo "Splash screen configured successfully" >&2
+

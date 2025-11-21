@@ -122,7 +122,17 @@ class ConfigLoader:
             # Merge: current overrides included
             merged = {**included_sections}
             for sect, mapping in curr_sections.items():
-                merged.setdefault(sect, {}).update(mapping)
+                if sect not in merged:
+                    merged[sect] = {}
+                for k, v in mapping.items():
+                    if sect in included_sections and k in included_sections[sect]:
+                        prev = included_sections[sect][k]
+                        if prev != v:
+                            print(
+                                f"OVR {path}: overrides [{sect}].{k} to '{v}' from '{prev}' (inherited)",
+                                file=sys.stderr,
+                            )
+                    merged[sect][k] = v
             return merged
 
         self.data = _load_yaml_recursive(Path(self.cfg_path).resolve(), set())
@@ -152,6 +162,7 @@ class ConfigLoader:
 
         # Disable interpolation
         self.config = configparser.ConfigParser(interpolation=None)
+        self.config.optionxform = str
         _load_ini_recursive(Path(self.cfg_path).resolve(), set(), self.config)
 
         for section in self.config.sections():
@@ -296,11 +307,19 @@ class ConfigLoader:
     def load_section(self, section: str):
         if section not in self.data:
             raise ValueError(f"Section [{section}] not found in {self.cfg_path}")
+        if section.lower() == "env":
+            self._load_env_section()
+            return
         for key, value in self.data[section].items():
             self._set_env_if_unset(self._env_key(section, key), self._expand(value))
 
     def load_all(self):
+        # Load [env] section first so that downstream config can rely on it
+        if "env" in self.data:
+            self.load_section("env")
         for section in self.data.keys():
+            if section == "env":
+                continue
             self.load_section(section)
 
         # Process override variables that don't correspond to config file entries
@@ -313,7 +332,11 @@ class ConfigLoader:
 
         # Build set of all environment keys that were processed from config file
         processed_env_keys = set()
+        if "env" in self.data:
+            processed_env_keys.update(self.data["env"].keys())
         for section_name, section_data in self.data.items():
+            if section_name == "env":
+                continue
             for key in section_data.keys():
                 env_key = self._env_key(section_name, key)
                 processed_env_keys.add(env_key)
@@ -354,9 +377,15 @@ class ConfigLoader:
 
             # First, process all keys from the config file
             sections = [section] if section else list(self.data.keys())
+            if section is None and "env" in self.data:
+                self._write_env_section(f, processed_env_keys, None)
             for sect in sections:
                 if sect not in self.data:
                     raise ValueError(f"Section [{sect}] not found in {self.cfg_path}")
+                if sect == "env":
+                    if section is not None:
+                        self._write_env_section(f, processed_env_keys, section)
+                    continue
                 for key, value in self.data[sect].items():
                     env_key = self._env_key(sect, key)
                     processed_env_keys.add(env_key)
@@ -388,7 +417,7 @@ class ConfigLoader:
         else:
             # If we can't parse it and we're filtering by section, skip it
             # (assume it doesn't belong to the filtered section)
-            if section_filter is not None:
+            if section_filter is not None and section_filter != "env":
                 return
 
         file_handle.write(f'{override_key}="{effective_value}"\n')
@@ -398,6 +427,46 @@ class ConfigLoader:
             print(f"ENV {override_key}={effective_value}")
         else:
             print(f"OVR {override_key}={effective_value}")
+
+    def _load_env_section(self):
+        for key, value in self.data.get("env", {}).items():
+            existing = os.environ.get(key)
+
+            if existing is not None and key not in self.overrides:
+                print(f"ENV {key}={existing} (preserved)")
+                continue
+
+            if key in self.overrides:
+                final_value = self._expand(self.overrides[key])
+                label = "OVR"
+            else:
+                final_value = self._expand(value)
+                label = "CFG"
+
+            os.environ[key] = final_value
+            print(f"{label} {key}={final_value}")
+
+    def _write_env_section(self, file_handle, processed_env_keys: set, section_filter: Optional[str]):
+        if section_filter is not None and section_filter != "env":
+            return
+        for key, value in self.data.get("env", {}).items():
+            processed_env_keys.add(key)
+            if key in os.environ:
+                effective_value = os.environ[key]
+                source = "env"
+            elif key in self.overrides:
+                effective_value = self._expand(self.overrides[key])
+                source = "override"
+            else:
+                effective_value = self._expand(value)
+                source = "config"
+            file_handle.write(f'{key}="{effective_value}"\n')
+            if source == "env":
+                print(f"ENV {key}={effective_value}")
+            elif source == "override":
+                print(f"OVR {key}={effective_value}")
+            else:
+                print(f"CFG {key}={effective_value}")
 
 
 def ConfigLoader_register_parser(subparsers):

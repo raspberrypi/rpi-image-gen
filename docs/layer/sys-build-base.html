@@ -234,6 +234,40 @@
                 </tr>
                 
                 <tr>
+                    <td><code>IGconf_sys_workroot</code></td>
+                    <td>The root work directory. Depending on the system(s)
+ being built, this directory can amount to a substantial amount of consumed
+ disk space.</td>
+                    <td>
+                       
+                           
+                           <code class="long-default">$(realpath --canonicalize-missing ./work)</code>
+                           
+                       
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td><code>IGconf_sys_cachedir</code></td>
+                    <td>Global cache root directory for all operations.</td>
+                    <td>
+                       
+                           
+                           <code class="long-default">${IGconf_sys_workroot}/cache</code>
+                           
+                       
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                
+                <tr>
                     <td><code>IGconf_sys_apt_cachedir</code></td>
                     <td>Cache directory for APT operations.
  Use this to specify the root directory APT uses when downloading packages.
@@ -254,14 +288,30 @@
                 </tr>
                 
                 <tr>
-                    <td><code>IGconf_sys_workroot</code></td>
-                    <td>The root work directory. Depending on the system(s)
- being built, this directory can amount to a substantial amount of consumed
- disk space.</td>
+                    <td><code>IGconf_sys_buildroot</code></td>
+                    <td>Global build root directory for source builds.</td>
                     <td>
                        
                            
-                           <code class="long-default">$(realpath --canonicalize-missing ./work)</code>
+                           <code class="long-default">${IGconf_sys_workroot}/build</code>
+                           
+                       
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td><code>IGconf_sys_bootstrapdir</code></td>
+                    <td>Directory for bootstrap artefacts (e.g. env, layer
+ order, metadata) used to resume the build in a containerised (or later)
+ invocation.</td>
+                    <td>
+                       
+                           
+                           <code class="long-default">${IGconf_sys_workroot}/bootstrap</code>
                            
                        
                     </td>

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: $(basename "$0") <chroot-path>" >&2
+  exit 2
+}
+
+[ $# -ge 1 ] || usage
+root="$1"
+[ -d "$root" ] || { echo "error: chroot path not found: $root" >&2; exit 2; }
+
+# Try to run systemd --version inside the chroot and extract the major number.
+# Requires privileges to chroot into <root>.
+ver="$(
+  chroot "$root" /bin/sh -eu -c '
+    PATH=/usr/sbin:/usr/bin:/sbin:/bin
+    for b in /usr/lib/systemd/systemd /lib/systemd/systemd systemd; do
+      if [ "$b" = systemd ]; then
+        command -v systemd >/dev/null 2>&1 || continue
+        cmd=systemd
+      else
+        [ -x "$b" ] || continue
+        cmd="$b"
+      fi
+      "$cmd" --version 2>/dev/null | sed -n "s/^systemd \([0-9][0-9]*\).*/\1/p" | head -n1
+      exit 0
+    done
+    exit 127
+  ' 2>/dev/null || true
+)"
+
+[ -n "${ver:-}" ] || { echo "error: could not determine systemd version in $root" >&2; exit 1; }
+printf '%s\n' "$ver"

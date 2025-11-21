@@ -1,0 +1,151 @@
+{
+  "$id": "https://raspberrypi.com/provisionmap/v1/schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Raspberry Pi Image Description Provisioning Map",
+  "type": "object",
+  "required": ["layout"],
+  "additionalProperties": true,
+  "properties": {
+    "layout": {
+      "type": "object",
+      "required": ["provisionmap"],
+      "additionalProperties": true,
+      "properties": {
+        "provisionmap": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entry" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "partitionRef": {
+      "type": "object",
+      "required": ["image"],
+      "additionalProperties": false,
+      "properties": {
+        "image": { "type": "string", "minLength": 1 },
+        "comment": { "type": "string" },
+        "static": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "uuid": {
+              "type": "string",
+              "anyOf": [
+                { "pattern": "^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$" },
+                { "pattern": "^[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}$" }
+              ]
+            },
+            "role": { "type": "string", "enum": ["boot", "system"] }
+          }
+        },
+        "expand-to-fit": { "type": "boolean", "default": false }
+      }
+    },
+    "slotMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z0-9_]+$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "partitions": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/partitionRef" }
+            },
+            "encrypted": { "$ref": "#/$defs/encryptedNode" }
+          }
+        }
+      }
+    },
+    "luks2": {
+      "type": "object",
+      "required": ["key_size", "cipher", "hash", "mname", "etype"],
+      "additionalProperties": false,
+      "properties": {
+        "key_size": { "type": "integer", "minimum": 1 },
+        "cipher": { "type": "string" },
+        "hash": { "type": "string" },
+        "label": { "type": "string" },
+        "uuid": { "type": "string", "pattern": "^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$" },
+        "mname": { "type": "string" },
+        "etype": { "type": "string", "enum": ["raw", "partitioned"] }
+      }
+    },
+    "encryptedNode": {
+      "type": "object",
+      "required": ["luks2"],
+      "additionalProperties": false,
+      "properties": {
+        "luks2": { "$ref": "#/$defs/luks2" },
+        "slots": { "$ref": "#/$defs/slotMap" },
+        "partitions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/partitionRef" }
+        },
+        "expand-to-fit": { "type": "boolean", "default": false }
+      },
+      "anyOf": [
+        { "required": ["slots"] },
+        { "required": ["partitions"] }
+      ]
+    },
+    "attributesEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "type": "object",
+          "required": ["PMAPversion", "system_type"],
+          "additionalProperties": false,
+          "properties": {
+            "PMAPversion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+            "system_type": { "type": "string", "enum": ["flat", "slotted"] }
+          }
+        }
+      },
+      "required": ["attributes"]
+    },
+    "partitionsEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "partitions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/partitionRef" }
+        }
+      },
+      "required": ["partitions"]
+    },
+    "slotsEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "slots": { "$ref": "#/$defs/slotMap" }
+      },
+      "required": ["slots"]
+    },
+    "encryptedEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "encrypted": { "$ref": "#/$defs/encryptedNode" }
+      },
+      "required": ["encrypted"]
+    },
+    "entry": {
+      "type": "object",
+      "oneOf": [
+        { "$ref": "#/$defs/attributesEntry" },
+        { "$ref": "#/$defs/partitionsEntry" },
+        { "$ref": "#/$defs/slotsEntry" },
+        { "$ref": "#/$defs/encryptedEntry" }
+      ]
+    }
+  }
+}
+
+

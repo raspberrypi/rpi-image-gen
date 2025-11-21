@@ -1,0 +1,92 @@
+= A/B Slots
+
+== Dynamic Slot Detection (A/B) – Overview and Integration
+
+This layer creates block device alias symlinks for A/B systems under /dev/disk/by-slot/{active,other}/{boot,system} using a combination of udev rules and dedicated script helpers. It prefers GPT labels (PARTLABELs) to classify partitions and falls back to a simple static map when labels aren’t available, working with both direct block devices and device‑mapper (DM) paths. The result is a consistent, boot‑agnostic way to reference the active and alternate partitions in a slot, suitable for both runtime and initramfs.
+
+== Slotted A/B
+
+An A/B (slotted) system maintains two self-contained slots (A and B), each made up of a boot and system partition. One slot runs the device (“active”), while the other remains idle for staging updates or rollback. This built-in redundancy enables safe reversion (rollback) if boot validation fails, minimises downtime, and preserves a known‑good environment for recovery. It’s particularly crucial for in‑field and fleet devices where reliable, remote deployment of security fixes and critical updates can safely be applied without bricking devices. The trade‑off is modest extra storage, health checks and tryboot orchestration to decide when to promote the new slot.
+
+This layer is intended to be reusable across different A/B image layouts. It makes no assumptions about partitioning scheme, filesystem, encryption/device‑mapper layout, or update mechanism; it simply exposes stable by‑slot device links leaving policy to higher layers.
+
+== Supported Boot Devices
+
+Devices booting from SD, eMMC and NVMe are supported.
+
+== Supported Block Devices
+
+Only eligible block devices are considered for slot assignment. An eligible block device is one which is 'boot‑disk–backed'. A device is considered boot‑disk–backed if its block‑device lineage (sysfs slaves chain) ultimately resolves to the boot disk’s kernel device (`$BOOT_DEV`, e.g., `mmcblk0` or `nvme0n1`). For non‑DM devices, this means the device is a partition of the boot disk. For DM devices, this means the device has the boot disk as an ancestor.
+
+== Why two schemes?
+
+Hardware and images vary:
+
+- Some images set GPT labels for each slot member (preferred: simple and deterministic).
+- Others cannot or do not use GPT labels (e.g., legacy layouts or devices). For those, a static slot map provides the same result.
+
+Both paths create the same stable symlinks so higher layers do not care how a slot was identified.
+
+== by-slot links
+
+The layer installs a set of udev rules so that upon events, installed helper scripts allow udev to create symlinks under:
+
+```
+/dev/disk/by-slot/
+  active/boot
+  active/system
+  other/boot
+  other/system
+```
+
+“active” is the slot the device booted from. “other” is the alternate slot.
+
+== Scheme 1: GPT labels (preferred)
+
+When a partition has a GPT PARTLABEL (e.g., `boot_a`, `system_a`, `boot_b`, `system_b`), the label helper maps it to one of the by-slot links above. No probing beyond labels is required. The active/other determination is derived from the boot partition’s label. Labels must be consistent across slot members and lower case.
+
+== Scheme 2: Static slot map (fallback)
+
+For unlabeled partitions, a static map provides exact device identities for each slot member. The map is evaluated against the current boot device to decide which pair is “active”.
+
+The map file should be installed as file ```/boot/slot.map``` in the chroot prior to image creation.
+
+Supported map format (one triplet key per line):
+
+```
+a.boot=KIND:NAME:PART
+a.system=KIND:NAME:PART
+b.boot=KIND:NAME:PART
+b.system=KIND:NAME:PART
+```
+
+Triplet semantics:
+
+- KIND empty: resolves to `/dev/${BOOT_DEV}p${PART}` where BOOT_DEV is the current boot device (e.g., mmcblk0 or nvme0n1).
+- KIND `mapper`: resolves to `/dev/mapper/${NAME}${PART}` (for dm‑crypt/LVM).
+- PART: decimal partition number (required).
+
+Example:
+
+```
+a.boot=::2
+a.system=::4
+b.boot=::3
+b.system=mapper:cryptroot:1
+```
+
+The helper resolves these to absolute devices, detects which `*.boot` matches the current boot partition, and maps it to one of the by-slot links above.
+
+== tryboot
+
+The helper `rpi-slot-tryboot` prints a Raspberry Pi tryboot config fragment to stdout, derived from `/dev/disk/by-slot/{active,other}/boot`.
+
+== Initramfs
+
+A script sets the root device to `/dev/disk/by-slot/active/system` at runtime. If this alias is not a block device, the system reboots immediately.
+
+== Notes
+
+- Both DM and non‑DM devices are supported by either scheme.
+- Labels take precedence. The static map is used only when labels are absent.
+
