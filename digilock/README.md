@@ -53,8 +53,8 @@ Clone this repository to the Host Pi:
 
 ```bash
 cd ~
-git clone https://github.com/SecurityPeopleInc/rpi-image-gen.git
-cd rpi-image-gen
+git clone https://github.com/SecurityPeopleInc/rpi-image-gen-onprem-demo.git
+cd rpi-image-gen-onprem-demo
 ```
 
 Then obtain the **output artifacts** from the following GitHub Action:  
@@ -66,7 +66,7 @@ extract the tar file using
 and put them into this structure: IMPORTANT!
 
 ```
-rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem/
+rpi-image-gen-onprem-demo/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem/
 ├── auth.tar
 ├── backend.tar
 ├── config/
@@ -82,9 +82,9 @@ rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/d
 └── start.demo.sh
 ```
 > **Note:** . Depending on how you transferred the output files to your directory, the start.demo.sh script may have lost its executable permission (especially if copied from a Windows file system, which does not preserve Unix file permissions).
-`chmod +x rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem/start.demo.sh`
+`chmod +x rpi-image-gen-onprem-demo/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt/digilink-onprem/start.demo.sh`
 
-> You might need read and write permissions to run the images. You can use `sudo chown -R "$USER":"$USER" rpi-image-gen` and `chmod -R u+rwX rpi-image-gen` to give permissions to your user.
+> You might need read and write permissions to run the images. You can use `sudo chown -R "$USER":"$USER" rpi-image-gen-onprem-demo` and `chmod -R u+rwX rpi-image-gen-onprem-demo` to give permissions to your user.
 
 ---
 
@@ -97,7 +97,7 @@ This guide explains how to build and flash the **On-Prem Demo Unit** image using
 ### 1. Build the Image
 
 ```bash
-cd ~/rpi-image-gen
+cd ~/rpi-image-gen-onprem-demo
 ```
 Now you have a choice between two configuration files for two different images.
 ```bash
