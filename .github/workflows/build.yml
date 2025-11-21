@@ -27,7 +27,7 @@ jobs:
       # -------------------------------
       - name: Download release artifact (latest or specific)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
           RELEASE_TAG: ${{ github.event.inputs.NL_On_Prem_Auth_Tag }}
         run: |
           mkdir -p artifacts
