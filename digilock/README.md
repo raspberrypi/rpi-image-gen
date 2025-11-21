@@ -102,7 +102,7 @@ cd ~/rpi-image-gen
 Now you have a choice between two configuration files for two different images.
 ```bash
 # Standard Image that contains just the onprem-demo as a server and a minimal standard network install utilizing an external DHCP server and no DNS.  
-./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo.yaml
+./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo-dhcp.yaml
 ```
 OR
 ```bash
