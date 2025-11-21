@@ -44,7 +44,7 @@ jobs:
             gh release download \
               "$RELEASE_TAG" \
               --repo SecurityPeopleInc/NL-On-Prem-Auth \
-              --pattern "digilink-onprem-${RELEASE_TAG#v}-arm64.tar.gz" \
+              --pattern "digilink-onprem-${RELEASE_TAG}-arm64.tar.gz" \
               --dir artifacts
           fi
 
