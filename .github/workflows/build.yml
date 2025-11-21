@@ -1,0 +1,67 @@
+name: Build Images
+
+on: 
+  workflow_dispatch:
+    inputs:
+      NL_On_Prem_Auth_Tag:
+        description: "OnPrem release tag (For example v0.0.5). Leave empty to download latest release."
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on:
+      - self-hosted
+      - linux
+      - arm64
+
+    steps:
+      - name: Fix workspace permissions
+        run: |
+          sudo rm -rf "$GITHUB_WORKSPACE"/work
+
+      - uses: actions/checkout@v5
+
+      # -------------------------------
+      # Downloading the selected release
+      # -------------------------------
+      - name: Download release artifact (latest or specific)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.NL_On_Prem_Auth_Tag }}
+        run: |
+          mkdir -p artifacts
+
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "No tag provided → downloading latest release"
+            gh release download \
+              --repo SecurityPeopleInc/NL-On-Prem-Auth \
+              --latest \
+              --pattern "digilink-onprem-*-arm64.tar.gz" \
+              --dir artifacts
+          else
+            echo "Using tag: $RELEASE_TAG"
+            gh release download \
+              --repo SecurityPeopleInc/NL-On-Prem-Auth \
+              --pattern "digilink-onprem-${RELEASE_TAG#v}-arm64.tar.gz" \
+              --dir artifacts \
+              --tag "$RELEASE_TAG"
+          fi
+
+          echo "Downloaded artifacts:"
+          ls -al artifacts
+
+      - name: Install dependencies
+        run: |
+          sudo ./install_deps.sh
+
+      - name: Run image generator
+        run: |
+          ./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo-network-prod.yaml
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onprem-image
+          path: ./work/image-onprem-demo-network-v0.0.4/onprem-demo-network-v0.0.4.img
+          compression-level: 0
