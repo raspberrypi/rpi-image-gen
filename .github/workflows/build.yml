@@ -58,7 +58,7 @@ jobs:
         run: |
           set -e
 
-          DEST="rpi-image-gen/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt"
+          DEST="${{ github.event.repository.name }}/digilock/onprem-demo-slim/device/mypi5/device/rootfs-overlay/opt"
 
           echo "Finding downloaded tar.gz..."
           TARFILE=$(ls artifacts/*.tar.gz | head -n 1)
