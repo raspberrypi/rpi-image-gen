@@ -1,7 +1,6 @@
 name: Create or Update Release
 
 on:
-  # 1. Manual trigger
   workflow_dispatch:
     inputs:
       NL_On_Prem_Auth_Tag:
@@ -9,7 +8,6 @@ on:
         required: true
         type: string
 
-  # 2. Auto-run when a release is published
   release:
     types: [published]
 
@@ -35,11 +33,10 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Show resolved tag
-        run: |
-          echo "Tag: ${{ steps.determine.outputs.tag }}"
+        run: echo "Resolved tag = ${{ steps.determine.outputs.tag }}"
 
   # -------------------------
-  # BUILD JOBS
+  # BUILD JOB (calls your build.yml)
   # -------------------------
   build-onprem-demo-network:
     needs: prepare
@@ -62,22 +59,24 @@ jobs:
         with:
           path: artifacts
 
-      # Create or update based on trigger type
-      - name: Create or update GitHub release
+      - name: Debug artifacts
+        run: ls -R artifacts
+
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           name: "Release ${{ needs.prepare.outputs.tag }}"
 
-          # Behavior depends on trigger:
-          #  - workflow_dispatch → manage draft release
-          #  - published event   → update published release
+          # If manually triggered → create/update a draft
+          # If triggered by an actual release event → update a published release
           draft: ${{ github.event_name == 'workflow_dispatch' }}
+
           overwrite_files: true
           generate_release_notes: ${{ github.event_name == 'release' }}
 
           files: |
-            artifacts/**/*.tar.gz
+            artifacts/**/*
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
