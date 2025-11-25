@@ -7,7 +7,7 @@ genimg_in=$2
 
 FW_SIZE=100%
 # 100% is minimal storage leaves no room for loading docker containers. 200% leaves overhead.
-ROOT_SIZE=200%
+ROOT_SIZE=300%
 
 cat genimage.cfg.in | sed \
    -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
