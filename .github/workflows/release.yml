@@ -1,0 +1,83 @@
+name: Create or Update Release
+
+on:
+  # 1. Manual trigger
+  workflow_dispatch:
+    inputs:
+      NL_On_Prem_Auth_Tag:
+        description: "OnPrem release tag (For example v0.0.5). Leave empty to download latest release."
+        required: true
+        type: string
+
+  # 2. Auto-run when a release is published
+  release:
+    types: [published]
+
+jobs:
+  # -------------------------
+  # PREPARATION JOB
+  # -------------------------
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.determine.outputs.tag }}
+
+    steps:
+      - name: Determine tag
+        id: determine
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ github.event.inputs.NL_On_Prem_Auth_Tag }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+          fi
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Show resolved tag
+        run: |
+          echo "Tag: ${{ steps.determine.outputs.tag }}"
+
+  # -------------------------
+  # BUILD JOBS
+  # -------------------------
+  build-onprem-demo-network:
+    needs: prepare
+    uses: ./.github/workflows/build.yml
+    with:
+      NL_On_Prem_Auth_Tag: ${{ needs.prepare.outputs.tag }}
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
+
+  # -------------------------
+  # RELEASE JOB
+  # -------------------------
+  release:
+    needs: [prepare, build-onprem-demo-network]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # Create or update based on trigger type
+      - name: Create or update GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: "Release ${{ needs.prepare.outputs.tag }}"
+
+          # Behavior depends on trigger:
+          #  - workflow_dispatch → manage draft release
+          #  - published event   → update published release
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          overwrite_files: true
+          generate_release_notes: ${{ github.event_name == 'release' }}
+
+          files: |
+            artifacts/**/*.tar.gz
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
