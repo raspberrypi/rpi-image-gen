@@ -116,9 +116,20 @@ jobs:
         run: |
           ./rpi-image-gen build -S ./digilock/onprem-demo-slim/ -c pi5-onprem-demo-network-prod.yaml
 
-      - name: Upload image artifact
+      - name: Zip image
+        run: |
+          IMG="./work/image-onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}/onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}.img"
+          ZIP="./work/image-onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}/onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}.zip"
+
+          echo "Zipping image..."
+          zip -j "$ZIP" "$IMG"
+
+          echo "Final zip:"
+          ls -lh "$ZIP"
+          
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: onprem-image
-          path: ./work/image-onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}/onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}.img
-          compression-level: 9
+          name: artifact-onprem-demo-image-network
+          path: ./work/image-onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}/onprem-demo-network-${{ inputs.NL_On_Prem_Auth_Tag }}.zip
+          compression-level: 0
