@@ -46,7 +46,7 @@ jobs:
       # -------------------------------
       # Downloading the selected release
       # -------------------------------
-      - name: Download release artifact (latest or specific)
+      - name: Download NL-On-Prem-Auth release artifact (latest or specific)
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           RELEASE_TAG: ${{ inputs.NL_On_Prem_Auth_Tag }}
