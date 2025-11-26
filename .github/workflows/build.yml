@@ -24,10 +24,6 @@ jobs:
       - arm64
 
     steps:
-      - name: Fix workspace permissions
-        run: |
-          sudo rm -rf "$GITHUB_WORKSPACE"/work
-
       - uses: actions/checkout@v5
 
       - name: Generate dynamic config file
