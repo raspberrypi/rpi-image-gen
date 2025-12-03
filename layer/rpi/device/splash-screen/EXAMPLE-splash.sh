@@ -34,6 +34,7 @@ convert \
     -depth 8 \
     -colors 224 \
     -type truecolor \
+    -flip \
     "$OUTPUT"
 
 echo "Splash screen created: $OUTPUT"

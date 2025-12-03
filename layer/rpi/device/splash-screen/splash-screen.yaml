@@ -5,7 +5,7 @@
 #
 # X-Env-VarPrefix: splash
 #
-# X-Env-Var-image_path: ${DIRECTORY}/splash-screen/default-splash.tga
+# X-Env-Var-image_path: ${DIRECTORY}/default-splash.tga
 # X-Env-Var-image_path-Desc: Path to the splash screen image file. Must be a 24-bit
 #  TGA file, smaller than 1920x1080px with fewer than 224 colours. The image will
 #  be copied to /lib/firmware/logo.tga and configured in the initramfs and kernel
