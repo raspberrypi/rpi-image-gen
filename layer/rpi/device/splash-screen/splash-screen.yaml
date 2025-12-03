@@ -1,7 +1,8 @@
 # METABEGIN
 # X-Env-Layer-Name: rpi-splash-screen
+# X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi fullscreen splash screen support with custom image configuration.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 #
 # X-Env-VarPrefix: splash
 #
