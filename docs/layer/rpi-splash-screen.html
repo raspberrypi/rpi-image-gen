@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rpi-splash-screen - Layer Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .badge { display: inline-block; background: #007acc; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-right: 10px; }
+        .policy-immediate { background: #28a745; color: white; text-decoration: none; }
+        .policy-lazy { background: #ffc107; color: #212529; text-decoration: none; }
+        .policy-force { background: #dc3545; color: white; text-decoration: none; }
+        .policy-skip { background: #6c757d; color: white; text-decoration: none; }
+        .policy-immediate:hover { background: #1e7e34; }
+        .policy-lazy:hover { background: #e0a800; }
+        .policy-force:hover { background: #c82333; }
+        .policy-skip:hover { background: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+        td:nth-child(3) {
+            width: auto;
+        }
+        code { background: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: 'Monaco', monospace; font-size: 14px; }
+        code.long-default { word-break: break-all; white-space: pre-wrap; display: block; min-width: 30ch; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { text-decoration: none; color: #007acc; }
+        .deps { display: flex; flex-wrap: wrap; gap: 5px; }
+        .dep-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; text-decoration: none; }
+        .dep-badge:hover { background: #1e7e34; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        /* Companion documentation content styling */
+        .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        .companion-content p { margin: 10px 0; }
+        .companion-content ul, .companion-content ol { margin: 10px 0; padding-left: 30px; }
+        .companion-content blockquote { border-left: 4px solid #007acc; padding-left: 15px; margin: 15px 0; color: #666; background: #f8f9fa; padding: 10px 15px; }
+        .companion-content pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #007acc; }
+        .companion-content table { border: 1px solid #ddd; }
+        .companion-content th, .companion-content td { border: 1px solid #ddd; }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="index.html">← Back to Layer Index</a>
+    </div>
+
+    <div class="header">
+        <h1>rpi-splash-screen</h1>
+        <span class="badge">general</span>
+        <span class="badge">v1.0.0</span>
+        <p>Raspberry Pi fullscreen splash screen support with custom image configuration.</p>
+    </div>
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_overview">Overview</a></li>
+<li><a href="#_features">Features</a></li>
+<li><a href="#_how_it_works">How It Works</a></li>
+<li><a href="#_technical_requirements">Technical Requirements</a>
+<ul class="sectlevel2">
+<li><a href="#_image_specifications">Image Specifications</a></li>
+<li><a href="#_kernel_parameters">Kernel Parameters</a></li>
+</ul>
+</li>
+<li><a href="#_configuration_variables">Configuration Variables</a>
+<ul class="sectlevel2">
+<li><a href="#_image_path"><code>image_path</code></a></li>
+<li><a href="#_skip_image_checks"><code>skip_image_checks</code></a></li>
+<li><a href="#_update_cmdline"><code>update_cmdline</code></a></li>
+</ul>
+</li>
+<li><a href="#_usage_examples">Usage Examples</a>
+<ul class="sectlevel2">
+<li><a href="#_basic_configuration">Basic Configuration</a></li>
+<li><a href="#_skip_splash_installation">Skip Splash Installation</a></li>
+<li><a href="#_custom_boot_configuration">Custom Boot Configuration</a></li>
+<li><a href="#_testing_with_lenient_validation">Testing with Lenient Validation</a></li>
+</ul>
+</li>
+<li><a href="#_creating_splash_images">Creating Splash Images</a>
+<ul class="sectlevel2">
+<li><a href="#_using_the_example_script_quickest_method">Using the Example Script (Quickest Method)</a></li>
+<li><a href="#_using_imagemagick">Using ImageMagick</a></li>
+<li><a href="#_using_gimp">Using GIMP</a></li>
+</ul>
+</li>
+<li><a href="#_dependencies">Dependencies</a></li>
+<li><a href="#_files_modified">Files Modified</a></li>
+<li><a href="#_troubleshooting">Troubleshooting</a>
+<ul class="sectlevel2">
+<li><a href="#_splash_screen_doesnt_appear">Splash Screen Doesn&#8217;t Appear</a></li>
+<li><a href="#_image_validation_fails">Image Validation Fails</a></li>
+<li><a href="#_boot_fails_after_configuration">Boot Fails After Configuration</a></li>
+</ul>
+</li>
+<li><a href="#_references">References</a></li>
+<li><a href="#_see_also">See Also</a></li>
+</ul>
+</div>
+<div class="sect1">
+<h2 id="_overview">Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>rpi-splash-screen</code> layer provides fullscreen splash screen support for Raspberry Pi devices. It configures the kernel and initramfs to display a custom image during boot, hiding kernel messages and providing a cleaner boot experience.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_features">Features</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Fullscreen boot logo</strong>: Display a custom image that covers the entire screen</p>
+</li>
+<li>
+<p><strong>Early boot display</strong>: Image appears as early as possible in the boot process</p>
+</li>
+<li>
+<p><strong>Automatic configuration</strong>: Handles initramfs and kernel command line setup</p>
+</li>
+<li>
+<p><strong>Flexible validation</strong>: Optional image checks can be skipped for testing</p>
+</li>
+<li>
+<p><strong>Customisable behaviour</strong>: Control whether cmdline.txt is automatically updated</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works">How It Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The splash screen layer:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Installs the <code>rpi-splash-screen-support</code> package containing the configuration tools</p>
+</li>
+<li>
+<p>Validates your splash image meets the technical requirements</p>
+</li>
+<li>
+<p>Copies the image to <code>/lib/firmware/logo.tga</code></p>
+</li>
+<li>
+<p>Adds an initramfs hook to load the image early in boot</p>
+</li>
+<li>
+<p>Updates the kernel command line with required parameters</p>
+</li>
+<li>
+<p>Rebuilds the initramfs with the new configuration</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The splash screen uses the kernel&#8217;s built-in <code>fullscreen_logo</code> functionality, which requires specific image formats and dimensions.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_technical_requirements">Technical Requirements</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_image_specifications">Image Specifications</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Format</strong>: TGA (Targa) image file</p>
+</li>
+<li>
+<p><strong>Colour depth</strong>: 24-bit</p>
+</li>
+<li>
+<p><strong>Maximum dimensions</strong>: 1920×1080 pixels</p>
+</li>
+<li>
+<p><strong>Maximum colours</strong>: 224 colours</p>
+</li>
+<li>
+<p><strong>Compression</strong>: Uncompressed</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_kernel_parameters">Kernel Parameters</h3>
+<div class="paragraph">
+<p>The layer configures the following kernel command line parameters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>fullscreen_logo=1</code>: Enable fullscreen logo display</p>
+</li>
+<li>
+<p><code>fullscreen_logo_name=logo.tga</code>: Specify the logo filename</p>
+</li>
+<li>
+<p><code>vt.global_cursor_default=0</code>: Hide the cursor</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuration_variables">Configuration Variables</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The layer declares the following configuration variables with prefix <code>splash</code>:</p>
+</div>
+<div class="sect2">
+<h3 id="_image_path"><code>image_path</code></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Type</strong>: String (path)</p>
+</li>
+<li>
+<p><strong>Default</strong>: <code>${DIRECTORY}/default-splash.tga</code></p>
+</li>
+<li>
+<p><strong>Required</strong>: No (can be empty to skip installation)</p>
+</li>
+<li>
+<p><strong>Description</strong>: Path to the splash screen image file. Can be absolute or relative to the layer directory.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_skip_image_checks"><code>skip_image_checks</code></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Type</strong>: Boolean</p>
+</li>
+<li>
+<p><strong>Default</strong>: <code>n</code></p>
+</li>
+<li>
+<p><strong>Required</strong>: No</p>
+</li>
+<li>
+<p><strong>Description</strong>: Skip validation of image dimensions, colour depth and colour count. Not recommended for production use.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_update_cmdline"><code>update_cmdline</code></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Type</strong>: Boolean</p>
+</li>
+<li>
+<p><strong>Default</strong>: <code>y</code></p>
+</li>
+<li>
+<p><strong>Required</strong>: No</p>
+</li>
+<li>
+<p><strong>Description</strong>: Automatically update <code>/boot/firmware/cmdline.txt</code> to enable the splash screen. Set to <code>n</code> if using custom boot configurations.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_usage_examples">Usage Examples</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_basic_configuration">Basic Configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: /home/user/my-logo.tga</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_skip_splash_installation">Skip Splash Installation</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: ""  # Empty string skips installation</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_custom_boot_configuration">Custom Boot Configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: /path/to/splash.tga
+  update_cmdline: n  # Don't modify cmdline.txt automatically</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_testing_with_lenient_validation">Testing with Lenient Validation</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  base: trixie-minbase
+  splash: rpi-splash-screen
+
+splash:
+  image_path: /path/to/test-splash.tga
+  skip_image_checks: y  # For testing only</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_splash_images">Creating Splash Images</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_using_the_example_script_quickest_method">Using the Example Script (Quickest Method)</h3>
+<div class="paragraph">
+<p>The layer includes a helper script for quick testing:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Generate a simple text-based splash screen
+./layer/rpi/device/splash-screen/EXAMPLE-splash.sh "Welcome to Raspberry Pi" splash.tga
+
+# The script creates a 1920×1080 black background with centred white text
+# Output is automatically in the correct TGA format</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is the easiest way to create a splash screen for testing or simple deployments.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_imagemagick">Using ImageMagick</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Convert and optimise an existing image
+convert input.png \
+  -resize 1920x1080 \
+  -background black \
+  -gravity center \
+  -extent 1920x1080 \
+  -depth 8 \
+  -colors 224 \
+  -type truecolor \
+  output.tga</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_gimp">Using GIMP</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Open your image in GIMP</p>
+</li>
+<li>
+<p>Scale to 1920×1080 or smaller (Image → Scale Image)</p>
+</li>
+<li>
+<p>Ensure RGB mode (Image → Mode → RGB)</p>
+</li>
+<li>
+<p>Reduce colours: Image → Mode → Indexed → Set 224 colours maximum</p>
+</li>
+<li>
+<p>Convert back to RGB: Image → Mode → RGB</p>
+</li>
+<li>
+<p>Export as TGA: File → Export As</p>
+</li>
+<li>
+<p>Select 24-bit, disable RLE compression</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_dependencies">Dependencies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The layer requires:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>rpi-essential-base</code>: Provides basic system utilities</p>
+</li>
+<li>
+<p><code>rpi-splash-screen-support</code>: Raspberry Pi splash screen configuration tool</p>
+</li>
+<li>
+<p><code>initramfs-tools</code>: For initramfs generation and hooks</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_files_modified">Files Modified</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The layer modifies the following files in the target system:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/lib/firmware/logo.tga</code>: The splash screen image</p>
+</li>
+<li>
+<p><code>/etc/initramfs-tools/hooks/splash-screen-hook.sh</code>: Initramfs hook</p>
+</li>
+<li>
+<p><code>/boot/firmware/cmdline.txt</code>: Kernel command line (if <code>update_cmdline=y</code>)</p>
+</li>
+<li>
+<p>Initramfs images in <code>/boot/firmware/</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting">Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_splash_screen_doesnt_appear">Splash Screen Doesn&#8217;t Appear</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Check that <code>/lib/firmware/logo.tga</code> exists in the built image</p>
+</li>
+<li>
+<p>Verify <code>/boot/firmware/cmdline.txt</code> contains the required parameters</p>
+</li>
+<li>
+<p>Ensure initramfs was rebuilt correctly</p>
+</li>
+<li>
+<p>Check image meets technical requirements</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_image_validation_fails">Image Validation Fails</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify image is 24-bit TGA format</p>
+</li>
+<li>
+<p>Check dimensions are ≤1920×1080</p>
+</li>
+<li>
+<p>Reduce colour count to &lt;224</p>
+</li>
+<li>
+<p>Ensure image is uncompressed</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_boot_fails_after_configuration">Boot Fails After Configuration</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set <code>update_cmdline: n</code> and configure manually</p>
+</li>
+<li>
+<p>Check initramfs hook installed correctly</p>
+</li>
+<li>
+<p>Review build logs for errors</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references">References</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/raspberrypi/rpi-splash-screen-support">Raspberry Pi Splash Screen Support</a></p>
+</li>
+<li>
+<p>The layer includes <code>EXAMPLE-splash.sh</code> helper script for quick splash screen generation</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../base/core-essential.html">Core Essential Layer</a></p>
+</li>
+<li>
+<p><a href="../device/boot-firmware.html">Boot Firmware Layer</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+        </div>
+    </div>
+    <div class="section">
+        <h2>Configuration Variables</h2>
+        <p><strong>Declares</strong> (prefix: <code>splash</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>IGconf_splash_image_path</code></td>
+                    <td>Path to the splash screen image file. Must be a 24-bit
+ TGA file, smaller than 1920x1080px with fewer than 224 colours. The image will
+ be copied to /lib/firmware/logo.tga and configured in the initramfs and kernel
+ command line. If the path is relative, it's resolved relative to the layer
+ directory. Set to an empty string to skip splash screen installation.</td>
+                    <td>
+                           <code class="long-default">${DIRECTORY}/default-splash.tga</code>
+                    </td>
+                    <td>String value (may be empty)</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_splash_skip_image_checks</code></td>
+                    <td>If y, skip validation of image dimensions,
+ colour depth and colour count. This may be useful for testing or if using
+ non-standard image formats, but the splash screen may not display correctly.</td>
+                    <td>
+                           <code>n</code>
+                    </td>
+                    <td>Boolean value - accepts: true/false, 1/0, yes/no, y/n (case insensitive)</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_splash_update_cmdline</code></td>
+                    <td>If y, automatically update /boot/firmware/cmdline.txt
+ to enable the splash screen. If n, the splash screen will be installed but
+ cmdline.txt must be manually configured. This is useful if using custom boot
+ configurations or alternative bootloaders.</td>
+                    <td>
+                           <code>y</code>
+                    </td>
+                    <td>Boolean value - accepts: true/false, 1/0, yes/no, y/n (case insensitive)</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>mmdebstrap</h2>
+        
+        <h3>Packages</h3>
+        <p>Installs:</p>
+        <ul>
+            <li><code>rpi-splash-screen-support</code></li>
+            <li><code>initramfs-tools</code></li>
+            <li><code>file</code></li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Attributes</h2>
+        <p><strong>File:</strong> <code>rpi/device/splash-screen/splash-screen.yaml</code></p>
+        <p><strong>Type:</strong> <code>static</code></p>
+    </div>
+</body>
+</html>

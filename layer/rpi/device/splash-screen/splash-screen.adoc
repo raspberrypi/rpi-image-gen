@@ -51,7 +51,7 @@ The layer declares the following configuration variables with prefix `splash`:
 === `image_path`
 
 * **Type**: String (path)
-* **Default**: `${DIRECTORY}/splash-screen/default-splash.tga`
+* **Default**: `${DIRECTORY}/default-splash.tga`
 * **Required**: No (can be empty to skip installation)
 * **Description**: Path to the splash screen image file. Can be absolute or relative to the layer directory.
 
@@ -130,7 +130,7 @@ The layer includes a helper script for quick testing:
 [source,bash]
 ----
 # Generate a simple text-based splash screen
-./layer/rpi/splash-screen/EXAMPLE-splash.sh "Welcome to Raspberry Pi" splash.tga
+./layer/rpi/device/splash-screen/EXAMPLE-splash.sh "Welcome to Raspberry Pi" splash.tga
 
 # The script creates a 1920×1080 black background with centred white text
 # Output is automatically in the correct TGA format
