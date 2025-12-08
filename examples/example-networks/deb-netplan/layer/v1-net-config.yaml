@@ -1,0 +1,34 @@
+# METABEGIN
+# X-Env-Layer-Name: v1-net-config
+# X-Env-Layer-Desc: Linux network configuration using systemd-netplan
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: networking
+# METAEND
+mmdebstrap:
+  suite: trixie
+  variant: minbase
+  setup-hooks:
+    - |
+      # Default network parameters (can be overridden by caller environment)
+      NET_ADDR="192.168.0.72/24"
+      NET_GW="192.168.0.1"
+      NAMESERVER="127.0.0.1"
+      IPV6_ADDR="2001:678:e68:f000::72/64"
+
+      install -d "$1/etc/netplan"
+      cat > "$1/etc/netplan/00-installer.yaml" <<-EOF
+      network:
+        version: 2
+        ethernets:
+          eth0:
+            dhcp4: no
+            dhcp6: no
+            addresses:
+              - ${NET_ADDR}
+              - ${IPV6_ADDR}
+            ipv6-privacy: true
+            ipv6-address-generation: stable-privacy
+            gateway4: ${NET_GW}
+            nameservers:
+              addresses: [${NAMESERVER}]
+      EOF    

@@ -1,0 +1,25 @@
+# METABEGIN
+# X-Env-Layer-Name: v0-net-config
+# X-Env-Layer-Desc: Linux network configuration pre-systemd and pre-netplan
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: networking
+# METAEND
+mmdebstrap:
+  suite: trixie
+  variant: minbase
+  setup-hooks:
+    - |
+      # Default network parameters (can be overridden by caller environment)
+      NET_ADDR="192.168.0.72/24"
+      NET_GW="192.168.0.1"
+      NAMESERVER="127.0.0.1"
+      IPV6_ADDR="2001:678:e68:f000::72/64"
+
+      install -d "$1/etc/network"
+      cat > "$1/etc/network/interfaces" <<-EOF
+      auto eth0
+      iface eth0 inet static
+          address ${NET_ADDR}
+          gateway ${NET_GW}
+          dns-nameservers ${NAMESERVER}
+      EOF

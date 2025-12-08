@@ -1,0 +1,29 @@
+# METABEGIN
+# X-Env-Layer-Name: v2-net-config
+# X-Env-Layer-Desc: Linux network configuration using systemd-resolved
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: networking
+# METAEND
+mmdebstrap:
+  suite: trixie
+  variant: minbase
+  customize-hooks:
+    - |
+      install -d "$1/etc/systemd/network"
+      cat > "$1/etc/systemd/network/01-eth0.network" <<-EOF
+      [Match]
+      Name=eth0
+
+      [Network]
+      DHCP=no
+      Address=192.168.0.72/24
+      Gateway=192.168.0.1
+      DNS=127.0.0.1
+      DNS=1.1.1.1
+      DNS=8.8.8.8
+      IPv6AcceptRA=no
+      LinkLocalAddressing=no
+
+      [Link]
+      RequiredForOnline=yes
+      EOF    
