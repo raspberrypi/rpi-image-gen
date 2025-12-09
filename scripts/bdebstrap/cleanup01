@@ -17,3 +17,4 @@ GH=$(git describe --dirty 2> /dev/null || \
 
 mkdir -p $1/etc
 echo "Generated using rpi-image-gen ${GH} on $(date +%Y-%m-%d)" > $1/etc/rpi-issue
+echo "Artefact version: $IGconf_artefact_version" >> $1/etc/rpi-issue
