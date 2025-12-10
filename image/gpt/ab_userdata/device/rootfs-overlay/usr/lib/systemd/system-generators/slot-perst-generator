@@ -4,10 +4,14 @@
 set -eu
 
 OUT_DIR="/run/systemd/generator"
-PERSIST_LABEL="${PERSIST_LABEL:-PERSISTENT}"     # label of the shared persistent partition
-
 mkdir -p "$OUT_DIR"
 
+# Label of the shared persistent partition
+PERSIST_LABEL="${PERSIST_LABEL:-PERSISTENT}"
+
+# Corresponding fsck unit
+path=$(systemd-escape --path "/dev/disk/by-label/${PERSIST_LABEL}")
+FSCK_UNIT="systemd-fsck@${path}.service"
 
 # 1) Determine current slot
 SLOT=""
@@ -25,9 +29,7 @@ fi
 
 VAR_SRC="/persistent/slots/${SLOT}/var"
 
-
 # 2) Emit persistent.mount (mount the shared persistent partition by label)
-#
 # Mount with:
 # noatime: avoids atime writes entirely (better than relatime)
 # lazytime: defer inode timestamps to memory, flushed with fsync/mtime changes / 24h.
@@ -38,6 +40,8 @@ cat >"$OUT_DIR/persistent.mount" <<EOF
 Description=Persistent data partition
 Before=local-fs.target
 Conflicts=umount.target
+Requires=${FSCK_UNIT}
+After=${FSCK_UNIT}
 
 [Mount]
 What=/dev/disk/by-label/${PERSIST_LABEL}
@@ -49,7 +53,17 @@ Options=rw,noatime,lazytime,commit=60,errors=remount-ro
 WantedBy=local-fs.target
 EOF
 
-# 3) Emit var.mount (bind per-slot /var)
+# 3) Emit fsck settings
+fsck_dir="/run/systemd/system/${FSCK_UNIT}.d"
+mkdir -p "$fsck_dir"
+cat >"$fsck_dir/repair.conf" <<EOF
+[Service]
+# Automatic non-interactive repair always
+Environment=SYSTEMD_FSCK_FORCE=yes
+Environment=SYSTEMD_FSCK_REPAIR=yes
+EOF
+
+# 4) Emit var.mount (bind per-slot /var)
 cat >"$OUT_DIR/var.mount" <<EOF
 [Unit]
 Description=Per-slot /var for ${SLOT}

@@ -156,31 +156,25 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock">/</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/dev/disk/by-slot/active/system</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ext4</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Read‑only system root (active slot A or B)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ro System root (active slot A or B)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/boot/firmware</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/dev/disk/by-slot/active/boot</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vfat</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Boot files (active slot A or B)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ro Boot files (active slot A or B)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/bootfs</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BOOTFS</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vfat</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Boot metadata</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rw Boot metadata</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/persistent</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">PERSISTENT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ext4</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Shared persistent storage</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/var</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/slots/&lt;slot&gt;/var</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Per‑slot runtime state (systemd, caches, etc.)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rw Shared persistent storage</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/home</p></td>
@@ -189,10 +183,22 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock">User data shared across slots</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/slots/&lt;slot&gt;/var</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Per‑slot runtime state (systemd, caches, etc.)</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/var/log/journal</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/log/journal</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Single log directory used by both slots</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/tmp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">tmpfs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">tmpfs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Volatile scratch</p></td>
 </tr>
 </tbody>
 </table>
