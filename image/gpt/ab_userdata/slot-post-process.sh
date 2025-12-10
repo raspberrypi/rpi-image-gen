@@ -12,7 +12,6 @@ case $COMP in
 /dev/disk/by-slot/active/system /              ext4 ro,relatime,commit=30 0 1
 /dev/disk/by-slot/active/boot   /boot/firmware vfat defaults,ro,noatime,nofail  0 2
 LABEL=BOOTFS                    /bootfs        vfat defaults,rw,noatime,errors=panic 0 2
-tmpfs                           /var/tmp       tmpfs mode=1777,nosuid,nodev,size=256M  0  0
 
 # Bespoke systemd generators mount /persistent, /var and bind mount into it
 # for per-slot storage. See slot-perst-generator.
