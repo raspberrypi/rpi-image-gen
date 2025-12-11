@@ -8,13 +8,12 @@ This system uses an A/B, read‑only root with all writable state on a single pe
 |===
 | Mount point | Backing | Type | Notes
 
-| / | /dev/disk/by-slot/active/system | ext4 | Read‑only system root (active slot A or B)
-| /boot/firmware | /dev/disk/by-slot/active/boot | vfat | Boot files (active slot A or B)
-| /bootfs | BOOTFS | vfat | Boot metadata
-| /persistent | PERSISTENT | ext4 | Shared persistent storage
-
-| /var | /persistent/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
+| / | /dev/disk/by-slot/active/system | ext4 | ro System root (active slot A or B)
+| /boot/firmware | /dev/disk/by-slot/active/boot | vfat | ro Boot files (active slot A or B)
+| /bootfs | BOOTFS | vfat | rw Boot metadata
+| /persistent | PERSISTENT | ext4 | rw Shared persistent storage
 | /home | /persistent/home | bind | User data shared across slots
+| /var | /persistent/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
 | /var/log/journal | /persistent/log/journal | bind | Single log directory used by both slots
 |===
 

@@ -107,7 +107,6 @@ Compress=yes
 
 # Lower disk budget
 SystemMaxUse=512M
-SystemKeepFree=15%
 SystemMaxFileSize=20M
 
 # Retention
