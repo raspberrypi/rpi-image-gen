@@ -96,7 +96,7 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="layer-docs-") as tmp_root:
         tmpdir = Path(tmp_root)
-        layer_paths = [f"TMPROOT_layer={tmpdir}"] + layer_paths
+        layer_paths = [f"DYNlayer={tmpdir}"] + layer_paths
         manager = LayerManager(layer_paths, doc_mode=True)
 
         # All layer names

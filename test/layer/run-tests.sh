@@ -9,7 +9,30 @@ LAYERS="${IGTOP}/test/layer"
 PATH="$IGTOP/bin:$PATH"
 PATH="$LAYERS/tools:$PATH"
 DYN_LAYER_DIR=$(mktemp -d -t dynamic-layers.XXXXXX)
-trap 'rm -rf "$DYN_LAYER_DIR"' EXIT
+PIPELINE_LAYER_DIR=$(mktemp -d -t pipeline-layers.XXXXXX)
+trap 'rm -rf "$DYN_LAYER_DIR" "$PIPELINE_LAYER_DIR"' EXIT
+
+PIPELINE_LAYER_FILES=(
+  "valid-basic.yaml"
+  "valid-all-types.yaml"
+  "valid-with-deps.yaml"
+  "set-policies.yaml"
+  "invalid-unsupported-fields.yaml"
+  "network-x-env.yaml"
+  "lazy-first.yaml"
+  "lazy-second.yaml"
+  "force-overwrite.yaml"
+  "test-dependency-top.yaml"
+  "test-dependency-middle.yaml"
+  "test-dependency-bottom.yaml"
+  "arm64-toolchain.yaml"
+  "debian-packages.yaml"
+  "test-env-var-deps.yaml"
+)
+
+for file in "${PIPELINE_LAYER_FILES[@]}"; do
+    cp "${LAYERS}/${file}" "$PIPELINE_LAYER_DIR/"
+done
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -57,7 +80,7 @@ run_test() {
 
     # Automatically inject dynamic layer search path when needed
     local patched_command="$command"
-    local layer_spec="--path TMPROOT_layer=$DYN_LAYER_DIR:$LAYERS"
+    local layer_spec="--path DYNlayer=$DYN_LAYER_DIR:$LAYERS"
     patched_command=${patched_command//--path "$LAYERS"/$layer_spec}
     patched_command=${patched_command//--path $LAYERS/$layer_spec}
 
@@ -114,6 +137,18 @@ setup_test_env() {
     export IGconf_valfail_port="99999"
     export IGconf_valfail_email="not-an-email"
     export IGconf_valfail_required=""
+}
+
+make_pipeline_env() {
+    local target_file="$1"
+    shift
+    {
+        printf "IGROOT=/tmp/pipeline\n"
+        printf "SRCROOT=/tmp/pipeline/src\n"
+        for line in "$@"; do
+            printf "%s\n" "$line"
+        done
+    } > "$target_file"
 }
 
 
@@ -229,7 +264,7 @@ run_test "invalid-unsupported-validate" \
 
 # Invalid - YAML syntax
 run_test "invalid-yaml-syntax-layer-validate" \
-    "ig layer --validate ${LAYERS}/invalid-yaml-syntax.yaml" \
+    "ig metadata --validate ${LAYERS}/invalid-yaml-syntax.yaml" \
     1 \
     "Invalid YAML syntax should fail layer validation"
 
@@ -276,27 +311,17 @@ run_test "layer-with-deps-info" \
     0 \
     "Layer with dependencies should show info successfully"
 
-run_test "layer-with-deps-validate" \
-    "ig layer --path ${LAYERS} --validate test-with-deps" \
-    0 \
-    "Layer with dependencies should validate successfully"
-
-
 # Layer with missing dependencies
-run_test "layer-missing-dep-validate" \
-    "ig layer --path ${LAYERS} --validate test-missing-dep" \
-    1 \
-    "Layer with missing dependencies should fail validation"
 
 run_test "layer-missing-dep-check" \
-    "ig layer --path ${LAYERS} --check test-missing-dep" \
+    "ig layer --path ${LAYERS} --build-order test-missing-dep >/dev/null" \
     1 \
     "Layer dependency check should fail for missing dependencies"
 
 
 # Circular dependencies
 run_test "layer-circular-deps-check" \
-    "ig layer --path ${LAYERS} --check test-circular-a" \
+    "ig layer --path ${LAYERS} --build-order test-circular-a >/dev/null" \
     1 \
     "Circular dependency check should fail"
 
@@ -357,27 +382,49 @@ cleanup_env
 unset IGconf_net_interface
 # Temporarily change Set policy to y for this test
 sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 run_test "meta-parse-auto-set" \
     "ig metadata --parse ${LAYERS}/network-x-env.yaml" \
     0 \
     "Meta parse should auto-set variables with Set: y policy"
 # Restore original setting
 sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 
 
 # Layer apply-env with valid metadata
 cleanup_env
 run_test "layer-apply-env-valid" \
-    "ig layer --path ${LAYERS} --apply-env test-set-policies" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-set-policies --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "IGconf_setpol_alwaysset=default-value" "$TMP_OUT" && \
+     grep -q "IGconf_setpol_defaultbehavior=default-value" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Layer apply-env should work with valid metadata"
+    "Pipeline apply-env should work with valid metadata"
 
 
 # Layer apply-env with invalid metadata
 run_test "layer-apply-env-invalid" \
-    "ig layer --path ${LAYERS} --apply-env test-unsupported" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-unsupported --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
     1 \
-    "Layer apply-env should fail with invalid metadata"
+    "Pipeline apply-env should fail with invalid metadata"
 
 
 # Verify meta parse auto-sets required variables with Set: y
@@ -386,12 +433,16 @@ unset IGconf_net_interface
 IGconf_net_interface_before=$(env | grep IGconf_net_interface || echo "UNSET")
 # Temporarily change Set policy to y for this test
 sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 run_test "meta-parse-sets-required-vars" \
     "test \"\$IGconf_net_interface_before\" = \"UNSET\" && ig metadata --parse ${LAYERS}/network-x-env.yaml | grep 'IGconf_net_interface=eth0'" \
     0 \
     "Meta parse should set required variables from defaults when Set: y"
 # Restore original setting
 sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 
 
 
@@ -400,12 +451,20 @@ cleanup_env
 unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
 # Temporarily change Set policy to y for this test
 sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 run_test "layer-apply-env-sets-vars" \
-    "ig layer --path ${LAYERS} --apply-env network-setup | grep -E '\\[SET\\].*IGconf_net_interface=eth0'" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers network-setup --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_net_interface=eth0$" "$TMP_OUT" && \
+     grep -q "^IGconf_net_ip=192.168.1.100$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Layer apply-env should SET variables, not skip them when they are unset"
+    "Pipeline should set network variables when unset"
 # Restore original setting
 sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 
 
 # Test metadata parse with required+auto-set variables works
@@ -426,21 +485,33 @@ cleanup_env
 unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
 # Temporarily change Set policy to y for this test
 sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 run_test "meta-parse-layer-apply-env-consistency" \
-    "ig metadata --parse ${LAYERS}/network-x-env.yaml >/dev/null && ig layer --path ${LAYERS} --apply-env network-setup | grep -E '\\[SET\\].*IGconf_net_interface=eth0'" \
+    'ig metadata --parse ${LAYERS}/network-x-env.yaml >/dev/null && \
+     TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers network-setup --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_net_interface=eth0$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
     "Both meta parse and layer apply-env should work consistently with required+auto-set variables"
 # Restore original setting
 sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${LAYERS}/network-x-env.yaml
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${PIPELINE_LAYER_DIR}/network-x-env.yaml
 
 
 # Test layer apply-env fails when required variable has Set: n and is not provided
 cleanup_env
 unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
 run_test "layer-apply-env-fails-required-no-set" \
-    "ig layer --path ${LAYERS} --apply-env network-setup" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers network-setup --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
     1 \
-    "Layer apply-env should fail when required variables have Set: n and are not provided in environment"
+    "Pipeline should fail when required variables are missing and Set: n"
 
 
 # Test layer apply-env succeeds when required variable has Set: n but is provided
@@ -448,9 +519,14 @@ cleanup_env
 unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
 export IGconf_net_interface=wlan0
 run_test "layer-apply-env-succeeds-required-manually-set" \
-    "ig layer --path ${LAYERS} --apply-env network-setup | grep -E '\\[SKIP\\].*IGconf_net_interface.*already set'" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "IGconf_net_interface=wlan0" && \
+     ig pipeline --env-in "$TMP_ENV" --layers network-setup --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_net_interface=wlan0$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Layer apply-env should succeed when required variables have Set: n but are manually provided"
+    "Pipeline should respect manually provided required variables"
 
 
 # Test metadata parse fails when required variable has Set: n and is not provided
@@ -476,17 +552,27 @@ run_test "meta-parse-succeeds-required-manually-set" \
 cleanup_env
 unset IGconf_lazy_path
 run_test "lazy-last-wins" \
-    "ig layer --path ${LAYERS} --apply-env test-lazy-second | grep -E '\[LAZY\].*IGconf_lazy_path=/usr/second'" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-lazy-second --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_lazy_path=/usr/second$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Lazy policy should apply last-wins value from test-lazy-second"
+    "Pipeline should apply lazy last-wins value from test-lazy-second"
 
 # Test force policy overrides existing value
 cleanup_env
 export IGconf_force_color=red
 run_test "force-overwrite" \
-    "ig layer --path ${LAYERS} --apply-env test-force-overwrite | grep -E '\[FORCE\].*IGconf_force_color=blue'" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "IGconf_force_color=red" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-force-overwrite --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_force_color=blue$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Force policy should overwrite pre-existing env value"
+    "Pipeline force policy should overwrite pre-existing env value"
 cleanup_env
 
 # Test placeholder substitution
@@ -501,13 +587,13 @@ run_test "placeholder-directory" \
 # Provider capability tests
 cleanup_env
 run_test "provider-resolution" \
-    "ig layer --path ${LAYERS} --check test-provider-base test-provider-consumer" \
+    "ig layer --path ${LAYERS} --build-order test-provider-base test-provider-consumer >/dev/null" \
     0 \
     "Provider check should pass if provider in dependency chain"
 
 cleanup_env
 run_test "provider-missing" \
-    "ig layer --path ${LAYERS} --check test-provider-consumer-missing" \
+    "ig layer --path ${LAYERS} --build-order test-provider-consumer-missing >/dev/null" \
     1 \
     "Check should fail when provider capability not available"
 
@@ -531,7 +617,7 @@ cat > ${CONFLICT_DIR}/provider-conflict2.yaml << 'EOF'
 # METAEND
 EOF
 run_test "provider-conflict" \
-    "{ ig layer --path ${CONFLICT_DIR} --check test-provider-conflict1 test-provider-conflict2; RESULT=\$?; rm -rf ${CONFLICT_DIR}; exit \$RESULT; }" \
+    "{ ig layer --path ${CONFLICT_DIR} --build-order test-provider-conflict1 test-provider-conflict2 >/dev/null; RESULT=\$?; rm -rf ${CONFLICT_DIR}; exit \$RESULT; }" \
     1 \
     "Check should fail when multiple layers provide the same capability"
 
@@ -548,42 +634,48 @@ run_test "meta-parse-write-out" \
     "Meta parse --write-out should write variables to file"
 rm -f ${WRITE_TEST_FILE}
 
-cleanup_env  
-unset IGconf_basic_hostname IGconf_basic_port
-WRITE_TEST_FILE="/tmp/test-layer-writeout-$$.env"
-run_test "layer-apply-env-write-out" \
-    "ig layer --path ${LAYERS} --apply-env test-basic --write-out ${WRITE_TEST_FILE} >/dev/null && grep -q 'IGconf_basic_hostname=\"localhost\"' ${WRITE_TEST_FILE} && grep -q 'IGconf_basic_port=\"8080\"' ${WRITE_TEST_FILE}" \
-    0 \
-    "Layer apply-env --write-out should write changed variables to file"
-rm -f ${WRITE_TEST_FILE}
+print_header "PIPELINE APPLY TESTS"
 
-cleanup_env
-unset IGconf_basic_hostname IGconf_basic_port  
-export IGconf_basic_hostname=already-set
-WRITE_TEST_FILE="/tmp/test-writeout-partial-$$.env"
-run_test "layer-apply-env-write-out-partial" \
-    "ig layer --path ${LAYERS} --apply-env test-basic --write-out ${WRITE_TEST_FILE} >/dev/null && ! grep -q 'IGconf_basic_hostname' ${WRITE_TEST_FILE} && grep -q 'IGconf_basic_port=\"8080\"' ${WRITE_TEST_FILE}" \
+run_test "pipeline-write-env-basic" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-basic --path '"${PIPELINE_LAYER_DIR}"' --env-out "$TMP_OUT" && \
+     grep -q "^IGconf_basic_hostname=localhost$" "$TMP_OUT" && \
+     grep -q "^IGconf_basic_port=8080$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Layer apply-env --write-out should only write changed variables, not already-set ones"
-rm -f ${WRITE_TEST_FILE}
+    "Pipeline should resolve vars for single layer"
 
-cleanup_env
-unset IGconf_basic_hostname IGconf_basic_port IGconf_types_name IGconf_types_timeout
-WRITE_TEST_FILE="/tmp/test-multi-layer-writeout-$$.env"
-run_test "layer-apply-env-write-out-multi-layer" \
-    "ig layer --path ${LAYERS} --apply-env test-basic test-all-types --write-out ${WRITE_TEST_FILE} >/dev/null && grep -q 'IGconf_basic_hostname=\"localhost\"' ${WRITE_TEST_FILE} && grep -q 'IGconf_basic_port=\"8080\"' ${WRITE_TEST_FILE} && grep -q 'IGconf_types_name=\"myapp\"' ${WRITE_TEST_FILE} && grep -q 'IGconf_types_timeout=\"30\"' ${WRITE_TEST_FILE}" \
+run_test "pipeline-respects-existing-values" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "IGconf_basic_hostname=already-set" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-basic --path '"${PIPELINE_LAYER_DIR}"' --env-out "$TMP_OUT" && \
+     grep -q "^IGconf_basic_hostname=already-set$" "$TMP_OUT" && \
+     grep -q "^IGconf_basic_port=8080$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Layer apply-env --write-out should write variables from ALL layers, not just the last one"
-rm -f ${WRITE_TEST_FILE}
+    "Pipeline should not overwrite existing immediate-set values"
 
-cleanup_env  
-unset IGconf_basic_hostname IGconf_basic_port IGconf_deps_feature
-WRITE_TEST_FILE="/tmp/test-deps-writeout-$$.env"
-run_test "layer-apply-env-write-out-with-dependencies" \
-    "ig layer --path ${LAYERS} --apply-env test-with-deps --write-out ${WRITE_TEST_FILE} >/dev/null && grep -q 'IGconf_basic_hostname=\"localhost\"' ${WRITE_TEST_FILE} && grep -q 'IGconf_basic_port=\"8080\"' ${WRITE_TEST_FILE} && grep -q 'IGconf_deps_feature=\"enabled\"' ${WRITE_TEST_FILE}" \
+run_test "pipeline-multi-layer-write-env" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-basic test-all-types --path '"${PIPELINE_LAYER_DIR}"' --env-out "$TMP_OUT" && \
+     grep -q "^IGconf_basic_hostname=localhost$" "$TMP_OUT" && \
+     grep -q "^IGconf_types_name=myapp$" "$TMP_OUT" && \
+     grep -q "^IGconf_types_timeout=30$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Layer apply-env --write-out should write variables from dependencies AND target layer"
-rm -f ${WRITE_TEST_FILE}
+    "Pipeline should write vars from multiple layers"
+
+run_test "pipeline-dependency-write-env" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-with-deps --path '"${PIPELINE_LAYER_DIR}"' --env-out "$TMP_OUT" && \
+     grep -q "^IGconf_basic_hostname=localhost$" "$TMP_OUT" && \
+     grep -q "^IGconf_deps_feature=enabled$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
+    0 \
+    "Pipeline should honor dependency expansion"
 
 run_test "bulk-lint-all-yaml" '
     # 1) collect every *.yaml / *.yml
@@ -634,8 +726,11 @@ run_test "bulk-lint-all-yaml" '
 # This robust test catches ordering bugs by using shell strict mode to detect undefined variables
 cleanup_env
 run_test "variable-dependency-order-robust" \
-    'WRITE_OUT_FILE=$(mktemp) && 
-     ig layer --path '"${LAYERS}"' --apply-env test-dependency-top --write-out "$WRITE_OUT_FILE" >/dev/null 2>&1 &&
+    'TMP_ENV=$(mktemp) &&
+     TMP_OUT=$(mktemp) &&
+          make_pipeline_env "$TMP_ENV" &&
+     ig pipeline --env-in "$TMP_ENV" --layers test-dependency-top --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null 2>&1 &&
      env -i bash -c '\''
        set -aeu  # Strict mode: -a export all, -e exit on error, -u error on undefined vars
        source "$1"
@@ -646,8 +741,8 @@ run_test "variable-dependency-order-robust" \
        [[ "$IGconf_dep_configpath" == "/test/base/path/config" ]] &&
        [[ "$IGconf_dep_finalpath" == "/test/base/path/enhanced-core-service/final" ]] &&
        [[ "$IGconf_dep_result" == "/test/base/path/config/enhanced-core/result" ]]
-     '\'' _ "$WRITE_OUT_FILE" &&
-     rm -f "$WRITE_OUT_FILE"' \
+     '\'' _ "$TMP_OUT" &&
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
     "Variables should be in correct dependency order and shell-sourceable with strict error checking"
 
@@ -659,7 +754,7 @@ cleanup_env
 export ARCH=arm64
 export DISTRO=debian
 run_test "env-var-deps-with-env" \
-    "ig layer --path ${LAYERS} --check test-env-var-deps" \
+    "ig layer --path ${LAYERS} --build-order test-env-var-deps >/dev/null" \
     0 \
     "Environment variable dependencies should resolve when variables are set"
 
@@ -667,7 +762,7 @@ run_test "env-var-deps-with-env" \
 cleanup_env
 unset ARCH DISTRO
 run_test "env-var-deps-missing-env" \
-    "ig layer --path ${LAYERS} --check test-env-var-deps" \
+    "ig layer --path ${LAYERS} --build-order test-env-var-deps >/dev/null" \
     1 \
     "Environment variable dependencies should fail when variables are missing"
 
@@ -683,7 +778,7 @@ run_test "env-var-deps-build-order" \
 # Test that static dependencies still work
 cleanup_env
 run_test "static-deps-still-work" \
-    "ig layer --path ${LAYERS} --check test-basic" \
+    "ig layer --path ${LAYERS} --build-order test-basic >/dev/null" \
     0 \
     "Static dependencies should continue to work without environment variables"
 
@@ -692,27 +787,23 @@ cleanup_env
 export ARCH=arm64
 export DISTRO=debian
 run_test "mixed-deps-static-and-env" \
-    "ig layer --path ${LAYERS} --check test-env-var-deps" \
+    "ig layer --path ${LAYERS} --build-order test-env-var-deps >/dev/null" \
     0 \
     "Mixed static and environment variable dependencies should work together"
-
-# Test environment variable dependency validation
-cleanup_env
-export ARCH=arm64
-export DISTRO=debian
-run_test "env-var-deps-validate" \
-    "ig layer --path ${LAYERS} --validate test-env-var-deps" \
-    0 \
-    "Environment variable dependencies should validate successfully"
 
 # Test environment variable dependency apply-env
 cleanup_env
 export ARCH=arm64
 export DISTRO=debian
 run_test "env-var-deps-apply-env" \
-    "ig layer --path ${LAYERS} --apply-env test-env-var-deps | grep -E '\\[SET\\].*IGconf_envtest_feature'" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-env-var-deps --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_envtest_feature=enabled$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
-    "Environment variable dependencies should work with apply-env"
+    "Environment variable dependencies should work with pipeline apply-env"
 
 print_header "LAYER MANAGER TESTS"
 

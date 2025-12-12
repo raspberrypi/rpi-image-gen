@@ -4,9 +4,9 @@ import shutil
 import argparse
 import shlex
 import subprocess
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
-from collections import OrderedDict
 from dataclasses import dataclass
 import yaml
 
@@ -14,8 +14,7 @@ import yaml
 from metadata_parser import Metadata
 from metadata_parser import print_env_var_descriptions
 
-from env_types import VariableResolver, EnvVariable
-from logger import log_warning, log_success, log_failure, log_error
+from logger import log_warning, log_failure, log_error
 
 
 @dataclass(frozen=True)
@@ -26,7 +25,15 @@ class LayerSearchRoot:
 
 # Handles discovery, dependency resolution, and orchestration
 class LayerManager:
-    def __init__(self, search_paths: Optional[List[str]] = None, file_patterns: Optional[List[str]] = None, *, show_loaded: bool = False, doc_mode: bool = False):
+    def __init__(
+        self,
+        search_paths: Optional[List[str]] = None,
+        file_patterns: Optional[List[str]] = None,
+        *,
+        show_loaded: bool = False,
+        doc_mode: bool = False,
+        fail_on_lint: bool = False,
+    ):
         if search_paths is None:
             search_paths = ['./layer']
         if file_patterns is None:
@@ -42,13 +49,11 @@ class LayerManager:
         self.tag_to_path: Dict[str, Path] = {root.tag: root.path for root in self.search_roots}
         self.show_loaded = show_loaded
         self.doc_mode = doc_mode  # When True, load all layers regardless of environment variables
+        self.fail_on_lint = fail_on_lint
         # provider index will be built after layers are loaded
         self.provider_index: Dict[str, str] = {}
         self.provider_conflicts: Dict[str, Set[str]] = {}
         self.generated_root: Optional[Path] = None
-
-        # Tracks write-out order
-        self.write_log: OrderedDict[str, str] = OrderedDict()
 
         for path in self.search_paths:
             if not path.exists():
@@ -125,7 +130,7 @@ class LayerManager:
             if not search_path.exists():
                 continue
 
-            if root.tag == 'TMPROOT_layer':
+            if root.tag == 'DYNlayer':
                 # Reserved for generated output only
                 continue
 
@@ -159,14 +164,21 @@ class LayerManager:
                 # lint on load
                 lint_results = meta.lint_metadata_syntax()
                 if lint_results:  # Any syntax errors found
+                    relative_path = abs_file
+                    try:
+                        relative_path = abs_file.relative_to(search_path)
+                    except ValueError:
+                        pass
+
+                    if self.fail_on_lint:
+                        details = "; ".join(error.get("message", "") for error in lint_results.values())
+                        raise ValueError(
+                            f"Layer '{layer_name}' failed lint ({relative_path}): {details}"
+                        )
+
                     if self.show_loaded:
-                        relative_path = abs_file
-                        try:
-                            relative_path = abs_file.relative_to(search_path)
-                        except ValueError:
-                            pass
                         log_warning(f"  Skipped layer: {layer_name} from {relative_path} (syntax errors)")
-                    continue  # Don't add
+                    continue
 
                 # Duplicate detection
                 if layer_name in self.layers:
@@ -187,7 +199,7 @@ class LayerManager:
                     output_file.parent.mkdir(parents=True, exist_ok=True)
                     self._run_layer_generator(layer_name, generator_cmd, abs_file, output_file)
                     abs_file = output_file.resolve()
-                    tag = 'TMPROOT_layer'
+                    tag = 'DYNlayer' # implicitly hard wired
                 else:
                     tag = root.tag
                     try:
@@ -205,13 +217,14 @@ class LayerManager:
                     relative_path = rel_path
                     metadata_type = 'x-env-layer' if meta.has_layer_info() else 'standard'
                     print(f"  Loaded layer: {layer_name} from {relative_path} ({metadata_type})")
+
     def _ensure_generated_root(self) -> Path:
         if self.generated_root is not None:
             return self.generated_root
 
-        tmp_path = self.tag_to_path.get('TMPROOT_layer')
+        tmp_path = self.tag_to_path.get('DYNlayer')
         if tmp_path is None:
-            raise ValueError('Dynamic layer requested but TMPROOT_layer root tag not provided in path')
+            raise ValueError('Dynamic layer requested but DYNlayer tag not provided in path')
 
         tmp_path.mkdir(parents=True, exist_ok=True)
         self.generated_root = tmp_path
@@ -487,115 +500,7 @@ class LayerManager:
 
         return None
 
-    def _collect_all_variable_definitions(self, build_order: List[str]) -> Dict[str, List[EnvVariable]]:
-        """Collect all variable definitions from all layers in dependency order."""
-        variable_definitions = {}
-
-        for position, layer_name in enumerate(build_order):
-            layer = self.layers[layer_name]
-
-            # Get all variables from this layer's metadata container
-            for var_name, env_var in layer._container.variables.items():
-                # Create a new EnvVariable with position and source layer info
-                var_with_position = EnvVariable(
-                    name=env_var.name,
-                    value=env_var.value,
-                    description=env_var.description,
-                    required=env_var.required,
-                    validator=env_var.validator,
-                    set_policy=env_var.set_policy,
-                    source_layer=layer_name,
-                    position=position
-                )
-
-                if var_name not in variable_definitions:
-                    variable_definitions[var_name] = []
-                variable_definitions[var_name].append(var_with_position)
-
-        return variable_definitions
-
-    def _apply_resolved_variables(self, resolved_variables: Dict[str, EnvVariable]):
-        """Apply resolved variables to environment and record for file writing."""
-        import os
-
-        # The resolver provides variables in the correct dependency order.
-        all_vars = list(resolved_variables.values())
-
-        for env_var in all_vars:
-            var_name = env_var.name
-            value = env_var.value
-            policy = env_var.set_policy
-            layer_name = env_var.source_layer
-
-            if policy == "force":
-                os.environ[var_name] = value
-                self._log_env_action("FORCE", var_name, value, layer_name)
-                self.write_log[var_name] = value
-
-            elif policy == "immediate":
-                if var_name not in os.environ:
-                    os.environ[var_name] = value
-                    self._log_env_action("SET", var_name, value, layer_name)
-                    self.write_log[var_name] = value
-                else:
-                    print(f"  [SKIP]  {var_name} (already set)")
-
-            elif policy == "lazy":
-                if var_name not in os.environ:
-                    os.environ[var_name] = value
-                    self._log_env_action("LAZY", var_name, value, layer_name)
-                    self.write_log[var_name] = value
-                else:
-                    print(f"  [SKIP]  {var_name} (already set)")
-
-            elif policy == "already_set":
-                # Variable was already in environment before we started
-                print(f"  [SKIP]  {var_name} (already set)")
-
-            elif policy == "skip":
-                if var_name in os.environ:
-                    print(f"  [SKIP]  {var_name} (already set)")
-                else:
-                    print(f"  [SKIP]  {var_name} (Set: false/skip)")
-
-
-    def _log_env_action(self, tag: str, var: str, value: str, layer_name: str):
-        """Log environment variable action."""
-        print(f"  [{tag}]  {var}={value} (layer: {layer_name})")
-
-
-
-    def apply_env_vars_for_build_order(self, build_order: List[str]) -> bool:
-        """Apply environment variables for all layers in build order using three-phase resolution"""
-        if not build_order:
-            return True
-
-        # Pre-flight validation: ensure all layers exist and schemas are valid
-        for layer_name in build_order:
-            if layer_name not in self.layers:
-                print(f"Layer '{layer_name}' not found")
-                return False
-
-            if not self.validate_single_layer_env_vars(layer_name, silent=False, ignore_missing_required=True):
-                print(f"Validation failed for layer '{layer_name}' – aborting apply-env")
-                return False
-
-        self.write_log = OrderedDict()
-
-        # Phase 1: Collect all variable definitions from all layers in build order
-        variable_definitions = self._collect_all_variable_definitions(build_order)
-
-        # Phase 2: Resolve final values using policy rules
-        resolver = VariableResolver()
-        resolved_variables = resolver.resolve(variable_definitions)
-
-        # Phase 3: Apply resolved variables to environment and file
-        self._apply_resolved_variables(resolved_variables)
-
-        print("Environment variables applied successfully")
-        return True
-
-    def validate_single_layer_env_vars(self, layer_name: str, silent: bool = False, *, ignore_missing_required: bool = False) -> bool:
+    def validate_layer(self, layer_name: str, silent: bool = False, *, ignore_missing_required: bool = False) -> bool:
         """Validate environment variables for a single layer (no dependency resolution)"""
         if layer_name not in self.layers:
             if not silent:
@@ -715,75 +620,6 @@ class LayerManager:
 
         return None
 
-    def process_layers(self, layer_ids: List[str], operation: str, **kwargs) -> bool:
-        """Top level API for processing multiple layers with coordinated dependency resolution"""
-        # Resolve all target layers first
-        resolved_layers = []
-        for layer_id in layer_ids:
-            layer_name = self.resolve_layer_name(layer_id)
-            if layer_name:
-                resolved_layers.append(layer_name)
-            else:
-                if operation == "check":
-                    print(f"✗ Layer '{layer_id}' not found")
-                else:
-                    log_failure(f"Layer '{layer_id}' not found")
-                return False
-
-        # Get build order for ALL target layers together (validates providers and dependencies)
-        try:
-            build_order = self.get_build_order(resolved_layers)
-        except ValueError as e:
-            if operation == "check":
-                log_failure(f"Dependency resolution failed: {e}")
-            else:
-                log_failure(f"Dependency resolution failed: {e}")
-            return False
-
-        # Delegate to appropriate operation
-        if operation == "apply":
-            if not self.apply_env_vars_for_build_order(build_order):
-                return False
-            # Final validation for all target layers
-            failed_layers = [layer for layer in resolved_layers if not self.validate_single_layer_env_vars(layer)]
-            if failed_layers:
-                print(f"Validation failed for layers: {', '.join(failed_layers)}; skipping write-out")
-                return False
-
-            # Write variables to file if requested
-            write_out = kwargs.get('write_out')
-            if write_out and self.write_log:
-                try:
-                    with open(write_out, 'w') as f:
-                        for var_name, value in self.write_log.items():
-                            f.write(f'{var_name}="{value}"\n')
-                    print(f"Environment variables written to: {write_out}")
-                except Exception as e:
-                    print(f"Error writing to file {write_out}: {e}")
-                    return False
-
-            return True
-
-        elif operation == "validate":
-            # Validate each target layer individually
-            all_valid = True
-            for layer_name in resolved_layers:
-                if self.validate_single_layer_env_vars(layer_name):
-                    log_success(f"Layer '{layer_name}' validation passed")
-                else:
-                    log_failure(f"Layer '{layer_name}' validation failed")
-                    all_valid = False
-            return all_valid
-
-        elif operation == "check":
-            # If we get here, all dependencies and providers are satisfied
-            for layer_name in resolved_layers:
-                log_success(f"Layer '{layer_name}' dependencies satisfied")
-            return True
-
-        else:
-            raise ValueError(f"Unknown operation: {operation}")
-
     def get_layer_documentation_data(self, layer_name: str):
         """Extract structured layer data for documentation generation"""
         if layer_name not in self.layers:
@@ -797,6 +633,7 @@ class LayerManager:
         # Read raw (unexpanded) metadata values from file
         raw_field_values = self._get_raw_metadata_fields(layer_name)
 
+        anchors = []
         if hasattr(layer, '_container') and layer._container.variables:
             for var_name, var_obj in layer._container.variables.items():
                 # Extract the original variable name from the IGconf_prefix_varname format
@@ -822,6 +659,12 @@ class LayerManager:
                     'set_policy': var_obj.set_policy,
                     'validation_description': var_obj.get_validation_description()
                 }
+                if getattr(var_obj, "anchor_name", None):
+                    anchors.append({
+                        'name': var_obj.anchor_name,
+                        'variable': var_obj.name,
+                        'description': var_obj.description,
+                    })
 
         # Get mmdebstrap configuration
         mmdebstrap_config = self._get_mmdebstrap_config(layer_name) or {}
@@ -873,7 +716,8 @@ class LayerManager:
             'file_path': relative_path,
             'companion_doc': companion_doc,
             'dependencies': dependencies,
-            'reverse_dependencies': reverse_dependencies
+            'reverse_dependencies': reverse_dependencies,
+            'anchors': anchors
         }
 
     def _get_companion_doc(self, layer_name: str, format: str = 'markdown') -> str:
@@ -1054,10 +898,6 @@ def LayerManager_register_parser(subparsers, root=None):
                        help='List all available layers')
     parser.add_argument('--describe', metavar='LAYER',
                        help='Show detailed information for a layer (use layer name)')
-    parser.add_argument('--validate', nargs='+', metavar='LAYER',
-                       help='Validate one or more layer(s) metadata and environment variables (use layer names)')
-    parser.add_argument('--check', '-c', nargs='+', metavar='LAYER',
-                       help='Check dependencies for one or more layer(s) (use layer names)')
     parser.add_argument('--rdep', '--reverse-deps', metavar='LAYER',
                        help='Show layers that depend on the specified layer')
     # Build-order related options
@@ -1071,12 +911,6 @@ def LayerManager_register_parser(subparsers, root=None):
                        help='Write build-order list to file (works with --build-order)')
     parser.add_argument('--show-paths', action='store_true',
                        help='Show search paths')
-    parser.add_argument('--apply-env', nargs='+', metavar='LAYER',
-                       help='Apply environment variables from one or more layers (use layer names, not file paths)')
-
-    parser.add_argument('--write-out', metavar='FILE',
-                       help='Write key=value pairs (changed vars) to file (works with --apply-env)')
-
     parser.add_argument('--gen', action='store_true',
                        help='Generate boilerplate layer template with  metadata')
     parser.add_argument('--help-fields', action='store_true',
@@ -1130,7 +964,7 @@ def _layer_main(args):
         return
 
     # Check if any action argument was provided
-    action_args = ['list', 'describe', 'validate', 'check', 'rdep', 'build_order', 'show_paths', 'apply_env']
+    action_args = ['list', 'describe', 'rdep', 'build_order', 'show_paths']
     if not any(getattr(args, arg, None) for arg in action_args):
         print("Error: No action specified. Use -h or --help for available options.")
         exit(1)
@@ -1141,8 +975,8 @@ def _layer_main(args):
     # Use a doc-mode manager if listing so that layers with dynamic deps
     # can be shown. Using doc-mode is more relaxed, but we still lint.
     list_only = bool(args.list) and not any([
-        args.describe, args.validate, args.check, args.rdep,
-        args.build_order, args.show_paths, args.apply_env
+        args.describe, args.rdep, args.build_order,
+        args.show_paths
     ])
 
     if list_only:
@@ -1257,14 +1091,6 @@ def _layer_main(args):
                 print()
                 print_env_var_descriptions(meta_obj, indent=2)
 
-    if args.validate:
-        if not manager.process_layers(args.validate, "validate"):
-            exit(1)
-
-    if args.check:
-        if not manager.process_layers(args.check, "check"):
-            exit(1)
-
     if args.rdep:
         layer_name = manager.resolve_layer_name(args.rdep)
         if not layer_name:
@@ -1353,9 +1179,3 @@ def _layer_main(args):
                 print(f"Build order written to: {args.output}")
             except Exception as e:
                 print(f"Error writing build order to {args.output}: {e}")
-
-    if args.apply_env:
-        if not manager.process_layers(args.apply_env, "apply", write_out=getattr(args, 'write_out', None)):
-            exit(1)
-
-        return

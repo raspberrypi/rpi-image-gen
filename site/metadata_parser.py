@@ -1,5 +1,6 @@
 import os
 import argparse
+import yaml
 from debian import deb822
 from validators import parse_validator
 from env_types import EnvVariable, EnvLayer, MetadataContainer, XEnv
@@ -107,6 +108,7 @@ SUPPORTED_FIELD_PATTERNS = {
     XEnv.var_required_pattern(): {"type": "pattern", "description": "Whether variable is required"},
     XEnv.var_valid_pattern(): {"type": "pattern", "description": "Variable validation rule"},
     XEnv.var_set_pattern(): {"type": "pattern", "description": "Whether to auto-set variable"},
+    XEnv.var_anchor_pattern(): {"type": "pattern", "description": "Anchor mapping for environment variable"},
 
     # Variable requirements (any environment variables)
     XEnv.var_requires(): {"type": "single", "description": "Environment variables required by this layer"},
@@ -201,6 +203,13 @@ class Metadata:
 
         with open(path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
+
+        yaml_text = "".join(lines).strip()
+        if yaml_text:
+            try:
+                yaml.safe_load(yaml_text)
+            except yaml.YAMLError as exc:
+                raise ValueError(f"Failed to parse YAML body in {path}: {exc}") from exc
 
         # Extract metadata block if embedded
         if any(line.strip() == '# METABEGIN' for line in lines):
@@ -428,10 +437,10 @@ class Metadata:
                 if XEnv.is_base_var_field(key):
                     # Base variable definition
                     base_vars.add(XEnv.extract_base_var_name(key).lower())
-                elif any(key.endswith(suffix) for suffix in ["-Desc", "-Valid", "-Required", "-Set"]):
+                elif any(key.endswith(suffix) for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor"]):
                     # Attribute field - extract variable name
                     var_part = XEnv.extract_var_name(key)
-                    for suffix in ["-Desc", "-Valid", "-Required", "-Set"]:
+                    for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor"]:
                         if var_part.endswith(suffix):
                             varname = var_part[:-len(suffix)].lower()
                             attribute_vars.add(varname)
@@ -771,6 +780,8 @@ def print_env_var_descriptions(meta: 'Metadata', indent: int = 0):
         print(f"{pad}    Default Value: {env_var.value}")
         if env_var.description:
             print(f"{pad}    Description: {env_var.description}")
+        if getattr(env_var, "anchor_name", None):
+            print(f"{pad}    Anchor: {env_var.anchor_name}")
         if env_var.validator:
             rule_display = f"type:{env_var.validation_rule}" if env_var.validation_rule else "custom"
             description = env_var.get_validation_description()

@@ -221,6 +221,30 @@
     </div>
     {%- endif %}
 
+    {%- if layer.anchors %}
+    <div class="section">
+        <h2>Anchors</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Anchor</th>
+                    <th>Variable</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {%- for anchor in layer.anchors %}
+                <tr>
+                    <td><code>{{ anchor.name }}</code></td>
+                    <td><code>{{ anchor.variable }}</code></td>
+                    <td>{{ anchor.description or 'No description' }}</td>
+                </tr>
+                {%- endfor %}
+            </tbody>
+        </table>
+    </div>
+    {%- endif %}
+
     {%- if (
        layer.mmdebstrap.get('packages') or
        layer.mmdebstrap.get('mirrors') or

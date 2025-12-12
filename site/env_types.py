@@ -37,6 +37,11 @@ class XEnv:
         """Build set policy field name: X-Env-Var-{name}-Set"""
         return f"{cls.VAR_PREFIX}{name.upper()}-Set"
 
+    @classmethod
+    def var_anchor(cls, name: str) -> str:
+        """Build anchor field name: X-Env-Var-{name}-Anchor"""
+        return f"{cls.VAR_PREFIX}{name.upper()}-Anchor"
+
     # === PATTERN METHODS FOR SUPPORTED_FIELD_PATTERNS ===
 
     @classmethod
@@ -58,6 +63,11 @@ class XEnv:
     def var_set_pattern(cls) -> str:
         """Build set policy pattern: X-Env-Var-*-Set"""
         return f"{cls.VAR_PREFIX}*-Set"
+
+    @classmethod
+    def var_anchor_pattern(cls) -> str:
+        """Build anchor field pattern: X-Env-Var-*-Anchor"""
+        return f"{cls.VAR_PREFIX}*-Anchor"
 
     @classmethod
     def var_prefix(cls) -> str:
@@ -208,7 +218,8 @@ class EnvVariable:
     def __init__(self, name: str, value: str = "", description: str = "",
                  required: bool = False, validator: Optional[BaseValidator] = None,
                  validation_rule: str = "", set_policy: str = "immediate",
-                 source_layer: str = "", position: int = 0):
+                 source_layer: str = "", position: int = 0,
+                 anchor_name: Optional[str] = None):
         self.name = name
         self.value = value
         self.description = description
@@ -218,28 +229,38 @@ class EnvVariable:
         self.set_policy = set_policy  # immediate, lazy, force, skip
         self.source_layer = source_layer  # Layer that defined this variable
         self.position = position  # Order within dependency processing
+        self.anchor_name = anchor_name
 
     @classmethod
     def from_metadata_fields(cls, var_name: str, metadata_dict: Dict[str, str],
                            prefix: str = "", source_layer: str = "", position: int = 0) -> 'EnvVariable':
         """Create an EnvVariable from metadata fields."""
+
+        def _get_metadata_value(key: str, default: str = "") -> str:
+            if key in metadata_dict:
+                return metadata_dict[key]
+            key_lower = key.lower()
+            for actual_key, actual_value in metadata_dict.items():
+                if actual_key.lower() == key_lower:
+                    return actual_value
+            return default
         # Extract the base variable name (without X-Env-Var- prefix)
         base_name = var_name.upper()
 
         # Get the basic variable definition
         var_key = XEnv.var_base(base_name)
-        value = metadata_dict.get(var_key, "")
+        value = _get_metadata_value(var_key, "")
 
         # Get additional attributes
         desc_key = XEnv.var_desc(base_name)
-        description = metadata_dict.get(desc_key, "")
+        description = _get_metadata_value(desc_key, "")
 
         required_key = XEnv.var_required(base_name)
-        required_str = metadata_dict.get(required_key, "false")
+        required_str = _get_metadata_value(required_key, "false")
         required = required_str.lower() in ("true", "1", "yes", "y")
 
         valid_key = XEnv.var_valid(base_name)
-        valid_rule = metadata_dict.get(valid_key, "")
+        valid_rule = _get_metadata_value(valid_key, "")
         validator = None
         if valid_rule:
             try:
@@ -248,8 +269,16 @@ class EnvVariable:
                 raise ValueError(f"Invalid validation rule '{valid_rule}' for variable {var_name}: {e}")
 
         set_key = XEnv.var_set(base_name)
-        set_raw = metadata_dict.get(set_key, "immediate")
+        set_raw = _get_metadata_value(set_key, "immediate")
         set_policy = cls._parse_set_policy(set_raw)
+
+        anchor_key = XEnv.var_anchor(base_name)
+        anchor_name = _get_metadata_value(anchor_key, "").strip()
+        if anchor_name and not anchor_name.startswith("@"):
+            raise ValueError(
+                f"Invalid anchor '{anchor_name}' for variable {var_name}: anchors must start with '@'"
+            )
+        anchor_name = anchor_name or None
 
         # Calculate full variable name
         full_name = f"IGconf_{prefix}_{var_name.lower()}" if prefix else var_name
@@ -263,7 +292,8 @@ class EnvVariable:
             validation_rule=valid_rule,
             set_policy=set_policy,
             source_layer=source_layer,
-            position=position
+            position=position,
+            anchor_name=anchor_name,
         )
 
     @staticmethod
@@ -301,7 +331,10 @@ class EnvVariable:
         return self.set_policy != "skip"
 
     def __repr__(self) -> str:
-        return f"EnvVariable(name='{self.name}', value='{self.value}', policy='{self.set_policy}', layer='{self.source_layer}', pos={self.position})"
+        return (
+            f"EnvVariable(name='{self.name}', value='{self.value}', policy='{self.set_policy}', "
+            f"layer='{self.source_layer}', pos={self.position}, anchor={self.anchor_name})"
+        )
 
 
 class EnvLayer:
