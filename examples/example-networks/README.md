@@ -10,5 +10,6 @@ Mixing network configurations can cause maintenance and management issues. Try t
 2. deb-netplan is the next developed approach. It utilizes YAML format for network definitions and description. It integrates to the NetworkManager (nmcli) graphical network management tool.
 3. deb13-systemd-resolved is the newest approach covered here. It provides rules to the systemd-resolved daemon configuration. It generates (and overwrites!) the commonly known /etc/resolv.conf file.
 
-I named deb13-systemd-resolved differently as that is the choice I have made for my given build. You are free to choose the others or venture to verify mix/matching them. I found the most success with Debian 13 using systemd-resolved configuration.
+deb13-systemd-resolved is named differently as that is the most current choice. You are free to choose the others or venture to verify mix/matching them. NetPlan and NetworkManager are more often used for Desktop GUI integrations. The systemd-resolved was found to require the least additional resources for a headless server.
 
+Additionally the /etc/networks file is provided in the example. It declares the 0.0 network name space for internal networking utilities. The example creates a 'lan' network name for the related configuration targeting the 192.168.0.1 gateway. It effectively names the local domain to 'lan' and gives the name 'lan' for domain name when queried by networking tools.

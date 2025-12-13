@@ -2,9 +2,9 @@
 
 The /etc/netplan/<00-70>-filename.yaml is the next or first post-interfaces networking configuration file setup.
 
-I will refer to this as version 1 (one). It integrates with both Systemd-resolved and NetworkManager (nmcli).
+Refer to this as version 2 (two). It integrates with both Systemd-resolved and NetworkManager (nmcli).
 
-You output the named file with the correct indentations and line endings. It will be read in alphabetical ascending order. There are references to existing netplan layers which are numbered 70 and above, so it is required to use lower numbers to invoke customizations.
+Output the named file with the correct indentations and line endings. It will be read in alphabetical ascending order. There are references to existing netplan layers which are numbered 70 and above, so it is required to use lower numbers to invoke customizations.
 
 The optional 'renderer' parameter determines whether systemd-resolved or NetworkManager domain name resolution is used.
 
@@ -37,3 +37,5 @@ See the layer defition for sample mmdebstrap instruction as shown below:
             nameservers:
               addresses: [${NAMESERVER}]
       EOF
+
+Note: Addresses, Gateway and Nameserver values will be specific to your environment and network. The Nameserver is pointed to 127.0.0.1 (localhost) to support a local DNS server prior to reaching out to internet-based DNS server(s).

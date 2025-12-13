@@ -2,7 +2,7 @@
 
 The /etc/network/interfaces is the earliest networking configuration file setup.
 
-I will refer to this as version 0 (zero).
+I will refer to this as version 1 (one).
 
 You output the named file with the correct indentations and line endings. It will be read.
 
@@ -26,3 +26,5 @@ See the layer defition for sample mmdebstrap instruction as shown below:
           gateway ${NET_GW}
           dns-nameservers ${NAMESERVER}
       EOF
+
+Note: Addresses, Gateway and Nameserver values will be specific to your environment and network. The Nameserver is pointed to 127.0.0.1 (localhost) to support a local DNS server prior to reaching out to internet-based DNS server(s).

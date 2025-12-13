@@ -1,0 +1,63 @@
+# METABEGIN
+# X-Env-Layer-Name: v2-net-config-meta
+# X-Env-Layer-Desc: Linux network configuration using systemd-netplan
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: networking
+# X-Env-VarRequires: IGconf_network_ipaddress
+# X-Env-VarRequires-Default: 192.168.0.72
+# X-Env-VarRequires: IGconf_network_ipnetmask
+# X-Env-VarRequires-Default: 24
+# X-Env-VarRequires-Description: Default IP address for the network configuration
+# X-Env-VarRequires: IGconf_network_ipv6address
+# X-Env-VarRequires-Default: 2001:678:e68:f000::72/64
+# X-Env-VarRequires-Description: Default IPv6 address for the network configuration
+# X-Env-VarRequires: IGconf_network_netmask
+# X-Env-VarRequires-Default: 255.255.255.0
+# X-Env-VarRequires-Description: Default netmask for the network configuration
+# X-Env-VarRequires: IGconf_network_gateway
+# X-Env-VarRequires-Default: 192.168.0.1
+# X-Env-VarRequires-Description: Default gateway for the network configuration
+# X-Env-VarRequires: IGconf_network_dns0
+# X-Env-VarRequires-Default: 127.0.0.1
+# X-Env-VarRequires: IGconf_network_dns1
+# X-Env-VarRequires-Default: 1.1.1.1
+# X-Env-VarRequires: IGconf_network_dns2
+# X-Env-VarRequires-Default: 8.8.8.8
+# X-Env-VarRequires-Description: Default DNS server for the network configuration
+# X-Env-VarRequires: IGconf_network_domain
+# X-Env-VarRequires-Default: lan
+# X-Env-VarRequires-Description: Default domain name for the network configuration
+# METAEND
+mmdebstrap:
+  suite: trixie
+  variant: minbase
+  setup-hooks:
+    - |
+      #!/bin/bash
+      # Set up network configuration based on environment variables
+      IP_ADDRESS=${IGconf_network_ipaddress:-192.168.0.53}
+      NETMASK=${IGconf_network_ipnetmask:-24}
+      GATEWAY=${IGconf_network_gateway:-192.168.0.1}
+      DNS0=${IGconf_network_dns0:-127.0.0.1}
+      DNS1=${IGconf_network_dns1:-8.8.8.8}
+      DNS2=${IGconf_network_dns2:-1.1.1.1}
+      DOMAIN=${IGconf_network_domain:-lan}
+
+      # Default network parameters (can be overridden by caller environment)
+      install -d "$1/etc/netplan"
+      cat > "$1/etc/netplan/00-installer.yaml" <<-EOF
+      network:
+        version: 2
+        ethernets:
+          eth0:
+            dhcp4: no
+            dhcp6: no
+            addresses:
+              - ${IP_ADDRESS}/${NETMASK}
+              - ${IGconf_network_ipv6address:-2001:678:e68:f000::72/64}
+            ipv6-privacy: true
+            ipv6-address-generation: stable-privacy
+            gateway4: ${GATEWAY}
+            nameservers:
+              addresses: [${DNS0}, ${DNS1}, ${DNS2}]
+      EOF    

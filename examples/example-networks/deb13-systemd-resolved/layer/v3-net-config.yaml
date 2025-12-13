@@ -1,5 +1,5 @@
 # METABEGIN
-# X-Env-Layer-Name: v2-net-config
+# X-Env-Layer-Name: v3-net-config
 # X-Env-Layer-Desc: Linux network configuration using systemd-resolved
 # X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: networking
