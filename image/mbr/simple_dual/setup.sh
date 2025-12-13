@@ -8,6 +8,7 @@ ROOTUUID="$3"
 
 case $LABEL in
    ROOT)
+      FSTABCONTENTS=$(<"$IMAGEMOUNTPATH/etc/fstab")
       case $IGconf_image_rootfs_type in
          ext4)
             cat << EOF > $IMAGEMOUNTPATH/etc/fstab
@@ -26,6 +27,7 @@ EOF
       cat << EOF >> $IMAGEMOUNTPATH/etc/fstab
 UUID=${BOOTUUID} /boot/firmware  vfat defaults,rw,noatime,errors=remount-ro 0 2
 EOF
+      echo $FSTABCONTENTS >> "$IMAGEMOUNTPATH/etc/fstab"
       ;;
    BOOT)
       sed -i "s|root=\([^ ]*\)|root=UUID=${ROOTUUID}|" $IMAGEMOUNTPATH/cmdline.txt
