@@ -14,7 +14,7 @@ import yaml
 from metadata_parser import Metadata
 from metadata_parser import print_env_var_descriptions
 
-from logger import log_warning, log_failure, log_error
+from logger import log_warning, log_failure, log_error, log_info
 
 
 @dataclass(frozen=True)
@@ -54,6 +54,7 @@ class LayerManager:
         self.provider_index: Dict[str, str] = {}
         self.provider_conflicts: Dict[str, Set[str]] = {}
         self.generated_root: Optional[Path] = None
+        self.load_errors: Dict[str, str] = {}
 
         for path in self.search_paths:
             if not path.exists():
@@ -63,6 +64,19 @@ class LayerManager:
 
         # now that self.layers is populated, build provider index
         self._build_provider_index()
+
+
+    def _handle_layer_load_error(self, rel_path: Path, message: str, exc: Optional[Exception] = None, layer_name: Optional[str] = None) -> None:
+        """Record and report layer load failures."""
+        key = layer_name or str(rel_path)
+        self.load_errors[key] = message
+        self.load_errors[str(rel_path)] = message
+        log_warning(f"{rel_path}: {message}")
+
+    @staticmethod
+    def _is_env_resolution_error(exc: Exception) -> bool:
+        """Return True if the exception is due to unresolved environment placeholders."""
+        return isinstance(exc, ValueError) and "Unresolved environment variables" in str(exc)
 
     def _build_search_roots(self, raw_paths: List[str]) -> List[LayerSearchRoot]:
         roots: List[LayerSearchRoot] = []
@@ -141,43 +155,64 @@ class LayerManager:
                 all_files.extend(files)
 
             for metadata_file in all_files:
+                abs_file = Path(metadata_file).resolve()
+                try:
+                    relative_path = abs_file.relative_to(search_path)
+                except ValueError:
+                    relative_path = abs_file
                 try:
                     meta = Metadata(metadata_file, doc_mode=self.doc_mode)
-                except Exception:
-                    # Malformed YAML or metadata – skip
+                except Exception as exc:
+                    # If placeholders can’t resolve yet, record and skip. Other
+                    # errors are hard failures for this file.
+                    if self._is_env_resolution_error(exc):
+                        self.load_errors[str(relative_path)] = str(exc)
+                        log_warning(f"{relative_path}: {exc}")
+                        continue
+                    self._handle_layer_load_error(relative_path, f"Failed to load layer file: {exc}", exc)
                     continue
 
                 try:
                     layer_info = meta.get_layer_info()
-                except ValueError:
-                    # Malformed X-Env-Layer fields; treat as non-layer file
+                except ValueError as exc:
+                    # Layer fields present but invalid, so env resolution errors
+                    # are downgraded to a warning/skip.
+                    if self._is_env_resolution_error(exc):
+                        self.load_errors[str(relative_path)] = str(exc)
+                        log_warning(f"{relative_path}: {exc}")
+                        continue
+                    self._handle_layer_load_error(relative_path, f"Invalid X-Env-Layer metadata: {exc}", exc)
                     continue
                 if not layer_info:
+                    raw_meta = meta.get_metadata()
+                    if any(k.startswith('X-Env-Layer-') for k in raw_meta.keys()):
+                        # Layer metadata present but incomplete (eg, missing Name)
+                        self._handle_layer_load_error(
+                            relative_path,
+                            "Incomplete X-Env-Layer metadata (missing required fields)",
+                            layer_name=abs_file.stem,
+                        )
                     continue
 
                 layer_type = (layer_info.get('type') or 'static').lower()
                 generator_cmd = (layer_info.get('generator') or '').strip()
 
                 layer_name = layer_info['name']
-                abs_file = Path(metadata_file).resolve()
 
                 # lint on load
                 lint_results = meta.lint_metadata_syntax()
                 if lint_results:  # Any syntax errors found
-                    relative_path = abs_file
-                    try:
-                        relative_path = abs_file.relative_to(search_path)
-                    except ValueError:
-                        pass
-
-                    if self.fail_on_lint:
-                        details = "; ".join(error.get("message", "") for error in lint_results.values())
-                        raise ValueError(
-                            f"Layer '{layer_name}' failed lint ({relative_path}): {details}"
+                    details = "; ".join(
+                        filter(
+                            None,
+                            (error.get("message", "") for error in lint_results.values()),
                         )
-
-                    if self.show_loaded:
-                        log_warning(f"  Skipped layer: {layer_name} from {relative_path} (syntax errors)")
+                    ) or "metadata syntax errors"
+                    self._handle_layer_load_error(
+                        relative_path,
+                        f"Layer '{layer_name}' failed lint: {details}",
+                        layer_name=layer_name,
+                    )
                     continue
 
                 # Duplicate detection
@@ -215,8 +250,7 @@ class LayerManager:
 
                 if self.show_loaded:
                     relative_path = rel_path
-                    metadata_type = 'x-env-layer' if meta.has_layer_info() else 'standard'
-                    print(f"  Loaded layer: {layer_name} from {relative_path} ({metadata_type})")
+                    log_info(f"Loaded layer: {layer_name} from {relative_path})")
 
     def _ensure_generated_root(self) -> Path:
         if self.generated_root is not None:
@@ -329,7 +363,7 @@ class LayerManager:
         required_deps = self.get_all_dependencies(layer_name, include_optional=False)
         for dep in required_deps:
             if dep not in self.layers:
-                missing_deps.append(f"Missing required dependency: {dep}")
+                missing_deps.append(f"Layer '{layer_name}' missing required dependency: {dep}")
 
         # Check optional dependencies separately - these generate warnings only
         optional_deps = self.get_optional_dependencies(layer_name)
@@ -342,17 +376,18 @@ class LayerManager:
         if circular:
             missing_deps.append(f"Circular dependency detected: {' -> '.join(circular)}")
 
-        # Check provider requirements
-        try:
-            # Get all layers that would be included in the dependency chain
-            build_order = self.get_build_order([layer_name])
-            # Provider validation happens inside get_build_order now
-        except ValueError as e:
-            missing_deps.append(str(e))
+        # Check provider requirements (only if all required deps are present)
+        if not missing_deps:
+            try:
+                # Get all layers that would be included in the dependency chain
+                build_order = self.get_build_order([layer_name])
+                # Provider validation happens inside get_build_order now
+            except ValueError as e:
+                missing_deps.append(str(e))
 
         if warnings:
             for warning in warnings:
-                print(f"[WARN] {warning}")
+                log_warning(f"{warning}")
 
         return len(missing_deps) == 0, missing_deps + warnings
 
@@ -391,6 +426,8 @@ class LayerManager:
             checked.add(layer_name)
 
             if layer_name not in self.layers:
+                if layer_name in self.load_errors:
+                    raise ValueError(f"Layer '{layer_name}' unavailable: {self.load_errors[layer_name]}")
                 raise ValueError(f"Missing required dependency: {layer_name}")
 
             # Recurse
@@ -504,7 +541,7 @@ class LayerManager:
         """Validate environment variables for a single layer (no dependency resolution)"""
         if layer_name not in self.layers:
             if not silent:
-                print(f"Layer '{layer_name}' not found")
+                log_error(f"Layer '{layer_name}' not found")
             return False
 
         layer = self.layers[layer_name]
@@ -613,10 +650,19 @@ class LayerManager:
         if layer_identifier in self.layers:
             return layer_identifier
 
+        # Known load error for this identifier
+        if layer_identifier in self.load_errors:
+            raise ValueError(self.load_errors[layer_identifier])
+
         # File path lookup for already loaded layers
         for layer_name, file_path in self.layer_files.items():
             if Path(file_path).resolve() == Path(layer_identifier).resolve():
                 return layer_name
+
+        # Load error recorded by path
+        rel_id = Path(layer_identifier).name
+        if rel_id in self.load_errors:
+            raise ValueError(self.load_errors[rel_id])
 
         return None
 
@@ -1019,6 +1065,12 @@ def _layer_main(args):
         layer_name = manager.resolve_layer_name(args.describe)
         if not layer_name:
             print(f"✗ Layer '{args.describe}' not found")
+            exit(1)
+
+        ok, dep_errors = manager.check_dependencies(layer_name)
+        if not ok:
+            for err in dep_errors:
+                print(f"[ERROR] {err}")
             exit(1)
 
         layer_info = manager.get_layer_info(layer_name)

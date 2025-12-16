@@ -678,11 +678,15 @@ run_test "pipeline-dependency-write-env" \
     "Pipeline should honor dependency expansion"
 
 run_test "bulk-lint-all-yaml" '
-    # 1) collect every *.yaml / *.yml
-    files=($(find "${IGTOP}/layer" "${IGTOP}/device" "${IGTOP}/image" "${IGTOP}/examples" \
-                 -type f \( -name "*.yaml" -o -name "*.yml" \)))
-    total=${#files[@]}
+    # 1) collect only *.yaml that appear to contain X-Env metadata
+    files=()
+    while IFS= read -r -d "" f; do
+        files+=("$f")
+    done < <(find "${IGTOP}/layer" "${IGTOP}/device" "${IGTOP}/image" "${IGTOP}/examples" \
+                 -type f -name "*.yaml" -print0 \
+             | xargs -0 grep -lZ -E "(^|[[:space:]])X-Env-|^# METABEGIN" || true)
 
+    total=${#files[@]}
     pass=0  fail=0  failed=()
 
     # 2) lint each file
@@ -720,7 +724,7 @@ run_test "bulk-lint-all-yaml" '
 
     # 4) success when every YAML passed
     [[ $pass -eq $total ]]
-' 0 "All layer files under layer/, device/, image/, examples/ must lint successfully"
+' 0 "All metadata-bearing YAML under layer/, device/, image/, examples/ must lint successfully"
 
 # Test variable dependency ordering using three-layer dependency chain and shell sourcing
 # This robust test catches ordering bugs by using shell strict mode to detect undefined variables

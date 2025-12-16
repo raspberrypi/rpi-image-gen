@@ -340,18 +340,6 @@ class Metadata:
             "value": env_var_obj.value
         }
 
-    def _parse_boolean(self, value, default=False):
-        """Parse a boolean value from string using same logic as bool validation"""
-        if not value:
-            return default
-        return str(value).lower() in ["true", "1", "yes", "y", "lazy", "force"]
-
-    def _is_supported_set_policy(self, value) -> bool:
-        if value is None:
-            return True
-        val = str(value).strip().lower()
-        return val in ["false", "0", "no", "n", "true", "1", "yes", "y", "lazy", "force", "immediate"]
-
     def _is_valid(self, value, rule):
         """Validate a value using the new validator system"""
         try:
@@ -638,18 +626,96 @@ class Metadata:
         return results
 
     def lint_metadata_syntax(self):
-        """Lint metadata for syntax errors by filtering validation results that don't require environment variables."""
-        # Reuse existing validation infrastructure
-        all_results = self.validate_env_vars()
+        """Lint metadata using schema-only checks (no environment dependence)."""
+        results = {}
 
-        # Filter to only syntax-related errors (don't require environment variables)
-        lint_statuses = {
-            "unsupported_field", "missing_var_prefix", "orphaned_attributes",
-            "invalid_default", "invalid_validation_rule"
-        }
+        # 0) Require at least some X-Env-* fields; otherwise treat as lint error
+        raw_meta = getattr(self._container, "raw_metadata", {}) if hasattr(self, "_container") else {}
+        if not raw_meta:
+            results["NO_METADATA_FIELDS"] = self._result_builder.build_result(
+                status="no_metadata_fields",
+                valid=False,
+                required=True,
+                message=f"{self.filepath}: no X-Env-* metadata fields found",
+            )
+            return results
 
-        return {key: result for key, result in all_results.items()
-                if result.get("status") in lint_statuses}
+        has_any_xenv = any(k.startswith("X-Env-") for k in raw_meta.keys())
+        if not has_any_xenv:
+            results["NO_METADATA_FIELDS"] = self._result_builder.build_result(
+                status="no_metadata_fields",
+                valid=False,
+                required=True,
+                message=f"{self.filepath}: no X-Env-* metadata fields found",
+            )
+            return results
+
+        # 1) Schema errors (unsupported fields, etc.)
+        results.update(self._collect_schema_errors())
+
+        # 2) Missing layer name if any X-Env-Layer-* is present
+        has_layer_fields = any(k.startswith("X-Env-Layer-") for k in raw_meta.keys())
+        if has_layer_fields and not raw_meta.get(XEnv.layer_name()):
+            results["MISSING_LAYER_NAME"] = {
+                "status": "missing_layer_name",
+                "valid": False,
+                "required": True,
+                "message": f"{self.filepath}: X-Env-Layer-* fields present but {XEnv.layer_name()} is missing",
+            }
+
+        # 3) Var prefix + orphaned attribute checks (schema-only)
+        results.update(self._validate_prefix_and_orphans())
+
+        # 4) Validation rule sanity checks (schema-only)
+        results.update(self._lint_validation_rules(raw_meta))
+
+        return results
+
+    def _lint_validation_rules(self, raw_meta: dict) -> dict:
+        """Check validation rules for invalid/unsupported definitions without using env."""
+        issues = {}
+
+        # Treat each invalid rule as a lint entry to surface mistakes early
+        def _add_issue(key: str, rule: str, msg: str):
+            issues[key] = self._result_builder.build_result(
+                status="invalid_validation_rule",
+                value=None,
+                valid=False,
+                required=False,
+                rule=rule,
+                message=msg,
+            )
+
+        # Per-variable -Valid fields
+        for field_name, rule in raw_meta.items():
+            if not (field_name.startswith(XEnv.VAR_PREFIX) and field_name.endswith("-Valid")):
+                continue
+            rule_str = (rule or "").strip()
+            if not rule_str:
+                continue
+            try:
+                parse_validator(rule_str)
+            except Exception as exc:
+                base_var = XEnv.extract_base_var_name(field_name) or field_name
+                key = f"INVALID_RULE_{base_var}"
+                _add_issue(key, rule_str, f"{self.filepath}: Invalid validation rule '{rule_str}' for {base_var}: {exc}")
+
+        # VarRequires-Valid and VarOptional-Valid lists
+        def _check_rule_list(field_name: str):
+            rules_raw = (raw_meta.get(field_name, "") or "").strip()
+            if not rules_raw:
+                return
+            for idx, rule in enumerate([r.strip() for r in rules_raw.split(",") if r.strip()]):
+                try:
+                    parse_validator(rule)
+                except Exception as exc:
+                    key = f"INVALID_RULE_{field_name}_{idx}"
+                    _add_issue(key, rule, f"{self.filepath}: Invalid validation rule '{rule}' in {field_name}: {exc}")
+
+        _check_rule_list(XEnv.var_requires_valid())
+        _check_rule_list(XEnv.var_optional_valid())
+
+        return issues
 
     def _collect_schema_errors(self):
         """Return dict {key: info_dict} for unsupported fields / invalid defaults."""
@@ -792,30 +858,24 @@ def print_env_var_descriptions(meta: 'Metadata', indent: int = 0):
 
 # Keep all the CLI and boilerplate functions from the original file
 def _generate_boilerplate():
-    """Generate boilerplate metadata with all supported fields and examples"""
+    """Generate boilerplate metadata with examples"""
     boilerplate = """# METABEGIN
-# Layer Management Fields
 # X-Env-Layer-Name: my-layer
 # X-Env-Layer-Desc: Layer description
 # X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: general
 #
-# Dependencies (comma-separated layer names)
 # X-Env-Layer-Requires:
 # X-Env-Layer-Conflicts:
 #
-# Environment Variables
 # X-Env-VarPrefix: my
 #
-# Variable requirements (any environment variables)
 # X-Env-VarRequires: HOME,IGconf_device_user1,DOCKER_HOST
 # X-Env-VarRequires-Valid: regex:^/.*,string,regex:^(unix|tcp)://.*
 #
-# Optional variables (validated if present, not required)
-# X-Env-VarOptional: IGconf_device_user1pass,LOG_LEVEL
-# X-Env-VarOptional-Valid: string,debug,info,warn,error
+# X-Env-VarOptional: LOG_LEVEL
+# X-Env-VarOptional-Valid: string
 #
-# Example variables with different validation schemes:
 # X-Env-Var-hostname: localhost
 # X-Env-Var-hostname-Desc: Server hostname
 # X-Env-Var-hostname-Required: false
@@ -852,7 +912,6 @@ def _generate_boilerplate():
 # X-Env-Var-component-Valid: keywords:frontend,backend,database,cache,worker
 # X-Env-Var-component-Set: true
 #
-# Validation schemes: run 'ig metadata help-validation' for details
 # METAEND"""
 
     print(boilerplate)
@@ -1072,7 +1131,14 @@ def _main(args):
                 print(f"[ERROR] {result['message']}")
                 has_errors = True
                 unsupported_count += 1
-            elif result["status"] in ["missing_var_prefix", "orphaned_attributes", "invalid_default"]:
+            elif result["status"] in [
+                "missing_var_prefix",
+                "orphaned_attributes",
+                "invalid_default",
+                "invalid_validation_rule",
+                "missing_layer_name",
+                "no_metadata_fields",
+            ]:
                 print(f"[ERROR] {result['message']}")
                 has_errors = True
 
