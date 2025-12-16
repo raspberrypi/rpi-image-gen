@@ -15,3 +15,4 @@ mmdebstrap:
     - ln -sf /dev/null $1/etc/systemd/network/99-default.link
     - ln -sf /dev/null $1/etc/systemd/network/73-usb-net-by-mac.link
     - $LAYER_HOOKS/systemd/netgen eth0 > $1/etc/systemd/network/01-eth0.network
+    - '[ -e "$1/run/systemd/resolve/stub-resolv.conf" ] || install -Dm644 /etc/resolv.conf "$1/run/systemd/resolve/stub-resolv.conf"'
