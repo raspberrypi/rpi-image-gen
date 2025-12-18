@@ -97,7 +97,12 @@ def main():
     with tempfile.TemporaryDirectory(prefix="layer-docs-") as tmp_root:
         tmpdir = Path(tmp_root)
         layer_paths = [f"DYNlayer={tmpdir}"] + layer_paths
-        manager = LayerManager(layer_paths, doc_mode=True)
+        manager = LayerManager(layer_paths, doc_mode=True, fail_on_lint=True)
+
+        # Docs cannot be generated if there are load/lint errors
+        if manager.load_errors:
+            msgs = "\n".join(f"{k}: {v}" for k, v in manager.load_errors.items())
+            raise SystemExit(f"Aborting docs generation due to layer load errors:\n{msgs}")
 
         # All layer names
         layer_names = sorted(manager.layers.keys())

@@ -313,24 +313,6 @@ run_test "layer-with-deps-info" \
 
 # Layer with missing dependencies
 
-run_test "layer-missing-dep-check" \
-    "ig layer --path ${LAYERS} --build-order test-missing-dep >/dev/null" \
-    1 \
-    "Layer dependency check should fail for missing dependencies"
-
-
-# Circular dependencies
-run_test "layer-circular-deps-check" \
-    "ig layer --path ${LAYERS} --build-order test-circular-a >/dev/null" \
-    1 \
-    "Circular dependency check should fail"
-
-run_test "layer-build-order-circular" \
-    "ig layer --path ${LAYERS} --build-order test-circular-a" \
-    1 \
-    "Build order should fail for circular dependencies"
-
-
 # Duplicate layer name detection uses a temp dir to avoid side effects
 tmp_dup_dir=$(mktemp -d)
 cp "${LAYERS}/valid-basic.yaml" "$tmp_dup_dir/layer1.yaml"
@@ -358,13 +340,6 @@ run_test "meta-gen" \
     "ig metadata --gen" \
     0 \
     "Metadata generation should work"
-
-
-# Layer build order (valid case)
-run_test "layer-build-order-valid" \
-    "ig layer --path ${LAYERS} --build-order test-with-deps" \
-    0 \
-    "Build order should work for valid dependencies"
 
 
 # Layer management discovery
@@ -584,46 +559,6 @@ run_test "placeholder-directory" \
    0 \
    "Placeholder ${DIRECTORY} should resolve to metadata directory"
 
-# Provider capability tests
-cleanup_env
-run_test "provider-resolution" \
-    "ig layer --path ${LAYERS} --build-order test-provider-base test-provider-consumer >/dev/null" \
-    0 \
-    "Provider check should pass if provider in dependency chain"
-
-cleanup_env
-run_test "provider-missing" \
-    "ig layer --path ${LAYERS} --build-order test-provider-consumer-missing >/dev/null" \
-    1 \
-    "Check should fail when provider capability not available"
-
-cleanup_env
-# Provider conflict test - uses temporary files to avoid interfering with other tests
-CONFLICT_DIR=$(mktemp -d)
-cat > ${CONFLICT_DIR}/provider-conflict1.yaml << 'EOF'
-# METABEGIN
-# X-Env-Layer-Name: test-provider-conflict1
-# X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-Provides: database
-# X-Env-Layer-Category: test
-# METAEND
-EOF
-cat > ${CONFLICT_DIR}/provider-conflict2.yaml << 'EOF'
-# METABEGIN
-# X-Env-Layer-Name: test-provider-conflict2
-# X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-Provides: database
-# X-Env-Layer-Category: test
-# METAEND
-EOF
-run_test "provider-conflict" \
-    "{ ig layer --path ${CONFLICT_DIR} --build-order test-provider-conflict1 test-provider-conflict2 >/dev/null; RESULT=\$?; rm -rf ${CONFLICT_DIR}; exit \$RESULT; }" \
-    1 \
-    "Check should fail when multiple layers provide the same capability"
-
-cleanup_env
-
-
 # Test --write-out functionality
 cleanup_env
 unset IGconf_basic_hostname IGconf_basic_port
@@ -633,6 +568,15 @@ run_test "meta-parse-write-out" \
     0 \
     "Meta parse --write-out should write variables to file"
 rm -f ${WRITE_TEST_FILE}
+
+# Pipeline should fail when lint errors are present
+cleanup_env
+run_test "pipeline-fails-on-lint-error" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ! ig pipeline --env-in "$TMP_ENV" --layers test-provider-consumer-missing --path '"${PIPELINE_LAYER_DIR}"' --env-out "$TMP_OUT" >/dev/null' \
+    0 \
+    "Pipeline should abort on lint/validation errors"
 
 print_header "PIPELINE APPLY TESTS"
 
@@ -676,6 +620,81 @@ run_test "pipeline-dependency-write-env" \
      rm -f "$TMP_ENV" "$TMP_OUT"' \
     0 \
     "Pipeline should honor dependency expansion"
+
+cleanup_env
+run_test "provider-resolution" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-base.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/provider-consumer.yaml "$TMP_DIR"/ && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-provider-base test-provider-consumer --path "$TMP_DIR" \
+        --env-out "$TMP_OUT" >/dev/null && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"' \
+    0 \
+    "Provider check should pass if provider in dependency chain"
+
+cleanup_env
+run_test "provider-missing" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-consumer-missing.yaml "$TMP_DIR"/ && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-provider-consumer-missing --path "$TMP_DIR" \
+        --env-out "$TMP_OUT" >/dev/null && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"' \
+    1 \
+    "Check should fail when provider capability not available"
+
+cleanup_env
+run_test "provider-conflict" \
+    'TMP_ENV=$(mktemp -t provider-env.XXXXXX) && TMP_OUT=$(mktemp -t provider-out.XXXXXX) && TMP_DIR=$(mktemp -d) && \
+     cat > "${TMP_DIR}/provider-conflict1.yaml" << "EOF" && \
+     # METABEGIN
+     # X-Env-Layer-Name: test-provider-conflict1
+     # X-Env-Layer-Version: 1.0.0
+     # X-Env-Layer-Provides: database
+     # X-Env-Layer-Category: test
+     # METAEND
+EOF
+     cat > "${TMP_DIR}/provider-conflict2.yaml" << "EOF" && \
+     # METABEGIN
+     # X-Env-Layer-Name: test-provider-conflict2
+     # X-Env-Layer-Version: 1.0.0
+     # X-Env-Layer-Provides: database
+     # X-Env-Layer-Category: test
+     # METAEND
+EOF
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-provider-conflict1 test-provider-conflict2 --path "$TMP_DIR" \
+        --env-out "$TMP_OUT" >/dev/null; RESULT=$?; \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"; \
+     exit $RESULT' \
+    1 \
+    "Check should fail when multiple layers provide the same capability"
+
+cleanup_env
+
+run_test "pipeline-build-order" \
+    'TMP_ENV=$(mktemp) && TMP_ENV_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-with-deps --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_ENV_OUT" --order-out "$TMP_ORDER" >/dev/null && \
+     grep -q "^test-basic=" "$TMP_ORDER" && \
+     grep -q "^test-with-deps=" "$TMP_ORDER" && \
+     rm -f "$TMP_ENV" "$TMP_ENV_OUT" "$TMP_ORDER"' \
+    0 \
+    "Pipeline should write build order for dependencies"
+
+run_test "pipeline-build-order-env-deps" \
+    'TMP_ENV=$(mktemp) && TMP_ENV_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "ARCH=arm64" "DISTRO=debian" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-env-var-deps --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_ENV_OUT" --order-out "$TMP_ORDER" >/dev/null && \
+     grep -q "^test-basic=" "$TMP_ORDER" && \
+     grep -q "^arm64-toolchain=" "$TMP_ORDER" && \
+     grep -q "^debian-packages=" "$TMP_ORDER" && \
+     rm -f "$TMP_ENV" "$TMP_ENV_OUT" "$TMP_ORDER"' \
+    0 \
+    "Pipeline should resolve env-based deps and write build order"
 
 run_test "bulk-lint-all-yaml" '
     # 1) collect only *.yaml that appear to contain X-Env metadata
@@ -752,48 +771,6 @@ run_test "variable-dependency-order-robust" \
 
 
 print_header "ENVIRONMENT VARIABLE DEPENDENCY TESTS"
-
-# Test environment variable dependency evaluation with proper environment
-cleanup_env
-export ARCH=arm64
-export DISTRO=debian
-run_test "env-var-deps-with-env" \
-    "ig layer --path ${LAYERS} --build-order test-env-var-deps >/dev/null" \
-    0 \
-    "Environment variable dependencies should resolve when variables are set"
-
-# Test environment variable dependency evaluation without environment variables
-cleanup_env
-unset ARCH DISTRO
-run_test "env-var-deps-missing-env" \
-    "ig layer --path ${LAYERS} --build-order test-env-var-deps >/dev/null" \
-    1 \
-    "Environment variable dependencies should fail when variables are missing"
-
-# Test build order with environment variable dependencies
-cleanup_env
-export ARCH=arm64
-export DISTRO=debian
-run_test "env-var-deps-build-order" \
-    "ig layer --path ${LAYERS} --build-order test-env-var-deps | grep -E 'test-basic|arm64-toolchain|debian-packages'" \
-    0 \
-    "Build order should include resolved environment variable dependencies"
-
-# Test that static dependencies still work
-cleanup_env
-run_test "static-deps-still-work" \
-    "ig layer --path ${LAYERS} --build-order test-basic >/dev/null" \
-    0 \
-    "Static dependencies should continue to work without environment variables"
-
-# Test mixed static and environment variable dependencies
-cleanup_env
-export ARCH=arm64
-export DISTRO=debian
-run_test "mixed-deps-static-and-env" \
-    "ig layer --path ${LAYERS} --build-order test-env-var-deps >/dev/null" \
-    0 \
-    "Mixed static and environment variable dependencies should work together"
 
 # Test environment variable dependency apply-env
 cleanup_env

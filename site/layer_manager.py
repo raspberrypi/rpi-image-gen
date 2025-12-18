@@ -48,7 +48,7 @@ class LayerManager:
         self.layer_relpaths: Dict[str, str] = {}  # layer_name -> relative path under tagged root
         self.tag_to_path: Dict[str, Path] = {root.tag: root.path for root in self.search_roots}
         self.show_loaded = show_loaded
-        self.doc_mode = doc_mode  # When True, load all layers regardless of environment variables
+        self.doc_mode = doc_mode  # Relaxed loader, eg does not run generators for dynamic layers
         self.fail_on_lint = fail_on_lint
         # provider index will be built after layers are loaded
         self.provider_index: Dict[str, str] = {}
@@ -223,18 +223,23 @@ class LayerManager:
                     )
 
                 if layer_type == 'dynamic':
-                    generated_root = self._ensure_generated_root()
                     if not generator_cmd:
                         raise ValueError(f"Layer '{layer_name}' marked dynamic but no generator defined")
                     try:
                         rel_path = abs_file.relative_to(search_path)
                     except ValueError:
                         rel_path = Path(layer_name).with_suffix('.yaml')
-                    output_file = generated_root / rel_path
-                    output_file.parent.mkdir(parents=True, exist_ok=True)
-                    self._run_layer_generator(layer_name, generator_cmd, abs_file, output_file)
-                    abs_file = output_file.resolve()
-                    tag = 'DYNlayer' # implicitly hard wired
+
+                    if self.doc_mode:
+                        # Don't run generator - not needed in doc mode
+                        tag = root.tag
+                    else:
+                        generated_root = self._ensure_generated_root()
+                        output_file = generated_root / rel_path
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        self._run_layer_generator(layer_name, generator_cmd, abs_file, output_file)
+                        abs_file = output_file.resolve()
+                        tag = 'DYNlayer' # implicitly hard wired
                 else:
                     tag = root.tag
                     try:
@@ -250,7 +255,7 @@ class LayerManager:
 
                 if self.show_loaded:
                     relative_path = rel_path
-                    log_info(f"Loaded layer: {layer_name} from {relative_path})")
+                    log_info(f"Loaded layer: {layer_name} from {relative_path}")
 
     def _ensure_generated_root(self) -> Path:
         if self.generated_root is not None:
@@ -265,7 +270,7 @@ class LayerManager:
         return tmp_path
 
     def _run_layer_generator(self, layer_name: str, generator_cmd: str, input_path: Path, output_path: Path) -> None:
-        cmd = shlex.split(generator_cmd)
+        cmd = shlex.split(generator_cmd) # supports positional args
         if not cmd:
             raise ValueError(f"Generator command for layer '{layer_name}' is empty")
         cmd = cmd + [str(input_path), str(output_path)]
@@ -553,38 +558,38 @@ class LayerManager:
                 if ignore_missing_required:
                     continue
                 if not silent:
-                    print(f"[FAIL] {var} - REQUIRED but not set (layer: {layer_name})")
+                    log_error(f"[FAIL] {var} - REQUIRED but not set (layer: {layer_name})")
                 layer_valid = False
             elif result["status"] == "missing_required_var":
                 if ignore_missing_required:
                     continue
                 if not silent:
-                    print(f"[FAIL] {result['required_var']} - REQUIRED but not set (layer: {layer_name})")
+                    log_error(f"[FAIL] {result['required_var']} - REQUIRED but not set (layer: {layer_name})")
                 layer_valid = False
             elif result["status"] == "validated" and not result["valid"]:
                 if not silent:
-                    print(f"[FAIL] {var}={result['value']} (invalid, layer: {layer_name})")
+                    log_error(f"[FAIL] {var}={result['value']} (invalid, layer: {layer_name})")
                 layer_valid = False
             elif result["status"] == "required_validated" and not result["valid"]:
                 if not silent:
-                    print(f"[FAIL] {result['required_var']}={result['value']} (invalid, layer: {layer_name})")
+                    log_error(f"[FAIL] {result['required_var']}={result['value']} (invalid, layer: {layer_name})")
                 layer_valid = False
             # Handle other statuses for info output
             elif not silent:
                 if result["status"] == "optional_var_unset":
-                    print(f"[INFO] {result['optional_var']} - optional, not set (layer: {layer_name})")
+                    log_info(f"[INFO] {result['optional_var']} - optional, not set (layer: {layer_name})")
                 elif result["status"] == "optional_validated":
                     status = "OK" if result["valid"] else "WARN"
-                    print(f"[{status}] {result['optional_var']}={result['value']} (optional, layer: {layer_name})")
+                    log_info(f"[{status}] {result['optional_var']}={result['value']} (optional, layer: {layer_name})")
                 elif result["status"] == "optional_no_validation":
-                    print(f"[SKIP] {result['optional_var']}={result['value']} (optional, no validation rule, layer: {layer_name})")
+                    (f"[SKIP] {result['optional_var']}={result['value']} (optional, no validation rule, layer: {layer_name})")
 
         # Additional check: unsupported layer fields
         unsupported_layer = layer._check_unsupported_layer_fields()
         if unsupported_layer:
             for fld, msg in unsupported_layer.items():
                 if not silent:
-                    print(f"[ERROR] {msg} (layer: {layer_name})")
+                    log_error(f"{msg} (layer: {layer_name})")
             layer_valid = False
 
         return layer_valid
@@ -946,56 +951,11 @@ def LayerManager_register_parser(subparsers, root=None):
                        help='Show detailed information for a layer (use layer name)')
     parser.add_argument('--rdep', '--reverse-deps', metavar='LAYER',
                        help='Show layers that depend on the specified layer')
-    # Build-order related options
-    parser.add_argument('--build-order', '-b', nargs='+', metavar='LAYER',
-                       help='Show build order for layers (use layer names)')
-    parser.add_argument('--full-paths', action='store_true',
-                       help='Include full file paths when showing build order')
-    parser.add_argument('--rel-paths', action='store_true',
-                       help='Write tag:relative paths to --output for container remapping')
-    parser.add_argument('--output', metavar='FILE',
-                       help='Write build-order list to file (works with --build-order)')
     parser.add_argument('--show-paths', action='store_true',
                        help='Show search paths')
     parser.add_argument('--gen', action='store_true',
                        help='Generate boilerplate layer template with  metadata')
-    parser.add_argument('--help-fields', action='store_true',
-                       help='Show reference for X-Env-Layer-* fields')
     parser.set_defaults(func=_layer_main)
-
-
-def _show_layer_fields_help():
-    """Print reference information for X-Env-Layer-* fields"""
-    help_text = """
-Layer Field Reference (X-Env-Layer-*)
-+------------------------------------
-Required basics:
-  X-Env-Layer-Name        Unique layer identifier (token)
-  X-Env-Layer-Version     Version string (free-form)
-  X-Env-Layer-Desc        Human-readable description
-
-Optional classification:
-  X-Env-Layer-Category           Category/group name (e.g. base, service, device)
-
-Dependencies:
-  X-Env-Layer-Requires           Comma-separated concrete layer names this layer needs
-  X-Env-Layer-Conflicts          Layers that cannot co-exist with this one
-
-Virtual capabilities:
-  X-Env-Layer-Provides           Comma-separated capability tokens this layer offers
-  X-Env-Layer-RequiresProvider   Comma-separated capability tokens this layer requires;
-                                 each must be provided by exactly one loaded layer
-
-Environment-variable support:
-  X-Env-VarPrefix                Prefix applied to IGconf_ env var names in this layer
-  (plus all X-Env-Var-* variable definition fields – see `ig metadata --help-validation`)
-
-Notes:
-  • Provides/RequresProvider enable abstract dependencies; use them instead of hard-coding
-    a specific base layer name when multiple alternatives could satisfy the need.
-  • Field values are trimmed of whitespace; tokens must be comma-separated without spaces.
-"""
-    print(help_text)
 
 
 def _layer_main(args):
@@ -1005,12 +965,8 @@ def _layer_main(args):
         _generate_layer_boilerplate()
         return
 
-    if getattr(args, 'help_fields', False):
-        _show_layer_fields_help()
-        return
-
     # Check if any action argument was provided
-    action_args = ['list', 'describe', 'rdep', 'build_order', 'show_paths']
+    action_args = ['list', 'describe', 'rdep', 'show_paths']
     if not any(getattr(args, arg, None) for arg in action_args):
         print("Error: No action specified. Use -h or --help for available options.")
         exit(1)
@@ -1018,28 +974,9 @@ def _layer_main(args):
     # Create default manager (non-doc-mode) for general operations
     search_paths = [p.strip() for p in args.path.split(':') if p.strip()]
 
-    # Use a doc-mode manager if listing so that layers with dynamic deps
-    # can be shown. Using doc-mode is more relaxed, but we still lint.
-    list_only = bool(args.list) and not any([
-        args.describe, args.rdep, args.build_order,
-        args.show_paths
-    ])
-
-    if list_only:
-        try:
-            list_manager = LayerManager(search_paths, args.patterns, show_loaded=True, doc_mode=True)
-        except ValueError as exc:
-            print(f'Error: {exc}')
-            exit(1)
-        print()
-        list_manager.show_search_paths()
-        print()
-        list_manager.list_layers()
-        return
-
-    # ..else generic instantiation.
+    # For all layer CLI actions, use a single doc-mode manager to avoid running dynamic generators.
     try:
-        manager = LayerManager(search_paths, args.patterns)
+        manager = LayerManager(search_paths, args.patterns, doc_mode=True, show_loaded=args.list)
     except ValueError as exc:
         print(f'Error: {exc}')
         exit(1)
@@ -1051,26 +988,35 @@ def _layer_main(args):
 
     if args.list:
         # Always show the search paths when listing layers
-        # Use a doc-mode manager for listing so unresolved env-based layers are included
-        try:
-            list_manager = LayerManager(search_paths, args.patterns, show_loaded=True, doc_mode=True)
-        except ValueError as exc:
-            print(f'Error: {exc}')
-            exit(1)
-        list_manager.show_search_paths()
+        manager.show_search_paths()
         print()
-        list_manager.list_layers()
+        manager.list_layers()
+
+    if args.rdep:
+        layer_name = manager.resolve_layer_name(args.rdep)
+        if not layer_name:
+            print(f"✗ Layer '{args.rdep}' not found")
+            exit(1)
+
+        reverse_deps = manager.get_reverse_dependencies(layer_name)
+
+        if reverse_deps:
+            print(f"Reverse dependencies for '{layer_name}':")
+            print()
+            for dep_layer in reverse_deps:
+                dep_info = manager.get_layer_info(dep_layer)
+                if dep_info:
+                    print(f"Layer: {dep_info['name']}")
+                    print(f"Category: {dep_info.get('category', 'unknown')}")
+                    print(f"Description: {dep_info.get('description', 'No description')}")
+                    print()
+
+            print(f"{len(reverse_deps)} layer(s) depend on '{layer_name}'")
 
     if args.describe:
         layer_name = manager.resolve_layer_name(args.describe)
         if not layer_name:
             print(f"✗ Layer '{args.describe}' not found")
-            exit(1)
-
-        ok, dep_errors = manager.check_dependencies(layer_name)
-        if not ok:
-            for err in dep_errors:
-                print(f"[ERROR] {err}")
             exit(1)
 
         layer_info = manager.get_layer_info(layer_name)
@@ -1143,91 +1089,4 @@ def _layer_main(args):
                 print()
                 print_env_var_descriptions(meta_obj, indent=2)
 
-    if args.rdep:
-        layer_name = manager.resolve_layer_name(args.rdep)
-        if not layer_name:
-            print(f"✗ Layer '{args.rdep}' not found")
-            exit(1)
-
-        reverse_deps = manager.get_reverse_dependencies(layer_name)
-
-        if reverse_deps:
-            print(f"Reverse dependencies for '{layer_name}':")
-            print()
-            for dep_layer in reverse_deps:
-                dep_info = manager.get_layer_info(dep_layer)
-                if dep_info:
-                    print(f"Layer: {dep_info['name']}")
-                    print(f"Category: {dep_info.get('category', 'unknown')}")
-                    print(f"Description: {dep_info.get('description', 'No description')}")
-                    print()
-
-            print(f"{len(reverse_deps)} layer(s) depend on '{layer_name}'")
-
-    if args.build_order:
-        # Resolve all layer names
-        resolved_layers = []
-        for layer_id in args.build_order:
-            layer_name = manager.resolve_layer_name(layer_id)
-            if layer_name:
-                resolved_layers.append(layer_name)
-            else:
-                print(f"✗ Layer '{layer_id}' not found")
-                exit(1)
-
-        build_order = manager.get_build_order(resolved_layers)
-
-        # Prepare output lines
-        output_display = []  # what goes to stdout
-        output_file = []     # what goes to --output file
-        if build_order:
-            print("Build order:")
-
-            # Compute dynamic column widths
-            num_width = len(str(len(build_order)))
-            name_width = max(len(l) for l in build_order) if args.full_paths else 0
-
-            for i, layer in enumerate(build_order, 1):
-                abs_path = manager.layer_files.get(layer, "<unknown>")
-                rel_spec = manager.get_layer_relative_spec(layer)
-
-                rel_display = None
-                if args.full_paths:
-                    display_line = (
-                        f"  {i:{num_width}d}. "
-                        f"{layer:<{name_width}}  "
-                        f"{abs_path}"
-                    )
-                    if args.rel_paths and rel_spec:
-                        rel_indent = " " * (num_width + 6)
-                        rel_display = f"{rel_indent}{rel_spec}"
-                else:
-                    display_line = f"  {i:{num_width}d}. {layer}"
-                    if args.rel_paths and rel_spec:
-                        display_line = f"{display_line}  {rel_spec}"
-
-                if args.rel_paths and rel_spec:
-                    file_line = f"{layer}=\"{rel_spec}\""
-                elif args.full_paths:
-                    file_line = f"{layer}=\"{abs_path}\""
-                else:
-                    file_line = layer
-
-                print(display_line)
-                output_display.append(display_line)
-                if rel_display:
-                    print(rel_display)
-                    output_display.append(rel_display)
-                output_file.append(file_line)
-        else:
-            print("No layers to build")
-
-        # Optionally write to file
-        if args.output and output_file:
-            try:
-                with open(args.output, 'w') as f:
-                    for line in output_file:
-                        f.write(line + "\n")
-                print(f"Build order written to: {args.output}")
-            except Exception as e:
-                print(f"Error writing build order to {args.output}: {e}")
+    # build-order CLI removed; layer commands are read-only.
