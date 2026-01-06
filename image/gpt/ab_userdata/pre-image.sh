@@ -109,8 +109,9 @@ Compress=yes
 SystemMaxUse=512M
 SystemMaxFileSize=20M
 
-# Retention
-MaxRetentionSec=2w
+# No time window retention
+MaxRetentionSec=0
+MaxFileSec=0
 
 # Endurance profile
 RuntimeMaxUse=128M
