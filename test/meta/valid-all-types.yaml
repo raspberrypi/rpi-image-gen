@@ -1,0 +1,38 @@
+# METABEGIN
+# X-Env-Layer-Name: test-all-types
+# X-Env-Layer-Desc: Test all validation types and features
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: types
+# X-Env-Var-name: myapp
+# X-Env-Var-name-Desc: Application name
+# X-Env-Var-name-Valid: string
+# X-Env-Var-name-Required: true
+# X-Env-Var-timeout: 30
+# X-Env-Var-timeout-Desc: Timeout in seconds
+# X-Env-Var-timeout-Valid: int:1-300
+# X-Env-Var-debug: false
+# X-Env-Var-debug-Desc: Enable debug mode
+# X-Env-Var-debug-Valid: bool
+# X-Env-Var-environment: development
+# X-Env-Var-environment-Desc: Deployment environment
+# X-Env-Var-environment-Valid: development,staging,production
+# X-Env-Var-email: admin@example.com
+# X-Env-Var-email-Desc: Admin email
+# X-Env-Var-email-Valid: regex:^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+# X-Env-Var-optional: optional
+# X-Env-Var-optional-Desc: Optional string
+# X-Env-Var-optional-Valid: string-or-unset
+# X-Env-VarRequires: HOME,PATH
+# X-Env-VarRequires-Valid: regex:^/.*,string
+# X-Env-VarOptional: EDITOR,LANG
+# X-Env-VarOptional-Valid: string,string
+# METAEND
+
+application:
+  name: "${IGconf_types_name}"
+  timeout: ${IGconf_types_timeout}
+  debug: ${IGconf_types_debug}
+  environment: "${IGconf_types_environment}"
+  email: "${IGconf_types_email}"
+  optional: "${IGconf_types_optional}"

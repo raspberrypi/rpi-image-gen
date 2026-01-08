@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: test-missing-dep
+# X-Env-Layer-Desc: Test layer with missing dependency
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: nonexistent-layer
+# X-Env-VarPrefix: missing
+# X-Env-Var-value: test
+# METAEND
+
+layer:
+  value: "${IGconf_missing_value}"

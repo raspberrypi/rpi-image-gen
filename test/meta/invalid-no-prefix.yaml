@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: test-no-prefix
+# X-Env-Layer-Desc: Test layer with variables but no prefix
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Var-hostname: localhost
+# X-Env-Var-hostname-Desc: Server hostname
+# X-Env-Var-hostname-Valid: string
+# METAEND
+
+test:
+  hostname: "${IGconf_hostname}"
