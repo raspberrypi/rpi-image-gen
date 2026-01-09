@@ -1,0 +1,18 @@
+# METABEGIN
+# X-Env-Layer-Name: test-with-deps
+# X-Env-Layer-Desc: Test layer with dependencies
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: test-basic
+# X-Env-Layer-Conflicts: test-conflict
+# X-Env-VarPrefix: deps
+# X-Env-Var-feature: enabled
+# X-Env-Var-feature-Desc: Feature flag
+# X-Env-Var-feature-Valid: enabled,disabled
+# X-Env-VarRequires: IGconf_basic_hostname
+# X-Env-VarRequires-Valid: string
+# METAEND
+
+service:
+  feature: "${IGconf_deps_feature}"
+  depends_on: "${IGconf_basic_hostname}"

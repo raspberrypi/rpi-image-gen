@@ -1,0 +1,13 @@
+# METABEGIN
+# X-Env-Layer-Name: test-malformed
+# X-Env-Layer-Desc: Test layer with malformed metadata
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: malformed
+# X-Env-Var-valid: value
+# X-Env-Var-missing-value
+# X-Env-Var-another
+# METAEND
+
+test:
+  value: "${IGconf_malformed_valid}"

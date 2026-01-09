@@ -1,0 +1,15 @@
+# METABEGIN
+# X-Env-Layer-Name: test-requirements-only
+# X-Env-Layer-Desc: Test layer with only requirements
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarRequires: HOME,USER,IGconf_basic_hostname
+# X-Env-VarRequires-Valid: regex:^/.*,string,string
+# X-Env-VarOptional: EDITOR,LANG,IGconf_types_debug
+# X-Env-VarOptional-Valid: string,string,bool
+# METAEND
+
+test:
+  uses_home: "${HOME}"
+  uses_user: "${USER}"
+  uses_hostname: "${IGconf_basic_hostname}"

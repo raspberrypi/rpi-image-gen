@@ -11,6 +11,9 @@ import argparse
 from config_loader import ConfigLoader_register_parser
 from metadata_parser import Metadata_register_parser
 from layer_manager import LayerManager_register_parser
+from env_resolver import EnvResolver_register_parser
+from env_init import EnvInit_register_parser
+from pipeline import Pipeline_register_parser
 
 def main():
     parser = argparse.ArgumentParser(description="rpi-image-gen core engine helper")
@@ -21,8 +24,12 @@ def main():
     ConfigLoader_register_parser(subparsers)
     Metadata_register_parser(subparsers)
     LayerManager_register_parser(subparsers,root=igroot)
+    EnvResolver_register_parser(subparsers)
+    EnvInit_register_parser(subparsers,root=igroot)
+    Pipeline_register_parser(subparsers,root=igroot)
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    args._unknown = unknown
     args.func(args)
 
 

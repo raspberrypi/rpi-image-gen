@@ -8,7 +8,7 @@ link:../index.adoc[← Back to Main Documentation]
 
 == Overview
 
-The rpi-image-gen build process consists of six main stages executed sequentially:
+The rpi-image-gen build process consists of multiple stages executed sequentially:
 
 . **Parameter Assembly** - Input validation and configuration parsing
 . **Layer Processing** - Layer collection, validation, and dependency resolution

@@ -77,8 +77,8 @@ Layers are static unless explicitly marked dynamic. To render a layer at build t
 
 The loader then:
 
-1. Checks for the existence of a temporary directory specified by tag `TMPROOT_layer=<tmpdir>` on the layer search path (`rpi-image-gen` does this automatically).
-2. Runs the generator with two arguments, `<template-path> <output-path>`, where the output is written to `TMPROOT_layer/path/to/<layer-name>.yaml`. The `path/to` portion matches the layer’s path under its original search root, so dynamic layers mirror the same directory structure as static layers when reported via tagged paths.
+1. Checks for the existence of a temporary directory specified by tag `DYNlayer=<tmpdir>` on the layer search path (`rpi-image-gen` does this automatically).
+2. Runs the generator with two arguments, `<template-path> <output-path>`, where the output is written to `DYNlayer/path/to/<layer-name>.yaml`. The `path/to` portion matches the layer’s path under its original search root, so dynamic layers mirror the same directory structure as static layers when reported via tagged paths.
 3. Reads all mmdebstrap/env content from the generated file while continuing to use the original `# X-Env-*` metadata for naming, dependencies, documentation, etc.
 
 Generators must write a complete layer to the output path. A trivial generator could copy the template directly to the output (e.g. `cp` works fine). More more complex generators may inject snapshot timestamps, merge user data, or pull content from other sources. If the generator writes nothing, the layer still 'exists' (metadata is intact) but it contains no YAML body information (packages, hooks, etc) and `--describe` output will reflect that. Dynamic layers provide a way to manipulate the layer YAML at build time. Modifications made by the generator only affect the YAML body. The original `# X-Env-*` metadata is always taken from the template.

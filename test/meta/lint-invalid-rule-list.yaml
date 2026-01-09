@@ -1,0 +1,10 @@
+# METABEGIN
+# X-Env-Layer-Name: lint-invalid-rule-list
+# X-Env-Layer-Desc: Invalid rule list for required vars
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: lint
+# X-Env-VarRequires: HOME
+# X-Env-VarRequires-Valid: regex:^(
+# METAEND
+

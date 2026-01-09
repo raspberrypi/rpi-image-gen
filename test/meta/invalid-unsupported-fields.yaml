@@ -1,0 +1,14 @@
+# METABEGIN
+# X-Env-Layer-Name: test-unsupported
+# X-Env-Layer-Desc: Test layer with unsupported fields
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: unsupported
+# X-Env-Var-valid: value
+# X-Env-Layer-Priority: high
+# X-Env-Prefix: old-style
+# X-Env-Var-test-Invalid: bad-field
+# METAEND
+
+test:
+  value: "${IGconf_unsupported_valid}"

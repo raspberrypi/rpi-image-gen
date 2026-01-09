@@ -1,0 +1,20 @@
+# METABEGIN
+# X-Env-Layer-Name: test-set-policies
+# X-Env-Layer-Desc: Test layer with Set policies
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: setpol
+# X-Env-Var-alwaysset: default-value
+# X-Env-Var-alwaysset-Desc: Always set this variable
+# X-Env-Var-alwaysset-Set: true
+# X-Env-Var-neverset: default-value
+# X-Env-Var-neverset-Desc: Never set this variable
+# X-Env-Var-neverset-Set: false
+# X-Env-Var-defaultbehavior: default-value
+# X-Env-Var-defaultbehavior-Desc: Default behavior (should set)
+# METAEND
+
+test:
+  always_set: "${IGconf_setpol_alwaysset}"
+  never_set: "${IGconf_setpol_neverset}"
+  default_behavior: "${IGconf_setpol_defaultbehavior}"

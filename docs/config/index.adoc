@@ -88,6 +88,47 @@ IGconf_device_class=pi5
 IGconf_device_storage_type=sd
 ----
 
+=== Anchors
+
+Anchors are declared in a variable's metadata and are definitive remapping points for paths and other environment values. They allow locations to be described in an abstract way (eg, `@IGROOT`, `@SRCROOT`) and are resolved by the engine automatically, never leaking to the shell. Anchors enable support of different contexts (eg, host vs. container, with different root paths) without rewriting layer or config files. The resolver replaces ${@ANCHOR} with the concrete value from the anchor registry when producing the final environment. From a simplistic viewpoint, an anchor is essentially a shortcut to a variable's value.
+
+The engine automatically sets a small number of default anchors. These are listed below:
+
+[cols="1,1,4", options="header"]
+|===
+| Anchor    | Scope   | Description
+| @IGROOT   | Always  | Root path of rpi-image-gen tree
+| @SRCROOT  | -S only | Root path of source directory
+|===
+
+An Anchor is declared in layer metadata as follows:
+[source,yaml]
+----
+# X-Env-Var-dir: ${IGconf_sys_workroot}/${IGconf_target_context}
+# X-Env-Var-dir-Anchor: @TARGETDIR
+# X-Env-Var-dir-Desc: Directory containing the target and related build artefacts.
+----
+
+An anchor can be used in a config file as follows:
+[source,yaml]
+----
+layer:
+  app: example-kiosk
+  extra: rpi-splash-screen
+
+splash:
+  image_path: ${@SRCROOT}/my.tga
+----
+In this case, when building sources via `-S`, `IGconf_splash_image_path` resolves to `/path/to/source/dir/my.tga`. This can be observed in the output:
+
+[source,bash]
+----
+$ rpi-image-gen build -S ./examples/webkiosk/ -c kiosk.yaml
+...
+FINAL ENV
+-> IGconf_splash_image_path : /path/to/repos/raspberrypi/rpi-image-gen/examples/webkiosk/my.tga
+----
+
 == Configuration File Support
 
 The configuration system supports both INI and YAML file formats with automatic format detection based on file extension.
@@ -208,9 +249,11 @@ Variables can be set directly on the command line as overrides after `--`, takin
 rpi-image-gen build -c config.yaml -- IGconf_device_class=pi5 IGconf_image_compression=xz
 ----
 
+Command-line overrides are handled by the calling shell before the engine sees them.
+
 == Variable Expansion
 
-The configuration system supports variable expansion in configuration values using shell-style syntax:
+The engine supports deferred variable expansion, meaning that it's possible to forward-declare references to other variables. Variables are resolved in the pipeline phase rather than the config file parsing phase. Provided a variable is declared, the engine will resolve it. Values assigned to all variables must adhere to POSIX‑sh syntax.
 
 === Environment Variable Expansion
 
@@ -225,9 +268,38 @@ image:
   assetdir: ${WORKSPACE}/build/assets/${IGconf_device_name}-rev${IGconf_device_rev}
 
 ssh:
-  pubkey_user1=$(< ${DEPLOY}/device/baseassets/id_rsa.pub)
-  pubkey_only=y
+  pubkey_user1: ${DEPLOY}/device/baseassets/id_rsa.pub
+  pubkey_only: y
 ----
+
+Care must be taken if using the command line to assign a value to a variable if the value contains spaces or newlines. Making sure the calling shell expands it into a single argument ensures the command substitution happens once and stays on one line:
+
+[source,bash]
+----
+rpi-image-gen build -c config.yaml -- "IGconf_ssh_pubkey_user1=$(< /path/to/.ssh/id_rsa.pub)"
+----
+
+Assigning a variable and preserving the literal value can be performed using single quotes:
+
+[source,bash]
+----
+rpi-image-gen build -c config.yaml -- 'IGconf_ssh_pubkey_user1=$(cat /path/to/.ssh/id_rsa.pub)'
+----
+
+The above yield identical results in the build configuration for the value of `IGconf_ssh_pubkey_user1`. The difference is that the first expands the value immediately upon assignment using the calling shell (eg Bash) before engine processing. The second keeps the literal text, which is expanded during engine processing using POSIX-sh.
+
+=== Expansion Context
+
+Variables are resolved after configuration parsing and layer assembly, and then expanded. Expansion is performed with a **strict policy** using `/bin/sh` with `POSIXLY_CORRECT=1` under `set -eu` in a 'clean room' environment. This means:
+
+  ** **errexit (set -e)**: Exit immediately if any command returns a non-zero exit status, including when variable expansion fails or returns an error.
+  ** **nounset (set -u)**: Treat unset variables as errors during expansion - attempting to expand a variable that hasn't been set will exit with an error instead of expanding to an empty string.
+  ** When these are combined, variable expansion is strict and fails quickly. Any attempt to expand an undefined variable will cause the build to exit immediately.
+
+[NOTE]
+====
+There may be a need to handle non-alphanumeric characters in config files and/or command line arguments. Input files are parsed as-is, without stripping quotes. In YAML, quote only when you need YAML to treat the value as a string (eg, URLs can be unquoted: `url: https://...`). On the command line, use shell quoting when needed to protect special characters or expansions (eg, `rpi-image-gen build -c <args> -- IGconf_device_user1pass='Fo0bar!!'`).
+====
 
 === Cross-Reference Expansion
 
@@ -243,9 +315,9 @@ image:
   name: ${IGconf_device_class}-custom-image
 ----
 
-=== Environment Variable Dependencies
+=== Layer Variable Dependencies
 
-Layer dependencies can use environment variable expansion to create dynamic dependency resolution:
+Layer dependencies can use config or command line variable assignments to create dynamic dependency resolution:
 
 [source,yaml]
 ----
@@ -255,14 +327,13 @@ Layer dependencies can use environment variable expansion to create dynamic depe
 # METAEND
 ----
 
-This allows layers to dynamically depend on other layers based on build-time environment variables:
+This allows layers to dynamically depend on other layers based on build-time set variables:
 
 [source,bash]
 ----
-# Set environment variables before processing
-export ARCH=arm64
-export DISTRO=debian
-
+# Set variables on the command line
+$ rpi-image-gen build -c <args> -- ARCH=arm64 DISTRO=debian
+...
 # Layer dependencies will be equivalent to:
 # X-Env-Layer-Requires: base-layer, arm64-toolchain, debian-packages
 ----
@@ -271,76 +342,15 @@ This feature enables dynamic layer selection. For example, one usage could be to
 
 [NOTE]
 ====
-Layer discovery will fail if variables referenced in dependencies are not set in the environment.
+Layer discovery will fail if variables referenced in dependencies are not set.
 ====
 
 [IMPORTANT]
 ====
-Environment variable dependencies are evaluated during layer discovery, not during layer variable expansion. This ensures dependencies are resolved before layer processing begins. Because of this, only variables *already present* in the environment can be used in layer dependencies.
-
-For example:
-
-- System or custom environment variables (e.g., `USER`, `ARCH`, `DISTRO`)
-- Configuration file variables or command line overrides
+Variable dependencies are evaluated during layer discovery, not during layer variable expansion. This ensures dependencies are resolved before layer processing begins. Only variables set in the config file or on the command line can be used in layer dependencies.
 
 All dependencies are always included, i.e. variable names result in actual layer names at build-time. For example, `${ARCH}-toolchain` always results in a dependency, but the specific layer name depends on the `ARCH` environment variable value.
 ====
-
-=== Expansion Context
-
-During configuration processing, variables are expanded using:
-
-. **Previously loaded configuration values**
-. **System environment variables** (for shell-style expansion like `${HOME}`)
-. A **Strict Policy** (using `bash` under `set -eu`). This means:
-  ** **errexit (set -e)**: Exit immediately if any command returns a non-zero exit status, including when variable expansion fails or returns an error.
-  ** **nounset (set -u)**: Treat unset variables as errors during expansion - attempting to expand a variable that hasn't been set will exit with an error instead of expanding to an empty string.
-  ** When these are combined, variable expansion is strict and fails quickly. Any attempt to expand an undefined variable will cause the build to exit immediately.
-
-[NOTE]
-====
-There may be a need to handle non-alphanumeric characters in config files and/or command line arguments. Best practices advise encapsulating the text for a more robust approach, even if it's not always technically necessary. For YAML files, use single quotes for literal strings. For example `password: 'Fo0bar!!'`. For INI files, quote values containing special characters. For example `password = "Fo0bar!!"`. For command line arguments, use single quotes to preserve the literal text. For example `rpi-image-gen build -c <args> -- IGconf_device_user1pass='Fo0bar!!'`.
-====
-
-=== Conditional Variables
-
-The expansion of variables during configuration processing means it's possible to use conditional expressions to assign variables based on other variables via _parameter expansion_. This provides quite a powerful feature for adapting configuration based characteristics or other settings.
-
-For example:
-
-[source,yaml]
-----
-# METABEGIN
-# X-Env-Layer-Name: image-rescue
-# X-Env-Layer-Requires: image-base,device-base
-# X-Env-Layer-Provides: image
-#
-# X-Env-VarRequires: IGconf_device_storage_type
-#
-# X-Env-VarPrefix: image
-#
-# X-Env-Var-ptable_protect: $( ["${IGconf_device_storage_type}" = "emmc"] && echo y || echo n )
-# X-Env-Var-ptable_protect-Desc: Enable eMMC Power-On Write Protection of the partition table
-# X-Env-Var-ptable_protect-Required: n
-# X-Env-Var-ptable_protect-Valid: string
-# X-Env-Var-ptable_protect-Set: y
-# METAEND
-----
-
-This results in `IGconf_image_ptable_protect=y` if `IGconf_device_storage_type=emmc`, else `IGconf_image_ptable_protect=n`. Because configuration variable validation operates on literal values prior to expansion, this will only pass validation if the variable being assigned is a derivative of type `X-Env-Var-X-Valid: string`.
-
-[WARNING]
-====
-Care must be taken when using parameter expansion if input variables to the expression are optional. Due to the strict expansion rules, variables referenced in conditional expressions are recommended to use the `:-` fallback syntax to avoid errors.
-====
-
-[source,yaml]
-----
-# X-Env-VarOptional: IGconf_device_storage_type
-# X-Env-Var-ptable_protect: $( ["${IGconf_device_storage_type:-}" = "emmc"] && echo y || echo n )
-----
-
-References: https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html[GNU Bash Manual,window=_blank]
 
 == Configuration Loading
 
@@ -351,9 +361,7 @@ The configuration system processes files using the following steps:
 1. **Parse main configuration file** - Automatically detects INI or YAML format
 2. **Process includes recursively** - Follows include directives with circular dependency detection
 3. **Apply command line overrides** - Processes variables specified after `--`
-4. **Expand variables** - Resolves variable references using configuration context
-5. **Set environment variables** - Applies final values following precedence rules
-6. **Generate output** - Either loads into environment or writes to file
+4. **Generate output** - Either loads into environment or writes to file
 
 == Command Line Interface
 
@@ -480,7 +488,7 @@ config/
 1. **Use `--write-to`** to see resolved variable values
 2. **Check precedence** with CFG/OVR output prefixes
 3. **Validate includes** by examining search path messages
-4. **Run interactively** to allow a pseudo 'dry-run' stepped flow 
+4. **Run interactively** to allow a pseudo 'dry-run' stepped flow
 5. **Test expansion** with simple configuration files
 
 === Output Interpretation

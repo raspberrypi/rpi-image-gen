@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: image-base
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Default image settings and build attributes.
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: sys-build-base,sbom-base,target-config,artefact-base,deploy-base
 # X-Env-Layer-RequiresProvider: device
 #
@@ -72,14 +72,6 @@
 # X-Env-Var-assetdir-Required: n
 # X-Env-Var-assetdir-Valid: string
 # X-Env-Var-assetdir-Set: lazy
-#
-# X-Env-Var-pmapfile: ${IGconf_image_pmap:+${IGconf_image_assetdir}/device/provisionmap-${IGconf_image_pmap}.json}
-# X-Env-Var-pmapfile-Desc: Full path to the Provisioning Map file. When
-#  IGconf_image_pmap is specified, this provides the complete path to the pmap
-#  file. If no pmap identifier is set, this variable remains empty.
-# X-Env-Var-pmapfile-Required: n
-# X-Env-Var-pmapfile-Valid: string-or-empty
-# X-Env-Var-pmapfile-Set: lazy
 #
 # METAEND
 ---

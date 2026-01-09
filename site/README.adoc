@@ -1,0 +1,67 @@
+= rpi-image-gen - Engine Documentation
+:toc: left
+:toclevels: 2
+:sectlinks:
+
+'Owner's Manual' for the Python engine that drives rpi-image-gen core operations.
+
+For system-wide user techical documentation, see the https://github.com/raspberrypi/rpi-image-gen/blob/master/docs/index.adoc[index page,window=_blank].
+
+For general project information, see the https://github.com/raspberrypi/rpi-image-gen[top level readme,window=_blank].
+
+== Overview
+
+rpi-image-gen is a metadata-driven build system. Each layer is a YAML file with an embedded `X-Env-*` section describing the environment variables it provides, its dependencies, providers, and any supporting configuration. The engine workflow is two-stage:
+
+First, `ig config` parses a configuration file (the frontend), handles override variables and produces an env for pipeline to consume.
+
+Second, `ig pipeline` is the entry point for applying a set of layers: it reads an env file produced by the config stage, uses LayerManager to build a dependency order, runs the policy resolver to apply variables and resolve anchors (`@TARGETDIR`, `@IGROOT`, etc) and all variables in the input env, then emits a final env file plus a layer build order.
+
+Additional tooling like `ig metadata` and `ig layer` let you inspect or validate individual layers, while LayerManager discovers every layer under a defined path heirarchy, computes dependency order, checks provider relationships, etc. The top level rpi-image-gen CLI is the main entry point for all tooling and build operations, passing commands directly through to the engine as needed.
+
+The architecture keeps metadata parsing/validation reusable (in metadata_parser, env_types, env_resolver), while LayerManager focuses on discovery/graphing and pipeline.py owns the actual application.
+
+The following summarise the individual Python components.
+
+== bin/ig
+
+Thin CLI entrypoint. Sets up argparse, wires every subcommand (config, metadata, layer, pipeline, etc) to the functions exported by the site modules, and hands control to whichever parser was selected.
+
+== site/env_init.py
+
+Resolves built-in and source directory root paths, config/layer/exec search paths, optional build dir, interactive flags, build switches/toggles, overrides, and any argv remainder into a JSON snapshot. The snapshot is the canonical hand-off to the shell wrapper (`host2sh.py`) so callers do not need to reparse CLI options.
+
+== site/config_loader.py
+
+Handles reading YAML/INI config files, resolving includes, and writing out the env file that feeds pipeline.
+
+== site/metadata_parser.py
+
+Core parser/validator for the `X-Env-*` metadata blocks embedded in layer YAML files. Provides Metadata objects with accessors for layer info, env variable definitions, validation results, etc. Exposes the ig metadata CLI (parse, validate, describe, lint, etc).
+
+==  site/env_types.py
+
+Houses shared data structures: EnvVariable, MetadataContainer, XEnv helpers, and the VariableResolver (policy logic for force/immediate/lazy).
+Also contains the placeholder substitution utilities used during metadata ingestion.
+
+== site/env_resolver.py
+
+Implements the shell-style env file parser, the lazy resolver for `${VAR}` / `${@ANCHOR}` references, and the AnchorRegistry.
+Used by pipeline to perform final variable expansion.
+
+== site/layer_manager.py
+
+Discovery and introspection of all layers. Walks search roots, parses metadata, maintains the layer registry (self.layers, file paths, tags).
+Provides dependency graph operations (get build order, provider checks, reverse deps), and the user-facing ig CLI (list, describe, etc).
+
+== site/pipeline.py
+
+Main orchestrator for the application. Loads the base env file produced by config_loader, asks LayerManager for the dependency order, validates layers, runs the policy resolver (VariableResolver) to apply env vars, writes env/order outputs.
+
+== site/validators.py
+
+Contains the validation rule parser/implementations referenced by Metadata.
+
+== site/logger.py
+
+Simple logging helpers used across commands for consistent formatting. Currently not used enough!

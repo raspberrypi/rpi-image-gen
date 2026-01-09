@@ -17,7 +17,7 @@ def main() -> None:
     tools_dir = layers_dir / "tools"
     with tempfile.TemporaryDirectory(prefix="dynamic-layer-") as tmpdir:
         os.environ["PATH"] = f"{tools_dir}:{os.environ['PATH']}"
-        manager = LayerManager([f"TMPROOT_layer={tmpdir}", str(layers_dir)])
+        manager = LayerManager([f"DYNlayer={tmpdir}", str(layers_dir)])
         order = manager.get_build_order(["dynamic-test"])
         if "dynamic-test" not in order:
             raise SystemExit("dynamic-test not in build order")

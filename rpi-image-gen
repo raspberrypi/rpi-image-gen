@@ -2,12 +2,10 @@
 
 set -uo pipefail
 
-
 if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
    >&2 echo "FATAL: run this script, don't source it."
    return 1 2>/dev/null || exit 1
 fi
-
 
 rootpath() {
    local dir=$(dirname "$(readlink -e "${BASH_SOURCE[0]}")")
@@ -21,7 +19,6 @@ rootpath() {
 }
 readonly IGTOP=$(rootpath)
 
-
 # Load helpers
 source "$IGTOP/lib/cli.sh"
 source "$IGTOP/lib/common.sh"
@@ -29,186 +26,150 @@ source "$IGTOP/lib/dependencies.sh"
 source "$IGTOP/lib/tools.sh"
 
 
-# Global context
-declare -A ctx=(
-   [INTERACTIVE]=n
-   [SRC_DIR]="$(readlink -e .)"
-   [ONLY_FS]=0
-   [ONLY_IMAGE]=0
-   [BUILD_DIR]="${BUILD_DIR:-}"
-   [TMPDIR]="$(mktemp -d)"
-)
+# cli
+cmd=${1:-}
+shift
+case $cmd in
+   build|clean|layer|metadata|config) ;;
+   help) cli_help ; exit 0 ;;
+   *) cli_help; die "Unknown command" ;;
+esac
+argv=("$@")
+
+if [[ ${argv[0]:-} == -h || ${argv[0]:-} == --help ]]; then
+  case $cmd in
+    layer|metadata|config) exec "$IGTOP/bin/ig" "$cmd" --help ;;
+    build|clean) cli_help_"$cmd"; exit 0 ;;
+  esac
+fi
 
 
-[[ -d "${ctx[TMPDIR]}" ]] || die "Failed to create temp directory"
-trap 'rm -rf "${ctx[TMPDIR]}"' EXIT
+# Host context init
+dependencies_check --category bootstrap "${IGTOP}/depends" || exit 1
+TMPDIR=$(mktemp -d || exit 1 )
+trap 'rm -rf "$TMPDIR"' EXIT
+$IGTOP/bin/ig env "${argv[@]}" > "${TMPDIR}/host.json" || die
+source <("${IGTOP}/scripts/host2sh.py" "${TMPDIR}/host.json")
 
-ctx[DYN_LAYER_DIR]="${ctx[TMPDIR]}/layers"
-mkdir -p "${ctx[DYN_LAYER_DIR]}"
+: "${HOST_CONFIG_PATH?missing}"
+: "${HOST_LAYER_PATH?missing}"
+: "${HOST_EXEC_PATH?missing}"
+: "${INTERACTIVE?missing}"
+: "${ONLY_FS?missing}"
+: "${ONLY_IMAGE?missing}"
 
-# Refresh path variables. These may change after CLI parse.
-path_refresh()
-{
-   for required in bin config device image layer; do
-      if ! path=$(map_path "IGROOT:$required"); then
-         die "Failed to resolve IGROOT:$required"
-      fi
-      [[ -d $path ]] || die "IGROOT:$required missing ($path)"
-   done
+# For dynamic layers
+DYNROOT="${TMPDIR}/dynamic"
+mkdir -p "${DYNROOT}/layer"
+HOST_LAYER_PATH="DYNlayer=${DYNROOT}/layer:${HOST_LAYER_PATH}"
 
-   # Defaults
-   ctx[EXEC_PATH]="${PATH:-}"
+PATH="$HOST_EXEC_PATH:$PATH"
+export PATH
 
-   ctx[PYTHON_PATH]="${PYTHONPATH:-}"
+# shortcut to loaders
+case $cmd in
+   build|clean)
+      [[ -z ${HOST_CONFIG_FILE:-} ]] && { cli_help_"$cmd" ; die ;}
+      ;;
+   layer)
+      exec "$IGTOP/bin/ig" layer --path "$HOST_LAYER_PATH" "${argv[@]}"
+      ;;
+   metadata|config)
+    exec "$IGTOP/bin/ig" "$cmd" "${argv[@]}"
+    ;;
+esac
 
-   ctx[CONFIG_PATH]="$(map_path 'IGROOT:config')"
 
-   printf -v ctx[LAYER_PATH] '%s:%s:%s' \
-      "IGROOT_device=$(map_path 'IGROOT:device')" \
-      "IGROOT_image=$(map_path 'IGROOT:image')" \
-      "IGROOT_layer=$(map_path 'IGROOT:layer')"
+# cmdline
+OVRF="${TMPDIR}/overrides"
+printf '%s\n' "${OVERRIDES[@]}" > "$OVRF"
+[[ -n ${HOST_BUILD_DIR:-} ]] && printf 'IGconf_sys_workroot="%s"\n' "$HOST_BUILD_DIR" >> "$OVRF"
+# Must hold sane key=value pairs
+while IFS= read -r line || [ -n "$line" ]; do
+   case "$line" in
+      [A-Za-z_][A-Za-z0-9_]*=*) ;;
+      *)
+         nl -ba "$OVRF" >&2
+         die "Overrides must be provided as key=value pairs."
+         ;;
+    esac
+done < "$OVRF"
 
-   # Plug src dirs into paths
-   if [[ ! "$IGTOP" -ef "${ctx[SRC_DIR]}" ]]; then
-      local src_bin
-      if src_bin=$(map_path 'SRCROOT:bin' 2>/dev/null) && [[ -d $src_bin ]]; then
-         ctx[EXEC_PATH]="${src_bin}:${ctx[EXEC_PATH]}"
-      fi
 
-      if src_bin=$(map_path 'SRCROOT:bin/generators' 2>/dev/null) && [[ -d $src_bin ]]; then
-         ctx[EXEC_PATH]="${src_bin}:${ctx[EXEC_PATH]}"
-      fi
-
-      for d in device image layer; do
-         local sub="${ctx[SRC_DIR]}/$d"
-         [[ -d $sub ]] || continue
-         ctx[LAYER_PATH]="SRCROOT_${d}=${sub}:${ctx[LAYER_PATH]}"
-      done
-
-      local src_cfg
-      if src_cfg=$(map_path 'SRCROOT:config' 2>/dev/null) && [[ -d $src_cfg ]]; then
-         ctx[CONFIG_PATH]="${src_cfg}:${ctx[CONFIG_PATH]}"
-      fi
-   fi
-
-   ctx[LAYER_PATH]="TMPROOT_layer=${ctx[DYN_LAYER_DIR]}:${ctx[LAYER_PATH]}"
-
-   # Built-in executables always take precedence
-   ctx[EXEC_PATH]="$(map_path 'IGROOT:bin'):${ctx[EXEC_PATH]}"
-   ctx[EXEC_PATH]="$(map_path 'IGROOT:bin/generators'):${ctx[EXEC_PATH]}"
-
-   PATH=${ctx[EXEC_PATH]}
-   export PATH
-}
+# Ready for pipeline flow
+dependencies_check --category all "${IGTOP}/depends" || exit 1
+declare -A ctx=()
+ctx[INTERACTIVE]="${INTERACTIVE:?missing}"
+ctx[ONLY_FS]="${ONLY_FS:?missing}"
+ctx[ONLY_IMAGE]="${ONLY_IMAGE:?missing}"
+ctx[SRCROOT]="${SRCROOT:-$(realpath -e .)}"
 
 
 ###############################################################################
 # Stage 1: Parameter assembly
-#   Validate input args, overrides
 #   Parse config
-#   Seed initial env file for subsequent stages
+#   Seed env for subsequent stages
 ###############################################################################
 parameter_assembly()
 {
    msg "\nPARAM"
 
-   # Config file is mandatory
-   [[ -z ${ctx[INCONFIG]:-} ]] && die "No config file specified"
+   # Toolchain variables. Native unless ARCH forces cross.
+   DEB_BUILD_ARCH_VAL="${DEB_BUILD_ARCH:-$(dpkg-architecture -qDEB_BUILD_ARCH)}"
+   DEB_BUILD_GNU_TYPE_VAL="${DEB_BUILD_GNU_TYPE:-$(dpkg-architecture -a"$DEB_BUILD_ARCH_VAL" -qDEB_BUILD_GNU_TYPE)}"
 
-   msg "CONFIG ${ctx[INCONFIG]}"
+   if [ -n "${ARCH:-}" ]; then
+      DEB_HOST_ARCH_VAL=${DEB_HOST_ARCH:-$(dpkg-architecture -a"$ARCH" -qDEB_HOST_ARCH)}
+   else
+      DEB_HOST_ARCH_VAL=${DEB_HOST_ARCH:-$DEB_BUILD_ARCH_VAL}
+   fi
+   DEB_HOST_GNU_TYPE_VAL="${DEB_HOST_GNU_TYPE:-$(dpkg-architecture -a"$DEB_HOST_ARCH_VAL" -qDEB_HOST_GNU_TYPE)}"
 
-   ctx[OVRF]="${ctx[TMPDIR]}/overrides.env"
-   : > "${ctx[OVRF]}"
+   TOOLCHAIN_MODE=$([ "$DEB_BUILD_ARCH_VAL" = "$DEB_HOST_ARCH_VAL" ] && echo native || echo cross)
 
-   # cmdline switches have already been captured by the cli
-   declare -A IGOVERRIDES=()
-   [[ -n ${ctx[BUILD_DIR]} ]] \
-      && IGOVERRIDES[IGconf_sys_workroot]="${ctx[BUILD_DIR]}"
-
-   for k in "${!IGOVERRIDES[@]}"; do
-      printf '%s=%s\n'  "$k"  "${IGOVERRIDES[$k]}" >> "${ctx[OVRF]}"
-   done
-
-   # Remaining cmdline overrides
-   for arg in "$@"; do
-      key="${arg%%=*}"
-      value="${arg#*=}"
-      if [[ $arg =~ ^IGconf_[A-Za-z_][A-Za-z0-9_]*=.* ]]; then
-         printf '%s\n' "$arg" >> "${ctx[OVRF]}"
-         msg "Override: $arg"
-      else
-         die "Invalid argument: $arg  (expected IGconf_key=value)"
-      fi
-      case $key in
-         IGconf_sys_workroot) die "Set IGconf_sys_workroot via build dir" ;;
-      esac
-   done
-
-   # Initialise and read config
-   ctx[IGENVF]="${ctx[TMPDIR]}/ig.env"
-   : > "${ctx[IGENVF]}"
-
-   ig config             \
-      --path "${ctx[CONFIG_PATH]}" \
-      "${ctx[INCONFIG]}"     \
-      --overrides "${ctx[OVRF]}" \
-      --write-to "${ctx[IGENVF]}" \
+   # Read config, writing all settings to file. Deferred variable resolution in pipeline
+   # means that variable expansion does not happen here, so a config file can use any
+   # variable it wants (from layers, env, anchors etc). Nothing is resolved until pipeline runs.
+   env \
+      ig config \
+      --path "$HOST_CONFIG_PATH" \
+      "$HOST_CONFIG_FILE"     \
+      --overrides "$OVRF" \
+      --write-to "${TMPDIR}/config.env" \
       || die "Config parse failed"
 
-   # Inject extras
-   printf 'IGTOP="%s"\n'         "$IGTOP"               >> "${ctx[IGENVF]}"
-   printf 'SRC_DIR="%s"\n'       "${ctx[SRC_DIR]}"      >> "${ctx[IGENVF]}"
-   printf 'LAYER_HOOKS="%s"\n'   '$IGTOP/layer-hooks'   >> "${ctx[IGENVF]}"
-   printf 'RPI_TEMPLATES="%s"\n' '$IGTOP/templates/rpi' >> "${ctx[IGENVF]}"
+   # These canonical variables are always provided to pipeline
+   cat >> "${TMPDIR}/config.env" <<EOF
+DEB_BUILD_ARCH="$DEB_BUILD_ARCH_VAL"
+DEB_BUILD_GNU_TYPE="$DEB_BUILD_GNU_TYPE_VAL"
+DEB_HOST_ARCH="$DEB_HOST_ARCH_VAL"
+DEB_HOST_GNU_TYPE="$DEB_HOST_GNU_TYPE_VAL"
+TOOLCHAIN_MODE="$TOOLCHAIN_MODE"
+IGTOP="$IGTOP"
+LAYER_HOOKS="${IGTOP}/layer-hooks"
+RPI_TEMPLATES="${IGTOP}/templates/rpi"
+DYNROOT="$DYNROOT"
+EOF
 
-   # Toolchain base detection
-   if dpkg-architecture >/dev/null 2>&1; then
-      DEB_BUILD_ARCH="${DEB_BUILD_ARCH:-$(dpkg-architecture -qDEB_BUILD_ARCH)}"
-      DEB_HOST_ARCH="${DEB_HOST_ARCH:-$(dpkg-architecture -a${ARCH:-arm64} -qDEB_HOST_ARCH)}"
-      DEB_BUILD_GNU_TYPE="${DEB_BUILD_GNU_TYPE:-$(dpkg-architecture -a"$DEB_BUILD_ARCH" -qDEB_BUILD_GNU_TYPE)}"
-      DEB_HOST_GNU_TYPE="${DEB_HOST_GNU_TYPE:-$(dpkg-architecture -a"$DEB_HOST_ARCH" -qDEB_HOST_GNU_TYPE)}"
+   # Conditional
+   [[ -n "${SRCROOT:-}" ]] && \
+      printf 'SRCROOT="%s"\n' "$SRCROOT" >> "${TMPDIR}/config.env"
 
-      if [ "$DEB_BUILD_ARCH" = "$DEB_HOST_ARCH" ]; then
-         TOOLCHAIN_MODE="native"
-      else
-         TOOLCHAIN_MODE="cross"
-      fi
-
-      printf 'DEB_BUILD_ARCH="%s"\n' "$DEB_BUILD_ARCH" >> "${ctx[IGENVF]}"
-      printf 'DEB_HOST_ARCH="%s"\n' "$DEB_HOST_ARCH" >> "${ctx[IGENVF]}"
-      printf 'DEB_BUILD_GNU_TYPE="%s"\n' "$DEB_BUILD_GNU_TYPE" >> "${ctx[IGENVF]}"
-      printf 'DEB_HOST_GNU_TYPE="%s"\n' "$DEB_HOST_GNU_TYPE" >> "${ctx[IGENVF]}"
-      printf 'TOOLCHAIN_MODE="%s"\n' "$TOOLCHAIN_MODE" >> "${ctx[IGENVF]}"
-   else
-      die "dpkg-architecture not found: source build support unavailable"
-   fi
-
-   # Config sanity checks
-   for need in layer; do
-      grep -q "^IGconf_${need}" "${ctx[IGENVF]}" \
-         || die "Config provides no ${need} info"
-   done
-
-   # Validate
-   ( env -i bash -c 'set -eu; source "$1"' _ "${ctx[IGENVF]}" ) \
-      || die "parameter assembly"
+  msg "\nENV" 
+  cat ${TMPDIR}/config.env
 }
 
 
 ###############################################################################
 # Stage 2: Layer processing
 #   Collect all specified layers
-#   For all layers:
-#      Generate config variables
-#      Validate
-#   Generate build order
-#   Expand all config variables and cache to file
+#   Ingest config environment and run pipeline to output the build config
+#   Expand all variables and generate layer order
+#   Write bootstrap information to file
 ##############################################################################
 collect_layers()
 {
    msg "\nLAYER"
-
-   [[ -z ${ctx[LAYER_PATH]:-} ]] && die "LAYER_PATH is not set"
 
    local -a layers=(essential)
    _collect() {
@@ -217,59 +178,62 @@ collect_layers()
          IGconf_device_layer|IGconf_image_layer|IGconf_layer_*) layers+=("$v");;
       esac
    }
-   mapfile_kv "${ctx[IGENVF]}" _collect
-   [[ ${#layers[@]} -eq 0 ]] && die "No layers defined in config"
+   mapfile_kv "${TMPDIR}/config.env" _collect
 
-   msg "VALIDATE: ${layers[*]}"
-   msg "SEARCH: ${ctx[LAYER_PATH]}"
+   msg "PIPELINE: ${layers[*]}"
+   msg "SEARCH: $HOST_LAYER_PATH"
 
-   local layer_env="${ctx[TMPDIR]}/all-layers.env"
-   local layer_order="${ctx[TMPDIR]}/layers.order"
+   # Generate the bootstrap information, resolving all variables. Configuration
+   # input is only from the input env file, so run it in a clean room.
+   env -i PATH=$PATH \
+     ig pipeline \
+      --env-in "${TMPDIR}/config.env" \
+      --layers "${layers[@]}" \
+      --path "$HOST_LAYER_PATH" \
+      --env-out "${TMPDIR}/env.out" \
+      --order-out "${TMPDIR}/layer.order" \
+      || die "pipeline failed"
 
-   # Generate layer config variables
-   runenv "${ctx[IGENVF]}" ig layer \
-      --path "${ctx[LAYER_PATH]}" \
-      --apply-env "${layers[@]}" \
-      --write-out "$layer_env" \
-      || die "Layer --apply-env failed"
+   msg "PIPELINE: OK"
 
-   # Append to initial env
-   cat "$layer_env" >> "${ctx[IGENVF]}"
+   # Normalise
+   safe_kv "${TMPDIR}/env.out" > "${TMPDIR}/env.safe"
 
-    # Validate layers
-   runenv "${ctx[IGENVF]}" ig layer \
-      --path "${ctx[LAYER_PATH]}" \
-      --validate "${layers[@]}" \
-      || die "Layer validation failed"
-
-   # Generate the layer build order
-   runenv "${ctx[IGENVF]}" ig layer \
-      --path "${ctx[LAYER_PATH]}" \
-      --build-order "${layers[@]}" \
-      --rel-paths --output "$layer_order" \
-      || die "Layer build-order failed"
-
-   # Expand and resolve all variables with a strict policy
+   # Expand all variables with a strict policy, posix only
    local -a vars
-   mapfile -t vars < <(grep -oE '^[A-Za-z_][A-Za-z0-9_]*' "${ctx[IGENVF]}")
+   mapfile -t vars < <(grep -oE '^[A-Za-z_][A-Za-z0-9_]*' "${TMPDIR}/env.safe")
 
-   local finalenv="${ctx[TMPDIR]}/final.env"
-   env -i bash -c '
-   set -aeu
-   source "$1"
-   shift
-   for v in "$@"; do printf "%s=\"%s\"\n" "$v" "${!v}"; done
-   ' _ "${ctx[IGENVF]}" "${vars[@]}" > "$finalenv" \
-      || die "Layer env expansion failed"
-
-   ctx[LAYER_ORDER]="$layer_order"
-   ctx[FINALENV]="$finalenv"
+   if ! env -i POSIXLY_CORRECT=1 \
+      /bin/sh -c '
+         set -aeu
+         . "$1"
+         shift
+         for v in "$@"; do
+            eval "val=\${$v-}"
+            printf "%s=\"%s\"\n" "$v" "$val"
+         done
+         ' _ "${TMPDIR}/env.safe" "${vars[@]}" > "${TMPDIR}/final.env"
+      then
+         nl -ba "${TMPDIR}/env.safe" >&2
+         die "Layer env expansion failed"
+   fi
 
    # Write bootstrap information
-   local bdir=$(get_var IGconf_sys_bootstrapdir "${ctx[FINALENV]}") || die
-   mkdir -p "$bdir"
-   cp "${ctx[FINALENV]}"   "${bdir}/config.env"
-   cp "${ctx[LAYER_ORDER]}" "${bdir}/layer.order"
+   local bdir=$(get_var IGconf_sys_bootstrapdir "${TMPDIR}/final.env") || \
+      die "No bootstrap dir"
+
+   mkdir -p "$bdir" || die
+   for f in final.env layer.order host.json ; do
+      src="${TMPDIR}/$f"
+      [[ -f "$src" ]] || die "Missing bootstrap file: $src"
+      cp "$src" "$bdir" || die
+   done
+   if [ -d "${DYNROOT}" ] ; then
+      mkdir -p "${bdir}/dynamic" && rsync -a ${DYNROOT}/ "${bdir}/dynamic/"
+   fi
+
+   ctx[FINALENV]="${bdir}/final.env"
+   ctx[LAYER_ORDER]="${bdir}/layer.order"
 }
 
 
@@ -277,6 +241,7 @@ collect_layers()
 ###############################################################################
 # Stage 3: Filesystem build preparation
 #   Create output directories
+#   Resolve host paths
 #   Build mission critical tools
 #   Initialise bdebstrap environment - apt, proxy, cache, etc
 #   Assemble compatible layers
@@ -295,7 +260,8 @@ prepare_build_config()
          IGconf_target_dir|\
          IGconf_target_path|\
          IGconf_sys_workroot|\
-         IGconf_sys_cachedir)
+         IGconf_sys_cachedir|\
+         DEB_BUILD_GNU_TYPE)
             declare -g "$key"="$val"
             ;;
       esac
@@ -304,34 +270,34 @@ prepare_build_config()
    mapfile_kv "${ctx[FINALENV]}" set_kv
 
    # Create output dirs
-   mkdir -p "$IGconf_target_dir" \
-      "$IGconf_sys_workroot" \
-      "$IGconf_sys_cachedir"
+   mkdir -p "$IGconf_target_dir" "$IGconf_sys_workroot" "$IGconf_sys_cachedir"
    [[ -n "${IGconf_image_outputdir:-}" ]] && mkdir -p "$IGconf_image_outputdir"
 
    # Build required host tools
    bootstrap_build_tools
 
-   # Create initial bdebstrap env
-   _bdebstrap=( --force --env PATH="$PATH" )
-
-   # Sane defaults
+   # Seed bdebstrap env with sane defaults
+   _bdebstrap=()
+   _bdebstrap+=( --force --env PATH="$PATH" )
    _bdebstrap+=( --name     "${IGconf_image_name:-rpi-image-gen}" )
    _bdebstrap+=( --hostname "${IGconf_device_hostname:-rpi-image-gen}" )
-   _bdebstrap+=( --output   "${IGconf_target_dir:?IGconf_target_dir is not set}" )
-   _bdebstrap+=( --target   "${IGconf_target_path:?IGconf_target_path is not set}" )
+   _bdebstrap+=( --output   "${IGconf_target_dir:?not set}" )
+   _bdebstrap+=( --target   "${IGconf_target_path:?not set}" )
 
-   # Process options from layer configuration
+   # Process all options from the configuration and selectively set apt/dpkg opts
+   # or other dynamically driven settings.
    process_conf_opt() {
-      local key=$1 value=$2
+      local key=${1:-} value=${2:-}
       msg "-> $key : $value"
       case $key in
          IGconf_sys_apt_keydir)
             if [[ -z "$value" ]]; then
                keydir=$(realpath -m "${IGconf_sys_workroot}/keys")
-               mkdir -p "$keydir"
+               mkdir -p -- "$keydir" || die
                [[ -d /usr/share/keyrings ]] && rsync -a /usr/share/keyrings/ "$keydir"
-               [[ -d "$USER/.local/share/keyrings" ]] && rsync -a "$USER/.local/share/keyrings/" "$keydir"
+               if [[ -n ${HOME:-} && -d ${HOME}/.local/share/keyrings ]]; then
+                  rsync -a "${HOME}/.local/share/keyrings/" "$keydir"
+               fi
                rsync -a "$IGTOP/keydir/" "$keydir"
                value="$keydir"
             else
@@ -369,18 +335,18 @@ prepare_build_config()
    # Translate layer paths and load those that contain an mmdebstrap mapping
    msg "\nMMDEBSTRAP"
    local total=0 added=0 skipped=0
-   local specs="${ctx[TMPDIR]}/layer.resolved"
+   local specs="${TMPDIR}/layer.resolved"
 
    : > $specs
-   while IFS='=' read -r layer filepath; do
-      [[ -n $layer && -n $filepath ]] || continue
+   while IFS='=' read -r layer spec; do
+      [[ -n $layer && -n $spec ]] || continue
       [[ $layer == \#* ]] && continue
-      filepath=${filepath#\"}
-      filepath=${filepath%\"}
-      [[ -n $filepath ]] || continue
+      spec=${spec#\"}
+      spec=${spec%\"}
+      [[ -n $spec ]] || continue
 
       ((total++))
-      local resolved=$(map_path "$filepath") || die "Failed to resolve $filepath"
+      local resolved=$(map_path "$spec") || die "Failed to resolve $spec"
       [[ -f $resolved ]] || die "Layer $layer ($resolved) not found"
       printf '%s="%s"\n' "$layer" "$resolved" >> "$specs"
    done < "${ctx[LAYER_ORDER]}"
@@ -423,7 +389,7 @@ generate_filesystem()
 
    local -n _benv="${ctx[ENV_BDEBSTRAP]}" # via nameref
 
-   rund "${ctx[SRC_DIR]}" podman unshare bdebstrap \
+   rund "${ctx[SRCROOT]}" podman unshare bdebstrap \
       "${_benv[@]}" \
       --setup-hook     'runner setup "$@"' \
       --extract-hook   'runner extract "$@"' \
@@ -462,14 +428,14 @@ generate_images() {
    runenv "${ctx[FINALENV]}" podman unshare runner pre-image
 
    if [[ "$provider" == genimage && -d "$filesystem" ]] ; then
-      mkdir -p "${ctx[TMPDIR]}/genimage"
+      mkdir -p "${TMPDIR}/genimage"
       local cfg
       for cfg in "${output_path}"/genimage*.cfg; do
          [[ -f $cfg ]] || continue
          runenv "${ctx[FINALENV]}" \
             podman unshare env genimage \
             --rootpath   "$filesystem" \
-            --tmppath    "${ctx[TMPDIR]}/genimage" \
+            --tmppath    "${TMPDIR}/genimage" \
             --inputpath  "$output_path" \
             --outputpath "$output_path" \
             --loglevel=1 \
@@ -504,101 +470,44 @@ deploy() {
 ###############################################################################
 clean_worktree() {
    msg "\nCLEAN"
+   : "${ctx[FINALENV]?FINALENV is not set}"
 
-   [[ -z ${ctx[FINALENV]:-} ]] && die "FINALENV is not set"
-
-   local keys=(
-      IGconf_target_path
-      IGconf_image_outputdir
-      IGconf_image_deploydir
-   )
-
-   # TODO handle cleaning IGconf_sys_workroot safely - could have been
-   # specified as . via CLI/config.
-
-   for key in "${keys[@]}" ; do
-      val=$(get_var $key "${ctx[FINALENV]}") || continue
-      [[ -e "$val" ]] || continue
-      msg "Remove  $key  [$val]"
-      ask "Continue with removal?" y || { echo "Skipping.." ; continue ; }
-      case $key in
-         IGconf_target_path)
-            run podman unshare rm -rf -- "$val" ;;
-         *)
-            rm -rf -- "$val" ;;
-      esac
+   local key val
+   for key in IGconf_target_path IGconf_image_outputdir IGconf_image_deploydir; do
+      val=$(get_var "$key" "${ctx[FINALENV]}") || continue
+      [[ -e $val ]] || continue
+      ask "Remove $key [$val]?" y || continue
+      if [[ $key == IGconf_target_path ]]; then
+         run podman unshare rm -rf -- "$val"
+      else
+         rm -rf -- "$val"
+      fi
    done
-   return 0
 }
 
 
-main() {
-   local cmd=${1:-}
-   [[ -z $cmd ]] && die "Command required"
-   shift
 
+main() {
    run_stage() {
       local fn=$1; shift
-      if [[ -z ${NO_COLOR:-} && -t 1 ]]; then
-         printf '\n\033[1m==> %s\033[0m\n' "$fn"
-      else
-         printf '\n==> %s\n' "$fn"
-      fi
+      printf '\n\033[1m==> %s\033[0m\n' "$fn"
       "$fn" "$@" || die "Stage '$fn' failed"
    }
 
    case $cmd in
       build)
-         cli_parse_build ctx "$@"
-         shift $?
-         path_refresh
-         dependencies_check --category all "$IGTOP/depends" || exit 1
-         run_stage parameter_assembly "$@"
+         run_stage parameter_assembly
          run_stage collect_layers
          run_stage prepare_build_config
-         [[ "${ctx[ONLY_IMAGE]}" == 1 ]] || run_stage generate_filesystem
-         [[ "${ctx[ONLY_FS]}" == 1 ]] || run_stage generate_images
+         [[ "${ctx[ONLY_IMAGE]}" == y ]] || run_stage generate_filesystem
+         [[ "${ctx[ONLY_FS]}" == y ]] || run_stage generate_images
          run_stage deploy
          ;;
 
       clean)
-         cli_parse_clean ctx "$@"
-         shift $?
-         path_refresh
-         dependencies_check --category all "$IGTOP/depends" || exit 1
-         run_stage parameter_assembly "$@"
+         run_stage parameter_assembly
          run_stage collect_layers
          run_stage clean_worktree
-         ;;
-
-      layer)
-         cli_parse_layer ctx "$@"
-         shift $?
-         path_refresh
-         dependencies_check --category all "$IGTOP/depends" || exit 1
-         exec "$IGTOP/bin/ig" layer --path "${ctx[LAYER_PATH]}" "$@"
-         ;;
-
-      metadata)
-         cli_parse_metadata ctx "$@"
-         shift $?
-         dependencies_check --category all "$IGTOP/depends" || exit 1
-         exec "$IGTOP/bin/ig" metadata "$@"
-         ;;
-
-      config)
-         cli_parse_config ctx "$@"
-         shift $?
-         dependencies_check --category all "$IGTOP/depends" || exit 1
-         exec "$IGTOP/bin/ig" config "$@"
-         ;;
-
-      help|-h|--help)
-         cli_help
-         ;;
-
-      *)
-         die "Unknown command: $cmd"
          ;;
    esac
 }

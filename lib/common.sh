@@ -118,34 +118,6 @@ mapfile_kv() {
 }
 
 
-# One way key check in file
-check_missing_keys() {
-   local needles="$1" haystack="$2"
-
-   [[ $# -eq 2 && -f "$needles" && -f "$haystack" ]] || {
-       die "Need <needles> and <haystack>"
-   }
-
-   # Look in here...
-   declare -A haystack_keys
-   gather_haystack() { haystack_keys["$1"]=1; }
-   mapfile_kv "$haystack" gather_haystack
-
-   # ...for these.
-   local missing=()
-   find_needle() { [[ -z "${haystack_keys[$1]:-}" ]] && missing+=("$1"); }
-   mapfile_kv "$needles" find_needle
-
-   if [[ ${#missing[@]} -gt 0 ]]; then
-       echo "Keys from '$needles' not found in '$haystack':"
-       printf ' %s\n' "${missing[@]}"
-       return 1
-   fi
-
-   return 0
-}
-
-
 # ask <prompt> [<default>]
 # default: y or n   (case-insensitive). If omitted -> ‘y’.
 ask () {
@@ -178,7 +150,7 @@ ask () {
 
 # Translates logical asset namespaces into real paths at execution time.
 # This is the central namespace path resolver for the build system. Rather than
-# using hard‑coded absolute paths, logical tag specs are used to translate
+# using hard‑coded absolute paths, logical specs are used to translate
 # them at runtime. This makes hooks, overlays, layer paths etc portable, eg
 # between (host) bootstrap and (container) build.
 map_path() {
@@ -188,15 +160,6 @@ map_path() {
    local tag=${raw%%:*}
    local rest=${raw#*:}
    local base
-
-   # Fall back to scalar when array not present.
-   # ctx doesn't exist outside of top level script
-   local src_root
-   if declare -p ctx &>/dev/null; then
-      src_root=${ctx[SRC_DIR]:?"not set for '$raw'"}
-   else
-      src_root=${SRC_DIR:?"not set for '$raw'"}
-   fi
 
    # Handler for variable or spec inside a variable
    if [[ $raw == VAR:* ]]; then
@@ -217,16 +180,18 @@ map_path() {
 
    case $tag in
       IGROOT)
-         base=${IGTOP:?"not set for $raw"}
-         ;;
-      IGROOT_*)
-         base="${IGTOP:?"not set for $raw"}/${tag#IGROOT_}"
+         base=${IGTOP:?"IGTOP not set for $raw"}
          ;;
       SRCROOT)
-         base=$src_root
+         [[ -n ${SRCROOT:-} ]] || return 1
+         base=$SRCROOT
          ;;
-      SRCROOT_*)
-         base="${src_root}/${tag#SRCROOT_}"
+      IG*)
+         base="${IGTOP}/${tag#IG}"
+         ;;
+      SRC*)
+         [[ -n ${SRCROOT:-} ]] || return 1
+         base="${SRCROOT}/${tag#SRC}"
          ;;
       DEVICE_ASSET)
          [[ -n ${IGconf_device_assetdir:-} ]] || return 1
@@ -236,9 +201,9 @@ map_path() {
          [[ -n ${IGconf_image_assetdir:-} ]] || return 1
          base=${IGconf_image_assetdir}
          ;;
-      TMPROOT_layer)
-         [[ -n ${ctx[DYN_LAYER_DIR]:-} ]] || return 1
-         base=${ctx[DYN_LAYER_DIR]}
+      DYN*)
+         [[ -n ${DYNROOT:-} ]] || return 1
+         base="${DYNROOT}/${tag#DYN}"
          ;;
       TARGETDIR)
          [[ -n ${IGconf_target_dir:-} ]] || return 1
@@ -259,3 +224,21 @@ map_path() {
    fi
 }
 export -f map_path
+
+
+# General purpose key=value normaliser that escapes chracters that would
+# break posix expansion
+safe_kv() {
+  python3 - "$1" <<'PY'
+import sys
+with open(sys.argv[1], encoding='utf-8') as src:
+   for raw in src:
+      line = raw.rstrip('\n')
+      if not line or line.lstrip().startswith('#') or '=' not in line:
+         print(line)
+         continue
+      key, value = line.split('=', 1)
+      value = value.replace('\\', '\\\\').replace('"', '\\"')
+      print(f'{key}="{value}"')
+PY
+}

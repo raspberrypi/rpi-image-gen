@@ -1,0 +1,10 @@
+# METABEGIN
+# X-Env-Layer-Name: lint-unsupported-layer
+# X-Env-Layer-Desc: Unsupported layer field present
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Priority: 10
+# X-Env-VarPrefix: lint
+# X-Env-Var-foo: bar
+# METAEND
+

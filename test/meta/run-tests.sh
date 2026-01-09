@@ -1,0 +1,453 @@
+#!/bin/bash
+set -uo pipefail
+
+# rpi-image-gen metadata parsing test suite
+# Usage: just run it
+
+IGTOP=$(readlink -f "$(dirname "$0")/../../")
+META="${IGTOP}/test/meta"
+PIPELINE_DIR=$(mktemp -d -t meta-layers.XXXXXX)
+trap 'rm -rf "$PIPELINE_DIR"' EXIT
+
+PATH="$IGTOP/bin:$PATH"
+
+# Copy fixtures to a clean work dir (skip duplicate-name fixture for positive cases)
+for f in "$META"/*.yaml; do
+    base=$(basename "$f")
+    if [ "$base" = "layer-duplicate-name.yaml" ]; then
+        continue
+    fi
+    if [[ "$base" == lint-* ]]; then
+        continue
+    fi
+    cp "$f" "$PIPELINE_DIR/$base"
+done
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+TOTAL_TESTS=0
+PASSED_TESTS=0
+FAILED_TESTS=0
+
+declare -a FAILED_TEST_NAMES=()
+
+print_header() {
+    echo -e "${BLUE}================================${NC}"
+    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}================================${NC}"
+}
+
+print_test() {
+    echo -e "${YELLOW}Testing: $1${NC}"
+}
+
+print_pass() {
+    echo -e "${GREEN}✓ PASS: $1${NC}"
+    ((PASSED_TESTS++))
+}
+
+print_fail() {
+    echo -e "${RED}✗ FAIL: $1${NC}"
+    echo -e "${RED}  Error: $2${NC}"
+    ((FAILED_TESTS++))
+    FAILED_TEST_NAMES+=("$1")
+}
+
+run_test() {
+    local test_name="$1"
+    local command="$2"
+    local expected_exit_code="$3"
+    local description="$4"
+
+    ((TOTAL_TESTS++))
+    print_test "$test_name"
+
+    local output
+    output=$(eval "$command" 2>&1)
+    local actual_exit_code=$?
+
+    if [ "$actual_exit_code" -eq "$expected_exit_code" ]; then
+        print_pass "$description"
+    else
+        print_fail "$description" "Expected exit code $expected_exit_code, got $actual_exit_code. Output: $output"
+    fi
+
+    echo ""
+}
+
+print_summary() {
+    echo -e "${BLUE}================================${NC}"
+    echo -e "${BLUE}TEST SUMMARY${NC}"
+    echo -e "${BLUE}================================${NC}"
+    echo -e "Total tests: $TOTAL_TESTS"
+    echo -e "${GREEN}Passed: $PASSED_TESTS${NC}"
+    echo -e "${RED}Failed: $FAILED_TESTS${NC}"
+
+    if [ ${#FAILED_TEST_NAMES[@]} -gt 0 ]; then
+        echo -e "\n${RED}Failed tests:${NC}"
+        for test in "${FAILED_TEST_NAMES[@]}"; do
+            echo -e "${RED}  - $test${NC}"
+        done
+    fi
+
+    if [ $FAILED_TESTS -eq 0 ]; then
+        echo -e "\n${GREEN}All tests passed!${NC}"
+        exit 0
+    else
+        echo -e "\n${RED}Some tests failed. Please check the output above.${NC}"
+        exit 1
+    fi
+}
+
+cleanup_env() {
+    unset $(env | grep '^IGconf_' | cut -d= -f1)
+    unset NONEXISTENT_VAR
+}
+
+setup_test_env() {
+    export IGconf_basic_hostname="test-host"
+    export IGconf_types_name="test-app"
+    export IGconf_types_timeout="60"
+    export IGconf_types_debug="true"
+    export IGconf_types_environment="development"
+    export IGconf_types_email="test@example.com"
+    export IGconf_valfail_port="99999"
+    export IGconf_valfail_email="not-an-email"
+    export IGconf_valfail_required=""
+}
+
+make_pipeline_env() {
+    local target_file="$1"
+    shift
+    {
+        printf "IGROOT=/tmp/pipeline\n"
+        printf "SRCROOT=/tmp/pipeline/src\n"
+        for line in "$@"; do
+            printf "%s\n" "$line"
+        done
+    } > "$target_file"
+}
+
+# ---------------------------------------------------------------------------
+print_header "VALID METADATA TESTS"
+
+run_test "valid-basic-parse" \
+    "ig metadata --parse ${META}/valid-basic.yaml" \
+    0 \
+    "Valid basic metadata should parse successfully"
+
+run_test "valid-basic-validate" \
+    "ig metadata --validate ${META}/valid-basic.yaml" \
+    0 \
+    "Valid basic metadata should validate successfully"
+
+run_test "valid-basic-describe" \
+    "ig metadata --describe ${META}/valid-basic.yaml" \
+    0 \
+    "Valid basic metadata should describe successfully"
+
+setup_test_env
+run_test "valid-all-types-parse" \
+    "ig metadata --parse ${META}/valid-all-types.yaml" \
+    0 \
+    "Valid all-types metadata should parse successfully"
+
+run_test "valid-all-types-validate" \
+    "ig metadata --validate ${META}/valid-all-types.yaml" \
+    0 \
+    "Valid all-types metadata should validate successfully"
+
+run_test "valid-all-types-set" \
+    "ig metadata --parse ${META}/valid-all-types.yaml" \
+    0 \
+    "Valid all-types metadata should set variables successfully"
+
+run_test "valid-requirements-only-parse" \
+    "setup_test_env; ig metadata --parse ${META}/valid-requirements-only.yaml" \
+    0 \
+    "Valid requirements-only metadata should parse successfully"
+
+run_test "valid-requirements-only-validate" \
+    "setup_test_env; ig metadata --validate ${META}/valid-requirements-only.yaml" \
+    0 \
+    "Valid requirements-only metadata should validate successfully"
+
+cleanup_env
+run_test "set-policies-set" \
+    "ig metadata --parse ${META}/set-policies.yaml" \
+    0 \
+    "Set policies should work correctly"
+
+# ---------------------------------------------------------------------------
+print_header "INVALID METADATA TESTS"
+
+cleanup_env
+run_test "invalid-no-prefix-parse" \
+    "ig metadata --parse ${META}/invalid-no-prefix.yaml" \
+    1 \
+    "Metadata with variables but no prefix should fail to parse"
+
+run_test "invalid-no-prefix-validate" \
+    "ig metadata --validate ${META}/invalid-no-prefix.yaml" \
+    1 \
+    "Metadata with variables but no prefix should fail to validate"
+
+run_test "invalid-malformed-parse" \
+    "ig metadata --parse ${META}/invalid-malformed.yaml" \
+    1 \
+    "Malformed metadata should fail to parse"
+
+run_test "invalid-malformed-validate" \
+    "ig metadata --validate ${META}/invalid-malformed.yaml" \
+    1 \
+    "Malformed metadata should fail to validate"
+
+run_test "invalid-unsupported-parse" \
+    "ig metadata --parse ${META}/invalid-unsupported-fields.yaml" \
+    1 \
+    "Metadata with unsupported fields should fail to parse"
+
+run_test "invalid-unsupported-validate" \
+    "ig metadata --validate ${META}/invalid-unsupported-fields.yaml" \
+    1 \
+    "Metadata with unsupported fields should fail to validate"
+
+run_test "invalid-yaml-syntax-layer-validate" \
+    "ig metadata --validate ${META}/invalid-yaml-syntax.yaml" \
+    1 \
+    "Invalid YAML syntax should fail validation"
+
+setup_test_env
+run_test "validation-failures-parse" \
+    "ig metadata --parse ${META}/validation-failures.yaml" \
+    1 \
+    "Metadata with validation failures should fail to parse"
+
+run_test "validation-failures-validate" \
+    "ig metadata --validate ${META}/validation-failures.yaml" \
+    1 \
+    "Metadata with validation failures should fail to validate"
+
+# ---------------------------------------------------------------------------
+print_header "LAYER FUNCTIONALITY TESTS"
+
+run_test "layer-with-deps-info" \
+    "ig layer --path ${PIPELINE_DIR} --describe test-with-deps" \
+    0 \
+    "Layer with dependencies should show info successfully"
+
+setup_test_env
+run_test "layer-with-deps-validate" \
+    "ig metadata --validate ${PIPELINE_DIR}/valid-with-deps.yaml" \
+    0 \
+    "Layer with dependencies should validate successfully"
+
+run_test "layer-missing-dep-validate" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-missing-dep --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    1 \
+    "Layer with missing dependencies should fail validation"
+
+run_test "layer-missing-dep-check" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-missing-dep --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    1 \
+    "Layer dependency check should fail for missing dependencies"
+
+run_test "layer-circular-deps-check" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-circular-a --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    1 \
+    "Circular dependency check should fail"
+
+run_test "layer-build-order-circular" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-circular-a --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    1 \
+    "Build order should fail for circular dependencies"
+
+run_test "layer-duplicate-name-handling" \
+    "ig layer --path ${META} --list" \
+    1 \
+    "Duplicate layer name should raise an error"
+
+# ---------------------------------------------------------------------------
+print_header "OTHER TESTS"
+
+run_test "meta-help-validation" \
+    "ig metadata --help-validation" \
+    0 \
+    "Help validation should work"
+
+run_test "meta-gen" \
+    "ig metadata --gen" \
+    0 \
+    "Metadata generation should work"
+
+run_test "layer-build-order-valid" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "IGconf_basic_hostname=test-host" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-with-deps --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    0 \
+    "Build order should work for valid dependencies"
+
+run_test "layer-discovery" \
+    "ig layer --path ${PIPELINE_DIR} --describe test-basic" \
+    0 \
+    "Layer discovery should find test layers"
+
+# ---------------------------------------------------------------------------
+print_header "AUTO-SET AND APPLY-ENV TESTS"
+
+NET_FILE="${PIPELINE_DIR}/network-x-env.yaml"
+
+cleanup_env
+unset IGconf_net_interface
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${NET_FILE}
+run_test "meta-parse-auto-set" \
+    "ig metadata --parse ${NET_FILE}" \
+    0 \
+    "Meta parse should auto-set variables with Set: y policy"
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${NET_FILE}
+
+cleanup_env
+run_test "layer-apply-env-valid" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-set-policies --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "IGconf_setpol_alwaysset=default-value" "$TMP_OUT" && \
+     grep -q "IGconf_setpol_defaultbehavior=default-value" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
+    0 \
+    "Pipeline apply-env should work with valid metadata"
+
+run_test "layer-apply-env-invalid" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-unsupported --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    1 \
+    "Pipeline apply-env should fail with invalid metadata"
+
+cleanup_env
+unset IGconf_net_interface
+IGconf_net_interface_before=$(env | grep IGconf_net_interface || echo "UNSET")
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${NET_FILE}
+run_test "meta-parse-sets-required-vars" \
+    "test \"$IGconf_net_interface_before\" = \"UNSET\" && ig metadata --parse ${NET_FILE} | grep 'IGconf_net_interface=eth0'" \
+    0 \
+    "Meta parse should set required variables from defaults when Set: y"
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${NET_FILE}
+
+cleanup_env
+unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${NET_FILE}
+run_test "layer-apply-env-sets-vars" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers network-setup --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_net_interface=eth0$" "$TMP_OUT" && \
+     grep -q "^IGconf_net_ip=192.168.1.100$" "$TMP_OUT" && \
+     rm -f "$TMP_ENV" "$TMP_OUT"' \
+    0 \
+    "Pipeline should set network variables when unset"
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${NET_FILE}
+
+cleanup_env
+unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
+sed -i 's/X-Env-Var-INTERFACE-Set: n/X-Env-Var-INTERFACE-Set: y/' ${NET_FILE}
+run_test "meta-parse-required-auto-set-regression" \
+    "ig metadata --parse ${NET_FILE} | grep 'IGconf_net_interface=eth0'" \
+    0 \
+    "Meta parse should work with required variables that have Set: y (regression test)"
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${NET_FILE}
+
+cleanup_env
+unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${NET_FILE}
+run_test "layer-apply-env-fails-required-no-set" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers network-setup --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    1 \
+    "Layer apply-env should fail when required variables have Set: n and are not provided"
+
+cleanup_env
+unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
+run_test "layer-apply-env-succeeds-required-manually-set" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "IGconf_net_interface=wlan0" && \
+     ig pipeline --env-in "$TMP_ENV" --layers network-setup --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_net_interface=wlan0$" "$TMP_OUT"; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    0 \
+    "Layer apply-env should succeed when required variables have Set: n but are manually provided"
+
+cleanup_env
+unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
+sed -i 's/X-Env-Var-INTERFACE-Set: y/X-Env-Var-INTERFACE-Set: n/' ${NET_FILE}
+run_test "meta-parse-fails-required-no-set" \
+    "ig metadata --parse ${NET_FILE}" \
+    1 \
+    "Meta parse should fail when required variables have Set: n and are not provided in environment"
+
+cleanup_env
+unset IGconf_net_interface IGconf_net_ip IGconf_net_dns
+run_test "meta-parse-succeeds-required-manually-set" \
+    "IGconf_net_interface=wlan0 ig metadata --parse ${NET_FILE} | grep 'IGconf_net_interface=wlan0'" \
+    0 \
+    "Meta parse should succeed when required variables have Set: n but are manually provided"
+
+print_header "LINT TESTS"
+
+run_test "lint-missing-layer-name" \
+    "ig metadata --lint ${META}/lint-missing-layer-name.yaml" \
+    1 \
+    "Lint should fail when layer fields exist but Name is missing"
+
+run_test "lint-unsupported-layer-field" \
+    "ig metadata --lint ${META}/lint-unsupported-layer-field.yaml" \
+    1 \
+    "Lint should fail on unsupported layer field"
+
+run_test "lint-unsupported-var-field" \
+    "ig metadata --lint ${META}/lint-unsupported-var-field.yaml" \
+    1 \
+    "Lint should fail on unsupported env var field"
+
+run_test "lint-orphan-attr" \
+    "ig metadata --lint ${META}/lint-orphan-attr.yaml" \
+    1 \
+    "Lint should fail on orphaned attribute without base var"
+
+run_test "lint-invalid-var-rule" \
+    "ig metadata --lint ${META}/lint-invalid-var-rule.yaml" \
+    1 \
+    "Lint should fail on invalid per-variable validation rule"
+
+run_test "lint-invalid-rule-list" \
+    "ig metadata --lint ${META}/lint-invalid-rule-list.yaml" \
+    1 \
+    "Lint should fail on invalid VarRequires-Valid rule list"
+
+run_test "lint-no-metadata" \
+    "ig metadata --lint ${META}/lint-no-metadata.yaml" \
+    1 \
+    "Lint should fail when no X-Env-* metadata fields exist"
+
+cleanup_env
+print_summary

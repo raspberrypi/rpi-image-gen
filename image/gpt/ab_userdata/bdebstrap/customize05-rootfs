@@ -3,8 +3,9 @@
 set -eu
 
 # Install provision map
-if [ -f "$IGconf_image_pmapfile" ] ; then
-   cp ${IGconf_image_pmapfile} ${IGconf_image_outputdir}/provisionmap.json
+pmap="${IGconf_image_assetdir:-}/device/provisionmap-${IGconf_image_pmap:-}.json"
+if [ -f "$pmap" ]; then
+    cp "$pmap" "${IGconf_image_outputdir}/provisionmap.json"
 else
    die "No pmap. Unable to provision image."
 fi
