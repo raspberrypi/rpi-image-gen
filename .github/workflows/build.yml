@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       NL_On_Prem_Auth_Tag:
-        description: "OnPrem release tag (For example v0.0.5). Leave empty to download latest release."
-        required: false
+        description: "OnPrem release tag (For example v0.0.5)."
+        required: true
         default: ""
   workflow_call:
     inputs:
@@ -42,28 +42,19 @@ jobs:
       # -------------------------------
       # Downloading the selected release
       # -------------------------------
-      - name: Download NL-On-Prem-Auth release artifact (latest or specific)
+      - name: Download NL-On-Prem-Auth release artifact
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           RELEASE_TAG: ${{ inputs.NL_On_Prem_Auth_Tag }}
         run: |
           mkdir -p artifacts
 
-          if [ -z "$RELEASE_TAG" ]; then
-            echo "No tag provided → downloading latest release"
-            gh release download \
-              --repo SecurityPeopleInc/NL-On-Prem-Auth \
-              --latest \
-              --pattern "digilink-onprem-*-arm64.tar.gz" \
-              --dir artifacts
-          else
-            echo "Using tag: $RELEASE_TAG"
-            gh release download \
-              "$RELEASE_TAG" \
-              --repo SecurityPeopleInc/NL-On-Prem-Auth \
-              --pattern "digilink-onprem-${RELEASE_TAG}-arm64.tar.gz" \
-              --dir artifacts
-          fi
+          echo "Using tag: $RELEASE_TAG"
+          gh release download \
+            "$RELEASE_TAG" \
+            --repo SecurityPeopleInc/NL-On-Prem-Auth \
+            --pattern "digilink-onprem-${RELEASE_TAG}-arm64.tar.gz" \
+            --dir artifacts
 
           echo "Downloaded artifacts:"
           ls -al artifacts
