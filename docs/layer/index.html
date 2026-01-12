@@ -321,10 +321,10 @@ mmdebstrap:
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Checks for the existence of a temporary directory specified by tag <code>TMPROOT_layer=&lt;tmpdir&gt;</code> on the layer search path (<code>rpi-image-gen</code> does this automatically).</p>
+<p>Checks for the existence of a temporary directory specified by tag <code>DYNlayer=&lt;tmpdir&gt;</code> on the layer search path (<code>rpi-image-gen</code> does this automatically).</p>
 </li>
 <li>
-<p>Runs the generator with two arguments, <code>&lt;template-path&gt; &lt;output-path&gt;</code>, where the output is written to <code>TMPROOT_layer/path/to/&lt;layer-name&gt;.yaml</code>. The <code>path/to</code> portion matches the layer’s path under its original search root, so dynamic layers mirror the same directory structure as static layers when reported via tagged paths.</p>
+<p>Runs the generator with two arguments, <code>&lt;template-path&gt; &lt;output-path&gt;</code>, where the output is written to <code>DYNlayer/path/to/&lt;layer-name&gt;.yaml</code>. The <code>path/to</code> portion matches the layer’s path under its original search root, so dynamic layers mirror the same directory structure as static layers when reported via tagged paths.</p>
 </li>
 <li>
 <p>Reads all mmdebstrap/env content from the generated file while continuing to use the original <code># X-Env-*</code> metadata for naming, dependencies, documentation, etc.</p>
@@ -784,6 +784,10 @@ IGconf_layer_app=my-app</code></pre>
         </div>
         
         <div class="layer-item">
+            <a href="rpi-splash-screen.html">rpi-splash-screen</a><span class="layer-desc">- Raspberry Pi fullscreen splash screen support with custom image configuration.</span>
+        </div>
+        
+        <div class="layer-item">
             <a href="rpi3.html">rpi3</a><span class="layer-desc">- Raspberry Pi 3 specific device layer</span>
         </div>
         
@@ -907,10 +911,6 @@ IGconf_layer_app=my-app</code></pre>
         
         <div class="layer-item">
             <a href="rpi-misc-utils.html">rpi-misc-utils</a><span class="layer-desc">- Raspberry Pi system utilities</span>
-        </div>
-        
-        <div class="layer-item">
-            <a href="rpi-splash-screen.html">rpi-splash-screen</a><span class="layer-desc">- Raspberry Pi fullscreen splash screen support with custom image configuration.</span>
         </div>
         
         <div class="layer-item">

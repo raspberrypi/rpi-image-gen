@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: target-config
 # X-Env-Layer-Category: build
 # X-Env-Layer-Desc: bdebstrap output target configuration.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 # X-Env-Layer-Requires: artefact-base,sys-build-base
 #
 # X-Env-VarPrefix: target
@@ -18,6 +18,7 @@
 # X-Env-Var-context-Set: y
 #
 # X-Env-Var-dir: ${IGconf_sys_workroot}/${IGconf_target_context}
+# X-Env-Var-dir-Anchor: @TARGETDIR
 # X-Env-Var-dir-Desc: Directory containing the target and related build artefacts.
 #  This is the working directory for the current build context, containing the
 #  bdebstrap target along with any build logs, intermediate files, or other
@@ -26,7 +27,8 @@
 # X-Env-Var-dir-Valid: string
 # X-Env-Var-dir-Set: y
 #
-# X-Env-Var-path: ${IGconf_target_dir}/${IGconf_artefact_target_name}
+# X-Env-Var-path: ${@TARGETDIR}/${IGconf_artefact_target_name}
+# X-Env-Var-path-Anchor: @TARGET
 # X-Env-Var-path-Desc: Path to the bdebstrap target for filesystem creation.
 #  This path is used for the filesystem target and remains neutral/reusable.
 #  Image-specific artefacts are organised separately using image-specific paths.

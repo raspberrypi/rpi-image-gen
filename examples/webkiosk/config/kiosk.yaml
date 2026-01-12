@@ -7,6 +7,10 @@ image:
 
 layer:
   app: example-kiosk
+  extra: rpi-splash-screen
+
+splash:
+  image_path: ${@SRCROOT}/splash.tga
 
 kiosk:
   url: "https://raspberrypi.com"

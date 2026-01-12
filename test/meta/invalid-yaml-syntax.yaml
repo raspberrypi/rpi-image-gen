@@ -1,0 +1,17 @@
+# METABEGIN
+# X-Env-Layer-Name: test-invalid-yaml
+# X-Env-Layer-Desc: Test layer with invalid YAML
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: yaml
+# X-Env-Var-test: value
+# METAEND
+
+test:
+  invalid: [unclosed bracket
+  another: value
+    bad_indent: test
+  extra:
+    - item1
+    - item2
+      - nested: but broken

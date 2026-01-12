@@ -1,0 +1,2 @@
+# This file intentionally has no X-Env-* fields to trigger no_metadata_fields lint.
+

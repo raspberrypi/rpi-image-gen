@@ -1,0 +1,17 @@
+# METABEGIN
+# X-Env-Layer-Name: test-basic
+# X-Env-Layer-Desc: Basic test layer with simple variables
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: basic
+# X-Env-Var-hostname: localhost
+# X-Env-Var-hostname-Desc: Server hostname
+# X-Env-Var-hostname-Valid: string
+# X-Env-Var-port: 8080
+# X-Env-Var-port-Desc: Port number
+# X-Env-Var-port-Valid: int:1024-65535
+# METAEND
+
+test:
+  hostname: "${IGconf_basic_hostname}"
+  port: ${IGconf_basic_port}

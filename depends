@@ -1,15 +1,16 @@
 all:realpath:coreutils
 all:bash
-all:mmdebstrap
-all:podman
-all:newuidmap:uidmap
 all::python-is-python3
-all::dbus-user-session
 
 bootstrap::python3-yaml
 bootstrap::python3-debian
+bootstrap:dpkg-architecture:dpkg-dev
 
-# image build essential
+# build essential
+build:mmdebstrap
+build:podman
+build:newuidmap:uidmap
+all::dbus-user-session
 build:zip
 build:mkdosfs:dosfstools
 build:mke2fs:e2fsprogs

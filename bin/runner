@@ -26,37 +26,30 @@ add_dir 'IGROOT:scripts/bdebstrap'   # built-in hooks
 # Execute these hooks at the appropriate phase
 declare -A HOOK_PHASES=(
    [setup]="\
-IGROOT_device:pre-build.sh IGROOT_image:pre-build.sh \
-DEVICE_ASSET:pre-build.sh IMAGE_ASSET:pre-build.sh \
 IGROOT:pre-build.sh \
+IGdevice:pre-build.sh IGimage:pre-build.sh \
+DEVICE_ASSET:pre-build.sh IMAGE_ASSET:pre-build.sh \
 SRCROOT:pre-build.sh"
 
    [post-build]="\
-IGROOT_device:post-build.sh IGROOT_image:post-build.sh \
-DEVICE_ASSET:post-build.sh IMAGE_ASSET:post-build.sh \
 IGROOT:post-build.sh \
+IGdevice:post-build.sh IGimage:post-build.sh \
+DEVICE_ASSET:post-build.sh IMAGE_ASSET:post-build.sh \
 SRCROOT:post-build.sh"
 
    [pre-image]="\
-IGROOT_device:pre-image.sh IGROOT_image:pre-image.sh \
-DEVICE_ASSET:pre-image.sh IMAGE_ASSET:pre-image.sh \
 IGROOT:pre-image.sh \
+IGdevice:pre-image.sh IGimage:pre-image.sh \
+DEVICE_ASSET:pre-image.sh IMAGE_ASSET:pre-image.sh \
 SRCROOT:pre-image.sh"
 
    [post-image]="\
-DEVICE_ASSET:post-image.sh IGROOT_device:post-image.sh \
-IMAGE_ASSET:post-image.sh IGROOT_image:post-image.sh \
 IGROOT:post-image.sh \
+IGdevice:post-image.sh IGimage:post-image.sh \
+DEVICE_ASSET:post-image.sh IMAGE_ASSET:post-image.sh \
 SRCROOT:post-image.sh"
 
    [sbom]='VAR:IGconf_sbom_hook'
-
-   [finalize]="\
-IGROOT_device:finalize.sh IGROOT_image:finalize.sh \
-DEVICE_ASSET:finalize.sh IMAGE_ASSET:finalize.sh \
-IGROOT:finalize.sh \
-SRCROOT:finalize.sh"
-
    [deploy]='VAR:IGconf_deploy_hook'
 )
 
@@ -175,9 +168,6 @@ phase_args() {
       deploy)
          [[ -n ${IGconf_deploy_dir:-} ]] && set -- "$@" "$IGconf_deploy_dir"
          ;;
-      finalize)
-         set -- "$@" "${IGconf_target_dir:?"required for $phase"}"
-         ;;
       *)
    esac
    printf '%s\0' "$@"
@@ -204,7 +194,7 @@ case "$phase" in
    pre-image|post-image)
       run_hook_phase "$phase" "$@"
       ;;
-   sbom|finalize|deploy)
+   sbom|deploy)
       run_hook_phase "$phase" "$@"
       ;;
    *)
