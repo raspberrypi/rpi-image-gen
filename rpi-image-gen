@@ -82,7 +82,8 @@ esac
 
 # cmdline
 OVRF="${TMPDIR}/overrides"
-printf '%s\n' "${OVERRIDES[@]}" > "$OVRF"
+: > "$OVRF"
+[[ ${#OVERRIDES[@]} -gt 0 ]] && printf '%s\n' "${OVERRIDES[@]}" >> "$OVRF"
 [[ -n ${HOST_BUILD_DIR:-} ]] && printf 'IGconf_sys_workroot="%s"\n' "$HOST_BUILD_DIR" >> "$OVRF"
 # Must hold sane key=value pairs
 while IFS= read -r line || [ -n "$line" ]; do
