@@ -390,7 +390,7 @@ generate_filesystem()
 
    local -n _benv="${ctx[ENV_BDEBSTRAP]}" # via nameref
 
-   rund "${ctx[SRCROOT]}" podman unshare bdebstrap \
+   rund "${ctx[SRCROOT]}" ns bdebstrap \
       "${_benv[@]}" \
       --setup-hook     'runner setup "$@"' \
       --extract-hook   'runner extract "$@"' \
@@ -398,13 +398,13 @@ generate_filesystem()
       --customize-hook 'runner customize "$@"' \
       --cleanup-hook   'runner cleanup "$@"'
 
-   runenv "${ctx[FINALENV]}" podman unshare runner post-build
+   runenv "${ctx[FINALENV]}" ns runner post-build
 
    [[ ${ctx[INTERACTIVE]} == y ]] && \
       { ask "Filesystem complete. Proceed to SBOM?" y || exit 0 ; }
 
    msg "\nSBOM"
-   runenv "${ctx[FINALENV]}" podman unshare runner sbom
+   runenv "${ctx[FINALENV]}" ns runner sbom
 }
 
 
@@ -426,15 +426,14 @@ generate_images() {
 
    msg "\nIMAGE"
 
-   runenv "${ctx[FINALENV]}" podman unshare runner pre-image
+   runenv "${ctx[FINALENV]}" ns runner pre-image
 
    if [[ "$provider" == genimage && -d "$filesystem" ]] ; then
       mkdir -p "${TMPDIR}/genimage"
       local cfg
       for cfg in "${output_path}"/genimage*.cfg; do
          [[ -f $cfg ]] || continue
-         runenv "${ctx[FINALENV]}" \
-            podman unshare env genimage \
+         runenv "${ctx[FINALENV]}" ns env genimage \
             --rootpath   "$filesystem" \
             --tmppath    "${TMPDIR}/genimage" \
             --inputpath  "$output_path" \
@@ -446,7 +445,7 @@ generate_images() {
       done
    fi
 
-   runenv "${ctx[FINALENV]}" podman unshare runner post-image
+   runenv "${ctx[FINALENV]}" ns runner post-image
 }
 
 
@@ -456,12 +455,12 @@ generate_images() {
 #   Install build assets for distribution
 ###############################################################################
 deploy() {
-   runenv "${ctx[FINALENV]}" podman unshare runner finalize
+   runenv "${ctx[FINALENV]}" ns runner finalize
 
    [[ ${ctx[INTERACTIVE]} == y ]] && { ask "Deploy assets?" y || exit 0 ; }
 
    msg "\nDEPLOY"
-   runenv "${ctx[FINALENV]}" podman unshare runner deploy
+   runenv "${ctx[FINALENV]}" ns runner deploy
 }
 
 
@@ -479,7 +478,7 @@ clean_worktree() {
       [[ -e $val ]] || continue
       ask "Remove $key [$val]?" y || continue
       if [[ $key == IGconf_target_path ]]; then
-         run podman unshare rm -rf -- "$val"
+         run ns rm -rf -- "$val"
       else
          rm -rf -- "$val"
       fi
