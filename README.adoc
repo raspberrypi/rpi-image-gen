@@ -74,7 +74,7 @@ rpi-image-gen builds its own copies of critical host tools so it always has curr
 
 === Important
 
-rpi-image-gen is developed on Raspberry Pi OS and supports builds on Debian Bookworm and Trixie arm64 systems. It expects a Debian-based host and will run on non-arm64 platforms (such as x86_64) via QEMU emulation or in container environments, although those non-native setups aren’t formally supported.
+rpi-image-gen is developed on Raspberry Pi OS, with Debian Bookworm and Trixie arm64 as the supported native hosts. It expects a Debian-based system and can run in containers or on non-arm64 hosts via QEMU, but those environments are not formally supported. The build invokes `mmdebstrap` to create a chroot and mount pseudo-filesystems (proc, sysfs, devpts) inside a private mount namespace, which requires `CAP_SYS_ADMIN` or equivalent (eg, `--privileged` or `--security-opt=unconfined` depending on rootless/container setup). The build will fail without that capability. Other environments may succeed if granted the necessary privileges, but remain outside the scope of support. For a supported path, run on native Debian Bookworm/Trixie arm64.
 
 == Documentation
 
