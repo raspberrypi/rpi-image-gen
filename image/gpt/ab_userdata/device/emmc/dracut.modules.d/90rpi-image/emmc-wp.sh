@@ -1,16 +1,5 @@
 #!/bin/sh
 
-case $1 in
-   prereqs)
-      echo ""
-      exit 0
-      ;;
-esac
-
-. /scripts/functions
-
-set -e
-
 DEV=/dev/mmcblk0
 
 # GPT entries begin at +8M. Write Protect everything prior.

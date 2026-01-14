@@ -24,6 +24,10 @@ IDP acts as a "smart block device creation tool" that prepares device storage an
 
 IDP was designed to be transport medium agnostic. The current implementation uses fastboot as the transport protocol, which allows it to interoperate with devices running the https://github.com/raspberrypi/pi-gen-micro[*pi-gen-micro*] fastboot gadget.
 
+=== Fastboot
+
+Please refer to the https://github.com/raspberrypi/rpi-fastbootd[*fastbootd*] repository for further information.
+
 === JSON Structure
 
 The image description is split into two components using a simple schema:
