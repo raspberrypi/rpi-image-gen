@@ -20,6 +20,9 @@ LABEL=BOOTFS                    /bootfs        vfat defaults,rw,noatime,errors=p
 /persistent/home         /home             none  bind,x-systemd.requires-mounts-for=/persistent/home,x-systemd.after=persistent.mount  0  0
 /persistent/log/journal  /var/log/journal  none  bind,x-systemd.requires-mounts-for=/persistent/log/journal,x-systemd.after=persistent.mount  0  0
 EOF
+
+      # Add extra module for erofs
+      echo "erofs" >> "${fs}/etc/initramfs-tools/modules"
       ;;
    BOOT)
       sed -i "s|root=\([^ ]*\)|root=\/dev\/ram0|" $IMAGEMOUNTPATH/cmdline.txt

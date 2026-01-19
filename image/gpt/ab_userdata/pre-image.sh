@@ -167,12 +167,6 @@ fi
 chmod 755 "${fs}/home"
 chmod 755 "${fs}/var"
 
-# Add extra module for erofs
-if [[ "${IGconf_image_rootfs_type}" = "erofs" ]]; then
-  echo "erofs" >> "${fs}/etc/initramfs-tools/modules"
-fi
-
-
 # Generate the persistent skeleton suitable for on-device overlay
 tar --xattrs --xattrs-include='*' --acls --numeric-owner \
    -C "${fs}/persistent" \
