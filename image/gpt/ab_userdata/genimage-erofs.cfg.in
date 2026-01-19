@@ -18,7 +18,7 @@ image boot.sparse {
 
 image system.sparse {
    android-sparse {
-      image = system.ext4
+      image = system.erofs
    }
 }
 
