@@ -43,7 +43,7 @@ EOF
 
 
 # Write genimage template
-cat genimage-${IGconf_image_system_part_type}.cfg.in | sed \
+cat genimage-${IGconf_image_rootfs_type}.cfg.in | sed \
    -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
    -e "s|<IMAGE_NAME>|$IGconf_image_name|g" \
    -e "s|<IMAGE_SUFFIX>|$IGconf_image_suffix|g" \
@@ -51,7 +51,7 @@ cat genimage-${IGconf_image_system_part_type}.cfg.in | sed \
    -e "s|<SYSTEM_SIZE>|$IGconf_image_system_part_size|g" \
    -e "s|<PERSISTENT_SIZE>|$IGconf_image_data_part_size|g" \
    -e "s|<SECTOR_SIZE>|$IGconf_device_sector_size|g" \
-   -e "s|<SLOTP>|'$(readlink -ef slot-post-process-${IGconf_image_system_part_type}.sh)'|g" \
+   -e "s|<SLOTP>|'$(readlink -ef slot-post-process-${IGconf_image_rootfs_type}.sh)'|g" \
    -e "s|<BOOT_LABEL>|$BOOT_LABEL|g" \
    -e "s|<SYSTEM_UUID>|$SYSTEM_UUID|g" \
    -e "s|<MKE2FS_CONF>|'$(readlink -ef mke2fs.conf)'|g" \
@@ -166,6 +166,11 @@ fi
 # Perms for bind mounts on the immutable root
 chmod 755 "${fs}/home"
 chmod 755 "${fs}/var"
+
+# Add extra module for erofs
+if [[ "${IGconf_image_rootfs_type}" = "erofs" ]]; then
+  echo "erofs" >> "${fs}/etc/initramfs-tools/modules"
+fi
 
 
 # Generate the persistent skeleton suitable for on-device overlay
