@@ -1,0 +1,114 @@
+image <IMAGE_NAME>.<IMAGE_SUFFIX>.sparse {
+   android-sparse {
+      image = <IMAGE_NAME>.<IMAGE_SUFFIX>
+   }
+}
+
+image config.sparse {
+   android-sparse {
+      image = config.vfat
+   }
+}
+
+image boot.sparse {
+   android-sparse {
+      image = boot.vfat
+   }
+}
+
+image system.sparse {
+   android-sparse {
+      image = system.ext4
+   }
+}
+
+image data.sparse {
+   android-sparse {
+      image = persistent.ext4
+   }
+}
+
+image <IMAGE_NAME>.<IMAGE_SUFFIX> {
+   hdimage {
+      align = 8M
+      partition-table-type = "gpt"
+      fill = true
+   }
+
+   partition config {
+      in-partition-table = true
+      image = config.vfat
+      partition-type-uuid = F
+      bootable = true
+   }
+
+   partition boot_a {
+      in-partition-table = true
+      image = boot.vfat
+      partition-type-uuid = F
+      bootable = true
+   }
+
+   partition boot_b {
+      in-partition-table = true
+      image = boot.vfat
+      partition-type-uuid = F
+      bootable = true
+   }
+
+   partition system_a {
+      in-partition-table = true
+      image = system.erofs
+      partition-type-uuid = L
+   }
+
+   partition system_b {
+      in-partition-table = true
+      image = system.erofs
+      partition-type-uuid = L
+   }
+
+   partition persistent {
+      in-partition-table = true
+      image = persistent.ext4
+      partition-type-uuid = L
+   }
+}
+
+image config.vfat {
+   vfat {
+      label = "BOOTFS"
+      file "autoboot.txt" { image = "autoboot.txt" }
+      extraargs = "-s 1 -S <SECTOR_SIZE>"
+   }
+   size = 32M
+}
+
+image boot.vfat {
+   vfat {
+      label = "BOOT"
+      extraargs = "-S <SECTOR_SIZE> -i <BOOT_LABEL>"
+   }
+   size = <BOOT_SIZE>
+   mountpoint = "/boot/firmware"
+   exec-pre = "<SLOTP> BOOT"
+}
+
+image system.erofs {
+   erofs {
+      label = "SYSTEM"
+   }
+   size = <SYSTEM_SIZE>
+   mountpoint = "/"
+   exec-pre = "<SLOTP> SYSTEM"
+}
+
+image persistent.ext4 {
+   ext4 {
+      use-mke2fs = true
+      label = "PERSISTENT"
+      extraargs = "<MKE2FS_DATA>"
+   }
+   mountpoint = "/persistent"
+   size = <PERSISTENT_SIZE>
+}
