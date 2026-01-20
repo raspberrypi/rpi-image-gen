@@ -97,6 +97,7 @@ image boot.vfat {
 image system.erofs {
    erofs {
       label = "SYSTEM"
+      extraargs = "<MKEROFS_SYSTEM>"
    }
    size = <SYSTEM_SIZE>
    mountpoint = "/"

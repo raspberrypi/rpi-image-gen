@@ -67,9 +67,3 @@ mmdebstrap:
   packages:
     - dosfstools
     - e2fsprogs
-    - erofs-utils
-  customize-hooks:
-    - |-
-      if [ "$IGconf_image_rootfs_type" = "erofs" ]; then
-        echo "erofs" >> "${1}/etc/initramfs-tools/modules"
-      fi

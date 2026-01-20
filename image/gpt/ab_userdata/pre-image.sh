@@ -12,8 +12,9 @@ genimg_in=$2
 . ${genimg_in}/img_uuids
 
 
-# mke2fs cmdline args
+# mkfs cmdline args
 MKE2FS_ARGS=()
+MKEROFS_ARGS=("-z" "zstd")
 case "$IGconf_device_sector_size" in
    4096)
       MKE2FS_ARGS+=("-b" "-4096")
@@ -21,12 +22,15 @@ case "$IGconf_device_sector_size" in
 esac
 
 MKE2FS_SYSTEM=("-U" "$SYSTEM_UUID")
+MKEROFS_SYSTEM=("-U" "$SYSTEM_UUID")
 MKE2FS_DATA=()
 
 MKE2FS_SYSTEM+=("${MKE2FS_ARGS[@]}")
+MKEROFS_SYSTEM+=("${MKEROFS_ARGS[@]}")
 MKE2FS_DATA+=("${MKE2FS_ARGS[@]}")
 
 MKE2FS_ARGS_SYSTEM="${MKE2FS_SYSTEM[*]}"
+MKEROFS_ARGS_SYSTEM="${MKEROFS_SYSTEM[*]}"
 MKE2FS_ARGS_DATA="${MKE2FS_DATA[*]}"
 
 
@@ -56,6 +60,7 @@ cat genimage-${IGconf_image_rootfs_type}.cfg.in | sed \
    -e "s|<SYSTEM_UUID>|$SYSTEM_UUID|g" \
    -e "s|<MKE2FS_CONF>|'$(readlink -ef mke2fs.conf)'|g" \
    -e "s|<MKE2FS_SYSTEM>|$MKE2FS_ARGS_SYSTEM|g" \
+   -e "s|<MKEROFS_SYSTEM>|$MKEROFS_ARGS_SYSTEM|g" \
    -e "s|<MKE2FS_DATA>|$MKE2FS_ARGS_DATA|g" \
    > ${genimg_in}/genimage.cfg
 
