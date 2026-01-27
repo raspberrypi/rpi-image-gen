@@ -1,0 +1,20 @@
+# METABEGIN
+# X-Env-Layer-Name: trigger-env-override
+# X-Env-Layer-Category: test
+# X-Env-Layer-Desc: Trigger should fire on env/CLI override and fail validation
+# X-Env-Layer-Version: 1.0.0
+# X-Env-VarPrefix: trig
+#
+# X-Env-Var-pmap: clear
+# X-Env-Var-pmap-Desc: Provisioning map selector
+# X-Env-Var-pmap-Required: n
+# X-Env-Var-pmap-Valid: clear,crypt
+# X-Env-Var-pmap-Set: force
+#
+# X-Env-Var-rootfs_type: ext4
+# X-Env-Var-rootfs_type-Desc: Root filesystem type
+# X-Env-Var-rootfs_type-Required: n
+# X-Env-Var-rootfs_type-Valid: ext4,btrfs
+# X-Env-Var-rootfs_type-Set: y
+# X-Env-Var-rootfs_type-Triggers: btrfs set IGconf_trig_pmap=shouldfail policy=force
+# METAEND

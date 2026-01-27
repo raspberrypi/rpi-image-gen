@@ -182,6 +182,17 @@ run_test "set-policies-set" \
     0 \
     "Set policies should work correctly"
 
+cleanup_env
+run_test "triggers-parse" \
+    "cleanup_env; ig metadata --parse ${META}/valid-triggers.yaml" \
+    0 \
+    "Triggers metadata should parse successfully"
+
+run_test "triggers-set" \
+    'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_FAST=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_FAST2=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_ANY=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_EXTRA=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger rules should set target variables (including inherited condition actions)"
+
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
 
@@ -215,6 +226,29 @@ run_test "invalid-unsupported-validate" \
     "ig metadata --validate ${META}/invalid-unsupported-fields.yaml" \
     1 \
     "Metadata with unsupported fields should fail to validate"
+
+run_test "invalid-trigger-action-parse" \
+    "ig metadata --parse ${META}/invalid-trigger-verb.yaml" \
+    1 \
+    "Unknown trigger action should fail to parse"
+
+cleanup_env
+run_test "invalid-trigger-validation" \
+    "cleanup_env; ig metadata --parse ${META}/invalid-trigger-validation.yaml" \
+    1 \
+    "Trigger-injected value that violates validation should fail to parse"
+
+cleanup_env
+run_test "invalid-trigger-validation-force" \
+    "cleanup_env; ig metadata --parse ${META}/invalid-trigger-validation-force.yaml" \
+    1 \
+    "Trigger-injected invalid value should fail even when target has force policy"
+
+cleanup_env
+run_test "invalid-trigger-env-override" \
+    "cleanup_env; IGconf_image_rootfs_type=btrfs ig metadata --parse ${META}/invalid-trigger-env-override.yaml" \
+    1 \
+    "Trigger should fire when source var is overridden via env/config"
 
 run_test "invalid-yaml-syntax-layer-validate" \
     "ig metadata --validate ${META}/invalid-yaml-syntax.yaml" \

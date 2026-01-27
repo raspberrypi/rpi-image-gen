@@ -45,8 +45,15 @@ def _pipeline_main(args):
     LogConfig.set_verbose(True)
 
     assignments: OrderedDict[str, str] = load_env_file(args.env_in)
+    # Seed environment with incoming assignments, but do not override any
+    # pre-existing values (e.g., CLI overrides passed through the wrapper).
     for key, value in assignments.items():
-        os.environ[key] = value
+        if key in os.environ:
+            # Preserve the existing override and reflect it in assignments so it
+            # participates in downstream resolution/validation.
+            assignments[key] = os.environ[key]
+        else:
+            os.environ[key] = value
 
     try:
         manager = LayerManager(search_paths, ['*.yaml'], fail_on_lint=True)
@@ -166,6 +173,7 @@ def _collect_variable_definitions(manager: LayerManager, build_order: List[str])
                 source_layer=layer_name,
                 position=position,
                 anchor_name=env_var.anchor_name,
+                triggers=getattr(env_var, "triggers", []),
             )
             variable_definitions.setdefault(var_name, []).append(var_with_position)
     return variable_definitions

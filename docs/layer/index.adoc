@@ -171,6 +171,8 @@ Unlike dependencies, environment variables are not supported when evaluating pro
 
 `X-Env-Var-<name>-Set`: Set policy (immediate, lazy, force, skip)
 
+`X-Env-Var-<name>-Triggers`: Derived actions based on the variable value
+
 === Variable Naming Convention
 Variables follow the pattern: `IGconf_<prefix>_<name>`
 
@@ -186,6 +188,93 @@ Variable values support dynamic placeholders:
 `${FILENAME}`: Name of the layer file (without extension)
 
 `${FILEPATH}`: Full path to the layer file
+
+=== Triggers
+
+Triggers (`X-Env-Var-*-Triggers`) allow a variable’s resolved value to automatically perform actions, meaning that derived settings can be injected based on that value. Format as follows (one rule per line):
+
+* Conditional: `VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
+* Unconditional: `set TARGET=VALUE [policy=force|immediate|lazy]`
+
+Rules are exact string matches on the resolved source variable value. Unconditional rules always fire. The first token after the action must be `TARGET=VALUE`. `policy=` is optional and defaults to `immediate`.
+
+Lint will fail on:
+
+* Unknown actions.
+* Actions that do not start with `TARGET=VALUE`.
+* Target names that are not POSIX identifiers.
+
+Usage:
+
+* Target values are preserved as literals with no expansion.
+* Triggers are collected from every definition of a variable across all layers. They are evaluated once against the variable’s final resolved value, so triggers declared in upstream layers still fire even if a downstream layer overrides the variable’s value. Suppression of upstream triggers is not supported.
+
+==== Supported actions
+
+[cols="1,3,2,3",options="header"]
+|===
+|Action |Description |Default policy |Applies to
+
+|`set` |Inject an environment variable with the given value and policy. | immediate |X-Env-*-Var
+|===
+
+==== Examples
+
+* Conditional:
++
+`# X-Env-Var-rootfs_type-Triggers: btrfs set IG_HAS_BTRFS_PROGS=1 policy=force`
+
+* Unconditional:
++
+`# X-Env-Var-rootfs_type-Triggers: set IG_ALWAYS_ON=1 policy=immediate`
+
+* Multiple with different conditions (new line per condition helps readability, but is not mandatory):
++
+```
+# X-Env-Var-rootfs_type-Triggers:
+#  btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
+#  ext4 set IG_HAS_E2FS_PROGS=1 policy=force
+```
+
+* Multiple actions sharing the same condition (omit the condition on following line to inherit the previous one):
++
+```
+# X-Env-Var-rootfs_type-Triggers:
+#  ext4 set IG_HAS_E2FS_PROGS=1
+#  set IG_HAS_SRCBUILD=1
+```
+
+[IMPORTANT]
+====
+Trigger precedence is determined by layer order, not file order.
+
+* Variable declarations in the same layer share that layer's position.
+* If a trigger sets a variable, it adds a definition for the target variable, e.g. at 'position + 0.01'.
+* Any definition of that target variable from a later layer (higher position) wins via the normal force/immediate/lazy policy rules.
+
+Within a single layer:
+
+* If the same variable is declared multiple times, last declaration is retained (before triggers are considered).
+* If a trigger sets a variable, the trigger’s injected definition sits after the layer’s base definition and will override that variable’s declaration in the same layer (force/immediate/lazy still apply). A later layer can still override the trigger.
+====
+
+==== Example (same layer):
+
+```
+# X-Env-VarPrefix: image
+
+# X-Env-Var-deploy_type: develop
+# X-Env-Var-deploy_type-Valid: develop,production
+# X-Env-Var-deploy_type-Set: y
+# X-Env-Var-deploy_type-Triggers: production set IGconf_image_pmap=crypt policy=force
+
+# X-Env-Var-pmap: clear
+# X-Env-Var-pmap-Valid: clear,crypt
+# X-Env-Var-pmap-Set: y
+# X-Env-Var-pmap-Set: force
+```
+
+If `IGconf_image_deploy_type` resolves to `production`, the trigger injects `IGconf_image_pmap=crypt` after the source variable, overriding `pmap: clear` in the same layer. A later layer defining `IGconf_image_pmap` with `force` would still win over the trigger.
 
 == Configuration Variables
 

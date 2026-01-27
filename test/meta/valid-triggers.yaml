@@ -1,0 +1,23 @@
+# METABEGIN
+# X-Env-Layer-Name: test-triggers
+# X-Env-Layer-Desc: Trigger-based variable injections
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: trig
+#
+# X-Env-Var-mode: fast
+# X-Env-Var-mode-Desc: Execution mode
+# X-Env-Var-mode-Valid: fast,slow
+# X-Env-Var-mode-Triggers: fast set IG_TRIG_FAST=1 policy=force
+#  set IG_TRIG_FAST2=1
+#  set IG_TRIG_ANY=1 policy=lazy
+#
+# X-Env-Var-extra: on
+# X-Env-Var-extra-Desc: Another variable to prove unconditional triggers
+# X-Env-Var-extra-Triggers: set IG_TRIG_EXTRA=1 policy=immediate
+# METAEND
+
+triggers:
+  mode: ${IGconf_trig_mode}
+  extra: ${IGconf_trig_extra}
+

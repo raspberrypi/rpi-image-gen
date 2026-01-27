@@ -1,0 +1,20 @@
+# METABEGIN
+# X-Env-Layer-Name: trigger-same-layer-force
+# X-Env-Layer-Category: test
+# X-Env-Layer-Desc: Trigger injects target defined later with force; later definition must win
+# X-Env-Layer-Version: 1.0.0
+# X-Env-VarPrefix: trig2
+#
+# X-Env-Var-rootfs_type: ext4
+# X-Env-Var-rootfs_type-Desc: Root filesystem type
+# X-Env-Var-rootfs_type-Required: n
+# X-Env-Var-rootfs_type-Valid: ext4,btrfs
+# X-Env-Var-rootfs_type-Set: y
+# X-Env-Var-rootfs_type-Triggers: btrfs set IGconf_trig2_pmap=crypt policy=force
+#
+# X-Env-Var-pmap: clear
+# X-Env-Var-pmap-Desc: Provisioning map
+# X-Env-Var-pmap-Required: n
+# X-Env-Var-pmap-Valid: clear,crypt
+# X-Env-Var-pmap-Set: force
+# METAEND
