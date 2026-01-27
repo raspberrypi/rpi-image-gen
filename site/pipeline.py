@@ -56,10 +56,13 @@ def _pipeline_main(args):
 
     resolved_layers: List[str] = []
     for layer_id in args.layers:
-        layer_name = manager.resolve_layer_name(layer_id)
+        try:
+            layer_name = manager.resolve_layer_name(layer_id)
+        except ValueError as exc:
+            raise SystemExit(str(exc))
+
         if not layer_name:
-            print(f"Error: Layer '{layer_id}' not found")
-            raise SystemExit(1)
+            raise SystemExit(f"Layer '{layer_id}' not found")
         resolved_layers.append(layer_name)
 
     try:
