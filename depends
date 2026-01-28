@@ -21,6 +21,7 @@ build:mtools
 build:zstd
 build:pv
 build:mkfs.btrfs:btrfs-progs
+build:mkfs.erofs:erofs-utils
 build::dctrl-tools
 build:uuidgen:uuid-runtime
 build:fdisk

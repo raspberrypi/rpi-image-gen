@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# Kernel module specific tweaks for AB when erofs is used for root
+
+[[ ${IGconf_image_rootfs_type:?} != erofs ]] && exit 0
+
+set -eu
+
+mkdir -p $1/etc/initramfs-tools/hooks
+
+# Install modules into the initramfs
+cat <<- 'EOF' > $1/etc/initramfs-tools/hooks/rpi-ab-kmod-install
+#!/bin/sh
+case $1 in
+   prereqs) echo ""; exit 0;;
+esac
+. /usr/share/initramfs-tools/hook-functions
+for module in $(find /usr/lib/modules/$version \
+   \( \
+   -name 'erofs.*' \
+   \) \
+   -exec basename {} \; |sed 's/\.ko\.xz$//; s/\.ko$//' ); do
+   manual_add_modules $module
+done
+EOF
+chmod +x $1/etc/initramfs-tools/hooks/rpi-ab-kmod-install
