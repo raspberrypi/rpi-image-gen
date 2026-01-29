@@ -1,0 +1,21 @@
+# Inherit all settings from this file, overriding relevant ones for this example.
+# Installing additional packages may require increasing system_part_size.
+include:
+  file: trixie-minbase-ab.yaml
+
+env:
+  APPLICATION_NAME: myapp
+  VERSION: 1.0.0
+
+device:
+  # This will set the name of the device in Raspberry Pi Connect
+  hostname: ota-device-1
+
+artefact:
+  version: ${VERSION}
+
+image:
+  name: ${APPLICATION_NAME}-${VERSION}
+
+layer:
+  app: example-ota
