@@ -43,6 +43,11 @@ class XEnv:
         """Build anchor field name: X-Env-Var-{name}-Anchor"""
         return f"{cls.VAR_PREFIX}{name.upper()}-Anchor"
 
+    @classmethod
+    def var_conflicts(cls, name: str) -> str:
+        """Build conflicts field name: X-Env-Var-{name}-Conflicts"""
+        return f"{cls.VAR_PREFIX}{name.upper()}-Conflicts"
+
     # === PATTERN METHODS FOR SUPPORTED_FIELD_PATTERNS ===
 
     @classmethod
@@ -69,6 +74,11 @@ class XEnv:
     def var_anchor_pattern(cls) -> str:
         """Build anchor field pattern: X-Env-Var-*-Anchor"""
         return f"{cls.VAR_PREFIX}*-Anchor"
+
+    @classmethod
+    def var_conflicts_pattern(cls) -> str:
+        """Build conflicts field pattern: X-Env-Var-*-Conflicts"""
+        return f"{cls.VAR_PREFIX}*-Conflicts"
 
     @classmethod
     def var_prefix(cls) -> str:
@@ -266,7 +276,8 @@ class EnvVariable:
                  validation_rule: str = "", set_policy: str = "immediate",
                  source_layer: str = "", position: int = 0,
                  anchor_name: Optional[str] = None,
-                 triggers: Optional[List[TriggerRule]] = None):
+                 triggers: Optional[List[TriggerRule]] = None,
+                 conflicts: Optional[List[str]] = None):
         self.name = name
         self.value = value
         self.description = description
@@ -278,6 +289,7 @@ class EnvVariable:
         self.position = position  # Order within dependency processing
         self.anchor_name = anchor_name
         self.triggers: List[TriggerRule] = triggers or []
+        self.conflicts: List[str] = conflicts or []
 
     @classmethod
     def from_metadata_fields(cls, var_name: str, metadata_dict: Dict[str, str],
@@ -337,6 +349,17 @@ class EnvVariable:
         # Calculate full variable name
         full_name = f"IGconf_{prefix}_{var_name.lower()}" if prefix else var_name
 
+        conflicts_key = XEnv.var_conflicts(base_name)
+        conflicts_raw = _get_metadata_value(conflicts_key, "")
+        conflicts: List[str] = []
+        if conflicts_raw and isinstance(conflicts_raw, str):
+            conflicts_raw_list = [c.strip() for c in conflicts_raw.split(",") if c.strip()]
+            for c in conflicts_raw_list:
+                if c.startswith("IGconf_"):
+                    conflicts.append(c)
+                else:
+                    conflicts.append(f"IGconf_{prefix}_{c.lower()}" if prefix else c)
+
         return cls(
             name=full_name,
             value=value,
@@ -349,6 +372,7 @@ class EnvVariable:
             position=position,
             anchor_name=anchor_name,
             triggers=triggers,
+            conflicts=conflicts,
         )
 
     @staticmethod
@@ -431,7 +455,7 @@ class EnvVariable:
         return (
             f"EnvVariable(name='{self.name}', value='{self.value}', policy='{self.set_policy}', "
             f"layer='{self.source_layer}', pos={self.position}, anchor={self.anchor_name}, "
-            f"triggers={len(self.triggers)})"
+            f"triggers={len(self.triggers)}, conflicts={len(self.conflicts)})"
         )
 
 
@@ -815,6 +839,15 @@ class VariableResolver:
                             continue
                         seen.add(key)
                         merged_triggers.append(trig)
+                # Merge conflicts from definitions so env/CLI overrides carry conflict metadata
+                merged_conflicts: List[str] = []
+                seen_conf = set()
+                for d in definitions:
+                    for c in getattr(d, "conflicts", []) or []:
+                        if c in seen_conf:
+                            continue
+                        seen_conf.add(c)
+                        merged_conflicts.append(c)
                 max_position = max(d.position for d in definitions)
                 env_var = EnvVariable(
                     name=var_name,
@@ -828,6 +861,7 @@ class VariableResolver:
                     position=max_position,
                     anchor_name=first_def.anchor_name,
                     triggers=merged_triggers,
+                    conflicts=merged_conflicts,
                 )
                 resolved[var_name] = env_var
 

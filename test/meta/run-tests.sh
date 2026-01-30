@@ -161,6 +161,11 @@ run_test "valid-all-types-validate" \
     0 \
     "Valid all-types metadata should validate successfully"
 
+run_test "valid-conflicts" \
+    "ig metadata --validate ${META}/valid-conflicts.yaml" \
+    0 \
+    "Conflicting vars should pass when only one side is set"
+
 run_test "valid-all-types-set" \
     "ig metadata --parse ${META}/valid-all-types.yaml" \
     0 \
@@ -226,6 +231,16 @@ run_test "invalid-unsupported-validate" \
     "ig metadata --validate ${META}/invalid-unsupported-fields.yaml" \
     1 \
     "Metadata with unsupported fields should fail to validate"
+
+run_test "invalid-conflicts" \
+    "ig metadata --validate ${META}/invalid-conflicts.yaml" \
+    1 \
+    "Conflicting vars both set should fail to validate"
+
+run_test "invalid-conflicts-skip" \
+    "ig metadata --validate ${META}/invalid-conflicts-skip.yaml" \
+    0 \
+    "Conflicts ignored when a side has no resolved value"
 
 run_test "invalid-trigger-action-parse" \
     "ig metadata --parse ${META}/invalid-trigger-verb.yaml" \

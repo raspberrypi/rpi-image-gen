@@ -173,6 +173,8 @@ Unlike dependencies, environment variables are not supported when evaluating pro
 
 `X-Env-Var-<name>-Triggers`: Derived actions based on the variable value
 
+`X-Env-Var-<name>-Conflicts`: Variables that cannot be set when this variable is also set
+
 === Variable Naming Convention
 Variables follow the pattern: `IGconf_<prefix>_<name>`
 
@@ -275,6 +277,20 @@ Within a single layer:
 ```
 
 If `IGconf_image_deploy_type` resolves to `production`, the trigger injects `IGconf_image_pmap=crypt` after the source variable, overriding `pmap: clear` in the same layer. A later layer defining `IGconf_image_pmap` with `force` would still win over the trigger.
+
+=== Variable Conflicts
+
+Variable conflicts (`X-Env-Var-*-Conflicts`) allow a variable to declare that it cannot be set when others are also set. Conflict resolution takes place on the final set of resolved `IGconf` prefixed variables. When declaring conflicts, any variable name can be specified (fully prefixed) that exists in the final set - not just variables declared in the same layer, ie cross-layer conflict resolution is supported. If a variable is set in a base layer and overridden in a consumer layer, conflicts are defined by the winning definition, ie conflicts from the earlier definition are not inherited.
+
+Examples:
+
+```
+# X-Env-Var-user1pass:
+# X-Env-Var-user1pass-Conflicts: user1hashpass
+#
+# X-Env-Var-user1hashpass:
+# X-Env-Var-user1hashpass-Conflicts: user1pass
+```
 
 == Configuration Variables
 

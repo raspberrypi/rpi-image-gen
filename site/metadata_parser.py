@@ -76,6 +76,17 @@ class ValidationResultBuilder:
             required=True
         )
 
+    def conflict(self, var_a: str, var_b: str, value_a=None, value_b=None):
+        """Build result for conflicting variables both being set."""
+        return self.build_result(
+            status="conflict",
+            valid=False,
+            message=f"Variables '{var_a}' and '{var_b}' conflict and both are set",
+            conflict_with=var_b,
+            value=value_a,
+            other_value=value_b,
+        )
+
     def lazy_overridden(self, current_value, required: bool):
         """Build result for lazy variable that was overridden."""
         return self.build_result(
@@ -110,6 +121,7 @@ SUPPORTED_FIELD_PATTERNS = {
     XEnv.var_valid_pattern(): {"type": "pattern", "description": "Variable validation rule"},
     XEnv.var_set_pattern(): {"type": "pattern", "description": "Whether to auto-set variable"},
     XEnv.var_anchor_pattern(): {"type": "pattern", "description": "Anchor mapping for environment variable"},
+    XEnv.var_conflicts_pattern(): {"type": "pattern", "description": "Conflicts list for environment variable"},
     f"{XEnv.VAR_PREFIX}*-Triggers": {"type": "pattern", "description": "Trigger rules to set other variables when this variable matches a value"},
 
     # Variable requirements (any environment variables)
@@ -405,6 +417,9 @@ class Metadata:
         results.update(self._validate_required_variables())
         results.update(self._validate_optional_variables())
 
+        # Conflicts check on final resolved values
+        results.update(self._validate_conflicts())
+
         # Check layer-level unsupported fields
         results.update(self._validate_layer_fields())
 
@@ -432,10 +447,10 @@ class Metadata:
                 if XEnv.is_base_var_field(key):
                     # Base variable definition
                     base_vars.add(XEnv.extract_base_var_name(key).lower())
-                elif any(key.endswith(suffix) for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor"]):
+                elif any(key.endswith(suffix) for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor", "-Conflicts"]):
                     # Attribute field - extract variable name
                     var_part = XEnv.extract_var_name(key)
-                    for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor"]:
+                    for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor", "-Conflicts"]:
                         if var_part.endswith(suffix):
                             varname = var_part[:-len(suffix)].lower()
                             attribute_vars.add(varname)
@@ -445,6 +460,37 @@ class Metadata:
         for varname in orphaned_vars:
             results[f"ORPHANED_ATTRS_{varname.upper()}"] = self._result_builder.orphaned_attributes(varname)
 
+        return results
+
+    def _validate_conflicts(self):
+        """Validate that conflicting variables are not both set (final resolved values)."""
+        results = {}
+
+        # Ensure we have resolved variables available for validation.
+        if self._resolved_vars is None:
+            resolver = VariableResolver()
+            variable_definitions = {name: [env_var] for name, env_var in self._container.variables.items()}
+            self._resolved_vars = resolver.resolve(variable_definitions)
+
+        seen_pairs = set()
+        for var_name, env_var in self._resolved_vars.items():
+            conflicts = getattr(env_var, "conflicts", None) or []
+            if not conflicts:
+                continue
+            for other in conflicts:
+                pair = tuple(sorted([var_name, other]))
+                if pair in seen_pairs:
+                    continue
+                seen_pairs.add(pair)
+
+                other_var = self._resolved_vars.get(other)
+                if not other_var:
+                    continue
+
+                val_a = str(env_var.value)
+                val_b = str(other_var.value)
+                if val_a and val_b:
+                    results[f"CONFLICT_{var_name}_{other}"] = self._result_builder.conflict(var_name, other, val_a, val_b)
         return results
 
     def _validate_defined_variables(self):
@@ -1109,6 +1155,9 @@ def _main(args):
                 elif result["status"] == "invalid_value":
                     log_error(result['message'])
                     has_validation_errors = True
+                elif result["status"] == "conflict":
+                    log_error(result['message'])
+                    has_validation_errors = True
                 elif result["status"] == "orphaned_attributes":
                     log_error(result['message'])
                     has_validation_errors = True
@@ -1166,6 +1215,9 @@ def _main(args):
                 print(f"[{status}] {var}={result['value']} (rule: {result['rule']})")
                 if not result["valid"]:
                     has_errors = True
+            elif result["status"] == "conflict":
+                print(f"[ERROR] {result['message']}")
+                has_errors = True
             elif result["status"] == "required_validated":
                 status = "OK" if result["valid"] else "FAIL"
                 print(f"[{status}] {result['required_var']}={result['value']} (required, rule: {result['rule']})")

@@ -566,6 +566,10 @@ class LayerManager:
                 if not silent:
                     log_error(f"[FAIL] {result['required_var']} - REQUIRED but not set (layer: {layer_name})")
                 layer_valid = False
+            elif result["status"] == "conflict":
+                if not silent:
+                    log_error(f"[FAIL] {result['message']} (layer: {layer_name})")
+                layer_valid = False
             elif result["status"] == "invalid_value":
                 if not silent:
                     log_error(f"[FAIL] {var}={result['value']} (invalid value, layer: {layer_name})")

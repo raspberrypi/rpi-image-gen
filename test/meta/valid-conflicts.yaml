@@ -1,0 +1,15 @@
+# METABEGIN
+# X-Env-Layer-Name: test-conflict-valid
+# X-Env-Layer-Desc: Conflicting variables - only one set
+# X-Env-VarPrefix: cft
+#
+# X-Env-Var-a: 1
+# X-Env-Var-a-Conflicts: b
+#
+# X-Env-Var-b:
+# X-Env-Var-b-Conflicts: a
+# METAEND
+
+conflict:
+  a: ${IGconf_cft_a}
+  b: ${IGconf_cft_b}
