@@ -280,16 +280,25 @@ If `IGconf_image_deploy_type` resolves to `production`, the trigger injects `IGc
 
 === Variable Conflicts
 
-Variable conflicts (`X-Env-Var-*-Conflicts`) allow a variable to declare that it cannot be set when others are also set. Conflict resolution takes place on the final set of resolved `IGconf` prefixed variables. When declaring conflicts, any variable name can be specified (fully prefixed) that exists in the final set - not just variables declared in the same layer, ie cross-layer conflict resolution is supported. If a variable is set in a base layer and overridden in a consumer layer, conflicts are defined by the winning definition, ie conflicts from the earlier definition are not inherited.
+Variable conflicts (`X-Env-Var-*-Conflicts`) allow a variable to declare that it cannot be set when other variables are also set, or when other variables do/do not have a particular value. Conflict resolution takes place on the final set of resolved `IGconf` prefixed variables. When declaring conflicts, any variable name can be specified (fully prefixed) that exists in the final set - not just variables declared in the same layer, ie cross-layer conflict resolution is supported. If a variable is set in a base layer and overridden in a consumer layer, conflicts are defined by the winning definition, ie conflicts from the earlier definition are not inherited. Conditional conflicts are supported with `name=value` or `name!=value` syntax. Multiple conflicts can be specified, separated by commas.
 
 Examples:
 
 ```
+# Unconditional:
 # X-Env-Var-user1pass:
 # X-Env-Var-user1pass-Conflicts: user1hashpass
 #
 # X-Env-Var-user1hashpass:
 # X-Env-Var-user1hashpass-Conflicts: user1pass
+
+
+# Conditional:
+# X-Env-Var-storage_type: sd
+# X-Env-Var-storage_type-Valid: sd,emmc,nvme
+#
+# X-Env-Var-lockemmc: y
+# X-Env-Var-lockemmc-Conflicts: storage_type!=emmc
 ```
 
 == Configuration Variables

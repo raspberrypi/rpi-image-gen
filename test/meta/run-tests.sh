@@ -166,6 +166,16 @@ run_test "valid-conflicts" \
     0 \
     "Conflicting vars should pass when only one side is set"
 
+run_test "valid-conflicts-conditional" \
+    "ig metadata --validate ${META}/valid-conflicts-conditional.yaml" \
+    0 \
+    "Conditional conflicts should pass when condition does not match"
+
+run_test "valid-conflicts-conditional-not-eq" \
+    "ig metadata --validate ${META}/valid-conflicts-conditional-not-eq.yaml" \
+    0 \
+    "Not-equals conflicts should pass when values are equal"
+
 run_test "valid-all-types-set" \
     "ig metadata --parse ${META}/valid-all-types.yaml" \
     0 \
@@ -236,6 +246,26 @@ run_test "invalid-conflicts" \
     "ig metadata --validate ${META}/invalid-conflicts.yaml" \
     1 \
     "Conflicting vars both set should fail to validate"
+
+run_test "invalid-conflicts-conditional" \
+    "ig metadata --validate ${META}/invalid-conflicts-conditional.yaml" \
+    1 \
+    "Conditional conflicts should fail when condition matches"
+
+run_test "invalid-conflicts-conditional-not-eq" \
+    "ig metadata --validate ${META}/invalid-conflicts-conditional-not-eq.yaml" \
+    1 \
+    "Not-equals conflicts should fail when values differ"
+
+run_test "invalid-conflicts-malformed" \
+    "ig metadata --parse ${META}/invalid-conflicts-malformed.yaml" \
+    1 \
+    "Malformed conflict specifiers should fail to parse"
+
+run_test "invalid-conflicts-operator" \
+    "ig metadata --parse ${META}/invalid-conflicts-operator.yaml" \
+    1 \
+    "Unsupported conflict operators should fail to parse"
 
 run_test "invalid-conflicts-skip" \
     "ig metadata --validate ${META}/invalid-conflicts-skip.yaml" \

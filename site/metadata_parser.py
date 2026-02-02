@@ -77,11 +77,13 @@ class ValidationResultBuilder:
         )
 
     def conflict(self, var_a: str, var_b: str, value_a=None, value_b=None):
-        """Build result for conflicting variables both being set."""
+        """Build result for conflicting variables."""
+        value_a = "<unset>" if value_a is None else value_a
+        value_b = "<unset>" if value_b is None else value_b
         return self.build_result(
             status="conflict",
             valid=False,
-            message=f"Variables '{var_a}' and '{var_b}' conflict and both are set",
+            message=f"Conflict: {var_a}={value_a} {var_b}={value_b}",
             conflict_with=var_b,
             value=value_a,
             other_value=value_b,
@@ -462,6 +464,26 @@ class Metadata:
 
         return results
 
+    @staticmethod
+    def _parse_conflict_spec(spec: str):
+        """Parse a conflict spec into (name, op, value). op is None for unconditional."""
+        if not spec:
+            return None, None, None
+        if "!=" in spec:
+            name, value = spec.split("!=", 1)
+            op = "!="
+        elif "=" in spec:
+            name, value = spec.split("=", 1)
+            op = "="
+        else:
+            # Unconditional conflict (just the variable name).
+            return spec, None, None
+        name = name.strip()
+        value = value.strip()
+        if not name or not value:
+            return None, None, None
+        return name, op, value
+
     def _validate_conflicts(self):
         """Validate that conflicting variables are not both set (final resolved values)."""
         results = {}
@@ -472,25 +494,60 @@ class Metadata:
             variable_definitions = {name: [env_var] for name, env_var in self._container.variables.items()}
             self._resolved_vars = resolver.resolve(variable_definitions)
 
+        # Track unconditional pairs to avoid duplicate conditional reporting.
+        unconditional_pairs = set()
+        for var_name, env_var in self._resolved_vars.items():
+            conflicts = getattr(env_var, "conflicts", None) or []
+            for other in conflicts:
+                conflict_var_name, op, _ = self._parse_conflict_spec(other)
+                if not conflict_var_name or op is not None:
+                    continue
+                pair = tuple(sorted([var_name, conflict_var_name]))
+                unconditional_pairs.add(pair)
+
+        # Track reported pairs (including conditional spec string) to dedupe.
         seen_pairs = set()
         for var_name, env_var in self._resolved_vars.items():
             conflicts = getattr(env_var, "conflicts", None) or []
             if not conflicts:
                 continue
-            for other in conflicts:
-                pair = tuple(sorted([var_name, other]))
+            for conflict in conflicts:
+                conflict_var_name, op, conflict_value = self._parse_conflict_spec(conflict)
+                if not conflict_var_name:
+                    continue
+                if op is not None:
+                    # If an unconditional conflict exists for the same pair, it wins.
+                    pair_base = tuple(sorted([var_name, conflict_var_name]))
+                    if pair_base in unconditional_pairs:
+                        continue
+
+                pair = tuple(sorted([var_name, conflict]))
                 if pair in seen_pairs:
                     continue
                 seen_pairs.add(pair)
 
-                other_var = self._resolved_vars.get(other)
-                if not other_var:
+                # Retrieve the conflicting var from the final resolved variable set
+                conflict_var = self._resolved_vars.get(conflict_var_name)
+                if not conflict_var:
                     continue
 
-                val_a = str(env_var.value)
-                val_b = str(other_var.value)
-                if val_a and val_b:
-                    results[f"CONFLICT_{var_name}_{other}"] = self._result_builder.conflict(var_name, other, val_a, val_b)
+                # A unconditional conflict only applies if this variable and the conflicting
+                # variable are both set.
+                this_value = str(env_var.value)
+                conflict_target_value = str(conflict_var.value)
+                if not this_value or not conflict_target_value:
+                    continue
+
+                # For conditional conflicts, the conflicting variable must match / not match
+                # the specified conflicting value for the conflict to apply.
+                if op == "=" and conflict_target_value != conflict_value:
+                    continue
+                if op == "!=" and conflict_target_value == conflict_value:
+                    continue
+
+                results[f"CONFLICT_{var_name}_{conflict}"] = self._result_builder.conflict(
+                    var_name, conflict_var_name, this_value, conflict_target_value
+                )
         return results
 
     def _validate_defined_variables(self):

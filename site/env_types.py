@@ -353,12 +353,46 @@ class EnvVariable:
         conflicts_raw = _get_metadata_value(conflicts_key, "")
         conflicts: List[str] = []
         if conflicts_raw and isinstance(conflicts_raw, str):
+            # Parse conflict specs - only support operators "=" or "!="
             conflicts_raw_list = [c.strip() for c in conflicts_raw.split(",") if c.strip()]
             for c in conflicts_raw_list:
-                if c.startswith("IGconf_"):
-                    conflicts.append(c)
+                operator = None
+                name_part = ""
+                value_part = ""
+                if "!=" in c:
+                    operator = "!="
+                    name_part, value_part = c.split("!=", 1)
+                elif "=" in c:
+                    operator = "="
+                    name_part, value_part = c.split("=", 1)
+                # Add other operators as needed
+
+                if operator:
+                    # Conditional conflict: "var=value" or "var!=value"
+                    name_part = name_part.strip()
+                    value_part = value_part.strip()
+                    if "=" in value_part or "!" in value_part:
+                        raise ValueError(f"Invalid conflict specifier '{c}' (unsupported operator)")
+                    if not name_part or not value_part:
+                        raise ValueError(f"Invalid conflict specifier '{c}' (missing name or value)")
+                    if name_part.startswith("IGconf_"):
+                        conflict_name = name_part
+                    else:
+                        conflict_name = f"IGconf_{prefix}_{name_part.lower()}" if prefix else name_part
+                    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", conflict_name):
+                        raise ValueError(f"Invalid conflict specifier '{c}' (invalid variable name)")
+                    conflicts.append(f"{conflict_name}{operator}{value_part}")
                 else:
-                    conflicts.append(f"IGconf_{prefix}_{c.lower()}" if prefix else c)
+                    # Unconditional conflict: just a variable name
+                    if "!" in c or "=" in c:
+                        raise ValueError(f"Invalid conflict specifier '{c}' (unsupported operator)")
+                    if c.startswith("IGconf_"):
+                        conflicts.append(c)
+                    else:
+                        conflict_name = f"IGconf_{prefix}_{c.lower()}" if prefix else c
+                        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", conflict_name):
+                            raise ValueError(f"Invalid conflict specifier '{c}' (invalid variable name)")
+                        conflicts.append(conflict_name)
 
         return cls(
             name=full_name,
