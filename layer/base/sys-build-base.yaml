@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: build
 # X-Env-Layer-Desc: Build environment configuration including workspace, apt
 #  settings, and system foundation defaults.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 #
 # X-Env-VarPrefix: sys
 #
@@ -23,23 +23,24 @@
 # X-Env-Var-apt_get_purge-Valid: bool
 # X-Env-Var-apt_get_purge-Set: y
 #
-# X-Env-Var-apt_keydir:
-# X-Env-Var-apt_keydir-Desc: APT key directory
-#  If a particular collection of keys are required for bdebstrap to download
-#  packages from the mirror(s) provided, set the directory containing them here.
-#  This will be passed to bdebstrap via aptopt Dir::Etc::TrustedParts. If not
-#  specified, rpi-image-gen sets this directory and assembles the keys it
-#  requires into it.
+# X-Env-Var-apt_keydir: ${@WORKROOT}/keys
+# X-Env-Var-apt_keydir-Desc: APT key directory.
+#  If a particular collection of keys are required for apt to download packages
+#  from the mirror(s) provided, set the directory containing them here. This
+#  will be passed to apt via Dir::Etc::TrustedParts. Other keys necessary for
+#  bootstrap, in addition to those in standard system locations, will be copied
+#  to this directory.
 #  This particular setting of Dir::Etc::TrustedParts will not be included in the
 #  image. If using this option, please make sure to install your key(s) into the
 #  chroot explicitly if a key contained in this directory points to a location
 #  that is not otherwise populated during chroot creation (for example by
 #  installing a keyring package).
 # X-Env-Var-apt_keydir-Required: n
-# X-Env-Var-apt_keydir-Valid: string-or-empty
+# X-Env-Var-apt_keydir-Valid: string
 # X-Env-Var-apt_keydir-Set: y
 #
 # X-Env-Var-workroot: $(realpath --canonicalize-missing ./work)
+# X-Env-Var-workroot-Anchor: @WORKROOT
 # X-Env-Var-workroot-Desc: The root work directory. Depending on the system(s)
 #  being built, this directory can amount to a substantial amount of consumed
 #  disk space.
@@ -47,7 +48,7 @@
 # X-Env-Var-workroot-Valid: string
 # X-Env-Var-workroot-Set: y
 #
-# X-Env-Var-cachedir: ${IGconf_sys_workroot}/cache
+# X-Env-Var-cachedir: ${@WORKROOT}/cache
 # X-Env-Var-cachedir-Desc: Global cache root directory for all operations.
 # X-Env-Var-cachedir-Required: n
 # X-Env-Var-cachedir-Valid: string
@@ -65,13 +66,13 @@
 # X-Env-Var-apt_cachedir-Valid: string-or-empty
 # X-Env-Var-apt_cachedir-Set: force
 #
-# X-Env-Var-buildroot: ${IGconf_sys_workroot}/build
+# X-Env-Var-buildroot: ${@WORKROOT}/build
 # X-Env-Var-buildroot-Desc: Global build root directory for source builds.
 # X-Env-Var-buildroot-Required: n
 # X-Env-Var-buildroot-Valid: string
 # X-Env-Var-buildroot-Set: y
 #
-# X-Env-Var-bootstrapdir: ${IGconf_sys_workroot}/bootstrap
+# X-Env-Var-bootstrapdir: ${@WORKROOT}/bootstrap
 # X-Env-Var-bootstrapdir-Desc: Directory for bootstrap artefacts (e.g. env, layer
 #  order, metadata) used to resume the build in a containerised (or later)
 #  invocation.

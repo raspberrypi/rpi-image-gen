@@ -123,7 +123,7 @@
     <div class="header">
         <h1>sys-build-base</h1>
         <span class="badge">build</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v1.1.0</span>
         <p>Build environment configuration including workspace, apt
  settings, and system foundation defaults.</p>
     </div>
@@ -188,21 +188,21 @@
                 </tr>
                 <tr>
                     <td><code>IGconf_sys_apt_keydir</code></td>
-                    <td>APT key directory
- If a particular collection of keys are required for bdebstrap to download
- packages from the mirror(s) provided, set the directory containing them here.
- This will be passed to bdebstrap via aptopt Dir::Etc::TrustedParts. If not
- specified, rpi-image-gen sets this directory and assembles the keys it
- requires into it.
+                    <td>APT key directory.
+ If a particular collection of keys are required for apt to download packages
+ from the mirror(s) provided, set the directory containing them here. This
+ will be passed to apt via Dir::Etc::TrustedParts. Other keys necessary for
+ bootstrap, in addition to those in standard system locations, will be copied
+ to this directory.
  This particular setting of Dir::Etc::TrustedParts will not be included in the
  image. If using this option, please make sure to install your key(s) into the
  chroot explicitly if a key contained in this directory points to a location
  that is not otherwise populated during chroot creation (for example by
  installing a keyring package).</td>
                     <td>
-                           <code>&lt;empty&gt;</code>
+                           <code>${@WORKROOT}/keys</code>
                     </td>
-                    <td>String value (may be empty)</td>
+                    <td>Non-empty string value</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
@@ -224,7 +224,7 @@
                     <td><code>IGconf_sys_cachedir</code></td>
                     <td>Global cache root directory for all operations.</td>
                     <td>
-                           <code class="long-default">${IGconf_sys_workroot}/cache</code>
+                           <code>${@WORKROOT}/cache</code>
                     </td>
                     <td>Non-empty string value</td>
                     <td>
@@ -252,7 +252,7 @@
                     <td><code>IGconf_sys_buildroot</code></td>
                     <td>Global build root directory for source builds.</td>
                     <td>
-                           <code class="long-default">${IGconf_sys_workroot}/build</code>
+                           <code>${@WORKROOT}/build</code>
                     </td>
                     <td>Non-empty string value</td>
                     <td>
@@ -265,12 +265,33 @@
  order, metadata) used to resume the build in a containerised (or later)
  invocation.</td>
                     <td>
-                           <code class="long-default">${IGconf_sys_workroot}/bootstrap</code>
+                           <code>${@WORKROOT}/bootstrap</code>
                     </td>
                     <td>Non-empty string value</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Anchors</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Anchor</th>
+                    <th>Variable</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>@WORKROOT</code></td>
+                    <td><code>IGconf_sys_workroot</code></td>
+                    <td>The root work directory. Depending on the system(s)
+ being built, this directory can amount to a substantial amount of consumed
+ disk space.</td>
                 </tr>
             </tbody>
         </table>

@@ -292,18 +292,12 @@ prepare_build_config()
       msg "-> $key : $value"
       case $key in
          IGconf_sys_apt_keydir)
-            if [[ -z "$value" ]]; then
-               keydir=$(realpath -m "${IGconf_sys_workroot}/keys")
-               mkdir -p -- "$keydir" || die
-               [[ -d /usr/share/keyrings ]] && rsync -a /usr/share/keyrings/ "$keydir"
-               if [[ -n ${HOME:-} && -d ${HOME}/.local/share/keyrings ]]; then
-                  rsync -a "${HOME}/.local/share/keyrings/" "$keydir"
-               fi
-               rsync -a "$IGTOP/keydir/" "$keydir"
-               value="$keydir"
-            else
-               [[ -d $value ]] || die "$key $value is invalid"
+            mkdir -p -- "$value" || die
+            [[ -d /usr/share/keyrings ]] && rsync -a /usr/share/keyrings/ "$value"
+            if [[ -n ${HOME:-} && -d ${HOME}/.local/share/keyrings ]]; then
+               rsync -a "${HOME}/.local/share/keyrings/" "$value"
             fi
+            rsync -a "${IGTOP}/keydir/" "$value"
             _bdebstrap+=( --aptopt "Dir::Etc::TrustedParts $value" ) ;;
 
          IGconf_sys_apt_cachedir)
