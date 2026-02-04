@@ -1,0 +1,55 @@
+name: build
+
+on:
+  push:
+    branches: [gh_workflow]
+  pull_request:
+    branches: [gh_workflow]
+  workflow_dispatch:
+
+jobs:
+  build-arm64:
+    name: build (arm64, on ubuntu-24.04-arm)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debian-archive-keyring
+          sudo ./install_deps.sh
+
+      - name: test harness
+        run: ./test/run-all.sh
+
+      - name: build
+        run: |
+          ./rpi-image-gen build -c ./config/trixie-minbase.yaml
+          ./rpi-image-gen build -c ./config/trixie-minbase-ab.yaml
+
+  build-arm64-qemu:
+    name: build (arm64, qemu on ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: enable qemu-user-static
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support debian-archive-keyring
+          sudo update-binfmts --enable qemu-aarch64
+
+      - name: install dependencies
+        run: sudo ./install_deps.sh
+
+      - name: test harness
+        run: ./test/run-all.sh
+
+      - name: build
+        run: ./rpi-image-gen build -c ./config/trixie-minbase.yaml
+
