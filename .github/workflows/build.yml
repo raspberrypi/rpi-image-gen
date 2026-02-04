@@ -2,9 +2,9 @@ name: build
 
 on:
   push:
-    branches: [gh_workflow]
+    branches: [master]
   pull_request:
-    branches: [gh_workflow]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -51,5 +51,5 @@ jobs:
         run: ./test/run-all.sh
 
       - name: build
-        run: ./rpi-image-gen build -c ./config/trixie-minbase.yaml
+        run: ./rpi-image-gen build -c ./config/trixie-minbase.yaml -f
 
