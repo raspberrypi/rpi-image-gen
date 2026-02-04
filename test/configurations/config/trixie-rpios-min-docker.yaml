@@ -1,0 +1,12 @@
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  boot_part_size: 200%
+  root_part_size: 300%
+  name: deb13-arm64-min
+
+layer:
+  base: trixie-minbase
+  app: docker-debian-trixie
