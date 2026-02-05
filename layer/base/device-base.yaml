@@ -47,6 +47,15 @@
 # X-Env-Var-user1pass-Valid: regex:^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
 # X-Env-Var-user1pass-Set: n
 #
+# X-Env-Var-user1hashedpass:
+# X-Env-Var-user1hashedpass-Desc: A pre-hashed value of the password required to log into the user1 account. If
+#  both user1hashedpass and user1pass are set, user1hashedpass will take precendence and user1pass will be ignored. 
+#  Otherwise if neither user1hashedpass or user1pass are set the account will be locked.
+#  to pre-hash a given password use the unix utility mkpasswd.
+# X-Env-Var-user1hashedpass-Required: n
+# X-Env-Var-user1hashedpass-Valid: string
+# X-Env-Var-user1hashedpass-Set: n
+#
 # X-Env-Var-storage_type: sd
 # X-Env-Var-storage_type-Desc: Device storage media type.
 # X-Env-Var-storage_type-Required: n
