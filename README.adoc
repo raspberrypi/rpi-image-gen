@@ -90,6 +90,7 @@ See the `examples/` directory for tips and help
 
 * `bin/` - Common executable files and utilities
 * `config/` - Configuration files
+* `contrib/` - Optional, community-maintained extensions and tooling outside the supported core
 * `device/` - Device specific assets
 * `docs/` - Technical documentation
 * `examples/` - Examples and howto
