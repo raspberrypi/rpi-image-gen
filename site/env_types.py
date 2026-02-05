@@ -353,9 +353,23 @@ class EnvVariable:
         conflicts_raw = _get_metadata_value(conflicts_key, "")
         conflicts: List[str] = []
         if conflicts_raw and isinstance(conflicts_raw, str):
-            # Parse conflict specs - only support operators "=" or "!="
-            conflicts_raw_list = [c.strip() for c in conflicts_raw.split(",") if c.strip()]
+            # Parse conflict expressions - only support "=" or "!=" as conditional operators
+            conflicts_raw_list: List[str] = []
+            for line in str(conflicts_raw).splitlines():
+                conflicts_raw_list.extend([c.strip() for c in line.split(",") if c.strip()])
             for c in conflicts_raw_list:
+                precursor_value = None
+                if c.startswith("when="):
+                    parts = c.split(None, 1)
+                    if len(parts) < 2:
+                        raise ValueError(f"Invalid conflict expr '{c}' (missing condition after precursor)")
+                    precursor_value = parts[0][len("when="):].strip()
+                    if not precursor_value:
+                        raise ValueError(f"Invalid conflict expr '{c}' (missing precursor value)")
+                    c = parts[1].strip()
+                    if not c:
+                        raise ValueError(f"Invalid conflict expr '{c}' (invalid condition after precursor)")
+
                 operator = None
                 name_part = ""
                 value_part = ""
@@ -372,27 +386,32 @@ class EnvVariable:
                     name_part = name_part.strip()
                     value_part = value_part.strip()
                     if "=" in value_part or "!" in value_part:
-                        raise ValueError(f"Invalid conflict specifier '{c}' (unsupported operator)")
+                        raise ValueError(f"Invalid conflict expr '{c}' (unsupported operator)")
                     if not name_part or not value_part:
-                        raise ValueError(f"Invalid conflict specifier '{c}' (missing name or value)")
+                        raise ValueError(f"Invalid conflict expr '{c}' (missing name or value)")
                     if name_part.startswith("IGconf_"):
                         conflict_name = name_part
                     else:
                         conflict_name = f"IGconf_{prefix}_{name_part.lower()}" if prefix else name_part
                     if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", conflict_name):
-                        raise ValueError(f"Invalid conflict specifier '{c}' (invalid variable name)")
-                    conflicts.append(f"{conflict_name}{operator}{value_part}")
+                        raise ValueError(f"Invalid conflict expr '{c}' (invalid variable name)")
+                    conflict_spec = f"{conflict_name}{operator}{value_part}"
                 else:
                     # Unconditional conflict: just a variable name
                     if "!" in c or "=" in c:
-                        raise ValueError(f"Invalid conflict specifier '{c}' (unsupported operator)")
+                        raise ValueError(f"Invalid conflict expr '{c}' (unsupported operator)")
                     if c.startswith("IGconf_"):
-                        conflicts.append(c)
+                        conflict_spec = c
                     else:
                         conflict_name = f"IGconf_{prefix}_{c.lower()}" if prefix else c
                         if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", conflict_name):
-                            raise ValueError(f"Invalid conflict specifier '{c}' (invalid variable name)")
-                        conflicts.append(conflict_name)
+                            raise ValueError(f"Invalid conflict expr '{c}' (invalid variable name)")
+                        conflict_spec = conflict_name
+
+                if precursor_value is not None:
+                    conflicts.append(f"when={precursor_value} {conflict_spec}")
+                else:
+                    conflicts.append(conflict_spec)
 
         return cls(
             name=full_name,
@@ -460,7 +479,7 @@ class EnvVariable:
                 raise ValueError(f"Invalid trigger action '{action}' for {var_name}")
 
             if not action_args:
-                raise ValueError(f"Trigger rule '{line}' for {var_name} is missing args for '{action}')")
+                raise ValueError(f"Trigger rule '{line}' for {var_name} is missing args for '{action}'")
 
             target, value, policy = parser(action_args, var_name, line)
             rules.append(TriggerRule(condition=condition, action=action, target=target, value=value, policy=policy))

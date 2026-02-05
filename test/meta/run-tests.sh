@@ -176,6 +176,31 @@ run_test "valid-conflicts-conditional-not-eq" \
     0 \
     "Not-equals conflicts should pass when values are equal"
 
+run_test "valid-conflicts-when" \
+    "ig metadata --validate ${META}/valid-conflicts-when.yaml" \
+    0 \
+    "when= conflicts should pass when condition does not match"
+
+run_test "valid-conflicts-when-multiple" \
+    "ig metadata --validate ${META}/valid-conflicts-when-multiple.yaml" \
+    0 \
+    "when= conflicts should coexist with other conflicts"
+
+run_test "valid-conflicts-when-whitespace" \
+    "ig metadata --validate ${META}/valid-conflicts-when-whitespace.yaml" \
+    0 \
+    "when= conflicts should tolerate extra whitespace"
+
+run_test "valid-conflicts-when-igconf" \
+    "ig metadata --validate ${META}/valid-conflicts-when-igconf.yaml" \
+    0 \
+    "when= conflicts should accept IGconf_ targets"
+
+run_test "valid-conflicts-when-multiline" \
+    "ig metadata --validate ${META}/valid-conflicts-when-multiline.yaml" \
+    0 \
+    "when= conflicts should support multi-line specs"
+
 run_test "valid-all-types-set" \
     "ig metadata --parse ${META}/valid-all-types.yaml" \
     0 \
@@ -256,6 +281,26 @@ run_test "invalid-conflicts-conditional-not-eq" \
     "ig metadata --validate ${META}/invalid-conflicts-conditional-not-eq.yaml" \
     1 \
     "Not-equals conflicts should fail when values differ"
+
+run_test "invalid-conflicts-when" \
+    "ig metadata --validate ${META}/invalid-conflicts-when.yaml" \
+    1 \
+    "when= conflicts should fail when condition matches"
+
+run_test "invalid-conflicts-when-missing-value" \
+    "ig metadata --parse ${META}/invalid-conflicts-when-missing-value.yaml" \
+    1 \
+    "when= conflicts should fail when value is missing"
+
+run_test "invalid-conflicts-when-missing-conflict" \
+    "ig metadata --parse ${META}/invalid-conflicts-when-missing-conflict.yaml" \
+    1 \
+    "when= conflicts should fail when conflict is missing"
+
+run_test "invalid-conflicts-when-multiline-missing-conflict" \
+    "ig metadata --parse ${META}/invalid-conflicts-when-multiline-missing-conflict.yaml" \
+    1 \
+    "when= conflicts should fail when split across lines"
 
 run_test "invalid-conflicts-malformed" \
     "ig metadata --parse ${META}/invalid-conflicts-malformed.yaml" \

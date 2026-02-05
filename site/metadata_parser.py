@@ -466,9 +466,22 @@ class Metadata:
 
     @staticmethod
     def _parse_conflict_spec(spec: str):
-        """Parse a conflict spec into (name, op, value). op is None for unconditional."""
+        """Parse a conflict spec into (name, op, value, when_value). op is None for unconditional."""
         if not spec:
-            return None, None, None
+            return None, None, None, None
+        when_value = None
+        spec = spec.strip()
+        if spec.startswith("when="):
+            parts = spec.split(None, 1)
+            if len(parts) < 2:
+                return None, None, None, None
+            when_value = parts[0][len("when="):].strip()
+            if not when_value:
+                return None, None, None, None
+            spec = parts[1].strip()
+            if not spec:
+                return None, None, None, None
+
         if "!=" in spec:
             name, value = spec.split("!=", 1)
             op = "!="
@@ -477,12 +490,12 @@ class Metadata:
             op = "="
         else:
             # Unconditional conflict (just the variable name).
-            return spec, None, None
+            return spec, None, None, when_value
         name = name.strip()
         value = value.strip()
         if not name or not value:
-            return None, None, None
-        return name, op, value
+            return None, None, None, None
+        return name, op, value, when_value
 
     def _validate_conflicts(self):
         """Validate that conflicting variables are not both set (final resolved values)."""
@@ -499,8 +512,8 @@ class Metadata:
         for var_name, env_var in self._resolved_vars.items():
             conflicts = getattr(env_var, "conflicts", None) or []
             for other in conflicts:
-                conflict_var_name, op, _ = self._parse_conflict_spec(other)
-                if not conflict_var_name or op is not None:
+                conflict_var_name, op, _, when_value = self._parse_conflict_spec(other)
+                if not conflict_var_name or op is not None or when_value is not None:
                     continue
                 pair = tuple(sorted([var_name, conflict_var_name]))
                 unconditional_pairs.add(pair)
@@ -512,7 +525,7 @@ class Metadata:
             if not conflicts:
                 continue
             for conflict in conflicts:
-                conflict_var_name, op, conflict_value = self._parse_conflict_spec(conflict)
+                conflict_var_name, op, conflict_value, when_value = self._parse_conflict_spec(conflict)
                 if not conflict_var_name:
                     continue
                 if op is not None:
@@ -534,6 +547,8 @@ class Metadata:
                 # A unconditional conflict only applies if this variable and the conflicting
                 # variable are both set.
                 this_value = str(env_var.value)
+                if when_value is not None and this_value != when_value:
+                    continue
                 conflict_target_value = str(conflict_var.value)
                 if not this_value or not conflict_target_value:
                     continue
