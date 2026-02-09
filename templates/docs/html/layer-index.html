@@ -22,11 +22,11 @@
         h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
 
         /* AsciiDoc table styling */
-        .tableblock { width: 100%; border-collapse: collapse; margin: 1.25em 0; }
+        .tableblock { width: 100%; border-collapse: collapse; margin: 1.25em 0; table-layout: fixed; }
         .tableblock.frame-all { border: 1px solid #dedede; }
         .tableblock.grid-all th, .tableblock.grid-all td { border: 1px solid #dedede; }
         .tableblock.stretch { width: 100%; }
-        .tableblock th, .tableblock td { padding: 0.5625em 0.625em; text-align: left; vertical-align: top; }
+        .tableblock th, .tableblock td { padding: 0.5625em 0.625em; text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
         .tableblock th { background: #f8f9fa; font-weight: 600; color: rgba(0,0,0,.8); }
         .tableblock tbody tr:nth-child(even) { background: #f8f8f7; }
         .tableblock p { margin: 0; line-height: 1.6; }
