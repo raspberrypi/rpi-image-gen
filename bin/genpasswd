@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+chroot="${1:?Usage: $0 <chroot_path>}"
+
+# Read password (stdin if piped, else prompt)
+if [ -t 0 ]; then
+   printf "Password: " >&2
+   stty -echo
+   IFS= read -r password
+   stty echo
+   printf "\n" >&2
+else
+   IFS= read -r password
+fi
+[ -n "$password" ] || { echo "Empty password" >&2; exit 1; }
+
+method="sha-512"
+if [ -f "$chroot/etc/login.defs" ]; then
+   m=$(awk '/^[[:space:]]*ENCRYPT_METHOD[[:space:]]+/ {print tolower($2)}' "$chroot/etc/login.defs")
+   [ -n "${m:-}" ] && method="$m"
+fi
+if [ "$method" = "" ] && [ -f "$chroot/etc/pam.d/common-password" ] &&
+   grep -q yescrypt "$chroot/etc/pam.d/common-password"; then
+   method="yescrypt"
+fi
+
+case "$method" in
+   sha512|sha-512) method="sha-512" ;;
+   yescrypt) ;;
+   md5) echo "md5 disallowed" >&2; exit 1 ;;
+   *) method="sha-512" ;;
+esac
+
+if [ "$method" = "yescrypt" ]; then
+   command -v mkpasswd >/dev/null 2>&1 || { echo "mkpasswd(whois) required for yescrypt" >&2; exit 1; }
+   mkpasswd --help 2>/dev/null | grep -q -- '--method' || { echo "mkpasswd lacks --method (need whois/libxcrypt)" >&2; exit 1; }
+   mkpasswd --method=yescrypt "$password"
+else
+   command -v openssl >/dev/null 2>&1 || { echo "openssl required for sha-512" >&2; exit 1; }
+   openssl passwd -6 "$password"
+fi
