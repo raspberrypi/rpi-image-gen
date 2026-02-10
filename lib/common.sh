@@ -226,11 +226,12 @@ map_path() {
 export -f map_path
 
 
-# General purpose key=value normaliser that escapes chracters that would
-# break posix expansion
+# General purpose key=value normaliser that escapes characters that would
+# break shell expansion.
 safe_kv() {
   python3 - "$1" <<'PY'
 import sys
+import re
 with open(sys.argv[1], encoding='utf-8') as src:
    for raw in src:
       line = raw.rstrip('\n')
@@ -238,7 +239,9 @@ with open(sys.argv[1], encoding='utf-8') as src:
          print(line)
          continue
       key, value = line.split('=', 1)
-      value = value.replace('\\', '\\\\').replace('"', '\\"')
+      value = value.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`')
+      # Permits ${var} or $(cmd) expansion, escapes $6$salt$hash
+      value = re.sub(r'\$(?![({])', r'\\$', value)
       print(f'{key}="{value}"')
 PY
 }

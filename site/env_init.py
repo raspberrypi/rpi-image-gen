@@ -1,4 +1,5 @@
 import json
+import os
 import platform
 import socket
 from pathlib import Path
@@ -38,6 +39,11 @@ def _env_init_command(args) -> None:
         except FileNotFoundError as exc:
             raise SystemExit(str(exc))
 
+    try:
+        os_release = platform.freedesktop_os_release()
+    except OSError:
+        os_release = None
+
     payload = {
         "igroot": str(igroot),
         "srcroot": str(srcroot) if srcroot else None,
@@ -55,13 +61,30 @@ def _env_init_command(args) -> None:
         "argv": getattr(args, "_unknown", []),
         "system": {
             "hostname": socket.gethostname(),
-            "os": platform.platform(),
+            "platform": platform.platform(),
             "python": platform.python_version(),
             "machine": platform.machine(),
+            "os_release": os_release,
+            "is_container": _is_container(),
         },
     }
 
     print(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def _is_container() -> bool:
+    # Simple best effort heuristic - not guaranteed!
+    if os.environ.get("container") == "podman":
+        return True
+    if os.environ.get("container") == "docker":
+        return True
+    if Path("/.dockerenv").exists():
+        return True
+    if Path("/run/.containerenv").exists():
+        return True
+    if Path("/run/systemd/container").exists():
+        return True
+    return False
 
 
 def _collect_config_paths(igroot: Path, srcroot: Path | None) -> list[str]:

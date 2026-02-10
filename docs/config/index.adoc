@@ -257,6 +257,13 @@ The engine supports deferred variable expansion, meaning that it's possible to f
 
 === Environment Variable Expansion
 
+Variable values may include parameter expansion or command substitution. To be expanded by the engine, they must use one of these forms:
+
+- `${variable}`
+- `$(command)`
+
+Any other `$` (eg, `$VAR` or `$6$...`) is treated as literal and will be escaped.
+
 [source,yaml]
 ----
 device:

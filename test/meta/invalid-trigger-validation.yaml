@@ -1,0 +1,24 @@
+# METABEGIN
+# X-Env-Layer-Name: trigger-invalid
+# X-Env-Layer-Desc: Trigger sets value that violates validation
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: image
+#
+# X-Env-Var-rootfs_type: btrfs
+# X-Env-Var-rootfs_type-Desc: Root filesystem type
+# X-Env-Var-rootfs_type-Required: n
+# X-Env-Var-rootfs_type-Valid: ext4,btrfs
+# X-Env-Var-rootfs_type-Set: y
+# X-Env-Var-rootfs_type-Triggers: btrfs set IGconf_image_pmap=overridden policy=force
+#
+# X-Env-Var-pmap: clear
+# X-Env-Var-pmap-Desc: Provisioning map identifier for this image layout
+# X-Env-Var-pmap-Required: n
+# X-Env-Var-pmap-Valid: clear,crypt
+# X-Env-Var-pmap-Set: force
+# METAEND
+
+trigger_invalid:
+  rootfs_type: ${IGconf_image_rootfs_type}
+  pmap: ${IGconf_image_pmap}

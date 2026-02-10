@@ -1,0 +1,14 @@
+# METABEGIN
+# X-Env-Layer-Name: test-conflict-when-missing-value
+# X-Env-Layer-Desc: when= missing value should fail parsing
+# X-Env-VarPrefix: cft
+#
+# X-Env-Var-compression: zstd
+# X-Env-Var-compression-Conflicts: when= rootfs_type=ext4
+#
+# X-Env-Var-rootfs_type: ext4
+# METAEND
+
+conflict_when_missing_value:
+  compression: ${IGconf_cft_compression}
+  rootfs_type: ${IGconf_cft_rootfs_type}

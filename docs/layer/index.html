@@ -22,11 +22,11 @@
         h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
 
         /* AsciiDoc table styling */
-        .tableblock { width: 100%; border-collapse: collapse; margin: 1.25em 0; }
+        .tableblock { width: 100%; border-collapse: collapse; margin: 1.25em 0; table-layout: fixed; }
         .tableblock.frame-all { border: 1px solid #dedede; }
         .tableblock.grid-all th, .tableblock.grid-all td { border: 1px solid #dedede; }
         .tableblock.stretch { width: 100%; }
-        .tableblock th, .tableblock td { padding: 0.5625em 0.625em; text-align: left; vertical-align: top; }
+        .tableblock th, .tableblock td { padding: 0.5625em 0.625em; text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
         .tableblock th { background: #f8f9fa; font-weight: 600; color: rgba(0,0,0,.8); }
         .tableblock tbody tr:nth-child(even) { background: #f8f8f7; }
         .tableblock p { margin: 0; line-height: 1.6; }
@@ -156,6 +156,14 @@
 <li><a href="#_environment_variables">Environment Variables</a></li>
 <li><a href="#_variable_naming_convention">Variable Naming Convention</a></li>
 <li><a href="#_placeholder_support">Placeholder Support</a></li>
+<li><a href="#_triggers">Triggers</a>
+<ul class="sectlevel3">
+<li><a href="#_supported_actions">Supported actions</a></li>
+<li><a href="#_examples">Examples</a></li>
+<li><a href="#_example_same_layer">Example (same layer):</a></li>
+</ul>
+</li>
+<li><a href="#_variable_conflicts">Variable Conflicts</a></li>
 </ul>
 </li>
 <li><a href="#_configuration_variables">Configuration Variables</a></li>
@@ -518,6 +526,12 @@ mmdebstrap:
 <div class="paragraph">
 <p><code>X-Env-Var-&lt;name&gt;-Set</code>: Set policy (immediate, lazy, force, skip)</p>
 </div>
+<div class="paragraph">
+<p><code>X-Env-Var-&lt;name&gt;-Triggers</code>: Derived actions based on the variable value</p>
+</div>
+<div class="paragraph">
+<p><code>X-Env-Var-&lt;name&gt;-Conflicts</code>: Variables that cannot be set when this variable is also set</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_variable_naming_convention"><a class="anchor" href="#_variable_naming_convention"></a><a class="link" href="#_variable_naming_convention">Variable Naming Convention</a></h3>
@@ -551,6 +565,214 @@ mmdebstrap:
 </div>
 <div class="paragraph">
 <p><code>${FILEPATH}</code>: Full path to the layer file</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_triggers"><a class="anchor" href="#_triggers"></a><a class="link" href="#_triggers">Triggers</a></h3>
+<div class="paragraph">
+<p>Triggers (<code>X-Env-Var-*-Triggers</code>) allow a variable’s resolved value to automatically perform actions, meaning that derived settings can be injected based on that value. Format as follows (one rule per line):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Conditional: <code>VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
+</li>
+<li>
+<p>Unconditional: <code>set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Rules are exact string matches on the resolved source variable value. Unconditional rules always fire. The first token after the action must be <code>TARGET=VALUE</code>. <code>policy=</code> is optional and defaults to <code>immediate</code>.</p>
+</div>
+<div class="paragraph">
+<p>Lint will fail on:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Unknown actions.</p>
+</li>
+<li>
+<p>Actions that do not start with <code>TARGET=VALUE</code>.</p>
+</li>
+<li>
+<p>Target names that are not POSIX identifiers.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Usage:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Target values are preserved as literals with no expansion.</p>
+</li>
+<li>
+<p>Triggers are collected from every definition of a variable across all layers. They are evaluated once against the variable’s final resolved value, so triggers declared in upstream layers still fire even if a downstream layer overrides the variable’s value. Suppression of upstream triggers is not supported.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_supported_actions"><a class="anchor" href="#_supported_actions"></a><a class="link" href="#_supported_actions">Supported actions</a></h4>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 33.3333%;">
+<col style="width: 22.2222%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Action</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default policy</th>
+<th class="tableblock halign-left valign-top">Applies to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>set</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inject an environment variable with the given value and policy.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">immediate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X-Env-*-Var</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples"><a class="anchor" href="#_examples"></a><a class="link" href="#_examples">Examples</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Conditional:</p>
+<div class="paragraph">
+<p><code># X-Env-Var-rootfs_type-Triggers: btrfs set IG_HAS_BTRFS_PROGS=1 policy=force</code></p>
+</div>
+</li>
+<li>
+<p>Unconditional:</p>
+<div class="paragraph">
+<p><code># X-Env-Var-rootfs_type-Triggers: set IG_ALWAYS_ON=1 policy=immediate</code></p>
+</div>
+</li>
+<li>
+<p>Multiple with different conditions (new line per condition helps readability, but is not mandatory):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Var-rootfs_type-Triggers:
+#  btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
+#  ext4 set IG_HAS_E2FS_PROGS=1 policy=force</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Multiple actions sharing the same condition (omit the condition on following line to inherit the previous one):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Var-rootfs_type-Triggers:
+#  ext4 set IG_HAS_E2FS_PROGS=1
+#  set IG_HAS_SRCBUILD=1</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Trigger precedence is determined by layer order, not file order.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Variable declarations in the same layer share that layer&#8217;s position.</p>
+</li>
+<li>
+<p>If a trigger sets a variable, it adds a definition for the target variable, e.g. at 'position + 0.01'.</p>
+</li>
+<li>
+<p>Any definition of that target variable from a later layer (higher position) wins via the normal force/immediate/lazy policy rules.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Within a single layer:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If the same variable is declared multiple times, last declaration is retained (before triggers are considered).</p>
+</li>
+<li>
+<p>If a trigger sets a variable, the trigger’s injected definition sits after the layer’s base definition and will override that variable’s declaration in the same layer (force/immediate/lazy still apply). A later layer can still override the trigger.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_example_same_layer"><a class="anchor" href="#_example_same_layer"></a><a class="link" href="#_example_same_layer">Example (same layer):</a></h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-VarPrefix: image
+
+# X-Env-Var-deploy_type: develop
+# X-Env-Var-deploy_type-Valid: develop,production
+# X-Env-Var-deploy_type-Set: y
+# X-Env-Var-deploy_type-Triggers: production set IGconf_image_pmap=crypt policy=force
+
+# X-Env-Var-pmap: clear
+# X-Env-Var-pmap-Valid: clear,crypt
+# X-Env-Var-pmap-Set: y
+# X-Env-Var-pmap-Set: force</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>IGconf_image_deploy_type</code> resolves to <code>production</code>, the trigger injects <code>IGconf_image_pmap=crypt</code> after the source variable, overriding <code>pmap: clear</code> in the same layer. A later layer defining <code>IGconf_image_pmap</code> with <code>force</code> would still win over the trigger.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_variable_conflicts"><a class="anchor" href="#_variable_conflicts"></a><a class="link" href="#_variable_conflicts">Variable Conflicts</a></h3>
+<div class="paragraph">
+<p>Variable conflicts (<code>X-Env-Var-*-Conflicts</code>) allow a variable to declare that it cannot be set when other variables are also set, or when other variables do/do not have a particular value. Conflict resolution takes place on the final set of resolved <code>IGconf</code> prefixed variables. When declaring conflicts, any variable name can be specified (fully prefixed) that exists in the final set - not just variables declared in the same layer, ie cross-layer conflict resolution is supported. If a variable is set in a base layer and overridden in a consumer layer, conflicts are defined by the winning definition, ie conflicts from the earlier definition are not inherited.</p>
+</div>
+<div class="paragraph">
+<p>Conflict expressions adhere to <code>&lt;precursor&gt; &lt;condition&gt;</code> syntax. The precursor is optional (<code>when=&lt;value&gt;</code>) and a single expression may only include one precursor. The condition can be unconditional (<code>name</code>) or conditional (<code>name=value</code> / <code>name!=value</code>). Multiple expressions can be specified, separated by commas, and may be wrapped across multiple lines. Each expression may include only one precursor.</p>
+</div>
+<div class="paragraph">
+<p>Examples:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># Unconditional:
+# X-Env-Var-user1pass:
+# X-Env-Var-user1pass-Conflicts: user1hashpass
+#
+# X-Env-Var-user1hashpass:
+# X-Env-Var-user1hashpass-Conflicts: user1pass
+
+# Conditional (no precursor):
+# X-Env-Var-storage_type: sd
+# X-Env-Var-storage_type-Valid: sd,emmc,nvme
+#
+# X-Env-Var-lockemmc: y
+# X-Env-Var-lockemmc-Valid: bool
+# X-Env-Var-lockemmc-Conflicts: storage_type!=emmc
+
+# Conditional (with precursor):
+# X-Env-Var-lockemmc-Conflicts: when=y storage_type!=emmc</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -984,6 +1206,10 @@ IGconf_layer_app=my-app</code></pre>
         
         <div class="layer-item">
             <a href="rpi-connect-lite.html">rpi-connect-lite</a><span class="layer-desc">- Raspberry Pi Connect client with remote shell access</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="rpi-connect-ota.html">rpi-connect-ota</a><span class="layer-desc">- Configures Raspberry Pi Connect's experimental remote update capability</span>
         </div>
         
     </div>

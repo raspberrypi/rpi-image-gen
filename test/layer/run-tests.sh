@@ -401,6 +401,29 @@ run_test "layer-apply-env-invalid" \
     1 \
     "Pipeline apply-env should fail with invalid metadata"
 
+run_test "layer-apply-env-trigger-env-override" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "IGconf_trig_rootfs_type=btrfs" && \
+     ig pipeline --env-in "$TMP_ENV" --layers trigger-env-override --path '"${PIPELINE_LAYER_DIR}"' \
+        --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    1 \
+    "Pipeline should fail when env/CLI override triggers invalid injected value"
+
+run_test "layer-apply-env-trigger-same-layer-force" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/trigger-same-layer-force.yaml "$TMP_DIR"/ && \
+     make_pipeline_env "$TMP_ENV" "IGconf_trig2_rootfs_type=btrfs" && \
+     ig pipeline --env-in "$TMP_ENV" --layers trigger-same-layer-force --path "$TMP_DIR" \
+        --env-out "$TMP_OUT" >/dev/null 2>&1; \
+     status=$?; \
+     if [ $status -eq 0 ]; then \
+       grep -q "^IGconf_trig2_pmap=crypt$" "$TMP_OUT"; status=$?; \
+     fi; \
+     rm -f "$TMP_ENV" "$TMP_OUT"; rm -rf "$TMP_DIR"; exit $status' \
+    0 \
+    "Pipeline should honor trigger when target is defined earlier in same layer (force)"
+
 
 # Verify meta parse auto-sets required variables with Set: y
 cleanup_env

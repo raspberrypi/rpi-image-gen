@@ -161,6 +161,46 @@ run_test "valid-all-types-validate" \
     0 \
     "Valid all-types metadata should validate successfully"
 
+run_test "valid-conflicts" \
+    "ig metadata --validate ${META}/valid-conflicts.yaml" \
+    0 \
+    "Conflicting vars should pass when only one side is set"
+
+run_test "valid-conflicts-conditional" \
+    "ig metadata --validate ${META}/valid-conflicts-conditional.yaml" \
+    0 \
+    "Conditional conflicts should pass when condition does not match"
+
+run_test "valid-conflicts-conditional-not-eq" \
+    "ig metadata --validate ${META}/valid-conflicts-conditional-not-eq.yaml" \
+    0 \
+    "Not-equals conflicts should pass when values are equal"
+
+run_test "valid-conflicts-when" \
+    "ig metadata --validate ${META}/valid-conflicts-when.yaml" \
+    0 \
+    "when= conflicts should pass when condition does not match"
+
+run_test "valid-conflicts-when-multiple" \
+    "ig metadata --validate ${META}/valid-conflicts-when-multiple.yaml" \
+    0 \
+    "when= conflicts should coexist with other conflicts"
+
+run_test "valid-conflicts-when-whitespace" \
+    "ig metadata --validate ${META}/valid-conflicts-when-whitespace.yaml" \
+    0 \
+    "when= conflicts should tolerate extra whitespace"
+
+run_test "valid-conflicts-when-igconf" \
+    "ig metadata --validate ${META}/valid-conflicts-when-igconf.yaml" \
+    0 \
+    "when= conflicts should accept IGconf_ targets"
+
+run_test "valid-conflicts-when-multiline" \
+    "ig metadata --validate ${META}/valid-conflicts-when-multiline.yaml" \
+    0 \
+    "when= conflicts should support multi-line specs"
+
 run_test "valid-all-types-set" \
     "ig metadata --parse ${META}/valid-all-types.yaml" \
     0 \
@@ -181,6 +221,17 @@ run_test "set-policies-set" \
     "ig metadata --parse ${META}/set-policies.yaml" \
     0 \
     "Set policies should work correctly"
+
+cleanup_env
+run_test "triggers-parse" \
+    "cleanup_env; ig metadata --parse ${META}/valid-triggers.yaml" \
+    0 \
+    "Triggers metadata should parse successfully"
+
+run_test "triggers-set" \
+    'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_FAST=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_FAST2=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_ANY=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_EXTRA=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger rules should set target variables (including inherited condition actions)"
 
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
@@ -215,6 +266,79 @@ run_test "invalid-unsupported-validate" \
     "ig metadata --validate ${META}/invalid-unsupported-fields.yaml" \
     1 \
     "Metadata with unsupported fields should fail to validate"
+
+run_test "invalid-conflicts" \
+    "ig metadata --validate ${META}/invalid-conflicts.yaml" \
+    1 \
+    "Conflicting vars both set should fail to validate"
+
+run_test "invalid-conflicts-conditional" \
+    "ig metadata --validate ${META}/invalid-conflicts-conditional.yaml" \
+    1 \
+    "Conditional conflicts should fail when condition matches"
+
+run_test "invalid-conflicts-conditional-not-eq" \
+    "ig metadata --validate ${META}/invalid-conflicts-conditional-not-eq.yaml" \
+    1 \
+    "Not-equals conflicts should fail when values differ"
+
+run_test "invalid-conflicts-when" \
+    "ig metadata --validate ${META}/invalid-conflicts-when.yaml" \
+    1 \
+    "when= conflicts should fail when condition matches"
+
+run_test "invalid-conflicts-when-missing-value" \
+    "ig metadata --parse ${META}/invalid-conflicts-when-missing-value.yaml" \
+    1 \
+    "when= conflicts should fail when value is missing"
+
+run_test "invalid-conflicts-when-missing-conflict" \
+    "ig metadata --parse ${META}/invalid-conflicts-when-missing-conflict.yaml" \
+    1 \
+    "when= conflicts should fail when conflict is missing"
+
+run_test "invalid-conflicts-when-multiline-missing-conflict" \
+    "ig metadata --parse ${META}/invalid-conflicts-when-multiline-missing-conflict.yaml" \
+    1 \
+    "when= conflicts should fail when split across lines"
+
+run_test "invalid-conflicts-malformed" \
+    "ig metadata --parse ${META}/invalid-conflicts-malformed.yaml" \
+    1 \
+    "Malformed conflict specifiers should fail to parse"
+
+run_test "invalid-conflicts-operator" \
+    "ig metadata --parse ${META}/invalid-conflicts-operator.yaml" \
+    1 \
+    "Unsupported conflict operators should fail to parse"
+
+run_test "invalid-conflicts-skip" \
+    "ig metadata --validate ${META}/invalid-conflicts-skip.yaml" \
+    0 \
+    "Conflicts ignored when a side has no resolved value"
+
+run_test "invalid-trigger-action-parse" \
+    "ig metadata --parse ${META}/invalid-trigger-verb.yaml" \
+    1 \
+    "Unknown trigger action should fail to parse"
+
+cleanup_env
+run_test "invalid-trigger-validation" \
+    "cleanup_env; ig metadata --parse ${META}/invalid-trigger-validation.yaml" \
+    1 \
+    "Trigger-injected value that violates validation should fail to parse"
+
+cleanup_env
+run_test "invalid-trigger-validation-force" \
+    "cleanup_env; ig metadata --parse ${META}/invalid-trigger-validation-force.yaml" \
+    1 \
+    "Trigger-injected invalid value should fail even when target has force policy"
+
+cleanup_env
+run_test "invalid-trigger-env-override" \
+    "cleanup_env; IGconf_image_rootfs_type=btrfs ig metadata --parse ${META}/invalid-trigger-env-override.yaml" \
+    1 \
+    "Trigger should fire when source var is overridden via env/config"
 
 run_test "invalid-yaml-syntax-layer-validate" \
     "ig metadata --validate ${META}/invalid-yaml-syntax.yaml" \

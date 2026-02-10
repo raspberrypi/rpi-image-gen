@@ -595,6 +595,22 @@ root_part_size = 300%</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_environment_variable_expansion"><a class="anchor" href="#_environment_variable_expansion"></a><a class="link" href="#_environment_variable_expansion">Environment Variable Expansion</a></h3>
+<div class="paragraph">
+<p>Variable values may include parameter expansion or command substitution. To be expanded by the engine, they must use one of these forms:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>${variable}</code></p>
+</li>
+<li>
+<p><code>$(command)</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Any other <code>$</code> (eg, <code>$VAR</code> or <code>$6$&#8230;&#8203;</code>) is treated as literal and will be escaped.</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">device:
