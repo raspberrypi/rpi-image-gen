@@ -7,7 +7,8 @@
 # X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
 # X-Env-Layer-Provides: image
 #
-# X-Env-VarRequires: IGconf_device_storage_type
+# X-Env-VarRequires: IGconf_device_storage_type,IGconf_device_class
+# X-Env-VarRequires-Valid: string,regex:^(cm4|pi4|cm5|pi5)$
 #
 # X-Env-VarPrefix: image
 #
