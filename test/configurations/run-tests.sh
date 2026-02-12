@@ -90,30 +90,65 @@ print_summary() {
 
 print_header "DRY RUN CONFIG TESTS"
 
-run_test "dryconfig1" \
+run_test "dryconfig1 - docker" \
     "printf 'n\n' | $IG build -S ${SRC} -c trixie-rpios-min-docker.yaml -I" \
     0 \
     "Configuration should parse successfully"
 
-run_test "dryconfig2" \
+run_test "dryconfig2 - splash" \
     "printf 'n\n' | $IG build -S ${SRC} -c trixie-ab-min-splash.yaml -I" \
     0 \
     "Configuration should parse successfully"
 
-run_test "dryconfig3" \
+run_test "dryconfig3 - examples/slim" \
     "printf 'n\n' | $IG build -S ${IGTOP}/examples/slim -c pi5-slim.yaml -I" \
     0 \
     "Configuration should parse successfully"
 
-run_test "dryconfig4" \
+run_test "dryconfig4 - examples/webkiosk" \
     "printf 'n\n' | $IG build -S ${IGTOP}/examples/webkiosk -c kiosk.yaml -I" \
     0 \
     "Configuration should parse successfully"
 
-run_test "dryconfig5" \
+run_test "dryconfig5 - examples/ota" \
     "printf 'n\n' | $IG build -S ${IGTOP}/examples/ota -c ota.yaml -I -- IGconf_connect_authkey=rpuak_foobar" \
     0 \
     "Configuration should parse successfully"
+
+run_test "dryconfig5 - cm4" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_device_layer=rpi-cm4" \
+    0 \
+    "Configuration should parse successfully"
+
+run_test "dryconfig5 - cm4 lite w/emmc" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_device_layer=rpi-cm4 IGconf_device_variant=lite IGconf_device_storage_type=emmc" \
+    1 \
+    "Configuration should reject cm4 lite w/emmc"
+
+run_test "dryconfig6 - cm5" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_device_layer=rpi-cm5" \
+    0 \
+    "Configuration should parse successfully"
+
+run_test "dryconfig7 - cm5 lite w/emmc" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_device_layer=rpi-cm5 IGconf_device_variant=lite IGconf_device_storage_type=emmc" \
+    1 \
+    "Configuration should reject cm5 lite w/emmc"
+
+run_test "dryconfig8 - pi5" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_device_layer=rpi5" \
+    0 \
+    "Configuration should parse correctly"
+
+run_test "dryconfig9 - pi5 w/emmc" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_device_layer=rpi5 IGconf_device_storage_type=emmc" \
+    1 \
+    "Configuration should reject pi5 w/emmc"
+
+run_test "dryconfig10 - zero2w" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_device_layer=rpizero2w" \
+    0 \
+    "Configuration should parse correctly"
 
 print_summary
 exit 0
