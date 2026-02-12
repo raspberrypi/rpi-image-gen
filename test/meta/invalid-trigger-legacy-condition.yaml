@@ -1,0 +1,10 @@
+# METABEGIN
+# X-Env-Layer-Name: invalid-trigger-legacy-condition
+# X-Env-Layer-Desc: Legacy conditional trigger syntax should be rejected
+# X-Env-VarPrefix: triglegacy
+#
+# X-Env-Var-mode: fast
+# X-Env-Var-mode-Triggers: fast set IG_SHOULD_NOT_EXIST=1
+# METAEND
+
+invalid: true

@@ -10,7 +10,7 @@
 # X-Env-Var-rootfs_type-Required: n
 # X-Env-Var-rootfs_type-Valid: ext4,btrfs
 # X-Env-Var-rootfs_type-Set: y
-# X-Env-Var-rootfs_type-Triggers: btrfs set IGconf_trig2_pmap=crypt policy=force
+# X-Env-Var-rootfs_type-Triggers: when=btrfs set IGconf_trig2_pmap=crypt policy=force
 #
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Desc: Provisioning map

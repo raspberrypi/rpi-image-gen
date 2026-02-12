@@ -18,7 +18,7 @@
 # X-Env-Var-rootfs_type-Required: n
 # X-Env-Var-rootfs_type-Valid: ext4,btrfs
 # X-Env-Var-rootfs_type-Set: y
-# X-Env-Var-rootfs_type-Triggers: btrfs set IGconf_image_pmap=invalid policy=force
+# X-Env-Var-rootfs_type-Triggers: when=btrfs set IGconf_image_pmap=invalid policy=force
 #
 # X-Env-Var-boot_part_size: 100%
 # X-Env-Var-boot_part_size-Desc: Boot partition size

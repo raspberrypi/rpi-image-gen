@@ -12,9 +12,9 @@
 # X-Env-Var-storage_type-Valid: sd,nvme,emmc8G,emmc16G,emmc32G
 # X-Env-Var-storage_type-Set: lazy
 # X-Env-Var-storage_type-Triggers:
-#  emmc8G  set IGconf_image_size=8G  policy=force
-#  emmc16G set IGconf_image_size=16G policy=force
-#  emmc32G set IGconf_image_size=32G policy=force
+#  when=emmc8G  set IGconf_image_size=8G  policy=force
+#  when=emmc16G set IGconf_image_size=16G policy=force
+#  when=emmc32G set IGconf_image_size=32G policy=force
 # METAEND
 
 storage:

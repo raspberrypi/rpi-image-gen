@@ -449,30 +449,29 @@ class EnvVariable:
         """
         Parse trigger rules.
         Syntax (one rule per line):
-          - "VALUE set TARGET=VAL [policy=...]"  # conditional
-          - "set TARGET=VAL [policy=...]"        # unconditional (or inherits previous condition)
+          - "when=VALUE set TARGET=VAL [policy=...]"  # conditional
+          - "set TARGET=VAL [policy=...]"             # unconditional
         """
         rules: List[TriggerRule] = []
         lines = [line.strip() for line in str(raw).splitlines() if line.strip()]
 
-        previous_condition: Optional[str] = None
         for line in lines:
             tokens = line.split()
-            if len(tokens) < 2:
-                raise ValueError(f"Trigger rule '{line}' for {var_name} is malformed")
+            if not tokens:
+                continue
 
-            # Detect whether the first token is an action or a condition
-            if tokens[0] in ACTION_PARSERS:
-                # If an action appears first, reuse the previous condition (if any); otherwise unconditional
-                condition = previous_condition
-                action = tokens[0]
-                action_args = tokens[1:]
-            else:
-                condition = tokens[0]
+            condition: Optional[str] = None
+            if tokens[0].startswith("when="):
+                condition = tokens[0][len("when="):].strip()
+                if not condition:
+                    raise ValueError(f"Trigger rule '{line}' for {var_name} is missing value in when=")
                 if len(tokens) < 2:
                     raise ValueError(f"Trigger rule '{line}' for {var_name} is missing an action keyword")
                 action = tokens[1]
                 action_args = tokens[2:]
+            else:
+                action = tokens[0]
+                action_args = tokens[1:]
 
             parser = ACTION_PARSERS.get(action)
             if not parser:
@@ -483,7 +482,6 @@ class EnvVariable:
 
             target, value, policy = parser(action_args, var_name, line)
             rules.append(TriggerRule(condition=condition, action=action, target=target, value=value, policy=policy))
-            previous_condition = condition
         return rules
 
     def validate_value(self, value: Optional[str] = None) -> List[str]:
@@ -922,10 +920,14 @@ class VariableResolver:
 
     def _collect_trigger_definitions(self, resolved: Dict[str, EnvVariable]) -> Dict[str, List[EnvVariable]]:
         """Build trigger-sourced definitions based on resolved values."""
+        import os
+
         trigger_defs: Dict[str, List[EnvVariable]] = {}
         for env_var in resolved.values():
+            # Trigger conditions evaluate against the effective runtime value.
+            effective_value = os.environ.get(env_var.name, env_var.value)
             for rule in getattr(env_var, "triggers", []) or []:
-                if rule.condition is not None and env_var.value != rule.condition:
+                if rule.condition is not None and effective_value != rule.condition:
                     continue
                 if rule.action != "set":
                     raise ValueError(f"Unsupported trigger action '{rule.action}' for variable '{env_var.name}'")

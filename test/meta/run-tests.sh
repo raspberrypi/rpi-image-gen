@@ -233,6 +233,11 @@ run_test "triggers-set" \
     0 \
     "Trigger rules should set target variables (including inherited condition actions)"
 
+run_test "triggers-set-skip-env-override" \
+    'cleanup_env; TMP_OUT=$(mktemp); IGconf_trigskip_rootfs_type=btrfs ig metadata --parse ${META}/valid-triggers-skip-env-override.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_SKIP=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger rules should use effective env values even when Set: n"
+
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
 
@@ -321,6 +326,11 @@ run_test "invalid-trigger-action-parse" \
     "ig metadata --parse ${META}/invalid-trigger-verb.yaml" \
     1 \
     "Unknown trigger action should fail to parse"
+
+run_test "invalid-trigger-legacy-condition-parse" \
+    "ig metadata --parse ${META}/invalid-trigger-legacy-condition.yaml" \
+    1 \
+    "Legacy trigger condition syntax without when= should fail to parse"
 
 cleanup_env
 run_test "invalid-trigger-validation" \
