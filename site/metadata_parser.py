@@ -394,6 +394,18 @@ class Metadata:
                 unsupported_fields[field_name] = f"'{field_name}' is not supported"
         return unsupported_fields
 
+    def _check_unknown_xenv_fields(self):
+        """Check for unknown X-Env-* field names not matching known namespaces."""
+        unknown_fields = {}
+        for field_name in self._container.raw_metadata.keys():
+            if not field_name.startswith("X-Env-"):
+                continue
+            if XEnv.is_layer_field(field_name) or XEnv.is_var_field(field_name):
+                continue
+            if not is_field_supported(field_name):
+                unknown_fields[field_name] = f"'{field_name}' is not supported"
+        return unknown_fields
+
     def validate_layer_schema(self):
         """Return layer-schema issues independent of env/value resolution."""
         return self._check_unsupported_layer_fields()
@@ -917,7 +929,8 @@ class Metadata:
         # Unsupported layer / env-var fields
         unsupported_layer = self._check_unsupported_layer_fields()
         unsupported_var   = self._check_unsupported_fields()
-        for fld, msg in {**unsupported_layer, **unsupported_var}.items():
+        unknown_xenv = self._check_unknown_xenv_fields()
+        for fld, msg in {**unsupported_layer, **unsupported_var, **unknown_xenv}.items():
             results[f"UNSUPPORTED_FIELD_{fld}"] = {
                 "status": "unsupported_field",
                 "value": self._container.raw_metadata.get(fld),

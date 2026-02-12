@@ -6,7 +6,7 @@ from collections import OrderedDict
 from typing import List, Optional, Dict
 
 from layer_manager import LayerManager
-from env_types import EnvVariable, VariableResolver
+from env_types import EnvVariable, VariableResolver, XEnv
 from env_resolver import (
     load_env_file,
     write_env_file,
@@ -14,6 +14,7 @@ from env_resolver import (
     AnchorRegistry,
 )
 from logger import LogConfig, log_error, log_info
+from validators import parse_validator
 
 
 def Pipeline_register_parser(subparsers, root=None):
@@ -291,6 +292,41 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
     resolver = VariableResolver()
     selected: Dict[str, EnvVariable] = {}
     ok = True
+
+    # Validate layer-required external vars (X-Env-VarRequires) in pipeline mode.
+    for layer_name in build_order:
+        meta = manager.layers.get(layer_name)
+        if not meta:
+            continue
+        required_vars = list(getattr(meta._container, "required_vars", []) or [])
+        if not required_vars:
+            continue
+        required_valid_rules = str(meta._container.raw_metadata.get(XEnv.var_requires_valid(), "") or "")
+        valid_rules = [r.strip() for r in required_valid_rules.split(",")] if required_valid_rules.strip() else []
+
+        for idx, req_var in enumerate(required_vars):
+            current = os.environ.get(req_var)
+            if current is None:
+                log_error(f"[FAIL] {req_var} - REQUIRED but not set (layer: {layer_name})")
+                ok = False
+                continue
+
+            valid_rule = valid_rules[idx] if idx < len(valid_rules) else ""
+            if not valid_rule:
+                continue
+
+            try:
+                validator = parse_validator(valid_rule)
+            except Exception:
+                log_error(f"[FAIL] {req_var}={current} (invalid rule '{valid_rule}', layer: {layer_name})")
+                ok = False
+                continue
+
+            errors = validator.validate(current)
+            if errors:
+                log_error(f"[FAIL] {req_var}={current} (invalid, layer: {layer_name})")
+                ok = False
+
     for var_name in sorted(variable_definitions.keys()):
         definitions = variable_definitions[var_name]
         previous_value = os.environ.get(var_name)

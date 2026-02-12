@@ -630,5 +630,10 @@ run_test "lint-no-metadata" \
     1 \
     "Lint should fail when no X-Env-* metadata fields exist"
 
+run_test "lint-unknown-xenv-field" \
+    "ig metadata --lint ${META}/lint-unknown-xenv-field.yaml" \
+    1 \
+    "Lint should fail on unknown top-level X-Env-* field names"
+
 cleanup_env
 print_summary
