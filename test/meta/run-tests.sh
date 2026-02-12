@@ -468,6 +468,43 @@ run_test "layer-apply-env-validates-against-resolved-definition" \
     0 \
     "Pipeline should validate storage_type using the resolved consumer definition"
 
+run_test "layer-apply-env-conflict-with-env-overrides" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cat > "$TMP_DIR/base.yaml" << "EOF" && \
+# METABEGIN
+# X-Env-Layer-Name: test-conflict-base
+# X-Env-Layer-Desc: Base layer for conflict regression
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: cflt
+# X-Env-Var-variant: 8G
+# X-Env-Var-variant-Valid: 8G,16G,32G,lite
+# X-Env-Var-variant-Set: lazy
+# X-Env-Var-storage_type: sd
+# X-Env-Var-storage_type-Valid: sd,emmc
+# X-Env-Var-storage_type-Set: lazy
+# METAEND
+EOF
+     cat > "$TMP_DIR/consumer.yaml" << "EOF" && \
+# METABEGIN
+# X-Env-Layer-Name: test-conflict-consumer
+# X-Env-Layer-Desc: Variant conflicts with emmc when lite
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: test-conflict-base
+# X-Env-VarPrefix: cflt
+# X-Env-Var-variant: 8G
+# X-Env-Var-variant-Valid: 8G,16G,32G,lite
+# X-Env-Var-variant-Set: lazy
+# X-Env-Var-variant-Conflicts: when=lite storage_type=emmc
+# METAEND
+EOF
+     make_pipeline_env "$TMP_ENV" "IGconf_cflt_variant=lite" "IGconf_cflt_storage_type=emmc" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-conflict-consumer --path "$TMP_DIR" --env-out "$TMP_OUT" >/dev/null; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; rm -rf "$TMP_DIR"; exit $status' \
+    1 \
+    "Pipeline should reject conflicts evaluated from current env values"
+
 run_test "layer-apply-env-invalid" \
     'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
      make_pipeline_env "$TMP_ENV" && \

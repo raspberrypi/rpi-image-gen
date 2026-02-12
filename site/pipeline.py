@@ -174,6 +174,7 @@ def _collect_variable_definitions(manager: LayerManager, build_order: List[str])
                 position=position,
                 anchor_name=env_var.anchor_name,
                 triggers=getattr(env_var, "triggers", []),
+                conflicts=getattr(env_var, "conflicts", []),
             )
             variable_definitions.setdefault(var_name, []).append(var_with_position)
     return variable_definitions
@@ -236,10 +237,59 @@ def _validate_layers(manager: LayerManager, layer_names: List[str]) -> bool:
     return True
 
 
+def _parse_conflict_spec(spec: str):
+    """Parse a conflict spec into (name, op, value, when_value)."""
+    if not spec:
+        return None, None, None, None
+
+    when_value = None
+    spec = spec.strip()
+    if spec.startswith("when="):
+        parts = spec.split(None, 1)
+        if len(parts) < 2:
+            return None, None, None, None
+        when_value = parts[0][len("when="):].strip()
+        if not when_value:
+            return None, None, None, None
+        spec = parts[1].strip()
+        if not spec:
+            return None, None, None, None
+
+    if "!=" in spec:
+        name, value = spec.split("!=", 1)
+        op = "!="
+    elif "=" in spec:
+        name, value = spec.split("=", 1)
+        op = "="
+    else:
+        return spec, None, None, when_value
+
+    name = name.strip()
+    value = value.strip()
+    if not name or not value:
+        return None, None, None, None
+    return name, op, value, when_value
+
+
+def _is_var_effectively_set(env_var: EnvVariable, current: Optional[str]) -> bool:
+    """Return True if variable should be considered set for conflict checks."""
+    if getattr(env_var, "set_policy", None) == "skip":
+        return current not in (None, "")
+    return (current if current is not None else env_var.value) not in (None, "")
+
+
+def _effective_var_value(env_var: EnvVariable, current: Optional[str]) -> str:
+    """Use current env value when provided; otherwise use resolved default value."""
+    if current is not None:
+        return str(current)
+    return str(env_var.value)
+
+
 def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
     """Validate each variable against the definition that won resolution."""
     variable_definitions = _collect_variable_definitions(manager, build_order)
     resolver = VariableResolver()
+    selected: Dict[str, EnvVariable] = {}
     ok = True
     for var_name in sorted(variable_definitions.keys()):
         definitions = variable_definitions[var_name]
@@ -257,6 +307,7 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
         if env_var is None:
             continue
 
+        selected[var_name] = env_var
         current = os.environ.get(env_var.name)
         if env_var.required and (current is None or current == ""):
             log_error(f"[FAIL] {env_var.name} - REQUIRED but not set (layer: {env_var.source_layer})")
@@ -268,6 +319,60 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
                     f"[FAIL] {env_var.name}={current} (invalid value, layer: {env_var.source_layer})"
                 )
                 ok = False
+
+    # Validate conflicts against the selected winning definitions.
+    unconditional_pairs = set()
+    for var_name, env_var in selected.items():
+        conflicts = getattr(env_var, "conflicts", None) or []
+        for other in conflicts:
+            conflict_var_name, op, _, when_value = _parse_conflict_spec(other)
+            if not conflict_var_name or op is not None or when_value is not None:
+                continue
+            pair = tuple(sorted([var_name, conflict_var_name]))
+            unconditional_pairs.add(pair)
+
+    seen_pairs = set()
+    for var_name, env_var in selected.items():
+        conflicts = getattr(env_var, "conflicts", None) or []
+        if not conflicts:
+            continue
+
+        current = os.environ.get(var_name)
+        if not _is_var_effectively_set(env_var, current):
+            continue
+        this_value = _effective_var_value(env_var, current)
+
+        for conflict in conflicts:
+            conflict_var_name, op, conflict_value, when_value = _parse_conflict_spec(conflict)
+            if not conflict_var_name:
+                continue
+            conflict_var = selected.get(conflict_var_name)
+            if not conflict_var:
+                continue
+            if when_value is not None and this_value != when_value:
+                continue
+            if op is not None:
+                pair_base = tuple(sorted([var_name, conflict_var_name]))
+                if pair_base in unconditional_pairs:
+                    continue
+
+            pair = tuple(sorted([var_name, conflict]))
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+
+            conflict_current = os.environ.get(conflict_var_name)
+            if not _is_var_effectively_set(conflict_var, conflict_current):
+                continue
+            conflict_target_value = _effective_var_value(conflict_var, conflict_current)
+
+            if op == "=" and conflict_target_value != conflict_value:
+                continue
+            if op == "!=" and conflict_target_value == conflict_value:
+                continue
+
+            log_error(f"[FAIL] Conflict: {var_name}={this_value} {conflict_var_name}={conflict_target_value}")
+            ok = False
     return ok
 
 
