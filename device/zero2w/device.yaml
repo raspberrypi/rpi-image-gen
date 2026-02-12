@@ -15,7 +15,8 @@
 # X-Env-Var-class-Set: y
 #
 # X-Env-Var-storage_type: sd
-# X-Env-Var-storage_type-Desc: Storage media type.
+# X-Env-Var-storage_type-Desc: Storage media the image is intended for, as seen
+#  by the OS.
 # X-Env-Var-storage_type-Required: n
 # X-Env-Var-storage_type-Valid: keywords:sd
 # X-Env-Var-storage_type-Set: y
