@@ -545,11 +545,17 @@ class Metadata:
                     continue
 
                 # A unconditional conflict only applies if this variable and the conflicting
-                # variable are both set.
-                this_value = str(env_var.value)
+                # variable are both set. For skip policy, only env counts as "set".
+                if getattr(env_var, "set_policy", None) == "skip":
+                    this_value = str(os.environ.get(var_name, ""))
+                else:
+                    this_value = str(env_var.value)
                 if when_value is not None and this_value != when_value:
                     continue
-                conflict_target_value = str(conflict_var.value)
+                if getattr(conflict_var, "set_policy", None) == "skip":
+                    conflict_target_value = str(os.environ.get(conflict_var_name, ""))
+                else:
+                    conflict_target_value = str(conflict_var.value)
                 if not this_value or not conflict_target_value:
                     continue
 

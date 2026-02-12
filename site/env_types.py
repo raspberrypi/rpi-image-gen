@@ -966,6 +966,7 @@ class VariableResolver:
         force_defs = [d for d in definitions if d.set_policy == "force"]
         immediate_defs = [d for d in definitions if d.set_policy == "immediate"]
         lazy_defs = [d for d in definitions if d.set_policy == "lazy"]
+        skip_defs = [d for d in definitions if d.set_policy == "skip"]
 
         # Rule a: If any variable is defined as force, use the last force definition
         if force_defs:
@@ -978,6 +979,10 @@ class VariableResolver:
         # Rule c: If lazy, use the last one provided the variable is not set in the env
         elif lazy_defs and var_name not in os.environ:
             return self._get_last_by_position(lazy_defs)
+
+        # Rule d: If only skip, still return one so validation can check required
+        elif skip_defs:
+            return self._get_last_by_position(skip_defs)
 
         # Variable is set in environment or no applicable definitions
         return None

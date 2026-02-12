@@ -13,7 +13,7 @@ from env_resolver import (
     LazyEnvResolver,
     AnchorRegistry,
 )
-from logger import LogConfig, log_info
+from logger import LogConfig, log_error, log_info
 
 
 def Pipeline_register_parser(subparsers, root=None):
@@ -85,7 +85,7 @@ def _pipeline_main(args):
     for var_name, value in applied_values.items():
         assignments[var_name] = value
 
-    if not _validate_layers(manager, resolved_layers, ignore_missing_required=False):
+    if not _validate_resolved(manager, build_order):
         print("Error: Validation failed for target layers")
         raise SystemExit(1)
 
@@ -234,6 +234,41 @@ def _validate_layers(manager: LayerManager, layer_names: List[str], *, ignore_mi
         if not manager.validate_layer(layer_name, silent=False, ignore_missing_required=ignore_missing_required):
             return False
     return True
+
+
+def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
+    """Validate each variable against the definition that won resolution."""
+    variable_definitions = _collect_variable_definitions(manager, build_order)
+    resolver = VariableResolver()
+    ok = True
+    for var_name in sorted(variable_definitions.keys()):
+        definitions = variable_definitions[var_name]
+        previous_value = os.environ.get(var_name)
+        had_value = var_name in os.environ
+        if had_value:
+            del os.environ[var_name]
+        try:
+            # Pick the winning metadata definition independent of current env value.
+            env_var = resolver._resolve_single_variable(var_name, definitions)
+        finally:
+            if had_value:
+                os.environ[var_name] = previous_value
+
+        if env_var is None:
+            continue
+
+        current = os.environ.get(env_var.name)
+        if env_var.required and (current is None or current == ""):
+            log_error(f"[FAIL] {env_var.name} - REQUIRED but not set (layer: {env_var.source_layer})")
+            ok = False
+        elif current is not None and env_var.validator:
+            errors = env_var.validate_value(current)
+            if errors:
+                log_error(
+                    f"[FAIL] {env_var.name}={current} (invalid value, layer: {env_var.source_layer})"
+                )
+                ok = False
+    return ok
 
 
 def _log_env_action(

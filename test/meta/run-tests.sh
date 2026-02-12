@@ -458,6 +458,16 @@ run_test "layer-apply-env-valid" \
     0 \
     "Pipeline apply-env should work with valid metadata"
 
+run_test "layer-apply-env-validates-against-resolved-definition" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-resolved-validator-base test-resolved-validator-consumer --path "${PIPELINE_DIR}" --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_device_storage_type=emmc8G$" "$TMP_OUT" && \
+     grep -q "^IGconf_image_size=8G$" "$TMP_OUT"; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    0 \
+    "Pipeline should validate storage_type using the resolved consumer definition"
+
 run_test "layer-apply-env-invalid" \
     'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
      make_pipeline_env "$TMP_ENV" && \

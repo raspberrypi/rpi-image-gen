@@ -1,0 +1,21 @@
+# METABEGIN
+# X-Env-Layer-Name: test-resolved-validator-consumer
+# X-Env-Layer-Desc: Consumer validator should win at resolution
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: test-resolved-validator-base
+# X-Env-VarPrefix: device
+#
+# X-Env-Var-storage_type: emmc8G
+# X-Env-Var-storage_type-Desc: Consumer layer storage media type
+# X-Env-Var-storage_type-Required: n
+# X-Env-Var-storage_type-Valid: sd,nvme,emmc8G,emmc16G,emmc32G
+# X-Env-Var-storage_type-Set: lazy
+# X-Env-Var-storage_type-Triggers:
+#  emmc8G  set IGconf_image_size=8G  policy=force
+#  emmc16G set IGconf_image_size=16G policy=force
+#  emmc32G set IGconf_image_size=32G policy=force
+# METAEND
+
+storage:
+  type: ${IGconf_device_storage_type}
