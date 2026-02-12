@@ -394,6 +394,10 @@ class Metadata:
                 unsupported_fields[field_name] = f"'{field_name}' is not supported"
         return unsupported_fields
 
+    def validate_layer_schema(self):
+        """Return layer-schema issues independent of env/value resolution."""
+        return self._check_unsupported_layer_fields()
+
     def validate_env_vars(self):
         """Validate environment variables - now broken into focused smaller methods"""
         # Always recompute resolved vars per validation pass to reflect current

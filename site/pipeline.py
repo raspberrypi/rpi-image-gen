@@ -78,7 +78,7 @@ def _pipeline_main(args):
         print(f"Error: {exc}")
         raise SystemExit(1)
 
-    if not _validate_layers(manager, build_order, ignore_missing_required=True):
+    if not _validate_layers(manager, build_order):
         raise SystemExit(1)
 
     applied_values = _apply_layers(manager, build_order)
@@ -224,14 +224,14 @@ def _apply_layers(
     return applied
 
 
-def _validate_layers(manager: LayerManager, layer_names: List[str], *, ignore_missing_required: bool) -> bool:
+def _validate_layers(manager: LayerManager, layer_names: List[str]) -> bool:
     for layer_name in layer_names:
         if layer_name not in manager.layers:
             print(f"Layer '{layer_name}' not found")
             return False
         if not hasattr(manager, "validate_layer"):
             raise AttributeError("LayerManager.validate_layer is required for pipeline validation")
-        if not manager.validate_layer(layer_name, silent=False, ignore_missing_required=ignore_missing_required):
+        if not manager.validate_layer(layer_name, silent=False):
             return False
     return True
 
