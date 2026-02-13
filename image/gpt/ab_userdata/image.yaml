@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
 #  boot/system redundancy, and a shared persistent data partition.
-# X-Env-Layer-Version: 4.1.0
+# X-Env-Layer-Version: 4.2.0
 # X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
 # X-Env-Layer-Provides: image
 #
@@ -48,13 +48,16 @@
 # X-Env-Var-pmap-Valid: clear,crypt,cryptslots,cryptdata,crypthybrid
 # X-Env-Var-pmap-Set: y
 #
-# X-Env-Var-ptable_protect: y
+# X-Env-Var-ptable_protect: n
 # X-Env-Var-ptable_protect-Desc: Enable eMMC Power-On Write Protect of the partition
 #  table. If enabled, the first 8MB of the boot storage device will be
 #  protected. Applies to eMMC only.
 # X-Env-Var-ptable_protect-Required: n
-# X-Env-Var-ptable_protect-Valid: string
-# X-Env-Var-ptable_protect-Set: y
+# X-Env-Var-ptable_protect-Valid: bool
+# X-Env-Var-ptable_protect-Set: lazy
+# X-Env-Var-ptable_protect-Conflicts: when=y IGconf_device_storage_type!=emmc
+# X-Env-Var-ptable_protect-Triggers:
+#  when=IGconf_device_storage_type=emmc set IGconf_image_ptable_protect=y policy=lazy
 #
 # METAEND
 ---
