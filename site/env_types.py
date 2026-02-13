@@ -927,7 +927,13 @@ class VariableResolver:
             # Trigger conditions evaluate against the effective runtime value.
             effective_value = os.environ.get(env_var.name, env_var.value)
             for rule in getattr(env_var, "triggers", []) or []:
-                if rule.condition is not None and effective_value != rule.condition:
+                if rule.condition is not None and not self._trigger_condition_matches(
+                    rule.condition,
+                    env_var.name,
+                    str(effective_value),
+                    resolved,
+                    env_var.source_layer,
+                ):
                     continue
                 if rule.action != "set":
                     raise ValueError(f"Unsupported trigger action '{rule.action}' for variable '{env_var.name}'")
@@ -959,6 +965,54 @@ class VariableResolver:
                 )
                 trigger_defs.setdefault(rule.target, []).append(injected)
         return trigger_defs
+
+    def _trigger_condition_matches(
+        self,
+        condition: str,
+        source_var_name: str,
+        source_effective_value: str,
+        resolved: Dict[str, EnvVariable],
+        source_layer: Optional[str] = None,
+    ) -> bool:
+        """
+        Evaluate trigger condition.
+
+        Supported forms:
+        - same-variable value condition: "btrfs"
+        - cross-variable equality: "IGconf_device_storage_type=emmc"
+        - cross-variable inequality: "IGconf_device_storage_type!=emmc"
+        """
+        import os
+
+        if "!=" in condition:
+            lhs, rhs = condition.split("!=", 1)
+            op = "!="
+        elif "=" in condition:
+            lhs, rhs = condition.split("=", 1)
+            op = "="
+        else:
+            return source_effective_value == condition
+
+        lhs = lhs.strip()
+        rhs = rhs.strip()
+        if not lhs:
+            return False
+
+        if lhs == source_var_name:
+            lhs_value = source_effective_value
+        elif lhs in os.environ:
+            lhs_value = str(os.environ.get(lhs, ""))
+        elif lhs in resolved:
+            lhs_value = str(resolved[lhs].value)
+        else:
+            layer_note = f" (layer: {source_layer})" if source_layer else ""
+            raise ValueError(
+                f"Unknown variable '{lhs}' referenced in trigger condition '{condition}'{layer_note}"
+            )
+
+        if op == "=":
+            return lhs_value == rhs
+        return lhs_value != rhs
 
     def _resolve_single_variable(self, var_name: str, definitions: List[EnvVariable]) -> Optional[EnvVariable]:
         """Resolve a single variable using policy rules."""

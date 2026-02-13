@@ -238,6 +238,11 @@ run_test "triggers-set-skip-env-override" \
     0 \
     "Trigger rules should use effective env values even when Set: n"
 
+run_test "triggers-set-cross-var-when" \
+    'cleanup_env; TMP_OUT=$(mktemp); IGconf_trigx_mode=fast ig metadata --parse ${META}/valid-triggers-cross-var-when.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_X=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger rules should support when=VAR=VALUE cross-variable conditions"
+
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
 
@@ -349,6 +354,11 @@ run_test "invalid-trigger-env-override" \
     "cleanup_env; IGconf_image_rootfs_type=btrfs ig metadata --parse ${META}/invalid-trigger-env-override.yaml" \
     1 \
     "Trigger should fire when source var is overridden via env/config"
+
+run_test "invalid-trigger-cross-var-missing-var" \
+    "cleanup_env; ig metadata --parse ${META}/invalid-triggers-cross-var-missing-var.yaml" \
+    1 \
+    "Cross-variable trigger condition should fail when referenced var is missing"
 
 run_test "invalid-yaml-syntax-layer-validate" \
     "ig metadata --validate ${META}/invalid-yaml-syntax.yaml" \

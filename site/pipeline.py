@@ -59,7 +59,7 @@ def _pipeline_main(args):
     try:
         manager = LayerManager(search_paths, ['*.yaml'], fail_on_lint=True)
     except ValueError as exc:
-        print(f"Error: {exc}")
+        log_error(f"Error: {exc}")
         raise SystemExit(1)
 
     resolved_layers: List[str] = []
@@ -76,18 +76,22 @@ def _pipeline_main(args):
     try:
         build_order = manager.get_build_order(resolved_layers)
     except ValueError as exc:
-        print(f"Error: {exc}")
+        log_error(f"Error: {exc}")
         raise SystemExit(1)
 
     if not _validate_layers(manager, build_order):
         raise SystemExit(1)
 
-    applied_values = _apply_layers(manager, build_order)
+    try:
+        applied_values = _apply_layers(manager, build_order)
+    except ValueError as exc:
+        log_error(f"Error: {exc}")
+        raise SystemExit(1)
     for var_name, value in applied_values.items():
         assignments[var_name] = value
 
     if not _validate_resolved(manager, build_order):
-        print("Error: Validation failed for target layers")
+        log_error("Error: Validation failed for target layers")
         raise SystemExit(1)
 
     if args.order_out:
