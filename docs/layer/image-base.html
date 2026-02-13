@@ -123,7 +123,7 @@
     <div class="header">
         <h1>image-base</h1>
         <span class="badge">image</span>
-        <span class="badge">v2.0.0</span>
+        <span class="badge">v2.0.2</span>
         <p>Default image settings and build attributes.</p>
     </div>
     <div class="section">
@@ -236,14 +236,16 @@ Unless otherwise stated, the following apply to all image layers:</p>
                 </tr>
                 <tr>
                     <td><code>IGconf_image_compression</code></td>
-                    <td>Identifier for the compression scheme used when
- deploying image assets.</td>
+                    <td>Compression scheme for generating image assets.
+ Downstream layer implementation-dependent. For example, a downstream layer
+ may define available schemes when creating filesystem images (e.g. erofs,
+ squashfs).</td>
                     <td>
                            <code>none</code>
                     </td>
-                    <td>Must be one of: none, zstd</td>
+                    <td>Non-empty string value</td>
                     <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
                 </tr>
                 <tr>
@@ -328,6 +330,17 @@ Unless otherwise stated, the following apply to all image layers:</p>
                     <td>Non-empty string value</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_rootfs_type</code></td>
+                    <td>Root filesystem type. Implementation-dependent.</td>
+                    <td>
+                           <code>none</code>
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
                     </td>
                 </tr>
             </tbody>
