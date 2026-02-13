@@ -1,9 +1,11 @@
 #!/bin/bash
 
-[[ ${IGconf_device_storage_type:?} != emmc ]] && exit 0
+set -eu
+
+[[ ${IGconf_device_storage_type} == emmc ]] || exit 0
 igconf isy image_ptable_protect || exit 0
 
-chroot $1 apt install mmc-utils
+chroot $1 apt install -y mmc-utils
 
 # layer/ab-initramfs has already installed initramfs-tools
 cat <<- 'EOF' > $1/etc/initramfs-tools/hooks/ab-install-files

@@ -4,7 +4,7 @@
 # X-Env-VarPrefix: trigbad
 #
 # X-Env-Var-mode: fast
-# X-Env-Var-mode-Triggers: fast notify IG_SHOULD_NOT_EXIST=1
+# X-Env-Var-mode-Triggers: when=fast notify IG_SHOULD_NOT_EXIST=1
 # METAEND
 
 invalid: true

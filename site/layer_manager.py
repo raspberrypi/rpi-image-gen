@@ -542,58 +542,18 @@ class LayerManager:
 
         return None
 
-    def validate_layer(self, layer_name: str, silent: bool = False, *, ignore_missing_required: bool = False) -> bool:
-        """Validate environment variables for a single layer (no dependency resolution)"""
+    def validate_layer(self, layer_name: str, silent: bool = False) -> bool:
+        """Validate one layer schema (independent of env/value resolution)."""
         if layer_name not in self.layers:
             if not silent:
                 log_error(f"Layer '{layer_name}' not found")
             return False
 
         layer = self.layers[layer_name]
-        results = layer.validate_env_vars()
-
         layer_valid = True
-        for var, result in results.items():
-            if result["status"] == "missing_required":
-                if ignore_missing_required:
-                    continue
-                if not silent:
-                    log_error(f"[FAIL] {var} - REQUIRED but not set (layer: {layer_name})")
-                layer_valid = False
-            elif result["status"] == "missing_required_var":
-                if ignore_missing_required:
-                    continue
-                if not silent:
-                    log_error(f"[FAIL] {result['required_var']} - REQUIRED but not set (layer: {layer_name})")
-                layer_valid = False
-            elif result["status"] == "conflict":
-                if not silent:
-                    log_error(f"[FAIL] {result['message']} (layer: {layer_name})")
-                layer_valid = False
-            elif result["status"] == "invalid_value":
-                if not silent:
-                    log_error(f"[FAIL] {var}={result['value']} (invalid value, layer: {layer_name})")
-                layer_valid = False
-            elif result["status"] == "validated" and not result["valid"]:
-                if not silent:
-                    log_error(f"[FAIL] {var}={result['value']} (invalid, layer: {layer_name})")
-                layer_valid = False
-            elif result["status"] == "required_validated" and not result["valid"]:
-                if not silent:
-                    log_error(f"[FAIL] {result['required_var']}={result['value']} (invalid, layer: {layer_name})")
-                layer_valid = False
-            # Handle other statuses for info output
-            elif not silent:
-                if result["status"] == "optional_var_unset":
-                    log_info(f"[INFO] {result['optional_var']} - optional, not set (layer: {layer_name})")
-                elif result["status"] == "optional_validated":
-                    status = "OK" if result["valid"] else "WARN"
-                    log_info(f"[{status}] {result['optional_var']}={result['value']} (optional, layer: {layer_name})")
-                elif result["status"] == "optional_no_validation":
-                    (f"[SKIP] {result['optional_var']}={result['value']} (optional, no validation rule, layer: {layer_name})")
 
-        # Additional check: unsupported layer fields
-        unsupported_layer = layer._check_unsupported_layer_fields()
+        # Validate layer schema first (independent of env/value resolution).
+        unsupported_layer = layer.validate_layer_schema()
         if unsupported_layer:
             for fld, msg in unsupported_layer.items():
                 if not silent:

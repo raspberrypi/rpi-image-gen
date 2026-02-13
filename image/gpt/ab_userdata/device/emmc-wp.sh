@@ -11,13 +11,6 @@ esac
 
 set -e
 
-# rpi-slot gives us the boot device details by reporting:
-# boot:<device type>:<partition number>
-# blk:<device node>:<UUID>
-# Only issue the protection op if booting from emmc (device type 1).
-set -- $(rpi-slot 2>/dev/null | sed -n '/^boot:/{s/:/ /g; p; q}')
-[ "$2" = 1 ] || exit 0
-
 DEV=/dev/mmcblk0
 
 # GPT entries begin at +8M. Write Protect everything prior.

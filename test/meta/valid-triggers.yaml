@@ -8,9 +8,9 @@
 # X-Env-Var-mode: fast
 # X-Env-Var-mode-Desc: Execution mode
 # X-Env-Var-mode-Valid: fast,slow
-# X-Env-Var-mode-Triggers: fast set IG_TRIG_FAST=1 policy=force
-#  set IG_TRIG_FAST2=1
-#  set IG_TRIG_ANY=1 policy=lazy
+# X-Env-Var-mode-Triggers: when=fast set IG_TRIG_FAST=1 policy=force
+#  when=fast set IG_TRIG_FAST2=1
+#  when=fast set IG_TRIG_ANY=1 policy=lazy
 #
 # X-Env-Var-extra: on
 # X-Env-Var-extra-Desc: Another variable to prove unconditional triggers

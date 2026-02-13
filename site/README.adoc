@@ -15,7 +15,7 @@ rpi-image-gen is a metadata-driven build system. Each layer is a YAML file with 
 
 First, `ig config` parses a configuration file (the frontend), handles override variables and produces an env for pipeline to consume.
 
-Second, `ig pipeline` is the entry point for applying a set of layers: it reads an env file produced by the config stage, uses LayerManager to build a dependency order, runs the policy resolver to apply variables and resolve anchors (`@TARGETDIR`, `@IGROOT`, etc) and all variables in the input env, then emits a final env file plus a layer build order.
+Second, `ig pipeline` is the entry point for applying a set of layers: it reads an env file produced by the config stage, uses LayerManager to build a dependency order, runs a schema-only precheck on each layer, runs the policy resolver to apply variables and resolve anchors (`@TARGETDIR`, `@IGROOT`, etc) and all variables in the input env, then validates values against the resolved winning definitions and emits a final env file plus a layer build order.
 
 Additional tooling like `ig metadata` and `ig layer` let you inspect or validate individual layers, while LayerManager discovers every layer under a defined path heirarchy, computes dependency order, checks provider relationships, etc. The top level rpi-image-gen CLI is the main entry point for all tooling and build operations, passing commands directly through to the engine as needed.
 
@@ -41,7 +41,7 @@ Core parser/validator for the `X-Env-*` metadata blocks embedded in layer YAML f
 
 ==  site/env_types.py
 
-Houses shared data structures: EnvVariable, MetadataContainer, XEnv helpers, and the VariableResolver (policy logic for force/immediate/lazy).
+Houses shared data structures: EnvVariable, MetadataContainer, XEnv helpers, and the VariableResolver (policy logic for force/immediate/lazy/skip).
 Also contains the placeholder substitution utilities used during metadata ingestion.
 
 == site/env_resolver.py
@@ -52,11 +52,11 @@ Used by pipeline to perform final variable expansion.
 == site/layer_manager.py
 
 Discovery and introspection of all layers. Walks search roots, parses metadata, maintains the layer registry (self.layers, file paths, tags).
-Provides dependency graph operations (get build order, provider checks, reverse deps), and the user-facing ig CLI (list, describe, etc).
+Provides dependency graph operations (get build order, provider checks, reverse deps), schema checks used by pipeline pre-validation, and the user-facing ig CLI (list, describe, etc).
 
 == site/pipeline.py
 
-Main orchestrator for the application. Loads the base env file produced by config_loader, asks LayerManager for the dependency order, validates layers, runs the policy resolver (VariableResolver) to apply env vars, writes env/order outputs.
+Main orchestrator for the application. Loads the base env file produced by config_loader, asks LayerManager for the dependency order, runs pre-resolution schema validation, runs the policy resolver (VariableResolver) to apply env vars, then validates env values against the resolved winning variable definitions before writing env/order outputs.
 
 == site/validators.py
 

@@ -123,7 +123,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v4.1.0</span>
+        <span class="badge">v4.2.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -386,7 +386,8 @@
     <div class="section">
         <h2>Configuration Variables</h2>
         <p><strong>References:</strong>
-        <code>IGconf_device_storage_type</code>
+        <code>IGconf_device_storage_type</code>, 
+        <code>IGconf_device_class</code>
         </p>
         <p><strong>Declares</strong> (prefix: <code>image</code>):</p>
         <table>
@@ -467,11 +468,11 @@
  table. If enabled, the first 8MB of the boot storage device will be
  protected. Applies to eMMC only.</td>
                     <td>
-                           <code>y</code>
+                           <code>n</code>
                     </td>
-                    <td>Non-empty string value</td>
+                    <td>Boolean value - accepts: true/false, 1/0, yes/no, y/n (case insensitive)</td>
                     <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
                 </tr>
             </tbody>

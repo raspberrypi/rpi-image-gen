@@ -195,10 +195,12 @@ Variable values support dynamic placeholders:
 
 Triggers (`X-Env-Var-*-Triggers`) allow a variable’s resolved value to automatically perform actions, meaning that derived settings can be injected based on that value. Format as follows (one rule per line):
 
-* Conditional: `VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
+* Conditional (same variable): `when=VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
+* Conditional (cross-variable): `when=VAR=VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
+* Conditional (cross-variable): `when=VAR!=VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
 * Unconditional: `set TARGET=VALUE [policy=force|immediate|lazy]`
 
-Rules are exact string matches on the resolved source variable value. Unconditional rules always fire. The first token after the action must be `TARGET=VALUE`. `policy=` is optional and defaults to `immediate`.
+For same-variable conditions, matching is an exact string comparison against the source variable's resolved value. For cross-variable conditions, matching is an exact string comparison against the referenced variable's resolved value (ie, the referenced variable is used as-is). Unconditional rules always fire. The first token after the action must be `TARGET=VALUE`. `policy=` is optional and defaults to `immediate` if not specified. If a cross-variable condition references an unknown variable, resolution fails with an error.
 
 Lint will fail on:
 
@@ -209,7 +211,7 @@ Lint will fail on:
 Usage:
 
 * Target values are preserved as literals with no expansion.
-* Triggers are collected from every definition of a variable across all layers. They are evaluated once against the variable’s final resolved value, so triggers declared in upstream layers still fire even if a downstream layer overrides the variable’s value. Suppression of upstream triggers is not supported.
+* Triggers are collected from every definition of a variable across all layers. Because trigger rules are merged across layers and evaluated against the effective final (resolved) value, upstream layer trigger rules can still fire when a downstream layer declaration determines that final value. Suppression of upstream triggers is not supported.
 
 ==== Supported actions
 
@@ -224,7 +226,7 @@ Usage:
 
 * Conditional:
 +
-`# X-Env-Var-rootfs_type-Triggers: btrfs set IG_HAS_BTRFS_PROGS=1 policy=force`
+`# X-Env-Var-rootfs_type-Triggers: when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force`
 
 * Unconditional:
 +
@@ -234,16 +236,8 @@ Usage:
 +
 ```
 # X-Env-Var-rootfs_type-Triggers:
-#  btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
-#  ext4 set IG_HAS_E2FS_PROGS=1 policy=force
-```
-
-* Multiple actions sharing the same condition (omit the condition on following line to inherit the previous one):
-+
-```
-# X-Env-Var-rootfs_type-Triggers:
-#  ext4 set IG_HAS_E2FS_PROGS=1
-#  set IG_HAS_SRCBUILD=1
+#  when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
+#  when=ext4 set IG_HAS_E2FS_PROGS=1 policy=force
 ```
 
 [IMPORTANT]
@@ -260,16 +254,16 @@ Within a single layer:
 * If a trigger sets a variable, the trigger’s injected definition sits after the layer’s base definition and will override that variable’s declaration in the same layer (force/immediate/lazy still apply). A later layer can still override the trigger.
 ====
 
-==== Example (same layer):
+==== Example (same layer)
 
 ```
 # X-Env-VarPrefix: image
-
+#
 # X-Env-Var-deploy_type: develop
 # X-Env-Var-deploy_type-Valid: develop,production
 # X-Env-Var-deploy_type-Set: y
-# X-Env-Var-deploy_type-Triggers: production set IGconf_image_pmap=crypt policy=force
-
+# X-Env-Var-deploy_type-Triggers: when=production set IGconf_image_pmap=crypt policy=force
+#
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Valid: clear,crypt
 # X-Env-Var-pmap-Set: y
@@ -277,6 +271,23 @@ Within a single layer:
 ```
 
 If `IGconf_image_deploy_type` resolves to `production`, the trigger injects `IGconf_image_pmap=crypt` after the source variable, overriding `pmap: clear` in the same layer. A later layer defining `IGconf_image_pmap` with `force` would still win over the trigger.
+
+==== Example (cross-var across layers)
+
+```
+# X-Env-VarPrefix: device
+# X-Env-Var-storage_type: sd
+# X-Env-Var-storage_type-Valid: sd,emmc
+# X-Env-Var-storage_type-Set: y
+```
+```
+# X-Env-VarPrefix: image
+# X-Env-Var-ptable_protect: n
+# X-Env-Var-ptable_protect-Triggers: when=IGconf_device_storage_type=emmc set IGconf_image_ptable_protect=y
+```
+
+If `IGconf_device_storage_type` resolves to `emmc`, the trigger injects `IGconf_image_ptable_protect=y`.
+
 
 === Variable Conflicts
 

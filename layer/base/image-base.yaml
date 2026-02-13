@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: image-base
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Default image settings and build attributes.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.0.2
 # X-Env-Layer-Requires: sys-build-base,sbom-base,target-config,artefact-base,deploy-base
 # X-Env-Layer-RequiresProvider: device
 #
@@ -18,11 +18,13 @@
 # X-Env-Var-suffix-Set: y
 #
 # X-Env-Var-compression: none
-# X-Env-Var-compression-Desc: Identifier for the compression scheme used when
-#  deploying image assets.
+# X-Env-Var-compression-Desc: Compression scheme for generating image assets.
+#  Downstream layer implementation-dependent. For example, a downstream layer
+#  may define available schemes when creating filesystem images (e.g. erofs,
+#  squashfs).
 # X-Env-Var-compression-Required: n
-# X-Env-Var-compression-Valid: none,zstd
-# X-Env-Var-compression-Set: y
+# X-Env-Var-compression-Valid: string
+# X-Env-Var-compression-Set: lazy
 #
 # X-Env-Var-version: ${IGconf_artefact_version}
 # X-Env-Var-version-Desc: Version string of generated images. This always maps
@@ -64,6 +66,7 @@
 # X-Env-Var-provider-Required: n
 # X-Env-Var-provider-Valid: keywords:genimage
 # X-Env-Var-provider-Set: lazy
+# X-Env-Var-provider-Triggers: when=genimage set IG_ENABLE_HOST_GENIMAGE=y
 #
 # X-Env-Var-assetdir: /dev/null
 # X-Env-Var-assetdir-Desc: Image specific asset location. Use this directory
@@ -72,6 +75,12 @@
 # X-Env-Var-assetdir-Required: n
 # X-Env-Var-assetdir-Valid: string
 # X-Env-Var-assetdir-Set: lazy
+#
+# X-Env-Var-rootfs_type: none
+# X-Env-Var-rootfs_type-Desc: Root filesystem type. Implementation-dependent.
+# X-Env-Var-rootfs_type-Required: n
+# X-Env-Var-rootfs_type-Valid: string
+# X-Env-Var-rootfs_type-Set: n
 #
 # METAEND
 ---

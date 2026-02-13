@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: device-base
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Device defaults.
-# X-Env-Layer-Version: 1.3.0
+# X-Env-Layer-Version: 1.3.1
 # X-Env-Layer-Requires:
 # X-Env-Layer-RequiresProvider: device
 #
@@ -48,9 +48,13 @@
 # X-Env-Var-user1pass-Set: n
 #
 # X-Env-Var-storage_type: sd
-# X-Env-Var-storage_type-Desc: Device storage media type.
+# X-Env-Var-storage_type-Desc: Declares the storage media the image is intended
+#  for, as seen by the OS. For example, an NVMe backed disk connected via USB
+#  would be usb, not nvme. Whether this restricts where the image can be written
+#  to or booted from depends on downstream layers. This may seed the configuration
+#  and behaviour of run-time boot media detection, device provisioning, etc.
 # X-Env-Var-storage_type-Required: n
-# X-Env-Var-storage_type-Valid: sd,emmc,nvme
+# X-Env-Var-storage_type-Valid: sd,emmc,nvme,usb
 # X-Env-Var-storage_type-Set: lazy
 #
 # X-Env-Var-sector_size: 512
