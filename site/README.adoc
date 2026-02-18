@@ -42,6 +42,7 @@ Core parser/validator for the `X-Env-*` metadata blocks embedded in layer YAML f
 ==  site/env_types.py
 
 Houses shared data structures: EnvVariable, MetadataContainer, XEnv helpers, and the VariableResolver (policy logic for force/immediate/lazy/skip).
+VariableResolver also evaluates trigger injections to a fixed point: resolve -> collect trigger definitions -> re-resolve until the injected definition set is stable, with a hard iteration cap to fail safely on non-converging trigger cycles.
 Also contains the placeholder substitution utilities used during metadata ingestion.
 
 == site/env_resolver.py

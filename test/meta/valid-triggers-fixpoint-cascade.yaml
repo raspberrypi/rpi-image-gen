@@ -1,0 +1,29 @@
+# METABEGIN
+# X-Env-Layer-Name: test-triggers-fixpoint-cascade
+# X-Env-Layer-Desc: Cascading triggers should be re-evaluated to a fixed point
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: cascade
+#
+# X-Env-Var-variant: normal
+# X-Env-Var-variant-Desc: Device variant
+# X-Env-Var-variant-Valid: normal,lite
+# X-Env-Var-variant-Set: lazy
+# X-Env-Var-variant-Triggers: when=lite set IGconf_cascade_storage_type=sd policy=lazy
+#
+# X-Env-Var-storage_type: emmc
+# X-Env-Var-storage_type-Desc: Storage type
+# X-Env-Var-storage_type-Valid: emmc,sd
+# X-Env-Var-storage_type-Set: lazy
+#
+# X-Env-Var-ptable_protect: n
+# X-Env-Var-ptable_protect-Desc: Partition table protection
+# X-Env-Var-ptable_protect-Valid: bool
+# X-Env-Var-ptable_protect-Set: lazy
+# X-Env-Var-ptable_protect-Triggers: when=IGconf_cascade_storage_type=emmc set IGconf_cascade_ptable_protect=y policy=lazy
+# METAEND
+---
+trigger_fixpoint:
+  variant: ${IGconf_cascade_variant}
+  storage: ${IGconf_cascade_storage_type}
+  ptable: ${IGconf_cascade_ptable_protect}

@@ -245,7 +245,7 @@ Usage:
 Trigger precedence is determined by layer order, not file order.
 
 * Variable declarations in the same layer share that layer's position.
-* If a trigger sets a variable, it adds a definition for the target variable, e.g. at 'position + 0.01'.
+* If a trigger sets a variable, it adds a new definition for the target variable at the same layer position.
 * Any definition of that target variable from a later layer (higher position) wins via the normal force/immediate/lazy policy rules.
 
 Within a single layer:

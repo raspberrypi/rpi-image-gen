@@ -1,0 +1,15 @@
+# METABEGIN
+# X-Env-Layer-Name: cascade-device-cm4
+# X-Env-Layer-Desc: Device layer overrides storage default
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: cascade-device-base
+# X-Env-VarPrefix: cascade
+# X-Env-Var-variant: 8G
+# X-Env-Var-variant-Valid: none,lite,8G
+# X-Env-Var-variant-Set: lazy
+# X-Env-Var-variant-Triggers: when=lite set IGconf_cascade_storage_type=sd policy=lazy
+# X-Env-Var-storage_type: emmc
+# X-Env-Var-storage_type-Valid: sd,emmc
+# X-Env-Var-storage_type-Set: lazy
+# METAEND
