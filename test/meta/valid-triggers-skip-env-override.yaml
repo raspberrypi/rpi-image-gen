@@ -1,0 +1,17 @@
+# METABEGIN
+# X-Env-Layer-Name: test-triggers-skip-env-override
+# X-Env-Layer-Desc: Trigger conditions should use effective env value even with Set: n
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: trigskip
+#
+# X-Env-Var-rootfs_type: none
+# X-Env-Var-rootfs_type-Desc: Root filesystem type
+# X-Env-Var-rootfs_type-Required: n
+# X-Env-Var-rootfs_type-Valid: none,btrfs
+# X-Env-Var-rootfs_type-Set: n
+# X-Env-Var-rootfs_type-Triggers: when=btrfs set IG_TRIG_SKIP=1 policy=force
+# METAEND
+
+triggers:
+  rootfs_type: ${IGconf_trigskip_rootfs_type}

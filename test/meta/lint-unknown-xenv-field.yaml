@@ -1,0 +1,11 @@
+# METABEGIN
+# X-Env-Layer-Name: lint-unknown-xenv-field
+# X-Env-Layer-Desc: Unknown top-level X-Env field should fail lint
+# X-Env-VarPrefix: typo
+# X-Env-Var-foo: bar
+# X-Env-VarRequires: IGconf_typo_foo
+# X-Env-VarRequiresValid: string
+# METAEND
+
+typo:
+  foo: ${IGconf_typo_foo}

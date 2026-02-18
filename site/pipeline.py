@@ -6,14 +6,15 @@ from collections import OrderedDict
 from typing import List, Optional, Dict
 
 from layer_manager import LayerManager
-from env_types import EnvVariable, VariableResolver
+from env_types import EnvVariable, VariableResolver, XEnv
 from env_resolver import (
     load_env_file,
     write_env_file,
     LazyEnvResolver,
     AnchorRegistry,
 )
-from logger import LogConfig, log_info
+from logger import LogConfig, log_error, log_info
+from validators import parse_validator
 
 
 def Pipeline_register_parser(subparsers, root=None):
@@ -58,7 +59,7 @@ def _pipeline_main(args):
     try:
         manager = LayerManager(search_paths, ['*.yaml'], fail_on_lint=True)
     except ValueError as exc:
-        print(f"Error: {exc}")
+        log_error(f"Error: {exc}")
         raise SystemExit(1)
 
     resolved_layers: List[str] = []
@@ -75,18 +76,22 @@ def _pipeline_main(args):
     try:
         build_order = manager.get_build_order(resolved_layers)
     except ValueError as exc:
-        print(f"Error: {exc}")
+        log_error(f"Error: {exc}")
         raise SystemExit(1)
 
-    if not _validate_layers(manager, build_order, ignore_missing_required=True):
+    if not _validate_layers(manager, build_order):
         raise SystemExit(1)
 
-    applied_values = _apply_layers(manager, build_order)
+    try:
+        applied_values = _apply_layers(manager, build_order)
+    except ValueError as exc:
+        log_error(f"Error: {exc}")
+        raise SystemExit(1)
     for var_name, value in applied_values.items():
         assignments[var_name] = value
 
-    if not _validate_layers(manager, resolved_layers, ignore_missing_required=False):
-        print("Error: Validation failed for target layers")
+    if not _validate_resolved(manager, build_order):
+        log_error("Error: Validation failed for target layers")
         raise SystemExit(1)
 
     if args.order_out:
@@ -174,6 +179,7 @@ def _collect_variable_definitions(manager: LayerManager, build_order: List[str])
                 position=position,
                 anchor_name=env_var.anchor_name,
                 triggers=getattr(env_var, "triggers", []),
+                conflicts=getattr(env_var, "conflicts", []),
             )
             variable_definitions.setdefault(var_name, []).append(var_with_position)
     return variable_definitions
@@ -224,16 +230,190 @@ def _apply_layers(
     return applied
 
 
-def _validate_layers(manager: LayerManager, layer_names: List[str], *, ignore_missing_required: bool) -> bool:
+def _validate_layers(manager: LayerManager, layer_names: List[str]) -> bool:
     for layer_name in layer_names:
         if layer_name not in manager.layers:
             print(f"Layer '{layer_name}' not found")
             return False
         if not hasattr(manager, "validate_layer"):
             raise AttributeError("LayerManager.validate_layer is required for pipeline validation")
-        if not manager.validate_layer(layer_name, silent=False, ignore_missing_required=ignore_missing_required):
+        if not manager.validate_layer(layer_name, silent=False):
             return False
     return True
+
+
+def _parse_conflict_spec(spec: str):
+    """Parse a conflict spec into (name, op, value, when_value)."""
+    if not spec:
+        return None, None, None, None
+
+    when_value = None
+    spec = spec.strip()
+    if spec.startswith("when="):
+        parts = spec.split(None, 1)
+        if len(parts) < 2:
+            return None, None, None, None
+        when_value = parts[0][len("when="):].strip()
+        if not when_value:
+            return None, None, None, None
+        spec = parts[1].strip()
+        if not spec:
+            return None, None, None, None
+
+    if "!=" in spec:
+        name, value = spec.split("!=", 1)
+        op = "!="
+    elif "=" in spec:
+        name, value = spec.split("=", 1)
+        op = "="
+    else:
+        return spec, None, None, when_value
+
+    name = name.strip()
+    value = value.strip()
+    if not name or not value:
+        return None, None, None, None
+    return name, op, value, when_value
+
+
+def _is_var_effectively_set(env_var: EnvVariable, current: Optional[str]) -> bool:
+    """Return True if variable should be considered set for conflict checks."""
+    if getattr(env_var, "set_policy", None) == "skip":
+        return current not in (None, "")
+    return (current if current is not None else env_var.value) not in (None, "")
+
+
+def _effective_var_value(env_var: EnvVariable, current: Optional[str]) -> str:
+    """Use current env value when provided; otherwise use resolved default value."""
+    if current is not None:
+        return str(current)
+    return str(env_var.value)
+
+
+def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
+    """Validate each variable against the definition that won resolution."""
+    variable_definitions = _collect_variable_definitions(manager, build_order)
+    resolver = VariableResolver()
+    selected: Dict[str, EnvVariable] = {}
+    ok = True
+
+    # Validate layer-required external vars (X-Env-VarRequires) in pipeline mode.
+    for layer_name in build_order:
+        meta = manager.layers.get(layer_name)
+        if not meta:
+            continue
+        required_vars = list(getattr(meta._container, "required_vars", []) or [])
+        if not required_vars:
+            continue
+        required_valid_rules = str(meta._container.raw_metadata.get(XEnv.var_requires_valid(), "") or "")
+        valid_rules = [r.strip() for r in required_valid_rules.split(",")] if required_valid_rules.strip() else []
+
+        for idx, req_var in enumerate(required_vars):
+            current = os.environ.get(req_var)
+            if current is None:
+                log_error(f"[FAIL] {req_var} - REQUIRED but not set (layer: {layer_name})")
+                ok = False
+                continue
+
+            valid_rule = valid_rules[idx] if idx < len(valid_rules) else ""
+            if not valid_rule:
+                continue
+
+            try:
+                validator = parse_validator(valid_rule)
+            except Exception:
+                log_error(f"[FAIL] {req_var}={current} (invalid rule '{valid_rule}', layer: {layer_name})")
+                ok = False
+                continue
+
+            errors = validator.validate(current)
+            if errors:
+                log_error(f"[FAIL] {req_var}={current} (invalid, layer: {layer_name})")
+                ok = False
+
+    for var_name in sorted(variable_definitions.keys()):
+        definitions = variable_definitions[var_name]
+        previous_value = os.environ.get(var_name)
+        had_value = var_name in os.environ
+        if had_value:
+            del os.environ[var_name]
+        try:
+            # Pick the winning metadata definition independent of current env value.
+            env_var = resolver._resolve_single_variable(var_name, definitions)
+        finally:
+            if had_value:
+                os.environ[var_name] = previous_value
+
+        if env_var is None:
+            continue
+
+        selected[var_name] = env_var
+        current = os.environ.get(env_var.name)
+        if env_var.required and (current is None or current == ""):
+            log_error(f"[FAIL] {env_var.name} - REQUIRED but not set (layer: {env_var.source_layer})")
+            ok = False
+        elif current is not None and env_var.validator:
+            errors = env_var.validate_value(current)
+            if errors:
+                log_error(
+                    f"[FAIL] {env_var.name}={current} (invalid value, layer: {env_var.source_layer})"
+                )
+                ok = False
+
+    # Validate conflicts against the selected winning definitions.
+    unconditional_pairs = set()
+    for var_name, env_var in selected.items():
+        conflicts = getattr(env_var, "conflicts", None) or []
+        for other in conflicts:
+            conflict_var_name, op, _, when_value = _parse_conflict_spec(other)
+            if not conflict_var_name or op is not None or when_value is not None:
+                continue
+            pair = tuple(sorted([var_name, conflict_var_name]))
+            unconditional_pairs.add(pair)
+
+    seen_pairs = set()
+    for var_name, env_var in selected.items():
+        conflicts = getattr(env_var, "conflicts", None) or []
+        if not conflicts:
+            continue
+
+        current = os.environ.get(var_name)
+        if not _is_var_effectively_set(env_var, current):
+            continue
+        this_value = _effective_var_value(env_var, current)
+
+        for conflict in conflicts:
+            conflict_var_name, op, conflict_value, when_value = _parse_conflict_spec(conflict)
+            if not conflict_var_name:
+                continue
+            conflict_var = selected.get(conflict_var_name)
+            if not conflict_var:
+                continue
+            if when_value is not None and this_value != when_value:
+                continue
+            if op is not None:
+                pair_base = tuple(sorted([var_name, conflict_var_name]))
+                if pair_base in unconditional_pairs:
+                    continue
+
+            pair = tuple(sorted([var_name, conflict]))
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+
+            conflict_current = os.environ.get(conflict_var_name)
+            if not _is_var_effectively_set(conflict_var, conflict_current):
+                continue
+            conflict_target_value = _effective_var_value(conflict_var, conflict_current)
+
+            if op == "=" and conflict_target_value != conflict_value:
+                continue
+            if op == "!=" and conflict_target_value == conflict_value:
+                continue
+
+            log_error(f"[FAIL] Conflict: {var_name}={this_value} {conflict_var_name}={conflict_target_value}")
+            ok = False
+    return ok
 
 
 def _log_env_action(

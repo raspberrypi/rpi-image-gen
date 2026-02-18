@@ -123,7 +123,7 @@
     <div class="header">
         <h1>rpi4</h1>
         <span class="badge">device</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v1.1.0</span>
         <p>Raspberry Pi 4 specific device layer</p>
     </div>
     <div class="section">
@@ -161,11 +161,12 @@
                 </tr>
                 <tr>
                     <td><code>IGconf_device_storage_type</code></td>
-                    <td>Storage media type.</td>
+                    <td>Storage media the image is intended for, as seen
+ by the OS.</td>
                     <td>
                            <code>sd</code>
                     </td>
-                    <td>Must be one of: sd</td>
+                    <td>Must be one of: sd, usb</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>

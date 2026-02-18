@@ -1,0 +1,22 @@
+# METABEGIN
+# X-Env-Layer-Name: test-triggers-cross-var-when
+# X-Env-Layer-Desc: Trigger conditions can reference another variable
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: trigx
+#
+# X-Env-Var-mode: slow
+# X-Env-Var-mode-Desc: Mode selector
+# X-Env-Var-mode-Valid: fast,slow
+# X-Env-Var-mode-Set: y
+#
+# X-Env-Var-switch: off
+# X-Env-Var-switch-Desc: Switch value
+# X-Env-Var-switch-Valid: on,off
+# X-Env-Var-switch-Set: y
+# X-Env-Var-switch-Triggers: when=IGconf_trigx_mode=fast set IG_TRIG_X=1 policy=force
+# METAEND
+
+triggers:
+  mode: ${IGconf_trigx_mode}
+  switch: ${IGconf_trigx_switch}

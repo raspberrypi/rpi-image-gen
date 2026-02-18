@@ -160,7 +160,8 @@
 <ul class="sectlevel3">
 <li><a href="#_supported_actions">Supported actions</a></li>
 <li><a href="#_examples">Examples</a></li>
-<li><a href="#_example_same_layer">Example (same layer):</a></li>
+<li><a href="#_example_same_layer">Example (same layer)</a></li>
+<li><a href="#_example_cross_var_across_layers">Example (cross-var across layers)</a></li>
 </ul>
 </li>
 <li><a href="#_variable_conflicts">Variable Conflicts</a></li>
@@ -575,7 +576,13 @@ mmdebstrap:
 <div class="ulist">
 <ul>
 <li>
-<p>Conditional: <code>VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
+<p>Conditional (same variable): <code>when=VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
+</li>
+<li>
+<p>Conditional (cross-variable): <code>when=VAR=VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
+</li>
+<li>
+<p>Conditional (cross-variable): <code>when=VAR!=VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
 </li>
 <li>
 <p>Unconditional: <code>set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
@@ -583,7 +590,7 @@ mmdebstrap:
 </ul>
 </div>
 <div class="paragraph">
-<p>Rules are exact string matches on the resolved source variable value. Unconditional rules always fire. The first token after the action must be <code>TARGET=VALUE</code>. <code>policy=</code> is optional and defaults to <code>immediate</code>.</p>
+<p>For same-variable conditions, matching is an exact string comparison against the source variable&#8217;s resolved value. For cross-variable conditions, matching is an exact string comparison against the referenced variable&#8217;s resolved value (ie, the referenced variable is used as-is). Unconditional rules always fire. The first token after the action must be <code>TARGET=VALUE</code>. <code>policy=</code> is optional and defaults to <code>immediate</code> if not specified. If a cross-variable condition references an unknown variable, resolution fails with an error.</p>
 </div>
 <div class="paragraph">
 <p>Lint will fail on:</p>
@@ -610,7 +617,7 @@ mmdebstrap:
 <p>Target values are preserved as literals with no expansion.</p>
 </li>
 <li>
-<p>Triggers are collected from every definition of a variable across all layers. They are evaluated once against the variable’s final resolved value, so triggers declared in upstream layers still fire even if a downstream layer overrides the variable’s value. Suppression of upstream triggers is not supported.</p>
+<p>Triggers are collected from every definition of a variable across all layers. Because trigger rules are merged across layers and evaluated against the effective final (resolved) value, upstream layer trigger rules can still fire when a downstream layer declaration determines that final value. Suppression of upstream triggers is not supported.</p>
 </li>
 </ul>
 </div>
@@ -648,7 +655,7 @@ mmdebstrap:
 <li>
 <p>Conditional:</p>
 <div class="paragraph">
-<p><code># X-Env-Var-rootfs_type-Triggers: btrfs set IG_HAS_BTRFS_PROGS=1 policy=force</code></p>
+<p><code># X-Env-Var-rootfs_type-Triggers: when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force</code></p>
 </div>
 </li>
 <li>
@@ -662,18 +669,8 @@ mmdebstrap:
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code># X-Env-Var-rootfs_type-Triggers:
-#  btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
-#  ext4 set IG_HAS_E2FS_PROGS=1 policy=force</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Multiple actions sharing the same condition (omit the condition on following line to inherit the previous one):</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code># X-Env-Var-rootfs_type-Triggers:
-#  ext4 set IG_HAS_E2FS_PROGS=1
-#  set IG_HAS_SRCBUILD=1</code></pre>
+#  when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
+#  when=ext4 set IG_HAS_E2FS_PROGS=1 policy=force</code></pre>
 </div>
 </div>
 </li>
@@ -721,16 +718,16 @@ mmdebstrap:
 </div>
 </div>
 <div class="sect3">
-<h4 id="_example_same_layer"><a class="anchor" href="#_example_same_layer"></a><a class="link" href="#_example_same_layer">Example (same layer):</a></h4>
+<h4 id="_example_same_layer"><a class="anchor" href="#_example_same_layer"></a><a class="link" href="#_example_same_layer">Example (same layer)</a></h4>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code># X-Env-VarPrefix: image
-
+#
 # X-Env-Var-deploy_type: develop
 # X-Env-Var-deploy_type-Valid: develop,production
 # X-Env-Var-deploy_type-Set: y
-# X-Env-Var-deploy_type-Triggers: production set IGconf_image_pmap=crypt policy=force
-
+# X-Env-Var-deploy_type-Triggers: when=production set IGconf_image_pmap=crypt policy=force
+#
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Valid: clear,crypt
 # X-Env-Var-pmap-Set: y
@@ -739,6 +736,27 @@ mmdebstrap:
 </div>
 <div class="paragraph">
 <p>If <code>IGconf_image_deploy_type</code> resolves to <code>production</code>, the trigger injects <code>IGconf_image_pmap=crypt</code> after the source variable, overriding <code>pmap: clear</code> in the same layer. A later layer defining <code>IGconf_image_pmap</code> with <code>force</code> would still win over the trigger.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_example_cross_var_across_layers"><a class="anchor" href="#_example_cross_var_across_layers"></a><a class="link" href="#_example_cross_var_across_layers">Example (cross-var across layers)</a></h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-VarPrefix: device
+# X-Env-Var-storage_type: sd
+# X-Env-Var-storage_type-Valid: sd,emmc
+# X-Env-Var-storage_type-Set: y</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-VarPrefix: image
+# X-Env-Var-ptable_protect: n
+# X-Env-Var-ptable_protect-Triggers: when=IGconf_device_storage_type=emmc set IGconf_image_ptable_protect=y</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>IGconf_device_storage_type</code> resolves to <code>emmc</code>, the trigger injects <code>IGconf_image_ptable_protect=y</code>.</p>
 </div>
 </div>
 </div>

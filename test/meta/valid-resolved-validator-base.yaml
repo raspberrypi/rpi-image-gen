@@ -1,0 +1,16 @@
+# METABEGIN
+# X-Env-Layer-Name: test-resolved-validator-base
+# X-Env-Layer-Desc: Base validator for storage type
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: device
+#
+# X-Env-Var-storage_type: sd
+# X-Env-Var-storage_type-Desc: Base layer storage media type
+# X-Env-Var-storage_type-Required: n
+# X-Env-Var-storage_type-Valid: sd,emmc,nvme,usb
+# X-Env-Var-storage_type-Set: lazy
+# METAEND
+
+storage:
+  type: ${IGconf_device_storage_type}

@@ -1,0 +1,16 @@
+# METABEGIN
+# X-Env-Layer-Name: invalid-triggers-cross-var-missing-var
+# X-Env-Layer-Desc: Cross-variable trigger should fail if referenced var is missing
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: trigmiss
+#
+# X-Env-Var-switch: off
+# X-Env-Var-switch-Desc: Switch value
+# X-Env-Var-switch-Valid: on,off
+# X-Env-Var-switch-Set: y
+# X-Env-Var-switch-Triggers: when=IGconf_does_not_exist=on set IG_TRIG_SHOULD_NOT_EXIST=1 policy=force
+# METAEND
+
+triggers:
+  switch: ${IGconf_trigmiss_switch}
