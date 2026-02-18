@@ -803,26 +803,92 @@ class MetadataContainer:
 class VariableResolver:
     """Resolves final variable values from multiple definitions using policy rules."""
 
+    MAX_TRIGGER_ITERATIONS = 16
+
     def __init__(self):
         pass
 
     def resolve(self, variable_definitions: Dict[str, List[EnvVariable]]) -> Dict[str, EnvVariable]:
         """
-        Resolve variables, then apply trigger rules once and re-resolve with
-        any injected variables.
+        Resolve variables and trigger injections until the injected set reaches
+        a stable fixed point.
         """
-        resolved = self._resolve_pass(variable_definitions)
+        max_iterations = self.MAX_TRIGGER_ITERATIONS
+        base_defs: Dict[str, List[EnvVariable]] = {k: list(v) for k, v in variable_definitions.items()}
+        current_defs: Dict[str, List[EnvVariable]] = self._normalise_definition_map(base_defs)
+        current_signature = self._definition_map_signature(current_defs)
 
-        trigger_defs = self._collect_trigger_definitions(resolved)
-        if not trigger_defs:
-            return resolved
+        for _ in range(max_iterations):
+            resolved = self._resolve_pass(current_defs)
+            trigger_defs = self._collect_trigger_definitions(resolved)
+            next_defs = self._merge_base_and_triggers(base_defs, trigger_defs)
+            next_signature = self._definition_map_signature(next_defs)
+            if next_signature == current_signature:
+                return resolved
+            current_defs = next_defs
+            current_signature = next_signature
 
-        merged_defs: Dict[str, List[EnvVariable]] = {k: list(v) for k, v in variable_definitions.items()}
+        raise ValueError(
+            "Trigger resolution did not converge after "
+            f"{max_iterations} iterations (possible cyclic trigger dependencies)"
+        )
+
+    @staticmethod
+    def _definition_key(env_var: EnvVariable) -> Tuple[Any, ...]:
+        """Return a stable key representing one variable definition."""
+        return (
+            env_var.name,
+            env_var.value,
+            env_var.set_policy,
+            env_var.source_layer,
+            env_var.position,
+            env_var.required,
+            getattr(env_var, "validation_rule", ""),
+            env_var.anchor_name,
+        )
+
+    def _normalise_definition_map(
+        self,
+        definition_map: Dict[str, List[EnvVariable]],
+    ) -> Dict[str, List[EnvVariable]]:
+        """
+        Return a map with exact duplicate definitions removed while preserving
+        relative ordering.
+        """
+        normalised: Dict[str, List[EnvVariable]] = {}
+        for name, defs in definition_map.items():
+            seen = set()
+            deduped: List[EnvVariable] = []
+            for env_var in defs:
+                key = self._definition_key(env_var)
+                if key in seen:
+                    continue
+                seen.add(key)
+                deduped.append(env_var)
+            normalised[name] = deduped
+        return normalised
+
+    def _merge_base_and_triggers(
+        self,
+        base_defs: Dict[str, List[EnvVariable]],
+        trigger_defs: Dict[str, List[EnvVariable]],
+    ) -> Dict[str, List[EnvVariable]]:
+        """
+        Compose the next definition map from immutable base definitions plus
+        trigger-injected definitions generated for the current iteration.
+        """
+        merged: Dict[str, List[EnvVariable]] = {k: list(v) for k, v in base_defs.items()}
         for name, defs in trigger_defs.items():
-            merged_defs.setdefault(name, []).extend(defs)
+            merged.setdefault(name, []).extend(defs)
+        return self._normalise_definition_map(merged)
 
-        # Re-run resolution so triggers participate in normal policy handling
-        return self._resolve_pass(merged_defs)
+    def _definition_map_signature(self, definition_map: Dict[str, List[EnvVariable]]) -> Tuple[Any, ...]:
+        """Build a stable signature so we can detect fixed-point convergence."""
+        signature = []
+        for name in sorted(definition_map.keys()):
+            defs = definition_map[name]
+            signature.append((name, tuple(self._definition_key(env_var) for env_var in defs)))
+        return tuple(signature)
 
     def _resolve_pass(self, variable_definitions: Dict[str, List[EnvVariable]]) -> Dict[str, EnvVariable]:
         """
@@ -854,51 +920,16 @@ class VariableResolver:
             resolved_var = self._resolve_single_variable(var_name, definitions)
             if resolved_var:
                 # Merge triggers from all definitions so upstream triggers are preserved
-                seen = set()
-                merged_triggers: List[TriggerRule] = []
-                for d in definitions:
-                    for trig in getattr(d, "triggers", []) or []:
-                        key = (
-                            trig.condition,
-                            trig.action,
-                            trig.target,
-                            trig.value,
-                            trig.policy,
-                        )
-                        if key in seen:
-                            continue
-                        seen.add(key)
-                        merged_triggers.append(trig)
+                merged_triggers = self._merge_unique_triggers(definitions)
                 if merged_triggers:
                     resolved_var.triggers = merged_triggers
                 resolved[var_name] = resolved_var
             elif var_name in os.environ:
                 # Variable is in environment - keep triggers so they can still fire
                 first_def = definitions[0]
-                seen = set()
-                merged_triggers: List[TriggerRule] = []
-                for d in definitions:
-                    for trig in getattr(d, "triggers", []) or []:
-                        key = (
-                            trig.condition,
-                            trig.action,
-                            trig.target,
-                            trig.value,
-                            trig.policy,
-                        )
-                        if key in seen:
-                            continue
-                        seen.add(key)
-                        merged_triggers.append(trig)
+                merged_triggers = self._merge_unique_triggers(definitions)
                 # Merge conflicts from definitions so env/CLI overrides carry conflict metadata
-                merged_conflicts: List[str] = []
-                seen_conf = set()
-                for d in definitions:
-                    for c in getattr(d, "conflicts", []) or []:
-                        if c in seen_conf:
-                            continue
-                        seen_conf.add(c)
-                        merged_conflicts.append(c)
+                merged_conflicts = self._merge_unique_conflicts(definitions)
                 max_position = max(d.position for d in definitions)
                 env_var = EnvVariable(
                     name=var_name,
@@ -917,6 +948,39 @@ class VariableResolver:
                 resolved[var_name] = env_var
 
         return resolved
+
+    @staticmethod
+    def _merge_unique_triggers(definitions: List[EnvVariable]) -> List[TriggerRule]:
+        """Collect trigger rules from definitions preserving first-seen order."""
+        seen = set()
+        merged: List[TriggerRule] = []
+        for definition in definitions:
+            for trig in getattr(definition, "triggers", []) or []:
+                key = (
+                    trig.condition,
+                    trig.action,
+                    trig.target,
+                    trig.value,
+                    trig.policy,
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                merged.append(trig)
+        return merged
+
+    @staticmethod
+    def _merge_unique_conflicts(definitions: List[EnvVariable]) -> List[str]:
+        """Collect conflict specs from definitions preserving first-seen order."""
+        seen = set()
+        merged: List[str] = []
+        for definition in definitions:
+            for conflict in getattr(definition, "conflicts", []) or []:
+                if conflict in seen:
+                    continue
+                seen.add(conflict)
+                merged.append(conflict)
+        return merged
 
     def _collect_trigger_definitions(self, resolved: Dict[str, EnvVariable]) -> Dict[str, List[EnvVariable]]:
         """Build trigger-sourced definitions based on resolved values."""
@@ -956,10 +1020,7 @@ class VariableResolver:
                     validation_rule=target_validation_rule,
                     set_policy=rule.policy or TRIGGER_DEFAULT_POLICY,
                     source_layer=env_var.source_layer or "trigger",
-                    # Place injected definition just after the source variable’s position
-                    # so triggers fire after the source but can still be overridden by
-                    # later layer definitions in normal force ordering.
-                    position=env_var.position + 0.01,
+                    position=env_var.position,
                     anchor_name=target_anchor,
                     triggers=[],
                 )
@@ -1044,10 +1105,34 @@ class VariableResolver:
         return None
 
     def _get_first_by_position(self, definitions: List[EnvVariable]) -> EnvVariable:
-        """Get the definition with the earliest position (first in dependency order)."""
-        return min(definitions, key=lambda d: d.position)
+        """
+        Get the earliest definition by layer position.
+        If positions tie, prefer the first definition in list order.
+        """
+        best_idx = 0
+        best = definitions[0]
+        for idx, definition in enumerate(definitions[1:], start=1):
+            if definition.position < best.position:
+                best_idx = idx
+                best = definition
+            elif definition.position == best.position and idx < best_idx:
+                best_idx = idx
+                best = definition
+        return best
 
     def _get_last_by_position(self, definitions: List[EnvVariable]) -> EnvVariable:
-        """Get the definition with the latest position (last in dependency order)."""
-        return max(definitions, key=lambda d: d.position)
+        """
+        Get the latest definition by layer position.
+        If positions tie, prefer the last definition in list order.
+        """
+        best_idx = 0
+        best = definitions[0]
+        for idx, definition in enumerate(definitions[1:], start=1):
+            if definition.position > best.position:
+                best_idx = idx
+                best = definition
+            elif definition.position == best.position and idx > best_idx:
+                best_idx = idx
+                best = definition
+        return best
 

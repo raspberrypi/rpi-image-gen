@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: rpi-cm5
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi CM5 specific device layer
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 1.2.0
 # X-Env-Layer-Requires: device-base,rpi-boot-firmware,rpi-linux-2712
 # X-Env-Layer-Provides: device
 #
@@ -20,13 +20,14 @@
 # X-Env-Var-variant-Valid: 16G,32G,64G,lite
 # X-Env-Var-variant-Set: lazy
 # X-Env-Var-variant-Conflicts: when=lite storage_type=emmc
+# X-Env-Var-variant-Triggers: when=lite set IGconf_device_storage_type=sd policy=lazy
 #
 # X-Env-Var-storage_type: emmc
 # X-Env-Var-storage_type-Desc: Storage media the image is intended for, as seen
 #  by the OS.
 # X-Env-Var-storage_type-Required: n
 # X-Env-Var-storage_type-Valid: emmc,sd,nvme,usb
-# X-Env-Var-storage_type-Set: y
+# X-Env-Var-storage_type-Set: lazy
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Device specific asset directory

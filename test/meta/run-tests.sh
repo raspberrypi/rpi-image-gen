@@ -6,6 +6,7 @@ set -uo pipefail
 
 IGTOP=$(readlink -f "$(dirname "$0")/../../")
 META="${IGTOP}/test/meta"
+FIXTURE_TRIGGER_CASCADE_DIR="${META}/fixtures/trigger-cascade-cross-layer"
 PIPELINE_DIR=$(mktemp -d -t meta-layers.XXXXXX)
 trap 'rm -rf "$PIPELINE_DIR"' EXIT
 
@@ -242,6 +243,16 @@ run_test "triggers-set-cross-var-when" \
     'cleanup_env; TMP_OUT=$(mktemp); IGconf_trigx_mode=fast ig metadata --parse ${META}/valid-triggers-cross-var-when.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_X=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
     0 \
     "Trigger rules should support when=VAR=VALUE cross-variable conditions"
+
+run_test "triggers-fixpoint-cascade" \
+    'cleanup_env; TMP_OUT=$(mktemp); IGconf_cascade_variant=lite ig metadata --parse ${META}/valid-triggers-fixpoint-cascade.yaml --write-out "$TMP_OUT" && grep "^IGconf_cascade_storage_type=\"sd\"$" "$TMP_OUT" && grep "^IGconf_cascade_ptable_protect=\"n\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger cascades should re-evaluate conditions until stable"
+
+run_test "triggers-fixpoint-no-override-stable" \
+    'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers-fixpoint-cascade.yaml --write-out "$TMP_OUT" && grep "^IGconf_cascade_storage_type=\"emmc\"$" "$TMP_OUT" && grep "^IGconf_cascade_ptable_protect=\"y\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Fixed-point trigger resolution should converge without overrides"
 
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
@@ -524,6 +535,26 @@ EOF
      status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; rm -rf "$TMP_DIR"; exit $status' \
     1 \
     "Pipeline should reject conflicts evaluated from current env values"
+
+run_test "layer-apply-env-trigger-cascade-cross-layer-default" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers cascade-image-rota --path "${PIPELINE_DIR}:${FIXTURE_TRIGGER_CASCADE_DIR}" --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_cascade_storage_type=emmc$" "$TMP_OUT" && \
+     grep -q "^IGconf_cascade_ptable_protect=y$" "$TMP_OUT"; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    0 \
+    "Cross-layer defaults should resolve to emmc with ptable protection enabled"
+
+run_test "layer-apply-env-trigger-cascade-cross-layer-lite" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
+     make_pipeline_env "$TMP_ENV" "IGconf_cascade_variant=lite" && \
+     ig pipeline --env-in "$TMP_ENV" --layers cascade-image-rota --path "${PIPELINE_DIR}:${FIXTURE_TRIGGER_CASCADE_DIR}" --env-out "$TMP_OUT" >/dev/null && \
+     grep -q "^IGconf_cascade_storage_type=sd$" "$TMP_OUT" && \
+     grep -q "^IGconf_cascade_ptable_protect=n$" "$TMP_OUT"; \
+     status=$?; rm -f "$TMP_ENV" "$TMP_OUT"; exit $status' \
+    0 \
+    "Cross-layer trigger cascade should resolve lite to sd and disable ptable protection"
 
 run_test "layer-apply-env-invalid" \
     'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && \
