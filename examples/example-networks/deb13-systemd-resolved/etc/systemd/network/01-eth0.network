@@ -1,0 +1,15 @@
+[Match]
+Name=eth0
+
+[Network]
+DHCP=no
+Address=192.168.0.72/24
+Gateway=192.168.0.1
+DNS=127.0.0.1
+DNS=1.1.1.1   # your ISP upstream DNS1 or other DNS
+DNS=8.8.8.8   # your ISP upstream DNS2 or other DNS
+IPv6AcceptRA=no
+LinkLocalAddressing=no
+
+[Link]
+RequiredForOnline=yes
