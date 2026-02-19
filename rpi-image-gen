@@ -115,19 +115,6 @@ parameter_assembly()
 {
    msg "\nPARAM"
 
-   # Toolchain variables. Native unless ARCH forces cross.
-   DEB_BUILD_ARCH_VAL="${DEB_BUILD_ARCH:-$(dpkg-architecture -qDEB_BUILD_ARCH)}"
-   DEB_BUILD_GNU_TYPE_VAL="${DEB_BUILD_GNU_TYPE:-$(dpkg-architecture -a"$DEB_BUILD_ARCH_VAL" -qDEB_BUILD_GNU_TYPE)}"
-
-   if [ -n "${ARCH:-}" ]; then
-      DEB_HOST_ARCH_VAL=${DEB_HOST_ARCH:-$(dpkg-architecture -a"$ARCH" -qDEB_HOST_ARCH)}
-   else
-      DEB_HOST_ARCH_VAL=${DEB_HOST_ARCH:-$DEB_BUILD_ARCH_VAL}
-   fi
-   DEB_HOST_GNU_TYPE_VAL="${DEB_HOST_GNU_TYPE:-$(dpkg-architecture -a"$DEB_HOST_ARCH_VAL" -qDEB_HOST_GNU_TYPE)}"
-
-   TOOLCHAIN_MODE=$([ "$DEB_BUILD_ARCH_VAL" = "$DEB_HOST_ARCH_VAL" ] && echo native || echo cross)
-
    # Read config, writing all settings to file. Deferred variable resolution in pipeline
    # means that variable expansion does not happen here, so a config file can use any
    # variable it wants (from layers, env, anchors etc). Nothing is resolved until pipeline runs.
@@ -138,6 +125,23 @@ parameter_assembly()
       --overrides "$OVRF" \
       --write-to "${TMPDIR}/config.env" \
       || die "Config parse failed"
+
+   # Toolchain variables. Native unless ARCH forces cross.
+   if [ -z "${ARCH:-}" ]; then
+      ARCH=$(get_var ARCH "${TMPDIR}/config.env") || true
+   fi
+
+   DEB_BUILD_ARCH_VAL="${DEB_BUILD_ARCH:-$(dpkg-architecture -qDEB_BUILD_ARCH)}"
+   DEB_BUILD_GNU_TYPE_VAL="${DEB_BUILD_GNU_TYPE:-$(dpkg-architecture -a"$DEB_BUILD_ARCH_VAL" -qDEB_BUILD_GNU_TYPE)}"
+
+   if [ -n "${ARCH:-}" ]; then
+      DEB_HOST_ARCH_VAL=${DEB_HOST_ARCH:-$(dpkg-architecture -a"$ARCH" -qDEB_HOST_ARCH 2>/dev/null)}
+   else
+      DEB_HOST_ARCH_VAL=${DEB_HOST_ARCH:-$DEB_BUILD_ARCH_VAL}
+   fi
+   DEB_HOST_GNU_TYPE_VAL="${DEB_HOST_GNU_TYPE:-$(dpkg-architecture -a"$DEB_HOST_ARCH_VAL" -qDEB_HOST_GNU_TYPE 2>/dev/null)}"
+
+   TOOLCHAIN_MODE=$([ "$DEB_BUILD_ARCH_VAL" = "$DEB_HOST_ARCH_VAL" ] && echo native || echo cross)
 
    # These canonical variables are always provided to pipeline
    cat >> "${TMPDIR}/config.env" <<EOF
