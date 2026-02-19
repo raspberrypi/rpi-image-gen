@@ -23,6 +23,7 @@ mmdebstrap:
     - deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
     - deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
   packages:
+    - perl-base
     - findutils
     - dpkg
     - libc-bin
