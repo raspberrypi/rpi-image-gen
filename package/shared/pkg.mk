@@ -37,6 +37,7 @@ PKG_PATCH_STRIP    ?= 1
 PKG_UNPACK_STRIP   ?= 1
 PKG_CONFIGURE_OPTS ?=
 PKG_LIB_SHARED     ?= lib$(patsubst lib%,%,$(PKG_NAME))*.so*
+PKG_MAKE_OPTS      ?=
 
 PKG_USE_HOST_PKGCONFIG ?= 0
 ifeq ($(PKG_USE_HOST_PKGCONFIG),1)
@@ -199,12 +200,12 @@ $(PKG_BUILD_PATH)/Makefile: $(PKG_SOURCE_PATH)/configure | $(PKG_BUILD_PATH) $(P
 
 $(PKG_BUILD_STAMP): $(PKG_BUILD_PATH)/Makefile
 	@$(call run,env $(PKG_ENVIRONMENT) \
-		$(MAKE) -C $(PKG_BUILD_PATH))
+		$(MAKE) -C $(PKG_BUILD_PATH) $(PKG_MAKE_OPTS))
 	@touch $@
 
 $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_RUNTIME_DESTDIR) $(PKG_DESTDIR)
 	@$(foreach d,$|,$(call run,env $(PKG_ENVIRONMENT) \
-		$(MAKE) -C $(PKG_BUILD_PATH) install DESTDIR=$(d));)
+		$(MAKE) -C $(PKG_BUILD_PATH) install $(PKG_MAKE_OPTS) DESTDIR=$(d));)
 	@rm -rf \
 		$(PKG_RUNTIME_PATH)/lib/*.a \
 		$(PKG_RUNTIME_PATH)/lib/*.la \
@@ -213,6 +214,29 @@ $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_RUNTIME_DESTDIR) $(PKG_DESTDIR)
 		$(PKG_RUNTIME_PATH)/share/doc \
 		$(PKG_RUNTIME_PATH)/share/man
 	@touch $@
+
+else ifeq ($(PKG_BUILD_SCHEME),makefile)
+
+PKG_ENVIRONMENT += CC="$(PKG_HOST_GNU_TYPE)-gcc"
+
+$(PKG_BUILD_STAMP): $(PKG_SOURCE_STAMP)
+	@$(call run,env $(PKG_ENVIRONMENT) \
+		$(MAKE) -C $(PKG_SOURCE_PATH) $(PKG_MAKE_OPTS))
+	@touch $@
+
+$(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR)
+	@$(foreach d,$|,$(call run,env $(PKG_ENVIRONMENT) \
+		$(MAKE) -C $(PKG_SOURCE_PATH) install $(PKG_MAKE_OPTS) \
+		PREFIX=$(PKG_PREFIX) DESTDIR=$(d));)
+	@rm -rf \
+		$(PKG_RUNTIME_PATH)/lib/*.a \
+		$(PKG_RUNTIME_PATH)/lib/*.la \
+		$(PKG_RUNTIME_PATH)/include \
+		$(PKG_RUNTIME_PATH)/lib/pkgconfig \
+		$(PKG_RUNTIME_PATH)/share/doc \
+		$(PKG_RUNTIME_PATH)/share/man
+	@touch $@
+
 else
 $(error Unknown build scheme)
 endif
