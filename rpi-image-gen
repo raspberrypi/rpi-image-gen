@@ -328,7 +328,7 @@ prepare_build_config()
       # pass through
       _bdebstrap+=( --env "$key=$value" )
    }
-   msg "FINAL ENV"
+   msg "\nFINAL ENV"
    mapfile_kv "${ctx[FINALENV]}" process_conf_opt
 
    # Translate layer paths and load those that contain an mmdebstrap mapping

@@ -32,10 +32,14 @@ bootstrap_build_tools() {
    local tools=( $(collect_build_deps "${ctx[FINALENV]}") )
    local destdir="${IGconf_sys_workroot}/${DEB_BUILD_GNU_TYPE}"
    local prefix=/usr
+   local start=$SECONDS
 
    runenv "${ctx[FINALENV]}" \
       make -s -j"$(nproc)" -C "${IGTOP}/package" "${tools[@]}" \
       PKG_DESTDIR="$destdir" PKG_PREFIX="$prefix"
+
+   local elapsed=$(( SECONDS - start ))
+   msg "Building host support took $((elapsed / 60))m$((elapsed % 60))s"
 
    # prepend host tool paths
    PATH="${destdir}${prefix}/local/bin:${destdir}${prefix}/bin:${PATH}"
