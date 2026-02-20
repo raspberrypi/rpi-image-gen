@@ -37,6 +37,14 @@ PKG_PATCH_STRIP    ?= 1
 PKG_UNPACK_STRIP   ?= 1
 PKG_CONFIGURE_OPTS ?=
 PKG_LIB_SHARED     ?= lib$(patsubst lib%,%,$(PKG_NAME))*.so*
+PKG_MAKE_OPTS      ?=
+
+PKG_USE_HOST_PKGCONFIG ?= 0
+ifeq ($(PKG_USE_HOST_PKGCONFIG),1)
+ifneq ($(PKG_BUILD_GNU_TYPE),$(PKG_HOST_GNU_TYPE))
+$(error PKG_USE_HOST_PKGCONFIG=1 not permitted for cross-build)
+endif
+endif
 
 PKG_CPPFLAGS ?= -I$(PKG_INSTALL_PATH)/include
 PKG_CFLAGS   ?= -I$(PKG_INSTALL_PATH)/include
@@ -74,6 +82,11 @@ define run
 endef
 
 
+define msg
+	@printf '  %-14s %s %s\n' "$(1)" "$(PKG_NAME)" "$(PKG_VER)"
+endef
+
+
 # Get source, unpack, patch
 $(PKG_WORK_DIR) $(PKG_BUILD_PATH) $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR):
 	@mkdir -p $@
@@ -83,9 +96,11 @@ $(PKG_BUILD_LOG):
 	@: > $@
 
 $(PKG_ARCHIVE_PATH): | $(PKG_META_PATH) $(PKG_WORK_DIR) $(PKG_BUILD_LOG)
+	$(call msg,GET)
 	@$(call run,vfetch $(PKG_META_PATH) $@)
 
 $(PKG_SOURCE_ROOT): $(PKG_ARCHIVE_PATH) $(PKG_PATCHES)
+	$(call msg,UNPACK)
 	@test -d $@ && rm -rf $@ ; true
 	@mkdir -p $@
 	@tar -xpf $< --strip-components $(PKG_UNPACK_STRIP) -C $@
@@ -95,6 +110,7 @@ $(PKG_PATCH_STAMP): | $(PKG_SOURCE_ROOT)
 	@touch $@
 else
 $(PKG_PATCH_STAMP): $(PKG_PATCHES) | $(PKG_SOURCE_ROOT)
+	$(call msg,PATCH)
 	@$(call run,for patch in $(PKG_PATCHES); do echo $$patch && \
 		patch -d $(firstword $|) -p$(PKG_PATCH_STRIP) < "$$patch"; done)
 	@touch $@
@@ -133,11 +149,13 @@ $(PKG_CACHE_ROOT) $(PIP_WHEELS):
 	@mkdir -p $@
 
 $(PKG_BUILD_STAMP): $(PKG_SOURCE_STAMP) | $(PKG_CACHE) $(PIP_WHEELS)
+	$(call msg,BUILD)
 	@$(call run,env $(PKG_ENVIRONMENT) \
 		python3 -m pip wheel --wheel-dir $(PIP_WHEELS) $(PKG_SOURCE_PATH))
 	@touch $@
 
 $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR)
+	$(call msg,INSTALL)
 	@$(foreach d,$|,$(call installwheel,$(d));)
 	@rm -rf \
 		$(PKG_RUNTIME_PATH)/lib/python*/dist-packages/*.dist-info \
@@ -150,9 +168,16 @@ $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR)
 
 else ifeq ($(PKG_BUILD_SCHEME),autotools)
 
+ifeq ($(PKG_USE_HOST_PKGCONFIG),1)
+PKG_ENVIRONMENT += PKG_CONFIG_SYSROOT_DIR=
+PKG_ENVIRONMENT += PKG_CONFIG_PATH=/usr/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
+PKG_ENVIRONMENT += PKG_CONFIG_LIBDIR=/usr/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
+else
 PKG_ENVIRONMENT += PKG_CONFIG_SYSROOT_DIR=$(PKG_DESTDIR)
 PKG_ENVIRONMENT += PKG_CONFIG_PATH=$(PKG_INSTALL_PATH)/lib/pkgconfig:$(PKG_INSTALL_PATH)/share/pkgconfig
 PKG_ENVIRONMENT += PKG_CONFIG_LIBDIR=$(PKG_INSTALL_PATH)/lib/pkgconfig:$(PKG_INSTALL_PATH)/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig
+endif
+
 PKG_ENVIRONMENT += PKG_CONFIG=pkg-config
 PKG_ENVIRONMENT += CPPFLAGS="$(PKG_CPPFLAGS)"
 PKG_ENVIRONMENT += CFLAGS="$(PKG_CFLAGS)"
@@ -161,6 +186,7 @@ PKG_ENVIRONMENT += LDFLAGS="$(PKG_LDFLAGS)"
 PKG_ENVIRONMENT += MAKEINFO=true
 
 $(PKG_SOURCE_PATH)/configure: $(PKG_SOURCE_STAMP)
+	$(call msg,AUTORECONF)
 	@$(call run,(cd $(@D) && \
 		if test -f ./configure; then \
 			:; \
@@ -172,6 +198,7 @@ $(PKG_SOURCE_PATH)/configure: $(PKG_SOURCE_STAMP)
 	@test -s $@
 
 $(PKG_BUILD_PATH)/Makefile: $(PKG_SOURCE_PATH)/configure | $(PKG_BUILD_PATH) $(PKG_DESTDIR)
+	$(call msg,CONFIGURE)
 	@$(call run,(cd $(PKG_BUILD_PATH) && \
 		env $(PKG_ENVIRONMENT) \
 		$(PKG_SOURCE_PATH)/configure \
@@ -184,13 +211,15 @@ $(PKG_BUILD_PATH)/Makefile: $(PKG_SOURCE_PATH)/configure | $(PKG_BUILD_PATH) $(P
 	@test -s $@
 
 $(PKG_BUILD_STAMP): $(PKG_BUILD_PATH)/Makefile
+	$(call msg,BUILD)
 	@$(call run,env $(PKG_ENVIRONMENT) \
-		$(MAKE) -C $(PKG_BUILD_PATH))
+		$(MAKE) -C $(PKG_BUILD_PATH) $(PKG_MAKE_OPTS))
 	@touch $@
 
 $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_RUNTIME_DESTDIR) $(PKG_DESTDIR)
+	$(call msg,INSTALL)
 	@$(foreach d,$|,$(call run,env $(PKG_ENVIRONMENT) \
-		$(MAKE) -C $(PKG_BUILD_PATH) install DESTDIR=$(d));)
+		$(MAKE) -C $(PKG_BUILD_PATH) install $(PKG_MAKE_OPTS) DESTDIR=$(d));)
 	@rm -rf \
 		$(PKG_RUNTIME_PATH)/lib/*.a \
 		$(PKG_RUNTIME_PATH)/lib/*.la \
@@ -199,6 +228,31 @@ $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_RUNTIME_DESTDIR) $(PKG_DESTDIR)
 		$(PKG_RUNTIME_PATH)/share/doc \
 		$(PKG_RUNTIME_PATH)/share/man
 	@touch $@
+
+else ifeq ($(PKG_BUILD_SCHEME),makefile)
+
+PKG_ENVIRONMENT += CC="$(PKG_HOST_GNU_TYPE)-gcc"
+
+$(PKG_BUILD_STAMP): $(PKG_SOURCE_STAMP)
+	$(call msg,BUILD)
+	@$(call run,env $(PKG_ENVIRONMENT) \
+		$(MAKE) -C $(PKG_SOURCE_PATH) $(PKG_MAKE_OPTS))
+	@touch $@
+
+$(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR)
+	$(call msg,INSTALL)
+	@$(foreach d,$|,$(call run,env $(PKG_ENVIRONMENT) \
+		$(MAKE) -C $(PKG_SOURCE_PATH) install $(PKG_MAKE_OPTS) \
+		PREFIX=$(PKG_PREFIX) DESTDIR=$(d));)
+	@rm -rf \
+		$(PKG_RUNTIME_PATH)/lib/*.a \
+		$(PKG_RUNTIME_PATH)/lib/*.la \
+		$(PKG_RUNTIME_PATH)/include \
+		$(PKG_RUNTIME_PATH)/lib/pkgconfig \
+		$(PKG_RUNTIME_PATH)/share/doc \
+		$(PKG_RUNTIME_PATH)/share/man
+	@touch $@
+
 else
 $(error Unknown build scheme)
 endif
