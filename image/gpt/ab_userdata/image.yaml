@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
 #  boot/system redundancy, and a shared persistent data partition.
-# X-Env-Layer-Version: 4.2.0
+# X-Env-Layer-Version: 5.2.0
 # X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
 # X-Env-Layer-Provides: image
 #
@@ -30,6 +30,21 @@
 # X-Env-Var-data_part_size-Required: n
 # X-Env-Var-data_part_size-Valid: size
 # X-Env-Var-data_part_size-Set: y
+#
+# X-Env-Var-rootfs_type: ext4
+# X-Env-Var-rootfs_type-Desc: Root filesystem type for each system partition.
+# X-Env-Var-rootfs_type-Required: n
+# X-Env-Var-rootfs_type-Valid: ext4,erofs
+# X-Env-Var-rootfs_type-Set: y
+# X-Env-Var-rootfs_type-Triggers:
+#  when=erofs set IGconf_image_erofs_comp_spec=zstd,3 policy lazy
+#
+# X-Env-Var-erofs_comp_spec: zstd,3
+# X-Env-Var-erofs_comp_spec-Desc: EROFS compression specification passed verbatim
+#  to mkfs.erofs -z
+# X-Env-Var-erofs_comp_spec-Valid: regex:^zstd(,(level=)?[0-9]{1,2})?(,dictsize=[0-9]+)?$
+# X-Env-Var-erofs_comp_spec-Set: n
+# X-Env-Var-erofs_comp_spec-Conflicts: IGconf_image_rootfs_type=ext4
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Image specific asset directory
@@ -58,6 +73,12 @@
 # X-Env-Var-ptable_protect-Conflicts: when=y IGconf_device_storage_type!=emmc
 # X-Env-Var-ptable_protect-Triggers:
 #  when=IGconf_device_storage_type=emmc set IGconf_image_ptable_protect=y policy=lazy
+#
+# X-Env-Var-compression: zstd
+# X-Env-Var-compression-Desc: Compression scheme used for update payloads.
+# X-Env-Var-compression-Required: n
+# X-Env-Var-compression-Valid: string
+# X-Env-Var-compression-Set: y
 #
 # METAEND
 ---

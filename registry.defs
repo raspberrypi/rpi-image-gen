@@ -7,20 +7,32 @@
 
 
 #
-# Tooling
+# Host Tooling
 #
 X-Env-Var-IG_ENABLE_HOST_BDEBSTRAP: y
-X-Env-Var-IG_ENABLE_HOST_BDEBSTRAP-Desc: Build and install bdebstrap for the
- host. Mission critical.
+X-Env-Var-IG_ENABLE_HOST_BDEBSTRAP-Desc: Build and install bdebstrap. Mission
+ critical.
 X-Env-Var-IG_ENABLE_HOST_BDEBSTRAP-Valid: bool
 X-Env-Var-IG_ENABLE_HOST_BDEBSTRAP-Set: y
 
 
 X-Env-Var-IG_ENABLE_HOST_GENIMAGE: n
-X-Env-Var-IG_ENABLE_HOST_GENIMAGE-Desc: Build and install genimage for the
- host. Image creation only.
+X-Env-Var-IG_ENABLE_HOST_GENIMAGE-Desc: Build and install genimage. Image
+ creation only.
 X-Env-Var-IG_ENABLE_HOST_GENIMAGE-Valid: bool
 X-Env-Var-IG_ENABLE_HOST_GENIMAGE-Set: y
+
+
+X-Env-Var-IG_ENABLE_HOST_ZSTD: n
+X-Env-Var-IG_ENABLE_HOST_ZSTD-Desc: Build and install zstd.
+X-Env-Var-IG_ENABLE_HOST_ZSTD-Valid: bool
+X-Env-Var-IG_ENABLE_HOST_ZSTD-Set: n
+
+
+X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS: n
+X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Desc: Build and install erofs-utils.
+X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Valid: bool
+X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Set: y
 
 
 #

@@ -18,6 +18,7 @@
 # X-Env-Var-compression-Required: n
 # X-Env-Var-compression-Valid: none,zstd
 # X-Env-Var-compression-Set: y
+# X-Env-Var-compression-Triggers: when=zstd set IG_ENABLE_HOST_ZSTD=y policy=force
 #
 # X-Env-Var-dir: ${IGconf_sys_workroot}/deploy-${IGconf_artefact_version}
 # X-Env-Var-dir-Desc: Final deployment directory for completed build assets.

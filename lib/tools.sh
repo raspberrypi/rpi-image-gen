@@ -10,6 +10,8 @@
 readonly -a IG_TOOLS_REGISTRY=(
    "IG_ENABLE_HOST_BDEBSTRAP|y|bdebstrap"
    "IG_ENABLE_HOST_GENIMAGE|y|genimage"
+   "IG_ENABLE_HOST_ZSTD|y|zstd"
+   "IG_ENABLE_HOST_EROFS_UTILS|y|erofs-utils"
 )
 
 collect_build_deps() {

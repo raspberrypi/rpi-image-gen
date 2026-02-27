@@ -18,7 +18,6 @@ build:grep
 build:rsync
 build:curl
 build:mtools
-build:zstd
 build:pv
 build:mkfs.btrfs:btrfs-progs
 build::dctrl-tools

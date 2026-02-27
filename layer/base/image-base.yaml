@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: image-base
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Default image settings and build attributes.
-# X-Env-Layer-Version: 2.0.3
+# X-Env-Layer-Version: 2.1.3
 # X-Env-Layer-Requires: sys-build-base,sbom-base,target-config,artefact-base,deploy-base
 # X-Env-Layer-RequiresProvider: device
 #
@@ -17,14 +17,13 @@
 # X-Env-Var-suffix-Valid: string
 # X-Env-Var-suffix-Set: y
 #
-# X-Env-Var-compression: none
-# X-Env-Var-compression-Desc: Compression scheme for generating image assets.
-#  Downstream layer implementation-dependent. For example, a downstream layer
-#  may define available schemes when creating filesystem images (e.g. erofs,
-#  squashfs).
+# X-Env-Var-compression:
+# X-Env-Var-compression-Desc: Compression scheme for generating image assets, eg
+#  update payloads. Downstream layer implementation-dependent.
 # X-Env-Var-compression-Required: n
 # X-Env-Var-compression-Valid: string
-# X-Env-Var-compression-Set: lazy
+# X-Env-Var-compression-Set: n
+# X-Env-Var-compression-Triggers: when=zstd set IG_ENABLE_HOST_ZSTD=y policy=force
 #
 # X-Env-Var-version: ${IGconf_artefact_version}
 # X-Env-Var-version-Desc: Version string of generated images. This always maps
@@ -77,10 +76,13 @@
 # X-Env-Var-assetdir-Set: lazy
 #
 # X-Env-Var-rootfs_type: none
-# X-Env-Var-rootfs_type-Desc: Root filesystem type. Implementation-dependent.
+# X-Env-Var-rootfs_type-Desc: Root filesystem type. Implementation-dependent. May
+#  set host tooling requirements / dependencies.
 # X-Env-Var-rootfs_type-Required: n
 # X-Env-Var-rootfs_type-Valid: string
 # X-Env-Var-rootfs_type-Set: n
+# X-Env-Var-rootfs_type-Triggers:
+#  when=erofs set IG_ENABLE_HOST_EROFS_UTILS=y policy=force
 #
 # METAEND
 ---
