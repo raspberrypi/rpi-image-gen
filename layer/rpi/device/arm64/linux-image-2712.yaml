@@ -2,8 +2,15 @@
 # X-Env-Layer-Name: rpi-linux-2712
 # X-Env-Layer-Category: kernel
 # X-Env-Layer-Desc: Raspberry Pi 2712 kernel
-# X-Env-Layer-Version: 1.1.0
-# X-Env-Layer-Sets: IG_DEVICE_KERNEL_PAGE_SIZE=16K
+# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Requires: linux-base
+#
+# X-Env-VarPrefix: linux
+#
+# X-Env-Var-page_size: 16384
+# X-Env-Var-page_size-Desc: 2712 uses a 16K page size kernel
+# X-Env-Var-page_size-Valid: int:16384-16384
+# X-Env-Var-page_size-Set: force
 # METAEND
 ---
 env:
