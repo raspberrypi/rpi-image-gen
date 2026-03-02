@@ -135,7 +135,9 @@ The configuration system supports both INI and YAML file formats with automatic 
 
 === YAML Configuration Format
 
-YAML provides the most flexible configuration format with native support for hierarchical data and includes:
+YAML provides the most flexible configuration format with native support for hierarchical data and includes.
+
+==== Mapping Sections
 
 [source,yaml]
 ----
@@ -155,6 +157,46 @@ image:
   boot_part_size: 200%
   root_part_size: 300%
 ----
+
+==== List Sections
+
+In addition to mapping (key-value) sections, YAML configuration files support sequence (list) sections. List items are assigned 0-based numeric keys, producing the same `IGconf_<section>_<key>` variable format as mapping sections.
+
+[source,yaml]
+----
+packages:
+  - vim
+  - git
+  - curl
+----
+
+This produces the following variables:
+
+[source,bash]
+----
+IGconf_packages_0=vim
+IGconf_packages_1=git
+IGconf_packages_2=curl
+----
+
+This is equivalent to the explicit mapping form:
+
+[source,yaml]
+----
+packages:
+  0: vim
+  1: git
+  2: curl
+----
+
+List sections are useful when the key names are not meaningful and only ordering matters. They follow the same include merging and override rules as mapping sections.
+
+
+[WARNING]
+====
+List sections do not merge with includes in the same way as mapping sections. Because list items are internally keyed by their position index, an include merge between two files defining the same list section produces a positional override rather than an append or replacement. For predictable results, avoid defining the same list section in both a base file and a file that includes it.
+====
+
 
 === INI Configuration Format
 
