@@ -15,8 +15,8 @@
 # X-Env-Var-rootfs_type-Valid: ext4,btrfs
 # X-Env-Var-rootfs_type-Set: y
 # X-Env-Var-rootfs_type-Triggers:
-#  when=ext4 set IGconf_fs_ext4_mkfs_args="-b ${IGconf_linux_page_size}" policy=lazy
-#  when=btrfs set IGconf_fs_btrfs_mkfs_args="-s ${IGconf_linux_page_size}" policy=lazy
+#  when=ext4 set IGconf_fs_ext4_mkfs_args="-F -b ${IGconf_linux_page_size}" policy=lazy
+#  when=btrfs set IGconf_fs_btrfs_mkfs_args="" policy=lazy
 #
 # X-Env-Var-boot_part_size: 100%
 # X-Env-Var-boot_part_size-Desc: Boot partition size
