@@ -198,7 +198,7 @@ collect_layers()
 
    # Generate the bootstrap information, resolving all variables. Configuration
    # input is only from the input env file, so run it in a clean room.
-   env -i PATH=$PATH \
+   env -i PATH="$PATH" \
      ig pipeline \
       --env-in "${TMPDIR}/config.env" \
       --layers "${layers[@]}" \

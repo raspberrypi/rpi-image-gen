@@ -46,7 +46,7 @@
 #  crypthybrid: B:system OS partition will be provisioned encrypted (dev only).
 # X-Env-Var-pmap-Required: n
 # X-Env-Var-pmap-Valid: clear,crypt,cryptslots,cryptdata,crypthybrid
-# X-Env-Var-pmap-Set: y
+# X-Env-Var-pmap-Set: force
 #
 # X-Env-Var-ptable_protect: n
 # X-Env-Var-ptable_protect-Desc: Enable eMMC Power-On Write Protect of the partition
