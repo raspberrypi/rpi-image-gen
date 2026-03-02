@@ -50,7 +50,7 @@ image boot.vfat {
 image root.btrfs {
    btrfs {
       label = "ROOT"
-      extraargs = "-U <ROOT_UUID>"
+      extraargs = "<BTRFS_EXTRAARGS>"
    }
    size = <ROOT_SIZE>
    mountpoint = "/"

@@ -37,14 +37,8 @@
 # X-Env-Var-rootfs_type-Valid: ext4,erofs
 # X-Env-Var-rootfs_type-Set: y
 # X-Env-Var-rootfs_type-Triggers:
-#  when=erofs set IGconf_image_erofs_comp_spec=zstd,3 policy lazy
-#
-# X-Env-Var-erofs_comp_spec: zstd,3
-# X-Env-Var-erofs_comp_spec-Desc: EROFS compression specification passed verbatim
-#  to mkfs.erofs -z
-# X-Env-Var-erofs_comp_spec-Valid: regex:^zstd(,(level=)?[0-9]{1,2})?(,dictsize=[0-9]+)?$
-# X-Env-Var-erofs_comp_spec-Set: n
-# X-Env-Var-erofs_comp_spec-Conflicts: IGconf_image_rootfs_type=ext4
+#  set IGconf_fs_ext4_mkfs_args="-F -b ${IGconf_linux_page_size}" policy=lazy
+#  when=erofs set IGconf_fs_erofs_mkfs_args="-b ${IGconf_linux_page_size} -z zstd,3" policy=lazy
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Image specific asset directory

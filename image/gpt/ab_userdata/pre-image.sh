@@ -12,45 +12,10 @@ genimg_in=$2
 . ${genimg_in}/img_uuids
 
 
-# Global mkfs.ext4 args for this image:
-#  - Testing has proven that 16K page size kernels benefit from 16K blocks, but
-#    for the time being, retain ext4 images with 4K blocks.
-#  - 4Kn storage media requires min 4K blocks
-case "$IG_DEVICE_KERNEL_PAGE_SIZE" in
-   *)
-      MKE2FS_ARGS=()
-      case "$IGconf_device_sector_size" in
-         4096)
-            MKE2FS_ARGS=("-b" "-4096")
-            ;;
-      esac
-esac
-
-
-MKE2FS_SYSTEM=("-U" "$SYSTEM_UUID")
-MKE2FS_DATA=()
-
-MKE2FS_SYSTEM+=("${MKE2FS_ARGS[@]}")
-MKE2FS_DATA+=("${MKE2FS_ARGS[@]}")
-
-MKE2FS_ARGS_SYSTEM="${MKE2FS_SYSTEM[*]}"
-MKE2FS_ARGS_DATA="${MKE2FS_DATA[*]}"
-
-
-# Global mkfs.erofs args
-#  16K page size kernels benefit from 16K blocks
-case "$IG_DEVICE_KERNEL_PAGE_SIZE" in
-   16K)
-      EROFS_ARGS=("-b" "16384")
-      ;;
-   4K|*)
-      EROFS_ARGS=("-b" "4096")
-      ;;
-esac
-EROFS_ARGS+=("-z" "${IGconf_image_erofs_comp_spec:-}")
-EROFS_SYSTEM=("-U" "$SYSTEM_UUID")
-EROFS_SYSTEM+=("${EROFS_ARGS[@]}")
-EROFS_ARGS_SYSTEM="${EROFS_SYSTEM[*]}"
+# mkfs args: UUIDs are image-structural, fs-specific args from IGconf_fs_*
+MKE2FS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_ext4_mkfs_args:-}"
+MKE2FS_ARGS_DATA="${IGconf_fs_ext4_mkfs_args:-}"
+EROFS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_erofs_mkfs_args:-}"
 
 
 # Set up the partition layout for tryboot support. Partition numbering
