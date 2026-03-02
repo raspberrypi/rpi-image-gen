@@ -143,7 +143,12 @@
 </li>
 <li><a href="#_configuration_file_support">Configuration File Support</a>
 <ul class="sectlevel2">
-<li><a href="#_yaml_configuration_format">YAML Configuration Format</a></li>
+<li><a href="#_yaml_configuration_format">YAML Configuration Format</a>
+<ul class="sectlevel3">
+<li><a href="#_mapping_sections">Mapping Sections</a></li>
+<li><a href="#_list_sections">List Sections</a></li>
+</ul>
+</li>
 <li><a href="#_ini_configuration_format">INI Configuration Format</a></li>
 <li><a href="#_configuration_includes">Configuration Includes</a>
 <ul class="sectlevel3">
@@ -419,8 +424,10 @@ FINAL ENV
 <div class="sect2">
 <h3 id="_yaml_configuration_format"><a class="anchor" href="#_yaml_configuration_format"></a><a class="link" href="#_yaml_configuration_format">YAML Configuration Format</a></h3>
 <div class="paragraph">
-<p>YAML provides the most flexible configuration format with native support for hierarchical data and includes:</p>
+<p>YAML provides the most flexible configuration format with native support for hierarchical data and includes.</p>
 </div>
+<div class="sect3">
+<h4 id="_mapping_sections"><a class="anchor" href="#_mapping_sections"></a><a class="link" href="#_mapping_sections">Mapping Sections</a></h4>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">include:
@@ -438,6 +445,59 @@ image:
   compression: zstd
   boot_part_size: 200%
   root_part_size: 300%</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_list_sections"><a class="anchor" href="#_list_sections"></a><a class="link" href="#_list_sections">List Sections</a></h4>
+<div class="paragraph">
+<p>In addition to mapping (key-value) sections, YAML configuration files support sequence (list) sections. List items are assigned 0-based numeric keys, producing the same <code>IGconf_&lt;section&gt;_&lt;key&gt;</code> variable format as mapping sections.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  - vim
+  - git
+  - curl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This produces the following variables:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">IGconf_packages_0=vim
+IGconf_packages_1=git
+IGconf_packages_2=curl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is equivalent to the explicit mapping form:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  0: vim
+  1: git
+  2: curl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List sections are useful when the key names are not meaningful and only ordering matters. They follow the same include merging and override rules as mapping sections.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>List sections do not merge with includes in the same way as mapping sections. Because list items are internally keyed by their position index, an include merge between two files defining the same list section produces a positional override rather than an append or replacement. For predictable results, avoid defining the same list section in both a base file and a file that includes it.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>

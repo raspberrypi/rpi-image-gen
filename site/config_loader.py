@@ -103,6 +103,10 @@ class ConfigLoader:
 
             # Handle include directive
             included_sections: Dict[str, Dict[str, str]] = {}
+            if 'include' in yaml_data and isinstance(yaml_data['include'], list):
+                raise ValueError(
+                    f"List includes are not supported in {path}"
+                )
             if 'include' in yaml_data and isinstance(yaml_data['include'], dict):
                 inc_file = yaml_data['include'].get('file')
                 if not inc_file:
@@ -115,9 +119,12 @@ class ConfigLoader:
             # Convert current file sections
             curr_sections: Dict[str, Dict[str, str]] = {}
             for sect, sect_data in yaml_data.items():
-                if not isinstance(sect_data, dict):
-                    raise ValueError(f"Section '{sect}' in {path} must be a mapping")
-                curr_sections[sect] = {k: str(v) for k, v in sect_data.items()}
+                if isinstance(sect_data, list):
+                    curr_sections[sect] = {str(i): str(v) for i, v in enumerate(sect_data)}
+                elif isinstance(sect_data, dict):
+                    curr_sections[sect] = {k: str(v) for k, v in sect_data.items()}
+                else:
+                    raise ValueError(f"Section '{sect}' in {path} must be a mapping or list")
 
             # Merge: current overrides included
             merged = {**included_sections}
@@ -495,19 +502,23 @@ def _main(args):
         _migrate_to_yaml(args.cfg_path, args)
         return
 
-    loader = ConfigLoader(
-        args.cfg_path,
-        expand_vars=not args.no_expand,
-        overrides_path=args.overrides,
-        search_paths=(args.path.split(":") if args.path else ["./config"]),
-    )
-    if args.write_to:
-        loader.write_file(args.write_to, args.section)
-    else:
-        if args.section:
-            loader.load_section(args.section)
+    try:
+        loader = ConfigLoader(
+            args.cfg_path,
+            expand_vars=not args.no_expand,
+            overrides_path=args.overrides,
+            search_paths=(args.path.split(":") if args.path else ["./config"]),
+        )
+        if args.write_to:
+            loader.write_file(args.write_to, args.section)
         else:
-            loader.load_all()
+            if args.section:
+                loader.load_section(args.section)
+            else:
+                loader.load_all()
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1)
 
 
 def _migrate_to_yaml(ini_path: str, args):
