@@ -1,4 +1,5 @@
 import re
+import shlex
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any, Tuple
 from validators import BaseValidator, parse_validator
@@ -461,7 +462,7 @@ class EnvVariable:
         lines = [line.strip() for line in str(raw).splitlines() if line.strip()]
 
         for line in lines:
-            tokens = line.split()
+            tokens = shlex.split(line)
             if not tokens:
                 continue
 

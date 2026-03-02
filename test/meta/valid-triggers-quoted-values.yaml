@@ -1,0 +1,24 @@
+# METABEGIN
+# X-Env-Layer-Name: test-triggers-quoted
+# X-Env-Layer-Desc: Trigger rules with quoted multi-word values
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: trigq
+#
+# X-Env-Var-fstype: erofs
+# X-Env-Var-fstype-Desc: Filesystem type selector
+# X-Env-Var-fstype-Valid: ext4,erofs
+# X-Env-Var-fstype-Set: y
+# X-Env-Var-fstype-Triggers:
+#  when=erofs set IG_TRIG_EROFS_ARGS="-b 4096 -z zstd,3" policy=force
+#  when=ext4 set IG_TRIG_EXT4_ARGS="-O has_journal,extent" policy=force
+#
+# X-Env-Var-mode: active
+# X-Env-Var-mode-Desc: Single-quoted trigger value
+# X-Env-Var-mode-Set: y
+# X-Env-Var-mode-Triggers: when=active set IG_TRIG_SINGLE='-v --force' policy=force
+# METAEND
+
+triggers_quoted:
+  fstype: ${IGconf_trigq_fstype}
+  mode: ${IGconf_trigq_mode}
