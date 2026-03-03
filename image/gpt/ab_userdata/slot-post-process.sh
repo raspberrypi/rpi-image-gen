@@ -17,8 +17,9 @@ EOF
             ;;
          erofs)
             cat << EOF > $IMAGEMOUNTPATH/etc/fstab
-/dev/disk/by-slot/active/system /              erofs defaults 0 1
+/dev/disk/by-slot/active/system /              erofs defaults 0 0
 EOF
+            ;;
       esac
 
       # remainder is constant
@@ -35,7 +36,10 @@ LABEL=BOOTFS                    /bootfs        vfat defaults,rw,noatime,errors=p
 EOF
       ;;
    BOOT)
-      sed -i "s|root=\([^ ]*\)|root=\/dev\/ram0|" $IMAGEMOUNTPATH/cmdline.txt
+      sed -i "s|root=[^ ]*|root=/dev/ram0|" "$IMAGEMOUNTPATH/cmdline.txt"
+      case $IGconf_image_rootfs_type in
+         erofs) sed -i 's|fsck\.repair=yes||g' "$IMAGEMOUNTPATH/cmdline.txt" ;;
+      esac
       ;;
    *)
       ;;

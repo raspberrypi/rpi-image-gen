@@ -31,7 +31,7 @@
 # X-Env-Var-data_part_size-Valid: size
 # X-Env-Var-data_part_size-Set: y
 #
-# X-Env-Var-rootfs_type: ext4
+# X-Env-Var-rootfs_type: erofs
 # X-Env-Var-rootfs_type-Desc: Root filesystem type for each system partition.
 # X-Env-Var-rootfs_type-Required: n
 # X-Env-Var-rootfs_type-Valid: ext4,erofs
