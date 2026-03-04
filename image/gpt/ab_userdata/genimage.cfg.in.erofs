@@ -103,6 +103,13 @@ image system.erofs {
    exec-pre = "<SLOTP> SYSTEM"
 }
 
+image system.verity {
+   verity {
+      image = "system.erofs"
+      extraargs = "<VERITY_SYSTEM>"
+   }
+}
+
 image persistent.ext4 {
    ext4 {
       use-mke2fs = true

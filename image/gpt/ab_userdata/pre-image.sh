@@ -12,10 +12,19 @@ genimg_in=$2
 . ${genimg_in}/img_uuids
 
 
-# mkfs args: UUIDs are image-structural, fs-specific args from IGconf_fs_*
+# mkfs args: UUIDs are image-structural
 MKE2FS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_ext4_mkfs_args:-}"
 MKE2FS_ARGS_DATA="${IGconf_fs_ext4_mkfs_args:-}"
 EROFS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_erofs_mkfs_args:-}"
+
+# verity
+VERITY_ARGS_SYSTEM="\
+ --data-block-size ${IGconf_linux_page_size:-4096} \
+ --hash-block-size ${IGconf_linux_page_size:-4096} \
+ --hash sha256 \
+ --uuid ${VERITY_UUID} \
+ --salt $(uuidgen | tr -d '-') \
+ --root-hash-file ${IGconf_image_outputdir}/system.roothash"
 
 
 # Set up the partition layout for tryboot support. Partition numbering
@@ -46,6 +55,7 @@ cat "genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
    -e "s|<MKE2FS_SYSTEM>|$MKE2FS_ARGS_SYSTEM|g" \
    -e "s|<MKE2FS_DATA>|$MKE2FS_ARGS_DATA|g" \
    -e "s|<EROFS_SYSTEM>|$EROFS_ARGS_SYSTEM|g" \
+   -e "s|<VERITY_SYSTEM>|$VERITY_ARGS_SYSTEM|g" \
    > ${genimg_in}/genimage.cfg
 
 
