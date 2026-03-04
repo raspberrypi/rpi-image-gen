@@ -23,8 +23,6 @@ PKG_META_PATH := $(abspath $(THIS_PKG)/$(PKG_META))
 ifeq (,$(wildcard $(PKG_META_PATH)))
 $(error $(PKG_META_PATH) not found)
 endif
-
-PKG_META_PATH := $(abspath $(CURDIR)/$(PKG_META))
 PKG_SOURCE_DIR ?= $(PKG_NAME)-$(PKG_VER)
 PKG_ARCHIVE ?= $(PKG_NAME)-$(PKG_VER).tar.gz
 PKG_SUBDIR ?= .
@@ -95,7 +93,7 @@ $(PKG_BUILD_LOG):
 	@mkdir -p $(@D)
 	@: > $@
 
-$(PKG_ARCHIVE_PATH): | $(PKG_META_PATH) $(PKG_WORK_DIR) $(PKG_BUILD_LOG)
+$(PKG_ARCHIVE_PATH): $(PKG_META_PATH) | $(PKG_WORK_DIR) $(PKG_BUILD_LOG)
 	$(call msg,GET)
 	@$(call run,vfetch $(PKG_META_PATH) $@)
 
@@ -145,10 +143,10 @@ PIP_WHEELS := $(PKG_CACHE_ROOT)/pip-wheels
 PKG_ENVIRONMENT += PIP_CACHE_DIR=$(PIP_CACHE)
 PKG_ENVIRONMENT += PIP_PREFER_BINARY=1
 
-$(PKG_CACHE_ROOT) $(PIP_WHEELS):
+$(PKG_CACHE_ROOT) $(PIP_CACHE) $(PIP_WHEELS):
 	@mkdir -p $@
 
-$(PKG_BUILD_STAMP): $(PKG_SOURCE_STAMP) | $(PKG_CACHE) $(PIP_WHEELS)
+$(PKG_BUILD_STAMP): $(PKG_SOURCE_STAMP) | $(PIP_CACHE) $(PIP_WHEELS)
 	$(call msg,BUILD)
 	@$(call run,env $(PKG_ENVIRONMENT) \
 		python3 -m pip wheel --wheel-dir $(PIP_WHEELS) $(PKG_SOURCE_PATH))
@@ -259,3 +257,13 @@ endif
 
 .PHONY: install
 install: $(PKG_INSTALL_STAMP)
+
+.PHONY: deps-mk
+deps-mk:
+	@python3 "$(DEPGEN)" \
+		--name "$(PKG_NAME)" \
+		--ver "$(PKG_VER)" \
+		--deps "$(PKG_DEPS)" \
+		--pkg-dir "$(THIS_PKG)" \
+		--pkg-env "$(abspath $(PKG_SHARED_DIR)pkg-env.mk)" \
+		--out "$(DEP_OUT)"

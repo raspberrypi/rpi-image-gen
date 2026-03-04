@@ -27,12 +27,10 @@ all: $(ALL_PACKAGE_STAMPS)
 
 $(DEP_DIR)/%.deps.mk: $(PKG_ROOT)/%/Makefile $(PKG_ENV) $(DEPGEN)
 	@mkdir -p "$(DEP_DIR)"
-	@python3 "$(DEPGEN)" \
-		--package "$*" \
-		--makefile "$<" \
-		--pkg-dir "$(PKG_ROOT)/$*" \
-		--pkg-env "$(PKG_ENV)" \
-		--out "$@"
+	@$(MAKE) -C "$(PKG_ROOT)/$*" --no-print-directory deps-mk \
+		IGconf_sys_buildroot="$(IGconf_sys_buildroot)" \
+		DEP_OUT="$@" \
+		DEPGEN="$(DEPGEN)"
 
 clean-%:
 	@rm -f "$(DEP_DIR)/$*.deps.mk"
