@@ -25,6 +25,7 @@ build:uuidgen:uuid-runtime
 build:fdisk
 build::python3-jsonschema
 build::dpkg-dev
+build:veritysetup:cryptsetup
 
 # pkg buildsys
 build::python3-pip

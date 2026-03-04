@@ -16,9 +16,10 @@ BOOT_LABEL=$(uuidgen | sed 's/-.*//' | tr 'a-f' 'A-F')
 BOOT_UUID=$(echo "$BOOT_LABEL" | sed 's/^\(....\)\(....\)$/\1-\2/')
 SYSTEM_UUID=$(uuidgen)
 CRYPT_UUID=$(uuidgen)
+VERITY_UUID=$(uuidgen)
 
 rm -f ${IGconf_image_outputdir}/img_uuids
-for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID; do
+for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID VERITY_UUID; do
     eval "val=\$$v"
     echo "$v=$val" >> "${IGconf_image_outputdir}/img_uuids"
 done
@@ -36,7 +37,3 @@ sed -i \
 pmap --schema "$IGconf_image_pmap_schema" \
      --file "${IGconf_image_outputdir}/provisionmap.json" \
      --slotvars > "$1/boot/slot.map"
-
-
-# Hint to initramfs-tools we have an ext4 rootfs
-sed -i "s|FSTYPE=\([^ ]*\)|FSTYPE=ext4|" $1/etc/initramfs-tools/initramfs.conf
