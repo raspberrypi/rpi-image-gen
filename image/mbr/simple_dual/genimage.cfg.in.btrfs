@@ -40,7 +40,7 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX> {
 image boot.vfat {
    vfat {
       label = "BOOT"
-      extraargs = "-S <SECTOR_SIZE> -i <BOOT_LABEL>"
+      extraargs = "<VFAT_EXTRAARGS>"
    }
    size = <FW_SIZE>
    mountpoint = "/boot/firmware"
@@ -50,7 +50,7 @@ image boot.vfat {
 image root.btrfs {
    btrfs {
       label = "ROOT"
-      extraargs = "-U <ROOT_UUID>"
+      extraargs = "<BTRFS_EXTRAARGS>"
    }
    size = <ROOT_SIZE>
    mountpoint = "/"

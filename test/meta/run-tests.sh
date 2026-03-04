@@ -254,6 +254,21 @@ run_test "triggers-fixpoint-no-override-stable" \
     0 \
     "Fixed-point trigger resolution should converge without overrides"
 
+run_test "triggers-quoted-double" \
+    'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers-quoted-values.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_EROFS_ARGS=\"-b 4096 -z zstd,3\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger rules should support double-quoted multi-word values"
+
+run_test "triggers-quoted-single" \
+    'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers-quoted-values.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_SINGLE=\"-v --force\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger rules should support single-quoted multi-word values"
+
+run_test "triggers-quoted-ext4-not-set" \
+    'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers-quoted-values.yaml --write-out "$TMP_OUT" && ! grep "^IG_TRIG_EXT4_ARGS=" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Trigger for non-matching condition should not set variable"
+
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
 

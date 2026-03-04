@@ -1,0 +1,17 @@
+# METABEGIN
+# X-Env-Layer-Name: linux-base
+# X-Env-Layer-Category: base
+# X-Env-Layer-Desc: Linux kernel base properties. Provides kernel level
+#  attributes that may influence downstream image creation in order to
+#  optimise for the target system.
+# X-Env-Layer-Version: 1.0.0
+#
+# X-Env-VarPrefix: linux
+#
+# X-Env-Var-page_size: 4096
+# X-Env-Var-page_size-Desc: Page size of the Linux kernel in bytes.
+# X-Env-Var-page_size-Required: n
+# X-Env-Var-page_size-Valid: 4096,16384
+# X-Env-Var-page_size-Set: lazy
+# METAEND
+---

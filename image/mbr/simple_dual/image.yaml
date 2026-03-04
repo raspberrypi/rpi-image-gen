@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Raspberry Pi OS style image layout with MBR, vfat
 #  boot partition, and a root partition that can be ext4 or btrfs.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: image-base
 # X-Env-Layer-Provides: image
 #
@@ -14,6 +14,9 @@
 # X-Env-Var-rootfs_type-Required: n
 # X-Env-Var-rootfs_type-Valid: ext4,btrfs
 # X-Env-Var-rootfs_type-Set: y
+# X-Env-Var-rootfs_type-Triggers:
+#  when=ext4 set IGconf_fs_ext4_mkfs_args="-F -b ${IGconf_linux_page_size}" policy=lazy
+#  when=btrfs set IGconf_fs_btrfs_mkfs_args="" policy=lazy
 #
 # X-Env-Var-boot_part_size: 100%
 # X-Env-Var-boot_part_size-Desc: Boot partition size

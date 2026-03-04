@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>debian-trixie-arm64-slim - Layer Documentation</title>
+    <title>linux-base - Layer Documentation</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
@@ -121,98 +121,56 @@
     </div>
 
     <div class="header">
-        <h1>debian-trixie-arm64-slim</h1>
-        <span class="badge">distribution</span>
-        <span class="badge">v1.1.0</span>
-        <p>Debian Trixie custom layer for arm64 providing
- a usable and practical base.</p>
+        <h1>linux-base</h1>
+        <span class="badge">base</span>
+        <span class="badge">v1.0.0</span>
+        <p>Linux kernel base properties. Provides kernel level
+ attributes that may influence downstream image creation in order to
+ optimise for the target system.</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
-        <p><strong>Depends on:</strong></p>
+        <p><strong>Required by:</strong></p>
         <div class="deps">
-            <a href="locale-base.html" class="dep-badge">locale-base</a>
+            
+            <a href="rpi-linux-2712.html" class="dep-badge">rpi-linux-2712</a>
+            
+            <a href="rpi-linux-v8.html" class="dep-badge">rpi-linux-v8</a>
+            
         </div>
     </div>
     <div class="section">
         <h2>Configuration Variables</h2>
-        <p><strong>References:</strong>
-        <code>IGconf_locale_timezone</code>, 
-        <code>IGconf_locale_default</code>, 
-        <code>IGconf_locale_keyboard_layout</code>, 
-        <code>IGconf_locale_keyboard_keymap</code>
-        </p>
-    </div>
-    <div class="section">
-        <h2>mmdebstrap</h2>
-        
-        <h3>Suite</h3>
-        <ul>
-            <li><code>trixie</code></li>
-        </ul>
-        
-        <h3>Variant</h3>
-        <p>Installs package set:</p>
-        <ul>
-            <li><code>custom</code></li>
-        </ul>
-        
-        <h3>Architectures</h3>
-        <ul>
-            <li><code>arm64</code></li>
-        </ul>
-        
-        <h3>Packages</h3>
-        <p>Installs:</p>
-        <ul>
-            <li><code>perl-base</code></li>
-            <li><code>findutils</code></li>
-            <li><code>dpkg</code></li>
-            <li><code>libc-bin</code></li>
-            <li><code>base-files</code></li>
-            <li><code>base-passwd</code></li>
-            <li><code>debianutils</code></li>
-            <li><code>bash</code></li>
-            <li><code>diffutils</code></li>
-            <li><code>util-linux</code></li>
-            <li><code>sed</code></li>
-            <li><code>grep</code></li>
-            <li><code>gzip</code></li>
-            <li><code>udev</code></li>
-            <li><code>e2fsprogs</code></li>
-            <li><code>linux-sysctl-defaults</code></li>
-        </ul>
-        
-        <h3>Mirrors</h3>
-        <ul>
-            <li><code>deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware</code></li>
-        </ul>
-        
-        <h3>dpkgopts</h3>
-        <ul>
-            <li><code>path-exclude=/usr/share/man/*</code></li>
-            <li><code>path-include=/usr/share/man/man[1-9]/*</code></li>
-            <li><code>path-exclude=/usr/share/locale/*</code></li>
-            <li><code>path-include=/usr/share/locale/locale.alias</code></li>
-            <li><code>path-exclude=/usr/share/doc/*</code></li>
-            <li><code>path-include=/usr/share/doc/*/copyright</code></li>
-            <li><code>path-include=/usr/share/doc/*/changelog.Debian.*</code></li>
-            <li><code>path-exclude=/usr/share/{doc,info,man,omf,help,gnome/help}/*</code></li>
-            <li><code>path-exclude=/usr/share/lintian/*</code></li>
-        </ul>
-        
-        <h3>aptopts</h3>
-        <ul>
-            <li><code>APT::Install-Suggests "false"</code></li>
-            <li><code>APT::Install-Recommends "false"</code></li>
-        </ul>
+        <p><strong>Declares</strong> (prefix: <code>linux</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>IGconf_linux_page_size</code></td>
+                    <td>Page size of the Linux kernel in bytes.</td>
+                    <td>
+                           <code>4096</code>
+                    </td>
+                    <td>Must be one of: 4096, 16384</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>debian/trixie/arm64/base-slim.yaml</code></p>
+        <p><strong>File:</strong> <code>base/linux-base.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
     </div>
 </body>

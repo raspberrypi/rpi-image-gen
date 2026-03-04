@@ -151,6 +151,7 @@
 <ul class="sectlevel3">
 <li><a href="#_x_env_layer_requires">X-Env-Layer-Requires</a></li>
 <li><a href="#_x_env_layer_provides_x_env_layer_requiresprovider">X-Env-Layer-Provides / X-Env-Layer-RequiresProvider</a></li>
+<li><a href="#_x_env_layer_sets">X-Env-Layer-Sets</a></li>
 </ul>
 </li>
 <li><a href="#_environment_variables">Environment Variables</a></li>
@@ -404,6 +405,9 @@ mmdebstrap:
 <div class="paragraph">
 <p><code>X-Env-Layer-Generator</code>: If dynamic, the generator invoked by the loader</p>
 </div>
+<div class="paragraph">
+<p><code>X-Env-Layer-Sets</code>: Space-separated KEY=VALUE pairs injected into the build environment when this layer is present</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_dependencies_and_providers"><a class="anchor" href="#_dependencies_and_providers"></a><a class="link" href="#_dependencies_and_providers">Dependencies and Providers</a></h3>
@@ -500,6 +504,26 @@ mmdebstrap:
 <td class="content">
 <div class="paragraph">
 <p>Unlike dependencies, environment variables are not supported when evaluating providers.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_x_env_layer_sets"><a class="anchor" href="#_x_env_layer_sets"></a><a class="link" href="#_x_env_layer_sets">X-Env-Layer-Sets</a></h4>
+<div class="paragraph">
+<p>Used to inject KEY=VALUE pairs into the build environment when this layer is present. Later layers override earlier ones.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Typically used for internal build/feature flags that do not belong in the <code>IGconf_</code> namespace. Specifying <code>IGconf_</code> variables here will result in an error.</p>
 </div>
 </td>
 </tr>
@@ -609,12 +633,25 @@ mmdebstrap:
 </ul>
 </div>
 <div class="paragraph">
+<p>Values containing spaces must be quoted (single or double quotes):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>when=erofs set IGconf_fs_erofs_mkfs_args="-b 4096 -z zstd,3" policy=lazy</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Quoted values have the quotes stripped during parsing, with the stored value being the unquoted content. Variable expansion (<code>${VAR}</code>) within trigger values is deferred and resolved during the expansion phase, not at parse time.</p>
+</div>
+<div class="paragraph">
 <p>Usage:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Target values are preserved as literals with no expansion.</p>
+<p>Target values are preserved as literals with no expansion at parse time (deferred expansion is supported via <code>${VAR}</code> syntax).</p>
 </li>
 <li>
 <p>Triggers are collected from every definition of a variable across all layers. Because trigger rules are merged across layers and evaluated against the effective final (resolved) value, upstream layer trigger rules can still fire when a downstream layer declaration determines that final value. Suppression of upstream triggers is not supported.</p>
@@ -672,6 +709,12 @@ mmdebstrap:
 #  when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
 #  when=ext4 set IG_HAS_E2FS_PROGS=1 policy=force</code></pre>
 </div>
+</div>
+</li>
+<li>
+<p>Quoted value with deferred variable expansion:</p>
+<div class="paragraph">
+<p><code># X-Env-Var-rootfs_type-Triggers: when=erofs set IGconf_fs_erofs_mkfs_args="-b ${IGconf_linux_page_size} -z zstd,3" policy=lazy</code></p>
 </div>
 </li>
 </ul>
@@ -963,6 +1006,21 @@ IGconf_layer_app=my-app</code></pre>
         
         <div class="layer-item">
             <a href="sbom-base.html">sbom-base</a><span class="layer-desc">- SBOM provider and settings.</span>
+        </div>
+        
+    </div>
+    
+    <h3>Base</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="fs-base.html">fs-base</a><span class="layer-desc">- Filesystem base properties and tunables. Provides
+ per-filesystem-type configuration consumed by image layers, includ...</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="linux-base.html">linux-base</a><span class="layer-desc">- Linux kernel base properties. Provides kernel level
+ attributes that may influence downstream image creation in order...</span>
         </div>
         
     </div>

@@ -123,7 +123,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v4.2.0</span>
+        <span class="badge">v5.2.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -436,6 +436,17 @@
                     </td>
                 </tr>
                 <tr>
+                    <td><code>IGconf_image_rootfs_type</code></td>
+                    <td>Root filesystem type for each system partition.</td>
+                    <td>
+                           <code>erofs</code>
+                    </td>
+                    <td>Must be one of: ext4, erofs</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
                     <td><code>IGconf_image_assetdir</code></td>
                     <td>Image specific asset directory</td>
                     <td>
@@ -459,7 +470,7 @@
                     </td>
                     <td>Must be one of: clear, crypt, cryptslots, cryptdata, crypthybrid</td>
                     <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                        <a href="variable-validation.html#set-policies" class="badge policy-force" title="Click for policy and validation help">force</a>
                     </td>
                 </tr>
                 <tr>
@@ -473,6 +484,17 @@
                     <td>Boolean value - accepts: true/false, 1/0, yes/no, y/n (case insensitive)</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_compression</code></td>
+                    <td>Compression scheme used for update payloads.</td>
+                    <td>
+                           <code>zstd</code>
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
                 </tr>
             </tbody>

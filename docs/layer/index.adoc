@@ -219,9 +219,15 @@ Lint will fail on:
 * Actions that do not start with `TARGET=VALUE`.
 * Target names that are not POSIX identifiers.
 
+Values containing spaces must be quoted (single or double quotes):
+
+* `when=erofs set IGconf_fs_erofs_mkfs_args="-b 4096 -z zstd,3" policy=lazy`
+
+Quoted values have the quotes stripped during parsing, with the stored value being the unquoted content. Variable expansion (`${VAR}`) within trigger values is deferred and resolved during the expansion phase, not at parse time.
+
 Usage:
 
-* Target values are preserved as literals with no expansion.
+* Target values are preserved as literals with no expansion at parse time (deferred expansion is supported via `${VAR}` syntax).
 * Triggers are collected from every definition of a variable across all layers. Because trigger rules are merged across layers and evaluated against the effective final (resolved) value, upstream layer trigger rules can still fire when a downstream layer declaration determines that final value. Suppression of upstream triggers is not supported.
 
 ==== Supported actions
@@ -250,6 +256,10 @@ Usage:
 #  when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
 #  when=ext4 set IG_HAS_E2FS_PROGS=1 policy=force
 ```
+
+* Quoted value with deferred variable expansion:
++
+`# X-Env-Var-rootfs_type-Triggers: when=erofs set IGconf_fs_erofs_mkfs_args="-b ${IGconf_linux_page_size} -z zstd,3" policy=lazy`
 
 [IMPORTANT]
 ====

@@ -12,22 +12,10 @@ genimg_in=$2
 . ${genimg_in}/img_uuids
 
 
-# mke2fs cmdline args
-MKE2FS_ARGS=()
-case "$IGconf_device_sector_size" in
-   4096)
-      MKE2FS_ARGS+=("-b" "-4096")
-      ;;
-esac
-
-MKE2FS_SYSTEM=("-U" "$SYSTEM_UUID")
-MKE2FS_DATA=()
-
-MKE2FS_SYSTEM+=("${MKE2FS_ARGS[@]}")
-MKE2FS_DATA+=("${MKE2FS_ARGS[@]}")
-
-MKE2FS_ARGS_SYSTEM="${MKE2FS_SYSTEM[*]}"
-MKE2FS_ARGS_DATA="${MKE2FS_DATA[*]}"
+# mkfs args: UUIDs are image-structural, fs-specific args from IGconf_fs_*
+MKE2FS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_ext4_mkfs_args:-}"
+MKE2FS_ARGS_DATA="${IGconf_fs_ext4_mkfs_args:-}"
+EROFS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_erofs_mkfs_args:-}"
 
 
 # Set up the partition layout for tryboot support. Partition numbering
@@ -43,7 +31,7 @@ EOF
 
 
 # Write genimage template
-cat genimage.cfg.in | sed \
+cat "genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
    -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
    -e "s|<IMAGE_NAME>|$IGconf_image_name|g" \
    -e "s|<IMAGE_SUFFIX>|$IGconf_image_suffix|g" \
@@ -57,6 +45,7 @@ cat genimage.cfg.in | sed \
    -e "s|<MKE2FS_CONF>|'$(readlink -ef mke2fs.conf)'|g" \
    -e "s|<MKE2FS_SYSTEM>|$MKE2FS_ARGS_SYSTEM|g" \
    -e "s|<MKE2FS_DATA>|$MKE2FS_ARGS_DATA|g" \
+   -e "s|<EROFS_SYSTEM>|$EROFS_ARGS_SYSTEM|g" \
    > ${genimg_in}/genimage.cfg
 
 
