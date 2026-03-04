@@ -2,6 +2,9 @@
 
 # Generate a Make fragment to describe package's dependencies.
 # This alows Make to build the dependency graph for a package.
+#
+# Variables (PKG_NAME, PKG_VER, PKG_DEPS) are passed as arguments already
+# already expanded by Make.
 
 from __future__ import annotations
 
@@ -10,7 +13,6 @@ import pathlib
 import re
 
 
-ASSIGN_RE = re.compile(r"^\s*PKG_(NAME|VER|DEPS)\s*(?::=|\+=|=)\s*(.*)$")
 RESET_VARS = (
     "PKG_NAME",
     "PKG_VER",
@@ -27,63 +29,15 @@ def sanitise(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_]+", "_", name)
 
 
-def parse_makefile(path: pathlib.Path) -> tuple[str | None, str | None, list[str]]:
-    text = path.read_text(encoding="utf-8")
-    buffer = ""
-    name: str | None = None
-    version: str | None = None
-    deps: list[str] = []
-
-    for raw in text.splitlines():
-        stripped = raw.split("#", 1)[0].rstrip()
-        if not stripped and not buffer:
-            continue
-
-        if stripped.endswith("\\"):
-            buffer += stripped[:-1] + " "
-            continue
-
-        if buffer:
-            stripped = buffer + stripped
-            buffer = ""
-
-        match = ASSIGN_RE.match(stripped)
-        if not match:
-            continue
-
-        key, rhs = match.groups()
-        rhs = rhs.strip()
-        if not rhs:
-            continue
-
-        if key == "DEPS":
-            deps.extend(rhs.split())
-        elif key == "NAME" and name is None:
-            name = rhs.split()[0]
-        elif key == "VER" and version is None:
-            version = rhs.split()[0]
-
-    ordered: list[str] = []
-    seen: set[str] = set()
-    for dep in deps:
-        if dep not in seen:
-            seen.add(dep)
-            ordered.append(dep)
-
-    return name, version, ordered
-
-
 def render(
     *,
-    pkg_identifier: str,
-    pkg_name: str | None,
-    pkg_version: str | None,
+    pkg_name: str,
+    pkg_version: str,
     deps: list[str],
     pkg_dir: pathlib.Path,
     pkg_env: pathlib.Path,
 ) -> str:
-    actual_name = pkg_name or pkg_identifier
-    pkg_id = sanitise(actual_name)
+    pkg_id = sanitise(pkg_name)
     dep_ids = [(dep, sanitise(dep)) for dep in deps]
 
     guard = f"_PKG_LOADED_{pkg_id}"
@@ -93,9 +47,8 @@ def render(
     lines.append(f"ifndef {guard}")
     lines.append(f"{guard} := 1")
     lines.append("")
-    lines.append(f"PKG_NAME := {actual_name}")
-    if pkg_version:
-        lines.append(f"PKG_VER := {pkg_version}")
+    lines.append(f"PKG_NAME := {pkg_name}")
+    lines.append(f"PKG_VER := {pkg_version}")
     if deps:
         lines.append(f"PKG_DEPS := {' '.join(deps)}")
     lines.append(f"include {pkg_env}")
@@ -104,8 +57,7 @@ def render(
     lines.append(f"PKG_DIR_{pkg_id} := {pkg_dir}")
     lines.append(f"PKG_STAMP_{pkg_id} := $(PKG_INSTALL_STAMP)")
     lines.append(f"PKG_SRC_STAMP_{pkg_id} := $(PKG_SOURCE_STAMP)")
-    if pkg_version:
-        lines.append(f"PKG_VER_{pkg_id} := $(PKG_VER)")
+    lines.append(f"PKG_VER_{pkg_id} := $(PKG_VER)")
     lines.append(f"PKG_DEPS_{pkg_id} := {' '.join(deps) if deps else ''}")
     lines.append("")
 
@@ -117,8 +69,8 @@ def render(
     lines.append(f"ALL_PACKAGE_STAMPS += $(PKG_STAMP_{pkg_id})")
     lines.append("")
 
-    lines.append(f".PHONY: {actual_name}")
-    lines.append(f"{actual_name}: $(PKG_STAMP_{pkg_id})")
+    lines.append(f".PHONY: {pkg_name}")
+    lines.append(f"{pkg_name}: $(PKG_STAMP_{pkg_id})")
     lines.append("")
 
     # Source preparation (fetch/extract/patch) runs without waiting for deps
@@ -132,11 +84,7 @@ def render(
         lines.append(f"$(PKG_STAMP_{pkg_id}): $(PKG_SRC_STAMP_{pkg_id}) {prereqs}")
     else:
         lines.append(f"$(PKG_STAMP_{pkg_id}): $(PKG_SRC_STAMP_{pkg_id})")
-    if pkg_version:
-        lines.append(f"\t@echo \"==> Build {actual_name} {pkg_version}\"")
-    else:
-        sys.stderr.write("no version\n")
-        sys.exit(1)
+    lines.append(f"\t@echo \"==> Build {pkg_name} {pkg_version}\"")
     lines.append(f"\t@$(MAKE) -C $(PKG_DIR_{pkg_id}) --no-print-directory")
     lines.append("")
 
@@ -151,27 +99,26 @@ def render(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate a package depfile")
-    parser.add_argument("--package", required=True)
-    parser.add_argument("--makefile", required=True, type=pathlib.Path)
+    parser.add_argument("--name", required=True)
+    parser.add_argument("--ver", required=True)
+    parser.add_argument("--deps", default="")
     parser.add_argument("--pkg-dir", required=True, type=pathlib.Path)
     parser.add_argument("--pkg-env", required=True, type=pathlib.Path)
     parser.add_argument("--out", required=True, type=pathlib.Path)
     args = parser.parse_args()
 
-    name, version, deps = parse_makefile(args.makefile)
+    deps = args.deps.split()
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     content = render(
-        pkg_identifier=args.package,
-        pkg_name=name,
-        pkg_version=version,
+        pkg_name=args.name,
+        pkg_version=args.ver,
         deps=deps,
         pkg_dir=args.pkg_dir.resolve(),
         pkg_env=args.pkg_env.resolve(),
     )
-    args.out.write_text(content + "\n", encoding="utf-8")
+    args.out.write_text(content, encoding="utf-8")
 
 
 if __name__ == "__main__":
     main()
-
