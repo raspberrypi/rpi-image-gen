@@ -1,0 +1,110 @@
+{
+  "$id": "https://raspberrypi.com/idp/v2/schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Raspberry Pi Image Description Provisioning",
+  "description": "The Image Description Provisioning (IDP) document describes a Raspberry Pi image for secure on-device provisioning. It combines image layout information (partition table, partition images, sizes, filesystem types and attributes) with a Provisioning Map (PMAP) that defines how the image is deployed — including partition creation, LUKS encryption, and security attributes. IDP documents are consumed by Raspberry Pi provisioning tools such as rpi-sb-provisioner.",
+  "type": "object",
+  "required": ["IGversion", "IGmeta", "attributes", "layout"],
+  "additionalProperties": false,
+  "properties": {
+    "IGversion": {
+      "description": "The IDP document format version in semver format (MAJOR.MINOR.PATCH). Provisioning tools use this field to select the correct parsing and provisioning path, enabling backward compatibility across document format revisions.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "IGmeta": {
+      "description": "Build configuration metadata derived from the rpi-image-gen environment. For images built outside rpi-image-gen these fields must be populated manually.",
+      "type": "object",
+      "required": ["IGconf_device_class", "IGconf_device_variant", "IGconf_device_storage_type", "IGconf_device_sector_size", "IGconf_image_version"],
+      "additionalProperties": false,
+      "properties": {
+        "IGconf_device_class":        { "description": "The Raspberry Pi device family the image is intended for.", "type": "string", "enum": ["zero2w", "pi4", "cm4", "pi5", "cm5"] },
+        "IGconf_device_variant":      { "description": "An optional device variant identifier, e.g. memory size or edition (8G, lite). Use 'none' if no variant applies.", "type": "string" },
+        "IGconf_device_storage_type": { "description": "The storage media type the image is intended for, as seen by the OS. Determines which block device the provisioning tool will target.", "type": "string", "enum": ["sd", "emmc", "nvme"] },
+        "IGconf_device_sector_size":  { "description": "The logical sector size in bytes of the target storage device. Used to guide image layout decisions such as alignment and padding.", "type": "integer", "enum": [512, 4096] },
+        "IGconf_image_version":       { "description": "The version string of the image, typically matching the artefact version set at build time.", "type": "string" },
+        "IGconf_image_outputdir":     { "description": "The output directory path where the image and associated artefacts were written by the build.", "type": "string" }
+      }
+    },
+    "attributes": {
+      "description": "Image-level attributes describing the overall image geometry and identity.",
+      "type": "object",
+      "required": ["image-name", "image-size", "image-palign-bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "image-name":         { "description": "The base name of the image, used to identify the image artefact.", "type": "string", "minLength": 1 },
+        "image-size":         { "description": "The physical size of the raw disk image in bytes.", "type": "integer", "minimum": 0 },
+        "image-palign-bytes": { "description": "The partition alignment of the image in bytes. Accepts integer values or genimage-style size suffixes (e.g. 8M).", "type": "string" }
+      }
+    },
+    "layout": {
+      "description": "The image layout, comprising the partition table, partition images, and provisioning map.",
+      "type": "object",
+      "required": ["partitiontable", "partitionimages", "provisionmap"],
+      "additionalProperties": false,
+      "properties": {
+        "partitiontable":  { "description": "The partition table descriptor, including type and disk identifier.", "$ref": "#/$defs/partitionTable" },
+        "partitionimages": { "description": "A map of partition entries keyed by partition name, each describing a partition's geometry, filesystem type, and attributes.", "$ref": "#/$defs/partitionImages" },
+        "provisionmap":    { "description": "The embedded Provisioning Map (PMAP), defining how partitions are assigned, ordered, and optionally encrypted on the target device. See the PMAP schema for full details.", "type": "array" }
+      }
+    }
+  },
+  "$defs": {
+    "uuidGPT": {
+      "description": "A standard UUID string (case-insensitive), e.g. F5C56D0D-B6D9-4353-9F7C-9E8FBF89D864.",
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$"
+    },
+    "uuidVFAT": {
+      "description": "A vfat volume ID in 4-byte hexadecimal format, e.g. 1234-ABCD.",
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}$"
+    },
+    "partitionTable": {
+      "description": "Describes the disk partition table type and identifier.",
+      "type": "object",
+      "required": ["label", "id"],
+      "additionalProperties": true,
+      "properties": {
+        "label": { "description": "The partition table type. 'gpt' for GUID Partition Table, 'dos' for MBR.", "type": "string", "enum": ["gpt", "dos"] },
+        "id":    { "description": "The disk identifier. A UUID for GPT disks, or a 4-byte hex value (e.g. 0x1234abcd) for MBR disks.", "type": "string" }
+      },
+      "if":   { "properties": { "label": { "const": "gpt" } } },
+      "then": { "properties": { "id": { "$ref": "#/$defs/uuidGPT" } } },
+      "else": { "properties": { "id": { "type": "string", "pattern": "^0x[0-9A-Fa-f]{8}$" } } }
+    },
+    "partitionImages": {
+      "description": "A collection of partition image entries, keyed by partition name.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/partitionImage" }
+    },
+    "partitionImage": {
+      "description": "Describes a single partition image, including its geometry, filesystem type, and attributes.",
+      "type": "object",
+      "required": ["name", "in-partition-table", "size", "image", "type", "simage"],
+      "additionalProperties": true,
+      "properties": {
+        "name":                { "description": "An arbitrary string identifying this partition. Used as the key in the partitionimages map and referenced by name in the PMAP.", "type": "string", "minLength": 1 },
+        "in-partition-table":  { "description": "Whether this partition image has a corresponding entry in the partition table. Represented as a string boolean.", "type": "string", "enum": ["true", "false"] },
+        "size":                { "description": "The physical size of the partition image in bytes. Must be at least one sector (512 bytes).", "type": "integer", "minimum": 512 },
+        "image":               { "description": "The filename of the raw partition image file.", "type": "string", "minLength": 1 },
+        "type":                { "description": "The filesystem or image type of this partition, e.g. ext4.", "type": "string", "minLength": 1 },
+        "bootable":            { "description": "Whether the partition is flagged as bootable. Represented as a string boolean.", "type": "string", "enum": ["true", "false"] },
+        "mountpoint":          { "description": "The mountpoint of this partition on the running device, e.g. /boot or /.", "type": "string" },
+        "partition-type-uuid": { "description": "The GPT partition type UUID, identifying the type of partition (e.g. Linux filesystem, EFI System).", "$ref": "#/$defs/uuidGPT" },
+        "partition-label":     { "description": "The GPT partition label, a human-readable name for the partition entry in the partition table.", "type": "string" },
+        "partition-uuid":      { "description": "The GPT partition UUID, uniquely identifying this partition entry in the partition table.", "$ref": "#/$defs/uuidGPT" },
+        "fs_label":            { "description": "The filesystem label assigned to this partition.", "type": "string" },
+        "fs_uuid": {
+          "description": "The filesystem UUID. A standard UUID for most filesystem types, or a 4-byte hex vfat volume ID.",
+          "type": "string",
+          "anyOf": [
+            { "$ref": "#/$defs/uuidGPT" },
+            { "$ref": "#/$defs/uuidVFAT" }
+          ]
+        },
+        "simage": { "description": "The filename of the sparse image file containing this partition's data, e.g. boot.sparse. Required for fastboot provisioning flows.", "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

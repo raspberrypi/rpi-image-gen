@@ -17,12 +17,18 @@ if [ -f ${1}/genimage.cfg ] ; then
    if [ -f "$pmap" ] ; then
       # Validate pmap against the schema
       pmap --schema "$IGconf_image_pmap_schema" --file "$pmap" ||
-         die "Installed Provisioning Map failed to validate."
+         die "Installed Provisioning Map failed validation."
       opts+=('-m' "$pmap")
+   else
+      warn "No Provisioning Map installed. Raspberry Pi provisioning flow is not possible."
    fi
 
    # Generate description for IDP
    image2json -g ${1}/genimage.cfg "${opts[@]}" > ${1}/image.json
+
+   # Validate IDP document against the schema
+   pmap --schema "$IGconf_image_idp_schema" --file "${1}/image.json" ||
+      die "Generated Image Description Provisioning document failed validation."
 fi
 
 

@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: image-base
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Default image settings and build attributes.
-# X-Env-Layer-Version: 2.1.3
+# X-Env-Layer-Version: 2.2.3
 # X-Env-Layer-Requires: sys-build-base,sbom-base,target-config,artefact-base,deploy-base,fs-base
 # X-Env-Layer-RequiresProvider: device
 #
@@ -53,6 +53,12 @@
 # X-Env-Var-pmap_schema-Required: n
 # X-Env-Var-pmap_schema-Valid: string
 # X-Env-Var-pmap_schema-Set: lazy
+#
+# X-Env-Var-idp_schema: ${DIRECTORY}/schemas/idp/v2/schema.json
+# X-Env-Var-idp_schema-Desc: Image Description Provisioning (IDP) schema for validation
+# X-Env-Var-idp_schema-Required: n
+# X-Env-Var-idp_schema-Valid: string
+# X-Env-Var-idp_schema-Set: lazy
 #
 # X-Env-Var-outputdir: ${IGconf_sys_workroot}/image-${IGconf_image_name}
 # X-Env-Var-outputdir-Desc: Location of all image build artefacts.
