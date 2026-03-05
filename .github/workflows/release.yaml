@@ -1,0 +1,40 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build-arm64-qemu:
+    name: Build ARM64 Rootfs via QEMU
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install QEMU + binfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support debian-archive-keyring
+          sudo update-binfmts --enable qemu-aarch64
+
+      - name: Install rpi-image-gen dependencies
+        run: sudo ./install_deps.sh
+
+      - name: Run test harness
+        run: ./test/run-all.sh
+
+      - name: Build ARM64 Rootfs
+        run: |
+          ./rpi-image-gen build -c ./config/trixie-minbase.yaml
+          ./rpi-image-gen build -c ./config/trixie-minbase-ab.yaml
+
+      - name: Upload Images
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpi4-rootfs-images
+          path: deploy/*.img
