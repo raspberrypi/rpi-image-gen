@@ -43,3 +43,4 @@ build:pkg-config
 # python3-markdown
 # asciidoctor
 # python3-jinja2
+# pip install json-schema-for-humans

@@ -1,7 +1,7 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.2.0",
+         "PMAPversion": "1.2.1",
          "system_type": "flat"
       }
    },
@@ -19,7 +19,7 @@
             "key_size": 512,
             "cipher": "aes-xts-plain64",
             "label": "OSROOT",
-            "uuid": "<CRYPT_UUID>",
+            "uuid": "${CRYPT_UUID}",
             "hash": "sha256",
             "mname": "osroot_crypt",
             "etype": "raw"

@@ -1,7 +1,7 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.4.1",
+         "PMAPversion": "1.4.2",
          "system_type": "slotted"
       }
    },
@@ -21,7 +21,7 @@
                   "comment": "kernel + device tree + initramfs slot A",
                   "image": "boot_a",
                   "static": {
-                     "uuid": "<BOOT_UUID>",
+                     "uuid": "${BOOT_UUID}",
                      "role": "boot"
                   }
                }
@@ -37,7 +37,7 @@
                   "comment": "kernel + device tree + initramfs slot B",
                   "image": "boot_b",
                   "static": {
-                     "uuid": "<BOOT_UUID>",
+                     "uuid": "${BOOT_UUID}",
                      "role": "boot"
                   }
                }
@@ -53,7 +53,7 @@
                   "comment": "root filesystem slot A",
                   "image": "system_a",
                   "static": {
-                     "uuid": "<SYSTEM_UUID>",
+                     "uuid": "${SYSTEM_UUID}",
                      "role": "system"
                   }
                }
@@ -70,7 +70,7 @@
                   "cipher": "aes-xts-plain64",
                   "hash": "sha256",
                   "label": "OSB",
-                  "uuid": "<CRYPT_UUID>",
+                  "uuid": "${CRYPT_UUID}",
                   "mname": "osb_crypt",
                   "etype": "partitioned"
                },
@@ -79,7 +79,7 @@
                      "comment": "Encrypted root filesystem slot B",
                      "image": "system_b",
                      "static": {
-                        "uuid": "<SYSTEM_UUID>",
+                        "uuid": "${SYSTEM_UUID}",
                         "role": "system"
                      }
                   }

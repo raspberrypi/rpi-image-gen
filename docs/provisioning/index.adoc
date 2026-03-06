@@ -33,6 +33,12 @@ The image description is split into two components using a simple schema:
 
 If an image layer is to support IDP, it must declare support of a provisioning map in its config settings and install the applicable JSON fragment as `${IGconf_image_outputdir}/provisionmap.json`. Typically this is handled by image layer specific hooks. If installed, rpi-image-gen will automatically include the PMAP in the final image description file (`image.json`). Please refer to the individual layer documentation for available PMAP options.
 
+=== Schema Validation
+
+The IDP and PMAP document formats are formally defined by JSON schemas (draft-07), located in `layer/base/schemas/`. These decouple document validation from the rpi-image-gen build flow - any toolchain capable of producing a conforming IDP document can participate in the Raspberry Pi provisioning flow without depending on rpi-image-gen.
+
+Schema validation is performed automatically at build time. The schemas can also be used independently to validate hand-authored or third-party generated IDP and PMAP documents.
+
 === Benefits:
 
 * *Smart provisioning* - Device validates before writing

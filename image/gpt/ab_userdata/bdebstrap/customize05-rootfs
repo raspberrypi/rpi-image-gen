@@ -2,13 +2,9 @@
 
 set -eu
 
-# Install provision map
+# Validate provision map exists
 pmap="${IGconf_image_assetdir:-}/device/provisionmap-${IGconf_image_pmap:-}.json"
-if [ -f "$pmap" ]; then
-    cp "$pmap" "${IGconf_image_outputdir}/provisionmap.json"
-else
-   die "No pmap. Unable to provision image."
-fi
+[ -f "$pmap" ] || die "No pmap. Unable to provision image."
 
 
 # Generate pre-defined UUIDs
@@ -25,11 +21,9 @@ for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID VERITY_UUID; do
 done
 
 
-# Populate PMAP UUIDs
-sed -i \
-   -e "s|<BOOT_UUID>|$BOOT_UUID|g" \
-   -e "s|<SYSTEM_UUID>|$SYSTEM_UUID|g" \
-   -e "s|<CRYPT_UUID>|$CRYPT_UUID|g" ${IGconf_image_outputdir}/provisionmap.json
+# Install provision map and populate UUIDs
+env BOOT_UUID="$BOOT_UUID" SYSTEM_UUID="$SYSTEM_UUID" CRYPT_UUID="$CRYPT_UUID" \
+    envsubst '${BOOT_UUID} ${SYSTEM_UUID} ${CRYPT_UUID}' < "$pmap" > "${IGconf_image_outputdir}/provisionmap.json"
 
 
 # Generate slot map. IDP does preserve GPT labels but this has yet make it to

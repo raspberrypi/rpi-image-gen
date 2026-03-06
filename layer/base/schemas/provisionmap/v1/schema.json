@@ -2,141 +2,198 @@
   "$id": "https://raspberrypi.com/provisionmap/v1/schema.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Raspberry Pi Image Description Provisioning Map",
-  "type": "object",
-  "required": ["layout"],
-  "additionalProperties": true,
-  "properties": {
-    "layout": {
+  "description": "The Provisioning Map (PMAP) defines how a Raspberry Pi image is provisioned on-device. It is an ordered sequence of entries describing partition assignments, slot mappings for A/B layouts, and optional LUKS2 encryption configuration. The PMAP is authored per-image and embedded in the IDP document by rpi-image-gen, or supplied manually for images built outside rpi-image-gen.",
+  "oneOf": [
+    {
+      "description": "A standalone PMAP document as a bare array of entries.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    {
+      "description": "A PMAP document embedded within an IDP layout object.",
       "type": "object",
-      "required": ["provisionmap"],
+      "required": ["layout"],
       "additionalProperties": true,
       "properties": {
-        "provisionmap": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/entry" }
+        "layout": {
+          "description": "The IDP layout container.",
+          "type": "object",
+          "required": ["provisionmap"],
+          "additionalProperties": true,
+          "properties": {
+            "provisionmap": {
+              "description": "The provisioning map array embedded in the IDP layout.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/entry" }
+            }
+          }
         }
       }
     }
-  },
+  ],
   "$defs": {
     "partitionRef": {
+      "description": "A reference to a partition image by name, with optional attributes.",
       "type": "object",
       "required": ["image"],
       "additionalProperties": false,
       "properties": {
-        "image": { "type": "string", "minLength": 1 },
-        "comment": { "type": "string" },
+        "image":          { "description": "The name of the partition image as defined in the IDP partitionimages map.", "type": "string", "minLength": 1 },
+        "comment":        { "description": "An optional human-readable comment describing this partition reference.", "type": "string" },
         "static": {
+          "description": "Optional static attributes to fix partition properties such as UUID or role at provisioning time.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
+            "id":   { "description": "A partition identifier string. Not currently used.", "type": "string" },
             "uuid": {
+              "description": "A UUID for this partition. For standard partitions, corresponds to the UUID of the matching partition image. For on-device created partitions such as LUKS containers, this UUID is used at partition creation allowing the partition to be identified with this UUID on device.",
               "type": "string",
               "anyOf": [
                 { "pattern": "^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$" },
                 { "pattern": "^[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}$" }
               ]
             },
-            "role": { "type": "string", "enum": ["boot", "system"] }
+            "role": { "description": "The role of this partition on the device, used by the provisioning tool to apply role-specific handling.", "type": "string", "enum": ["boot", "system"] }
           }
         },
-        "expand-to-fit": { "type": "boolean", "default": false }
+        "expand-to-fit": { "description": "If true, the partition is expanded to fill the remaining available space on the device.", "type": "boolean", "default": false }
       }
     },
     "slotMap": {
+      "description": "A map of named slots keyed by slot name (A or B), each containing a set of partitions. Used for A/B partition layouts.",
       "type": "object",
       "additionalProperties": false,
-      "patternProperties": {
-        "^[A-Za-z0-9_]+$": {
+      "properties": {
+        "A": {
+          "description": "The A slot, containing a list of partitions and optional encryption configuration.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
             "partitions": {
+              "description": "The list of partition references assigned to this slot.",
               "type": "array",
               "items": { "$ref": "#/$defs/partitionRef" }
             },
-            "encrypted": { "$ref": "#/$defs/encryptedNode" }
+            "encrypted": { "description": "Optional encryption configuration for this slot.", "$ref": "#/$defs/encryptedNodeFlat" }
+          }
+        },
+        "B": {
+          "description": "The B slot, containing a list of partitions and optional encryption configuration.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "partitions": {
+              "description": "The list of partition references assigned to this slot.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/partitionRef" }
+            },
+            "encrypted": { "description": "Optional encryption configuration for this slot.", "$ref": "#/$defs/encryptedNodeFlat" }
           }
         }
       }
     },
     "luks2": {
+      "description": "LUKS v2 parameters used to create this encrypted container.",
       "type": "object",
-      "required": ["key_size", "cipher", "hash", "mname", "etype"],
+      "required": ["key_size", "cipher", "hash", "uuid", "mname", "etype"],
       "additionalProperties": false,
       "properties": {
-        "key_size": { "type": "integer", "minimum": 1 },
-        "cipher": { "type": "string" },
-        "hash": { "type": "string" },
-        "label": { "type": "string" },
-        "uuid": { "type": "string", "pattern": "^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$" },
-        "mname": { "type": "string" },
-        "etype": { "type": "string", "enum": ["raw", "partitioned"] }
+        "key_size": { "description": "The encryption key size in bits.", "type": "integer", "enum": [128, 256, 512] },
+        "cipher":   { "description": "The cipher and mode used for encryption, e.g. aes-xts-plain64.", "type": "string" },
+        "hash":     { "description": "The hash algorithm used for key derivation, e.g. sha256.", "type": "string" },
+        "label":    { "description": "An optional human-readable label for the LUKS2 container.", "type": "string" },
+        "uuid":     { "description": "The UUID assigned to the LUKS2 container. Required so that the container can be identified and unlocked at runtime.", "type": "string", "pattern": "^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$" },
+        "mname":    { "description": "The device mapper name for the LUKS2 container, used as the mapped device name under /dev/mapper.", "type": "string" },
+        "etype":    { "description": "The encrypted container type. 'raw' for a directly encrypted block device, 'partitioned' for a LUKS2 container that itself holds a partition table.", "type": "string", "enum": ["raw", "partitioned"] }
       }
     },
     "encryptedNode": {
+      "description": "Defines an encrypted container, combining LUKS2 configuration with a slot map, a flat list of partitions, or both.",
       "type": "object",
       "required": ["luks2"],
       "additionalProperties": false,
       "properties": {
-        "luks2": { "$ref": "#/$defs/luks2" },
-        "slots": { "$ref": "#/$defs/slotMap" },
+        "luks2":          { "description": "The LUKS2 configuration for this encrypted container.", "$ref": "#/$defs/luks2" },
+        "slots":          { "description": "A slot map defining named A/B partition sets within this encrypted container.", "$ref": "#/$defs/slotMap" },
         "partitions": {
+          "description": "A flat list of partition references within this encrypted container.",
           "type": "array",
           "items": { "$ref": "#/$defs/partitionRef" }
         },
-        "expand-to-fit": { "type": "boolean", "default": false }
+        "expand-to-fit":  { "description": "If true, the encrypted container is expanded to fill the remaining available space on the device.", "type": "boolean", "default": false }
       },
       "anyOf": [
         { "required": ["slots"] },
         { "required": ["partitions"] }
       ]
     },
-    "attributesEntry": {
+    "encryptedNodeFlat": {
+      "description": "Defines an encrypted container within a slot entry, combining LUKS2 configuration with a flat list of partitions. Nested slots are not permitted.",
       "type": "object",
+      "required": ["luks2", "partitions"],
+      "additionalProperties": false,
+      "properties": {
+        "luks2":         { "description": "The LUKS2 configuration for this encrypted container.", "$ref": "#/$defs/luks2" },
+        "partitions": {
+          "description": "A flat list of partition references within this encrypted container.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/partitionRef" }
+        },
+        "expand-to-fit": { "description": "If true, the encrypted container is expanded to fill the remaining available space on the device.", "type": "boolean", "default": false }
+      }
+    },
+    "attributesEntry": {
+      "description": "A PMAP entry that declares top-level attributes for the provisioning map, including format version and system type.",
+      "type": "object",
+      "required": ["attributes"],
       "additionalProperties": false,
       "properties": {
         "attributes": {
+          "description": "The attributes object containing PMAP version and system type.",
           "type": "object",
           "required": ["PMAPversion", "system_type"],
           "additionalProperties": false,
           "properties": {
-            "PMAPversion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
-            "system_type": { "type": "string", "enum": ["flat", "slotted"] }
+            "PMAPversion": { "description": "The PMAP format version in semver format. Used by provisioning tools to determine how to parse this PMAP.", "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+            "system_type": { "description": "The partition layout type. 'flat' for a simple single-slot layout, 'slotted' for an A/B layout.", "type": "string", "enum": ["flat", "slotted"] }
           }
         }
-      },
-      "required": ["attributes"]
+      }
     },
     "partitionsEntry": {
+      "description": "A PMAP entry that defines a flat list of partition references.",
       "type": "object",
+      "required": ["partitions"],
       "additionalProperties": false,
       "properties": {
         "partitions": {
+          "description": "The list of partition references for this entry.",
           "type": "array",
           "items": { "$ref": "#/$defs/partitionRef" }
         }
-      },
-      "required": ["partitions"]
+      }
     },
     "slotsEntry": {
+      "description": "A PMAP entry that defines a map for a slotted partition layout.",
       "type": "object",
+      "required": ["slots"],
       "additionalProperties": false,
       "properties": {
-        "slots": { "$ref": "#/$defs/slotMap" }
-      },
-      "required": ["slots"]
+        "slots": { "description": "The slot map for this entry.", "$ref": "#/$defs/slotMap" }
+      }
     },
     "encryptedEntry": {
+      "description": "A PMAP entry that defines an encrypted container.",
       "type": "object",
+      "required": ["encrypted"],
       "additionalProperties": false,
       "properties": {
-        "encrypted": { "$ref": "#/$defs/encryptedNode" }
-      },
-      "required": ["encrypted"]
+        "encrypted": { "description": "The encrypted container configuration for this entry.", "$ref": "#/$defs/encryptedNode" }
+      }
     },
     "entry": {
+      "description": "A single PMAP entry.",
       "type": "object",
       "oneOf": [
         { "$ref": "#/$defs/attributesEntry" },
@@ -147,5 +204,3 @@
     }
   }
 }
-
-

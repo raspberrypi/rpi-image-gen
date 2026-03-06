@@ -1,0 +1,2051 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Overpass:300,400,600,800">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	<link rel="stylesheet" type="text/css" href="schema_doc.css">
+    <script src="https://use.fontawesome.com/facf9fa52c.js"></script>
+    <script src="schema_doc.min.js"></script>
+    <meta charset="utf-8"/>
+        
+    
+    <title>Raspberry Pi Image Description Provisioning</title>
+</head>
+<body onload="anchorOnLoad();" id="root">
+
+    <div class="breadcrumbs"></div> <h1>Raspberry Pi Image Description Provisioning</h1><span class="badge badge-dark value-type">Type: object</span><br/>
+<span class="description"><p>The Image Description Provisioning (IDP) document describes a Raspberry Pi image for secure on-device provisioning. It combines image layout information (partition table, partition images, sizes, filesystem types and attributes) with a Provisioning Map (PMAP) that defines how the image is deployed — including partition creation, LUKS encryption, and security attributes. IDP documents are consumed by Raspberry Pi provisioning tools such as rpi-sb-provisioner.</p>
+</span> <span class="badge badge-info no-additional">No Additional Properties</span>
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionIGversion">
+    <div class="card">
+        <div class="card-header" id="headingIGversion">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGversion"
+                        aria-expanded="" aria-controls="IGversion" onclick="setAnchor('#IGversion')"><span class="property-name">IGversion</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="IGversion"
+             class="collapse property-definition-div" aria-labelledby="headingIGversion"
+             data-parent="#accordionIGversion">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGversion" onclick="anchorLink('IGversion')">IGversion</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The IDP document format version in semver format (MAJOR.MINOR.PATCH). Provisioning tools use this field to select the correct parsing and provisioning path, enabling backward compatibility across document format revisions.</p>
+</span><span class="pattern-value" id="IGversion_pattern">Must match regular expression: <code>^[0-9]+\.[0-9]+\.[0-9]+$</code></span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionIGmeta">
+    <div class="card">
+        <div class="card-header" id="headingIGmeta">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGmeta"
+                        aria-expanded="" aria-controls="IGmeta" onclick="setAnchor('#IGmeta')"><span class="property-name">IGmeta</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="IGmeta"
+             class="collapse property-definition-div" aria-labelledby="headingIGmeta"
+             data-parent="#accordionIGmeta">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta" onclick="anchorLink('IGmeta')">IGmeta</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+<span class="description"><p>Build configuration metadata derived from the rpi-image-gen environment. For images built outside rpi-image-gen these fields must be populated manually.</p>
+</span> <span class="badge badge-info no-additional">No Additional Properties</span>
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionIGmeta_IGconf_device_class">
+    <div class="card">
+        <div class="card-header" id="headingIGmeta_IGconf_device_class">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGmeta_IGconf_device_class"
+                        aria-expanded="" aria-controls="IGmeta_IGconf_device_class" onclick="setAnchor('#IGmeta_IGconf_device_class')"><span class="property-name">IGconf_device_class</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="IGmeta_IGconf_device_class"
+             class="collapse property-definition-div" aria-labelledby="headingIGmeta_IGconf_device_class"
+             data-parent="#accordionIGmeta_IGconf_device_class">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta" onclick="anchorLink('IGmeta')">IGmeta</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta_IGconf_device_class" onclick="anchorLink('IGmeta_IGconf_device_class')">IGconf_device_class</a></div><span class="badge badge-dark value-type">Type: enum (of string)</span><br/>
+<span class="description"><p>The Raspberry Pi device family the image is intended for.</p>
+</span><div class="enum-value" id="IGmeta_IGconf_device_class_enum">
+            <h4>Must be one of:</h4>
+            <ul class="list-group"><li class="list-group-item enum-item">"zero2w"</li><li class="list-group-item enum-item">"pi4"</li><li class="list-group-item enum-item">"cm4"</li><li class="list-group-item enum-item">"pi5"</li><li class="list-group-item enum-item">"cm5"</li></ul>
+            </div>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionIGmeta_IGconf_device_variant">
+    <div class="card">
+        <div class="card-header" id="headingIGmeta_IGconf_device_variant">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGmeta_IGconf_device_variant"
+                        aria-expanded="" aria-controls="IGmeta_IGconf_device_variant" onclick="setAnchor('#IGmeta_IGconf_device_variant')"><span class="property-name">IGconf_device_variant</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="IGmeta_IGconf_device_variant"
+             class="collapse property-definition-div" aria-labelledby="headingIGmeta_IGconf_device_variant"
+             data-parent="#accordionIGmeta_IGconf_device_variant">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta" onclick="anchorLink('IGmeta')">IGmeta</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta_IGconf_device_variant" onclick="anchorLink('IGmeta_IGconf_device_variant')">IGconf_device_variant</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>An optional device variant identifier, e.g. memory size or edition (8G, lite). Use 'none' if no variant applies.</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionIGmeta_IGconf_device_storage_type">
+    <div class="card">
+        <div class="card-header" id="headingIGmeta_IGconf_device_storage_type">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGmeta_IGconf_device_storage_type"
+                        aria-expanded="" aria-controls="IGmeta_IGconf_device_storage_type" onclick="setAnchor('#IGmeta_IGconf_device_storage_type')"><span class="property-name">IGconf_device_storage_type</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="IGmeta_IGconf_device_storage_type"
+             class="collapse property-definition-div" aria-labelledby="headingIGmeta_IGconf_device_storage_type"
+             data-parent="#accordionIGmeta_IGconf_device_storage_type">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta" onclick="anchorLink('IGmeta')">IGmeta</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta_IGconf_device_storage_type" onclick="anchorLink('IGmeta_IGconf_device_storage_type')">IGconf_device_storage_type</a></div><span class="badge badge-dark value-type">Type: enum (of string)</span><br/>
+<span class="description"><p>The storage media type the image is intended for, as seen by the OS. Determines which block device the provisioning tool will target.</p>
+</span><div class="enum-value" id="IGmeta_IGconf_device_storage_type_enum">
+            <h4>Must be one of:</h4>
+            <ul class="list-group"><li class="list-group-item enum-item">"sd"</li><li class="list-group-item enum-item">"emmc"</li><li class="list-group-item enum-item">"nvme"</li></ul>
+            </div>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionIGmeta_IGconf_device_sector_size">
+    <div class="card">
+        <div class="card-header" id="headingIGmeta_IGconf_device_sector_size">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGmeta_IGconf_device_sector_size"
+                        aria-expanded="" aria-controls="IGmeta_IGconf_device_sector_size" onclick="setAnchor('#IGmeta_IGconf_device_sector_size')"><span class="property-name">IGconf_device_sector_size</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="IGmeta_IGconf_device_sector_size"
+             class="collapse property-definition-div" aria-labelledby="headingIGmeta_IGconf_device_sector_size"
+             data-parent="#accordionIGmeta_IGconf_device_sector_size">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta" onclick="anchorLink('IGmeta')">IGmeta</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta_IGconf_device_sector_size" onclick="anchorLink('IGmeta_IGconf_device_sector_size')">IGconf_device_sector_size</a></div><span class="badge badge-dark value-type">Type: enum (of integer)</span><br/>
+<span class="description"><p>The logical sector size in bytes of the target storage device. Used to guide image layout decisions such as alignment and padding.</p>
+</span><div class="enum-value" id="IGmeta_IGconf_device_sector_size_enum">
+            <h4>Must be one of:</h4>
+            <ul class="list-group"><li class="list-group-item enum-item">512</li><li class="list-group-item enum-item">4096</li></ul>
+            </div>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionIGmeta_IGconf_image_version">
+    <div class="card">
+        <div class="card-header" id="headingIGmeta_IGconf_image_version">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGmeta_IGconf_image_version"
+                        aria-expanded="" aria-controls="IGmeta_IGconf_image_version" onclick="setAnchor('#IGmeta_IGconf_image_version')"><span class="property-name">IGconf_image_version</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="IGmeta_IGconf_image_version"
+             class="collapse property-definition-div" aria-labelledby="headingIGmeta_IGconf_image_version"
+             data-parent="#accordionIGmeta_IGconf_image_version">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta" onclick="anchorLink('IGmeta')">IGmeta</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta_IGconf_image_version" onclick="anchorLink('IGmeta_IGconf_image_version')">IGconf_image_version</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The version string of the image, typically matching the artefact version set at build time.</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionIGmeta_IGconf_image_outputdir">
+    <div class="card">
+        <div class="card-header" id="headingIGmeta_IGconf_image_outputdir">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#IGmeta_IGconf_image_outputdir"
+                        aria-expanded="" aria-controls="IGmeta_IGconf_image_outputdir" onclick="setAnchor('#IGmeta_IGconf_image_outputdir')"><span class="property-name">IGconf_image_outputdir</span></button>
+            </h2>
+        </div>
+
+        <div id="IGmeta_IGconf_image_outputdir"
+             class="collapse property-definition-div" aria-labelledby="headingIGmeta_IGconf_image_outputdir"
+             data-parent="#accordionIGmeta_IGconf_image_outputdir">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta" onclick="anchorLink('IGmeta')">IGmeta</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#IGmeta_IGconf_image_outputdir" onclick="anchorLink('IGmeta_IGconf_image_outputdir')">IGconf_image_outputdir</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The output directory path where the image and associated artefacts were written by the build.</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionattributes">
+    <div class="card">
+        <div class="card-header" id="headingattributes">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#attributes"
+                        aria-expanded="" aria-controls="attributes" onclick="setAnchor('#attributes')"><span class="property-name">attributes</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="attributes"
+             class="collapse property-definition-div" aria-labelledby="headingattributes"
+             data-parent="#accordionattributes">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#attributes" onclick="anchorLink('attributes')">attributes</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+<span class="description"><p>Image-level attributes describing the overall image geometry and identity.</p>
+</span> <span class="badge badge-info no-additional">No Additional Properties</span>
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionattributes_image-name">
+    <div class="card">
+        <div class="card-header" id="headingattributes_image-name">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#attributes_image-name"
+                        aria-expanded="" aria-controls="attributes_image-name" onclick="setAnchor('#attributes_image-name')"><span class="property-name">image-name</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="attributes_image-name"
+             class="collapse property-definition-div" aria-labelledby="headingattributes_image-name"
+             data-parent="#accordionattributes_image-name">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#attributes" onclick="anchorLink('attributes')">attributes</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#attributes_image-name" onclick="anchorLink('attributes_image-name')">image-name</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The base name of the image, used to identify the image artefact.</p>
+</span>
+        
+
+        
+        <p><span class="badge badge-light restriction min-length-restriction" id="attributes_image-name_minLength">Must be at least <code>1</code> characters long</span></p>
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionattributes_image-size">
+    <div class="card">
+        <div class="card-header" id="headingattributes_image-size">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#attributes_image-size"
+                        aria-expanded="" aria-controls="attributes_image-size" onclick="setAnchor('#attributes_image-size')"><span class="property-name">image-size</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="attributes_image-size"
+             class="collapse property-definition-div" aria-labelledby="headingattributes_image-size"
+             data-parent="#accordionattributes_image-size">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#attributes" onclick="anchorLink('attributes')">attributes</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#attributes_image-size" onclick="anchorLink('attributes_image-size')">image-size</a></div><span class="badge badge-dark value-type">Type: integer</span><br/>
+<span class="description"><p>The physical size of the raw disk image in bytes.</p>
+</span>
+        
+
+        
+        <p><span class="badge badge-light restriction numeric-restriction" id="attributes_image-size_number">Value must be greater or equal to <code>0</code></span></p>
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionattributes_image-palign-bytes">
+    <div class="card">
+        <div class="card-header" id="headingattributes_image-palign-bytes">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#attributes_image-palign-bytes"
+                        aria-expanded="" aria-controls="attributes_image-palign-bytes" onclick="setAnchor('#attributes_image-palign-bytes')"><span class="property-name">image-palign-bytes</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="attributes_image-palign-bytes"
+             class="collapse property-definition-div" aria-labelledby="headingattributes_image-palign-bytes"
+             data-parent="#accordionattributes_image-palign-bytes">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#attributes" onclick="anchorLink('attributes')">attributes</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#attributes_image-palign-bytes" onclick="anchorLink('attributes_image-palign-bytes')">image-palign-bytes</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The partition alignment of the image in bytes. Accepts integer values or genimage-style size suffixes (e.g. 8M).</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout">
+    <div class="card">
+        <div class="card-header" id="headinglayout">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout"
+                        aria-expanded="" aria-controls="layout" onclick="setAnchor('#layout')"><span class="property-name">layout</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout"
+             class="collapse property-definition-div" aria-labelledby="headinglayout"
+             data-parent="#accordionlayout">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+<span class="description"><p>The image layout, comprising the partition table, partition images, and provisioning map.</p>
+</span> <span class="badge badge-info no-additional">No Additional Properties</span>
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionlayout_partitiontable">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitiontable">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitiontable"
+                        aria-expanded="" aria-controls="layout_partitiontable" onclick="setAnchor('#layout_partitiontable')"><span class="property-name">partitiontable</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitiontable"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitiontable"
+             data-parent="#accordionlayout_partitiontable">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+<span class="description"><p>The partition table descriptor, including type and disk identifier.</p>
+</span>
+
+    <h2 class="handle">
+    <label>Conditional Subschema</label>
+</h2>
+<p>If the conditions in the "If" tab are respected, then the conditions in the "Then" tab should be respected.
+    Otherwise, the conditions in the "Else" tab should be respected.</p>
+<ul class="nav nav-tabs" id="layout_partitiontable_condition_tabs" role="tablist">
+    
+    <li class="nav-item">
+        <a class="nav-link active"
+           id="layout_partitiontable_if" data-toggle="tab" href="#tab-pane_layout_partitiontable_if" role="tab"
+           onclick="setAnchor('#layout_partitiontable_if')"
+        >If</a>
+    </li>
+
+    
+        
+        <li class="nav-item">
+            <a class="nav-link"
+               id="layout_partitiontable_then" data-toggle="tab" href="#tab-pane_layout_partitiontable_then" role="tab"
+               onclick="setAnchor('#layout_partitiontable_then')"
+            >Then</a>
+        </li><li class="nav-item">
+            <a class="nav-link"
+               id="layout_partitiontable_else" data-toggle="tab" href="#tab-pane_layout_partitiontable_else" role="tab"
+               onclick="setAnchor('#layout_partitiontable_else')"
+            >Else</a>
+        </li></ul>
+
+<div class="tab-content card">
+    
+    <div class="tab-pane fade card-body active show"
+         id="tab-pane_layout_partitiontable_if" role="tabpanel">
+        
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_if" onclick="anchorLink('layout_partitiontable_if')">if</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionlayout_partitiontable_if_label">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitiontable_if_label">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitiontable_if_label"
+                        aria-expanded="" aria-controls="layout_partitiontable_if_label" onclick="setAnchor('#layout_partitiontable_if_label')"><span class="property-name">label</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitiontable_if_label"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitiontable_if_label"
+             data-parent="#accordionlayout_partitiontable_if_label">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_if" onclick="anchorLink('layout_partitiontable_if')">if</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_if_label" onclick="anchorLink('layout_partitiontable_if_label')">label</a></div><span class="badge badge-dark value-type">Type: const</span><br/>
+<span class="const-value" id="layout_partitiontable_if_label_const">Specific value: <code>"gpt"</code></span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+
+    
+        
+        <div class="tab-pane fade card-body"
+             id="tab-pane_layout_partitiontable_then" role="tabpanel">
+            
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_then" onclick="anchorLink('layout_partitiontable_then')">then</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionlayout_partitiontable_then_id">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitiontable_then_id">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitiontable_then_id"
+                        aria-expanded="" aria-controls="layout_partitiontable_then_id" onclick="setAnchor('#layout_partitiontable_then_id')"><span class="property-name">id</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitiontable_then_id"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitiontable_then_id"
+             data-parent="#accordionlayout_partitiontable_then_id">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_then" onclick="anchorLink('layout_partitiontable_then')">then</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_then_id" onclick="anchorLink('layout_partitiontable_then_id')">id</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>A standard UUID string (case-insensitive), e.g. F5C56D0D-B6D9-4353-9F7C-9E8FBF89D864.</p>
+</span>
+
+    <span class="pattern-value" id="layout_partitiontable_then_id_pattern">Must match regular expression: <code>^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$</code></span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+        </div>
+        <div class="tab-pane fade card-body"
+             id="tab-pane_layout_partitiontable_else" role="tabpanel">
+            
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_else" onclick="anchorLink('layout_partitiontable_else')">else</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionlayout_partitiontable_else_id">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitiontable_else_id">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitiontable_else_id"
+                        aria-expanded="" aria-controls="layout_partitiontable_else_id" onclick="setAnchor('#layout_partitiontable_else_id')"><span class="property-name">id</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitiontable_else_id"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitiontable_else_id"
+             data-parent="#accordionlayout_partitiontable_else_id">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_else" onclick="anchorLink('layout_partitiontable_else')">else</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_else_id" onclick="anchorLink('layout_partitiontable_else_id')">id</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="pattern-value" id="layout_partitiontable_else_id_pattern">Must match regular expression: <code>^0x[0-9A-Fa-f]{8}$</code></span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+        </div></div>
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionlayout_partitiontable_label">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitiontable_label">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitiontable_label"
+                        aria-expanded="" aria-controls="layout_partitiontable_label" onclick="setAnchor('#layout_partitiontable_label')"><span class="property-name">label</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitiontable_label"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitiontable_label"
+             data-parent="#accordionlayout_partitiontable_label">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_label" onclick="anchorLink('layout_partitiontable_label')">label</a></div><span class="badge badge-dark value-type">Type: enum (of string)</span><br/>
+<span class="description"><p>The partition table type. 'gpt' for GUID Partition Table, 'dos' for MBR.</p>
+</span><div class="enum-value" id="layout_partitiontable_label_enum">
+            <h4>Must be one of:</h4>
+            <ul class="list-group"><li class="list-group-item enum-item">"gpt"</li><li class="list-group-item enum-item">"dos"</li></ul>
+            </div>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitiontable_id">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitiontable_id">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitiontable_id"
+                        aria-expanded="" aria-controls="layout_partitiontable_id" onclick="setAnchor('#layout_partitiontable_id')"><span class="property-name">id</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitiontable_id"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitiontable_id"
+             data-parent="#accordionlayout_partitiontable_id">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_id" onclick="anchorLink('layout_partitiontable_id')">id</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The disk identifier. A UUID for GPT disks, or a 4-byte hex value (e.g. 0x1234abcd) for MBR disks.</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitiontable_additionalProperties">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitiontable_additionalProperties">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitiontable_additionalProperties"
+                        aria-expanded="" aria-controls="layout_partitiontable_additionalProperties" onclick="setAnchor('#layout_partitiontable_additionalProperties')"><em><span class="property-name">Additional Properties</span></em></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitiontable_additionalProperties"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitiontable_additionalProperties"
+             data-parent="#accordionlayout_partitiontable_additionalProperties">
+            <div class="card-body pl-5"><p class="additional-properties">Additional Properties of any type are allowed.</p>
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable" onclick="anchorLink('layout_partitiontable')">partitiontable</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitiontable_additionalProperties" onclick="anchorLink('layout_partitiontable_additionalProperties')">additionalProperties</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages"
+                        aria-expanded="" aria-controls="layout_partitionimages" onclick="setAnchor('#layout_partitionimages')"><span class="property-name">partitionimages</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages"
+             data-parent="#accordionlayout_partitionimages">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+<span class="description"><p>A map of partition entries keyed by partition name, each describing a partition's geometry, filesystem type, and attributes.</p>
+</span>
+
+    
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties" onclick="setAnchor('#layout_partitionimages_additionalProperties')"><em><span class="property-name">Additional Properties</span></em></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties"
+             data-parent="#accordionlayout_partitionimages_additionalProperties">
+            <div class="card-body pl-5"><p class="additional-properties">Each additional property must conform to the following schema</p>
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">partitionImage</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+<span class="description"><p>Describes a single partition image, including its geometry, filesystem type, and attributes.</p>
+</span>
+
+    
+        
+
+        
+        
+
+        
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_name">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_name">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_name"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_name" onclick="setAnchor('#layout_partitionimages_additionalProperties_name')"><span class="property-name">name</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_name"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_name"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_name">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_name" onclick="anchorLink('layout_partitionimages_additionalProperties_name')">name</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>An arbitrary string identifying this partition. Used as the key in the partitionimages map and referenced by name in the PMAP.</p>
+</span>
+        
+
+        
+        <p><span class="badge badge-light restriction min-length-restriction" id="layout_partitionimages_additionalProperties_name_minLength">Must be at least <code>1</code> characters long</span></p>
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_in-partition-table">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_in-partition-table">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_in-partition-table"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_in-partition-table" onclick="setAnchor('#layout_partitionimages_additionalProperties_in-partition-table')"><span class="property-name">in-partition-table</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_in-partition-table"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_in-partition-table"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_in-partition-table">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_in-partition-table" onclick="anchorLink('layout_partitionimages_additionalProperties_in-partition-table')">in-partition-table</a></div><span class="badge badge-dark value-type">Type: enum (of string)</span><br/>
+<span class="description"><p>Whether this partition image has a corresponding entry in the partition table. Represented as a string boolean.</p>
+</span><div class="enum-value" id="layout_partitionimages_additionalProperties_in-partition-table_enum">
+            <h4>Must be one of:</h4>
+            <ul class="list-group"><li class="list-group-item enum-item">"true"</li><li class="list-group-item enum-item">"false"</li></ul>
+            </div>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_size">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_size">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_size"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_size" onclick="setAnchor('#layout_partitionimages_additionalProperties_size')"><span class="property-name">size</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_size"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_size"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_size">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_size" onclick="anchorLink('layout_partitionimages_additionalProperties_size')">size</a></div><span class="badge badge-dark value-type">Type: integer</span><br/>
+<span class="description"><p>The physical size of the partition image in bytes. Must be at least one sector (512 bytes).</p>
+</span>
+        
+
+        
+        <p><span class="badge badge-light restriction numeric-restriction" id="layout_partitionimages_additionalProperties_size_number">Value must be greater or equal to <code>512</code></span></p>
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_image">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_image">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_image"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_image" onclick="setAnchor('#layout_partitionimages_additionalProperties_image')"><span class="property-name">image</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_image"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_image"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_image">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_image" onclick="anchorLink('layout_partitionimages_additionalProperties_image')">image</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The filename of the raw partition image file.</p>
+</span>
+        
+
+        
+        <p><span class="badge badge-light restriction min-length-restriction" id="layout_partitionimages_additionalProperties_image_minLength">Must be at least <code>1</code> characters long</span></p>
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_type">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_type">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_type"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_type" onclick="setAnchor('#layout_partitionimages_additionalProperties_type')"><span class="property-name">type</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_type"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_type"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_type">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_type" onclick="anchorLink('layout_partitionimages_additionalProperties_type')">type</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The filesystem or image type of this partition, e.g. ext4.</p>
+</span>
+        
+
+        
+        <p><span class="badge badge-light restriction min-length-restriction" id="layout_partitionimages_additionalProperties_type_minLength">Must be at least <code>1</code> characters long</span></p>
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_bootable">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_bootable">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_bootable"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_bootable" onclick="setAnchor('#layout_partitionimages_additionalProperties_bootable')"><span class="property-name">bootable</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_bootable"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_bootable"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_bootable">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_bootable" onclick="anchorLink('layout_partitionimages_additionalProperties_bootable')">bootable</a></div><span class="badge badge-dark value-type">Type: enum (of string)</span><br/>
+<span class="description"><p>Whether the partition is flagged as bootable. Represented as a string boolean.</p>
+</span><div class="enum-value" id="layout_partitionimages_additionalProperties_bootable_enum">
+            <h4>Must be one of:</h4>
+            <ul class="list-group"><li class="list-group-item enum-item">"true"</li><li class="list-group-item enum-item">"false"</li></ul>
+            </div>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_mountpoint">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_mountpoint">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_mountpoint"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_mountpoint" onclick="setAnchor('#layout_partitionimages_additionalProperties_mountpoint')"><span class="property-name">mountpoint</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_mountpoint"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_mountpoint"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_mountpoint">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_mountpoint" onclick="anchorLink('layout_partitionimages_additionalProperties_mountpoint')">mountpoint</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The mountpoint of this partition on the running device, e.g. /boot or /.</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_partition-type-uuid">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_partition-type-uuid">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_partition-type-uuid"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_partition-type-uuid" onclick="setAnchor('#layout_partitionimages_additionalProperties_partition-type-uuid')"><span class="property-name">partition-type-uuid</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_partition-type-uuid"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_partition-type-uuid"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_partition-type-uuid">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_partition-type-uuid" onclick="anchorLink('layout_partitionimages_additionalProperties_partition-type-uuid')">partition-type-uuid</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The GPT partition type UUID, identifying the type of partition (e.g. Linux filesystem, EFI System).</p>
+</span><a href="#layout_partitiontable_then_id" onclick="anchorLink('layout_partitiontable_then_id')" class="ref-link">Same definition as id</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_partition-label">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_partition-label">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_partition-label"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_partition-label" onclick="setAnchor('#layout_partitionimages_additionalProperties_partition-label')"><span class="property-name">partition-label</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_partition-label"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_partition-label"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_partition-label">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_partition-label" onclick="anchorLink('layout_partitionimages_additionalProperties_partition-label')">partition-label</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The GPT partition label, a human-readable name for the partition entry in the partition table.</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_partition-uuid">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_partition-uuid">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_partition-uuid"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_partition-uuid" onclick="setAnchor('#layout_partitionimages_additionalProperties_partition-uuid')"><span class="property-name">partition-uuid</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_partition-uuid"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_partition-uuid"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_partition-uuid">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_partition-uuid" onclick="anchorLink('layout_partitionimages_additionalProperties_partition-uuid')">partition-uuid</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The GPT partition UUID, uniquely identifying this partition entry in the partition table.</p>
+</span><a href="#layout_partitiontable_then_id" onclick="anchorLink('layout_partitiontable_then_id')" class="ref-link">Same definition as id</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_fs_label">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_fs_label">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_fs_label"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_fs_label" onclick="setAnchor('#layout_partitionimages_additionalProperties_fs_label')"><span class="property-name">fs_label</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_fs_label"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_fs_label"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_fs_label">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_label" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_label')">fs_label</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The filesystem label assigned to this partition.</p>
+</span>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_fs_uuid">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_fs_uuid">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_fs_uuid"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_fs_uuid" onclick="setAnchor('#layout_partitionimages_additionalProperties_fs_uuid')"><span class="property-name">fs_uuid</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_fs_uuid"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_fs_uuid"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_fs_uuid">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_uuid" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_uuid')">fs_uuid</a></div><br/>
+<span class="description"><p>The filesystem UUID. A standard UUID for most filesystem types, or a 4-byte hex vfat volume ID.</p>
+</span><div class="any-of-value" id="layout_partitionimages_additionalProperties_fs_uuid_anyOf"><h2 class="handle">
+  <label>Any of</label>
+</h2><ul class="nav nav-tabs" id="tabslayout_partitionimages_additionalProperties_fs_uuid_anyOf_anyOf" role="tablist"><li class="nav-item">
+            <a class="nav-link active anyOf-option"
+               id="layout_partitionimages_additionalProperties_fs_uuid_anyOf_i0" data-toggle="tab" href="#tab-pane_layout_partitionimages_additionalProperties_fs_uuid_anyOf_i0" role="tab"
+               onclick="setAnchor('#layout_partitionimages_additionalProperties_fs_uuid_anyOf_i0')"
+            >uuidGPT</a>
+        </li><li class="nav-item">
+            <a class="nav-link anyOf-option"
+               id="layout_partitionimages_additionalProperties_fs_uuid_anyOf_i1" data-toggle="tab" href="#tab-pane_layout_partitionimages_additionalProperties_fs_uuid_anyOf_i1" role="tab"
+               onclick="setAnchor('#layout_partitionimages_additionalProperties_fs_uuid_anyOf_i1')"
+            >uuidVFAT</a>
+        </li></ul>
+<div class="tab-content card"><div class="tab-pane fade card-body active show"
+             id="tab-pane_layout_partitionimages_additionalProperties_fs_uuid_anyOf_i0" role="tabpanel">
+            
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_uuid" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_uuid')">fs_uuid</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_uuid_anyOf" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_uuid_anyOf')">anyOf</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_uuid_anyOf_i0" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_uuid_anyOf_i0')">uuidGPT</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>A standard UUID string (case-insensitive), e.g. F5C56D0D-B6D9-4353-9F7C-9E8FBF89D864.</p>
+</span><a href="#layout_partitiontable_then_id" onclick="anchorLink('layout_partitiontable_then_id')" class="ref-link">Same definition as id</a>
+        </div><div class="tab-pane fade card-body "
+             id="tab-pane_layout_partitionimages_additionalProperties_fs_uuid_anyOf_i1" role="tabpanel">
+            
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_uuid" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_uuid')">fs_uuid</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_uuid_anyOf" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_uuid_anyOf')">anyOf</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_fs_uuid_anyOf_i1" onclick="anchorLink('layout_partitionimages_additionalProperties_fs_uuid_anyOf_i1')">uuidVFAT</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>A vfat volume ID in 4-byte hexadecimal format, e.g. 1234-ABCD.</p>
+</span>
+
+    <span class="pattern-value" id="layout_partitionimages_additionalProperties_fs_uuid_anyOf_i1_pattern">Must match regular expression: <code>^[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}$</code></span>
+        
+
+        
+        
+
+        
+        </div></div></div>
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_simage">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_simage">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_simage"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_simage" onclick="setAnchor('#layout_partitionimages_additionalProperties_simage')"><span class="property-name">simage</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_simage"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_simage"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_simage">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_simage" onclick="anchorLink('layout_partitionimages_additionalProperties_simage')">simage</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
+<span class="description"><p>The filename of the sparse image file containing this partition's data, e.g. boot.sparse. Required for fastboot provisioning flows.</p>
+</span>
+        
+
+        
+        <p><span class="badge badge-light restriction min-length-restriction" id="layout_partitionimages_additionalProperties_simage_minLength">Must be at least <code>1</code> characters long</span></p>
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_partitionimages_additionalProperties_additionalProperties">
+    <div class="card">
+        <div class="card-header" id="headinglayout_partitionimages_additionalProperties_additionalProperties">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_partitionimages_additionalProperties_additionalProperties"
+                        aria-expanded="" aria-controls="layout_partitionimages_additionalProperties_additionalProperties" onclick="setAnchor('#layout_partitionimages_additionalProperties_additionalProperties')"><em><span class="property-name">Additional Properties</span></em></button>
+            </h2>
+        </div>
+
+        <div id="layout_partitionimages_additionalProperties_additionalProperties"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_partitionimages_additionalProperties_additionalProperties"
+             data-parent="#accordionlayout_partitionimages_additionalProperties_additionalProperties">
+            <div class="card-body pl-5"><p class="additional-properties">Additional Properties of any type are allowed.</p>
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages" onclick="anchorLink('layout_partitionimages')">partitionimages</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties')">additionalProperties</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_partitionimages_additionalProperties_additionalProperties" onclick="anchorLink('layout_partitionimages_additionalProperties_additionalProperties')">additionalProperties</a></div><span class="badge badge-dark value-type">Type: object</span><br/>
+
+        
+
+        
+        
+
+        
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="accordion" id="accordionlayout_provisionmap">
+    <div class="card">
+        <div class="card-header" id="headinglayout_provisionmap">
+            <h2 class="mb-0">
+                <button class="btn btn-link property-name-button" type="button" data-toggle="collapse" data-target="#layout_provisionmap"
+                        aria-expanded="" aria-controls="layout_provisionmap" onclick="setAnchor('#layout_provisionmap')"><span class="property-name">provisionmap</span> <span class="badge badge-warning required-property">Required</span></button>
+            </h2>
+        </div>
+
+        <div id="layout_provisionmap"
+             class="collapse property-definition-div" aria-labelledby="headinglayout_provisionmap"
+             data-parent="#accordionlayout_provisionmap">
+            <div class="card-body pl-5">
+
+    <div class="breadcrumbs">root
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout" onclick="anchorLink('layout')">layout</a>
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-right-short" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path
+                fill-rule="evenodd"
+                d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+            />
+        </svg>
+    <a href="#layout_provisionmap" onclick="anchorLink('layout_provisionmap')">provisionmap</a></div><span class="badge badge-dark value-type">Type: array</span><br/>
+<span class="description"><p>The embedded Provisioning Map (PMAP), defining how partitions are assigned, ordered, and optionally encrypted on the target device. See the PMAP schema for full details.</p>
+</span>
+        
+
+        
+        
+
+         <span class="badge badge-info no-additional">No Additional Items</span>
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <footer>
+        <p class="generated-by-footer">Generated using <a href="https://github.com/coveooss/json-schema-for-humans">json-schema-for-humans</a> on 2026-03-05 at 17:39:34 +0000</p>
+    </footer></body>
+</html>

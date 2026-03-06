@@ -73,19 +73,9 @@ def validate(data, schema_path=None):
         validator = _load_validator(schema_path)
 
     if validator is not None:
-        # Always validate only the provisionmap subtree
-        if isinstance(data, list):
-            pmap = data
-        else:
-            pmap = get_key(data, "layout.provisionmap")
-            if pmap is None:
-                sys.stderr.write("Error: layout.provisionmap not found in JSON.\n")
-                sys.exit(1)
-        doc = {"layout": {"provisionmap": pmap}}
-
-        errors = sorted(validator.iter_errors(doc), key=lambda e: list(e.path))
+        errors = sorted(validator.iter_errors(data), key=lambda e: list(e.path))
         if errors:
-            sys.stderr.write(f"Error: provisionmap schema validation failed ({len(errors)} errors)\n")
+            sys.stderr.write(f"Error: schema validation failed ({len(errors)} errors)\n")
             for e in errors:
                 path = "/".join(str(p) for p in e.path)
                 if path:
@@ -235,7 +225,7 @@ if __name__ == '__main__':
                         required=True)
 
     parser.add_argument("--schema",
-                        help="Path to JSON schema")
+                        help="Path to JSON schema to validate the supplied file against")
 
     parser.add_argument("-s", "--slotvars",
                         action="store_true",

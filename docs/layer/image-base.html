@@ -123,7 +123,7 @@
     <div class="header">
         <h1>image-base</h1>
         <span class="badge">image</span>
-        <span class="badge">v2.1.3</span>
+        <span class="badge">v2.2.3</span>
         <p>Default image settings and build attributes.</p>
     </div>
     <div class="section">
@@ -290,6 +290,17 @@ Unless otherwise stated, the following apply to all image layers:</p>
                     <td>Image Description PMAP schema for validation</td>
                     <td>
                            <code class="long-default">${DIRECTORY}/schemas/provisionmap/v1/schema.json</code>
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_idp_schema</code></td>
+                    <td>Image Description Provisioning (IDP) schema for validation</td>
+                    <td>
+                           <code class="long-default">${DIRECTORY}/schemas/idp/v2/schema.json</code>
                     </td>
                     <td>Non-empty string value</td>
                     <td>
