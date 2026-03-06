@@ -207,11 +207,15 @@ Variable values support dynamic placeholders:
 Triggers (`X-Env-Var-*-Triggers`) allow a variable’s resolved value to automatically perform actions, meaning that derived settings can be injected based on that value. Format as follows (one rule per line):
 
 * Conditional (same variable): `when=VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
+* Conditional (same variable, wildcard): `when=* set TARGET=VALUE [policy=force|immediate|lazy]`
 * Conditional (cross-variable): `when=VAR=VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
 * Conditional (cross-variable): `when=VAR!=VALUE set TARGET=VALUE [policy=force|immediate|lazy]`
+* Conditional (cross-variable, wildcard): `when=VAR=* set TARGET=VALUE [policy=force|immediate|lazy]`
 * Unconditional: `set TARGET=VALUE [policy=force|immediate|lazy]`
 
 For same-variable conditions, matching is an exact string comparison against the source variable's resolved value. For cross-variable conditions, matching is an exact string comparison against the referenced variable's resolved value (ie, the referenced variable is used as-is). Unconditional rules always fire. The first token after the action must be `TARGET=VALUE`. `policy=` is optional and defaults to `immediate` if not specified. If a cross-variable condition references an unknown variable, resolution fails with an error.
+
+The wildcard `*` matches any non-empty value. It will not fire if the variable is unset or set to an empty string.
 
 Lint will fail on:
 
