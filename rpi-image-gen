@@ -32,6 +32,12 @@ shift
 case $cmd in
    build|clean|layer|metadata|config) ;;
    help) cli_help ; exit 0 ;;
+   doc*)
+      bind=$(hostname -I | cut -d' ' -f1)
+      echo "Point your browser at http://${bind}:3142"
+      python -m http.server 3142 --directory "${IGTOP}/docs/" --bind "$bind"
+      exit 0
+      ;;
    *) cli_help; die "Unknown command" ;;
 esac
 argv=("$@")
