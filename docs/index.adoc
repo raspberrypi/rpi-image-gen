@@ -9,12 +9,10 @@ For general information, see the https://github.com/raspberrypi/rpi-image-gen[pr
 
 == Viewing Documentation
 
-=== Online
 - **Technical Documentation**: https://raspberrypi.github.io/rpi-image-gen/
 - **Project Information**: https://github.com/raspberrypi/rpi-image-gen
 
-=== Offline
-The technical documentation HTML pages are browsable offline via `file:///path/to/page.html`.
+Documentation can be served locally using `rpi-image-gen docs`, which starts a web server on port 3142. Point your browser to the URL printed on startup.
 
 == Documentation Structure
 
