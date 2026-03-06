@@ -36,6 +36,7 @@
 # X-Env-Var-user1-Set: y
 #
 # X-Env-Var-user1pass:
+# X-Env-Var-user1pass-Conflicts: user1hashedpass
 # X-Env-Var-user1pass-Desc: Password required to log into the user1 account. If
 #  empty, the account will be locked. Password requirements are as follows.
 #  At least 8 characters.
@@ -46,6 +47,14 @@
 # X-Env-Var-user1pass-Required: n
 # X-Env-Var-user1pass-Valid: regex:^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
 # X-Env-Var-user1pass-Set: n
+#
+# X-Env-Var-user1hashedpass:
+# X-Env-Var-user1hashedpass-Conflicts: user1pass
+# X-Env-Var-user1hashedpass-Desc: A pre-hashed value of the password required to log into the user1 account.
+#  to pre-hash a password use the provided genpasswd script in the chroot scope.
+# X-Env-Var-user1hashedpass-Required: n
+# X-Env-Var-user1hashedpass-Valid: string
+# X-Env-Var-user1hashedpass-Set: n
 #
 # X-Env-Var-storage_type: sd
 # X-Env-Var-storage_type-Desc: Declares the storage media the image is intended
