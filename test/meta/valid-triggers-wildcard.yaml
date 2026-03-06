@@ -1,0 +1,16 @@
+# METABEGIN
+# X-Env-Layer-Name: test-triggers-wildcard
+# X-Env-Layer-Desc: Trigger wildcard condition - fires when variable is set to any non-empty value
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: trigw
+#
+# X-Env-Var-source:
+# X-Env-Var-source-Desc: Source variable for wildcard trigger tests
+# X-Env-Var-source-Valid: string
+# X-Env-Var-source-Required: n
+# X-Env-Var-source-Set: n
+# X-Env-Var-source-Triggers:
+#  when=* set IG_TRIG_WILDCARD_SAME=1 policy=force
+#  when=IGconf_trigw_source=* set IG_TRIG_WILDCARD_CROSS=1 policy=force
+# METAEND
