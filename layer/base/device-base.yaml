@@ -59,6 +59,20 @@
 # X-Env-Var-user1passhash-Set: n
 # X-Env-Var-user1passhash-Conflicts: user1pass
 #
+# X-Env-Var-user1uid:
+# X-Env-Var-user1uid-Desc: The UID assigned to the user1 account. If unset,
+#  one will be assigned automatically.
+# X-Env-Var-user1uid-Required: n
+# X-Env-Var-user1uid-Valid: int:1000-65533
+# X-Env-Var-user1uid-Set: n
+#
+# X-Env-Var-user1gid:
+# X-Env-Var-user1gid-Desc: The GID assigned to the user1 account. If unset,
+#  one will be assigned automatically.
+# X-Env-Var-user1gid-Required: n
+# X-Env-Var-user1gid-Valid: int:1000-65533
+# X-Env-Var-user1gid-Set: n
+#
 # X-Env-Var-storage_type: sd
 # X-Env-Var-storage_type-Desc: Declares the storage media the image is intended
 #  for, as seen by the OS. For example, an NVMe backed disk connected via USB
