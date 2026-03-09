@@ -1,0 +1,14 @@
+# Line endings
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.adoc text eol=lf
+*.cfg.in text eol=lf
+
+# GitHub Linguist overrides
+docs/** linguist-documentation=true
+docs/**/*.html linguist-generated=true
+layer/base/schemas/**/*.html linguist-generated=true
+templates/docs/html/*.html linguist-generated=true
