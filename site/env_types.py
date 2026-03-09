@@ -1072,10 +1072,16 @@ class VariableResolver:
 
         Supported forms:
         - same-variable value condition: "btrfs"
+        - same-variable wildcard: "*" (matches any non-empty value)
         - cross-variable equality: "IGconf_device_storage_type=emmc"
         - cross-variable inequality: "IGconf_device_storage_type!=emmc"
+        - cross-variable wildcard: "IGconf_device_storage_type=*" (matches any non-empty value)
         """
         import os
+
+        def _is_set(v: str) -> bool:
+            """Return True if the value is meaningfully set (non-empty, non-None)."""
+            return v not in ("", "None")
 
         if "!=" in condition:
             lhs, rhs = condition.split("!=", 1)
@@ -1084,6 +1090,8 @@ class VariableResolver:
             lhs, rhs = condition.split("=", 1)
             op = "="
         else:
+            if condition == "*":
+                return _is_set(source_effective_value)
             return source_effective_value == condition
 
         lhs = lhs.strip()
@@ -1096,7 +1104,8 @@ class VariableResolver:
         elif lhs in os.environ:
             lhs_value = str(os.environ.get(lhs, ""))
         elif lhs in resolved:
-            lhs_value = str(resolved[lhs].value)
+            raw = resolved[lhs].value
+            lhs_value = "" if raw is None else str(raw)
         else:
             layer_note = f" (layer: {source_layer})" if source_layer else ""
             raise ValueError(
@@ -1104,6 +1113,8 @@ class VariableResolver:
             )
 
         if op == "=":
+            if rhs == "*":
+                return _is_set(lhs_value)
             return lhs_value == rhs
         return lhs_value != rhs
 

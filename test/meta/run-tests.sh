@@ -269,6 +269,16 @@ run_test "triggers-quoted-ext4-not-set" \
     0 \
     "Trigger for non-matching condition should not set variable"
 
+run_test "triggers-wildcard-fires-when-set" \
+    'cleanup_env; TMP_OUT=$(mktemp); IGconf_trigw_source=hello ig metadata --parse ${META}/valid-triggers-wildcard.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_WILDCARD_SAME=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_WILDCARD_CROSS=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Wildcard trigger (when=*) should fire when variable is set to a non-empty value"
+
+run_test "triggers-wildcard-silent-when-unset" \
+    'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers-wildcard.yaml --write-out "$TMP_OUT" && ! grep "^IG_TRIG_WILDCARD_SAME=" "$TMP_OUT" && ! grep "^IG_TRIG_WILDCARD_CROSS=" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "Wildcard trigger (when=*) should not fire when variable is unset"
+
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
 

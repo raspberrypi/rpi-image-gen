@@ -123,7 +123,7 @@
     <div class="header">
         <h1>device-base</h1>
         <span class="badge">device</span>
-        <span class="badge">v1.3.1</span>
+        <span class="badge">v2.0.0</span>
         <p>Device defaults.</p>
     </div>
     <div class="section">
@@ -203,8 +203,9 @@
                 </tr>
                 <tr>
                     <td><code>IGconf_device_user1pass</code></td>
-                    <td>Password required to log into the user1 account. If
- empty, the account will be locked. Password requirements are as follows.
+                    <td>Password required to log into the user1 account.
+ If neither user1pass nor user1passhash is set, the account will be locked.
+ Password requirements are as follows.
  At least 8 characters.
  At least one lowercase letter.
  At least one uppercase letter.
@@ -214,6 +215,58 @@
                            <code>&lt;disabled&gt;</code>
                     </td>
                     <td>Must match regex pattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_device_user1passhash</code></td>
+                    <td>A pre-hashed password for the user1 account.
+ Generate using the provided genpasswd utility, or supply a hash created with
+ the same algorithm used by the chroot.
+ If neither user1pass nor user1passhash is set, the account will be locked.</td>
+                    <td>
+                           <code>&lt;disabled&gt;</code>
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_device_user1sudo</code></td>
+                    <td>Controls sudo access for the user1 account. 'none' disables
+ sudo access entirely. 'passwd' requires a password for sudo. 'nopasswd' grants
+ passwordless sudo. If user1pass or user1passhash is set, defaults to 'passwd'.
+ Note: setting 'nopasswd' without a password is permitted but inadvisable.</td>
+                    <td>
+                           <code>none</code>
+                    </td>
+                    <td>Must be one of: none, passwd, nopasswd</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_device_user1uid</code></td>
+                    <td>The UID assigned to the user1 account. If unset,
+ one will be assigned automatically.</td>
+                    <td>
+                           <code>&lt;disabled&gt;</code>
+                    </td>
+                    <td>Integer value in range 1000 to 65533</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_device_user1gid</code></td>
+                    <td>The GID assigned to the user1 account. If unset,
+ one will be assigned automatically.</td>
+                    <td>
+                           <code>&lt;disabled&gt;</code>
+                    </td>
+                    <td>Integer value in range 1000 to 65533</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
                     </td>
