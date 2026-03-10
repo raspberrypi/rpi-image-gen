@@ -261,6 +261,68 @@ Therefore, included files are resolved using:
 1. **Parent directory**
 2. **Search path**
 
+== Section Names
+
+Any section name used in a configuration file maps directly to the `IGconf_<section>_*` variable namespace. A layer can declare a section via `X-Env-VarPrefix` in its metadata. This means that the set of meaningful section names in a build is determined by the layers included. Declaring a section allows a layer to expose a group of configuration variables. Some section names carry specific functional meaning because the build system actively responds to them.
+
+=== device
+
+The `device` section (`X-Env-VarPrefix: device`) holds variables describing the target hardware. Variables in this section are declared by `device-base` and downstream device layers.
+
+The `device.layer` key has functional meaning: it's one way to specify the device layer to include in the build.
+
+=== image
+
+The `image` section (`X-Env-VarPrefix: image`) holds variables that control image construction. Variables in this section are declared by `image-base` and downstream image layers.
+
+The `image.layer` key has functional meaning: it's one way to specify the image layer to include in the build.
+
+=== layer
+
+The `layer` section is used to specify layers to include in the build. Each key names an extra layer:
+
+[source,yaml]
+----
+layer:
+  app: my-app-layer
+  extra: rpi-splash-screen
+----
+
+The key names are arbitrary - only the values matter. Lists are also supported. This is the primary mechanism for composing a build from multiple optional layers. Device and image layers can be specified here, too:
+
+[source,yaml]
+----
+layer:
+  - rpi-cm5
+  - image-rota
+----
+
+=== packages
+
+The `packages` section triggers automatic package installation into the target rootfs during the build. Each entry is either an apt package name or a path to a local `.deb` file on the build host.
+
+[source,yaml]
+----
+packages:
+  - curl
+  - vim
+  - git
+----
+
+Local `.deb` files are specified by path and are detected by the presence of the file on the build host at the time the hook runs:
+
+[source,yaml]
+----
+packages:
+  apt: curl
+  local1: /path/to/mypkg_1.0_arm64.deb
+  local2: myotherpkg_2.0_arm64.deb
+----
+
+Both list and mapping forms are supported. Local `.deb` files are installed before apt packages so that apt can satisfy any dependencies they introduce.
+
+Absolute paths are fully supported. Relative paths are resolved from the source directory and require `-S` to be specified, falling back to the rpi-image-gen root directory.
+
 == Variable Sources and Precedence
 
 The configuration system supports multiple variable sources with a clear precedence hierarchy:

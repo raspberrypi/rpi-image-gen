@@ -1,5 +1,5 @@
 include:
-  file: bookworm-minbase.yaml
+  file: trixie-minbase.yaml
 
 image:
   name: debstore-test

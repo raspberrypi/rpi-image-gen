@@ -158,6 +158,14 @@
 </li>
 </ul>
 </li>
+<li><a href="#_section_names">Section Names</a>
+<ul class="sectlevel2">
+<li><a href="#_device">device</a></li>
+<li><a href="#_image">image</a></li>
+<li><a href="#_layer">layer</a></li>
+<li><a href="#_packages">packages</a></li>
+</ul>
+</li>
 <li><a href="#_variable_sources_and_precedence">Variable Sources and Precedence</a>
 <ul class="sectlevel2">
 <li><a href="#_command_line_overrides">Command Line Overrides</a></li>
@@ -590,6 +598,86 @@ root_part_size = 300%</code></pre>
 </li>
 </ol>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_section_names"><a class="anchor" href="#_section_names"></a><a class="link" href="#_section_names">Section Names</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Any section name used in a configuration file maps directly to the <code>IGconf_&lt;section&gt;_*</code> variable namespace. A layer can declare a section via <code>X-Env-VarPrefix</code> in its metadata. This means that the set of meaningful section names in a build is determined by the layers included. Declaring a section allows a layer to expose a group of configuration variables. Some section names carry specific functional meaning because the build system actively responds to them.</p>
+</div>
+<div class="sect2">
+<h3 id="_device"><a class="anchor" href="#_device"></a><a class="link" href="#_device">device</a></h3>
+<div class="paragraph">
+<p>The <code>device</code> section (<code>X-Env-VarPrefix: device</code>) holds variables describing the target hardware. Variables in this section are declared by <code>device-base</code> and downstream device layers.</p>
+</div>
+<div class="paragraph">
+<p>The <code>device.layer</code> key has functional meaning: it&#8217;s one way to specify the device layer to include in the build.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_image"><a class="anchor" href="#_image"></a><a class="link" href="#_image">image</a></h3>
+<div class="paragraph">
+<p>The <code>image</code> section (<code>X-Env-VarPrefix: image</code>) holds variables that control image construction. Variables in this section are declared by <code>image-base</code> and downstream image layers.</p>
+</div>
+<div class="paragraph">
+<p>The <code>image.layer</code> key has functional meaning: it&#8217;s one way to specify the image layer to include in the build.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_layer"><a class="anchor" href="#_layer"></a><a class="link" href="#_layer">layer</a></h3>
+<div class="paragraph">
+<p>The <code>layer</code> section is used to specify layers to include in the build. Each key names an extra layer:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  app: my-app-layer
+  extra: rpi-splash-screen</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The key names are arbitrary - only the values matter. Lists are also supported. This is the primary mechanism for composing a build from multiple optional layers. Device and image layers can be specified here, too:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  - rpi-cm5
+  - image-rota</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_packages"><a class="anchor" href="#_packages"></a><a class="link" href="#_packages">packages</a></h3>
+<div class="paragraph">
+<p>The <code>packages</code> section triggers automatic package installation into the target rootfs during the build. Each entry is either an apt package name or a path to a local <code>.deb</code> file on the build host.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  - curl
+  - vim
+  - git</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Local <code>.deb</code> files are specified by path and are detected by the presence of the file on the build host at the time the hook runs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  apt: curl
+  local1: /path/to/mypkg_1.0_arm64.deb
+  local2: myotherpkg_2.0_arm64.deb</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both list and mapping forms are supported. Local <code>.deb</code> files are installed before apt packages so that apt can satisfy any dependencies they introduce.</p>
+</div>
+<div class="paragraph">
+<p>Absolute paths are fully supported. Relative paths are resolved from the source directory and require <code>-S</code> to be specified, falling back to the rpi-image-gen root directory.</p>
 </div>
 </div>
 </div>
