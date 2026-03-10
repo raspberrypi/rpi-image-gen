@@ -1,0 +1,67 @@
+From 490f244ec9ade815b5a6619adde0ac7ae35de87f Mon Sep 17 00:00:00 2001
+From: Phil Elwell <phil@raspberrypi.com>
+Date: Mon, 9 Mar 2026 08:59:13 +0000
+Subject: [PATCH] android-sparse: Split extents of 4GB or more
+
+The Android sparse image format uses chunk headers that include the
+(slightly redundant) overall size of each chunk. The size is stored in
+a 32-bit integer, limiting the maximum chunk size to 2**32 - 1.
+
+Fix a long-standing To Do by implementing the splitting of extents which
+are 4GB or larger.
+
+Signed-off-by: Phil Elwell <phil@raspberrypi.com>
+---
+ image-android-sparse.c | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/image-android-sparse.c b/image-android-sparse.c
+index e7db48e..c52eef2 100644
+--- a/image-android-sparse.c
++++ b/image-android-sparse.c
+@@ -121,6 +121,7 @@ static int android_sparse_generate(struct image *image)
+ 	off_t offset;
+ 	unsigned int i;
+ 	uint32_t *buf, *zeros, crc32 = 0;
++	uint32_t max_raw_blocks = (UINT32_MAX - sizeof(struct sparse_chunk_header)) / sparse->block_size;
+ 	struct stat s;
+ 
+ 	memset(&header, 0, sizeof(header));
+@@ -161,7 +162,6 @@ static int android_sparse_generate(struct image *image)
+ 	   So all start and end of all extents must be aligned accordingly. The
+ 	   extents may overlap now, so merge them if necessary. */
+ 	for (extent = 0; extent < extent_count; ++extent) {
+-		size_t size, max;
+ 		int j;
+ 
+ 		extents[extent].start = extents[extent].start / sparse->block_size *
+@@ -179,16 +179,6 @@ static int android_sparse_generate(struct image *image)
+ 			extents[extent].start = 0;
+ 			extents[extent].end = 0;
+ 		}
+-
+-		/* TODO: split extents that are too big */
+-		max = (~(uint32_t)0) - sizeof(struct sparse_chunk_header);
+-		size = extents[extent].end - extents[extent].start;
+-		if (size > max) {
+-			image_error(image, "extents size %llu larger and supported maximum %llu.\n",
+-				    (unsigned long long)size, (unsigned long long)max);
+-			ret = -EINVAL;
+-			goto out;
+-		}
+ 	}
+ 
+ 	out_fd = open_file(image, imageoutfile(image), O_TRUNC);
+@@ -292,7 +282,8 @@ static int android_sparse_generate(struct image *image)
+ 				}
+ 				chunk_header.blocks++;
+ 			} else {
+-				if (chunk_header.chunk_type != SPARSE_RAW) {
++				if (chunk_header.chunk_type != SPARSE_RAW ||
++				    chunk_header.blocks >= max_raw_blocks) {
+ 					header.input_chunks++;
+ 					ret = flush_header(image, out_fd, &chunk_header, pos);
+ 					if (ret < 0)
+-- 
+2.47.3
+
