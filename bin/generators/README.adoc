@@ -8,8 +8,9 @@ Helper scripts in this directory are invoked by the layer manager when a layer d
 
 [cols="1,4,4", options="header"]
 |===
-| Script | Purpose   | Notes
-| envcp  | Placeholder replacement using environment variables. Includes `SNAPSHOT_ISO8601` (derived from `SOURCE_DATE_EPOCH`). | If `SOURCE_DATE_EPOCH` is unset, the current UTC time is used.
+| Script  | Purpose   | Notes
+| envcp   | Placeholder replacement using environment variables. Includes `SNAPSHOT_ISO8601` (derived from `SOURCE_DATE_EPOCH`). | If `SOURCE_DATE_EPOCH` is unset, the current UTC time is used.
+| snapgen | Renders a named DEB822 `.sources` template from input to output, with `${SNAPSHOT_ISO8601}` substitution. |
 |===
 
 
