@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Architecture agnostic Debian Trixie minbase snapshot
 #  providing a reproducible base.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Type: dynamic
 # X-Env-Layer-Generator: envcp
 # METAEND
@@ -11,8 +11,8 @@ mmdebstrap:
   suite: trixie
   variant: minbase
   mirrors:
-    - deb http://snapshot.debian.org/archive/debian/<SNAPSHOT> trixie main contrib non-free non-free-firmware
-    - deb http://snapshot.debian.org/archive/debian-security/<SNAPSHOT> trixie-security main contrib non-free non-free-firmware
+    - deb https://snapshot.debian.org/archive/debian/${SNAPSHOT_ISO8601} trixie main contrib non-free non-free-firmware
+    - deb https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_ISO8601} trixie-security main contrib non-free non-free-firmware
   setup-hooks:
     - mkdir -p $1/etc/apt/apt.conf.d
     - |-
@@ -22,12 +22,9 @@ mmdebstrap:
   cleanup-hooks:
     - |-
       set -e
+      snap=$(date -u -d @"${SOURCE_DATE_EPOCH}" +%Y%m%dT%H%M%SZ)
       rm -f $1/etc/apt/apt.conf.d/snapshot.conf
-      cat <<- EOF > $1/etc/apt/sources.list
-      # Origin
-      # deb http://snapshot.debian.org/archive/debian/<SNAPSHOT> trixie main contrib non-free non-free-firmware
-      # deb http://snapshot.debian.org/archive/debian-security/<SNAPSHOT> trixie-security main contrib non-free non-free-firmware
-      deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
-      deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
-      deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
-      EOF
+      rm -f $1/etc/apt/sources.list
+      cp ${IGTOP}/templates/debian/apt/trixie.sources $1/etc/apt/sources.list.d/trixie.sources
+      printf '\n# Snapshot origin:\n# https://snapshot.debian.org/archive/debian/%s\n# https://snapshot.debian.org/archive/debian-security/%s\n' \
+        "$snap" "$snap" >> $1/etc/apt/sources.list.d/trixie.sources

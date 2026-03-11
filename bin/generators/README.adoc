@@ -9,7 +9,7 @@ Helper scripts in this directory are invoked by the layer manager when a layer d
 [cols="1,4,4", options="header"]
 |===
 | Script | Purpose   | Notes
-| envcp  | `<PLACEHOLDER>` replacement using environment variables | If `DEBIAN_SNAPSHOT_TS` is unset, `<SNAPSHOT>` is derived from the current UTC time.
+| envcp  | Placeholder replacement using environment variables. Includes `SNAPSHOT_ISO8601` (derived from `SOURCE_DATE_EPOCH`). | If `SOURCE_DATE_EPOCH` is unset, the current UTC time is used.
 |===
 
 
