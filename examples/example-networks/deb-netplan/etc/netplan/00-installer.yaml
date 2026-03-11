@@ -1,0 +1,24 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: no
+      dhcp4-overrides:
+        use-dns: false
+      dhcp6: no
+      dhcp6-overrides:
+        use-dns: false
+      optional: true
+      addresses:
+        - 192.168.0.72/24
+        - 2001:678:e68:f000::72/64
+      # ipv6-privacy and ipv6-address-generation are primarily for SLAAC/autoconf
+      # and are unnecessary for explicitly assigned static IPv6 addresses.
+      gateway4: 192.168.0.1
+      # gateway6: 2001:678:e68:f000::1   # set this if you need an IPv6 gateway
+      nameservers:
+        addresses:
+          - 127.0.0.1
+          - 1.1.1.1     # your ISP upstream DNS1 or other DNS
+          - 8.8.8.8     # your ISP upstream DNS2 or other DNS
