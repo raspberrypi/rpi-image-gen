@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import shutil
 import argparse
@@ -273,7 +274,13 @@ class LayerManager:
         cmd = shlex.split(generator_cmd) # supports positional args
         if not cmd:
             raise ValueError(f"Generator command for layer '{layer_name}' is empty")
-        cmd = cmd + [str(input_path), str(output_path)]
+        expanded_args = []
+        for a in cmd[1:]:
+            expanded = os.path.expandvars(a)
+            if re.search(r'\$(\{\w+\}|\w+)', expanded):
+                raise ValueError(f"Generator arg '{a}' contains unresolved variable after expansion")
+            expanded_args.append(expanded)
+        cmd = [cmd[0]] + [str(input_path), str(output_path)] + expanded_args
         try:
             subprocess.run(cmd, check=True)
         except FileNotFoundError as exc:
