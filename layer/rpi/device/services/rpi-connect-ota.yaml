@@ -26,21 +26,26 @@ mmdebstrap:
     cat <<-EOF > $1/usr/share/dbus-1/system.d/com.raspberrypi.Connect1.RemoteUpdateManager.conf
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE busconfig PUBLIC
-     "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
-     "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+    "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+    "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
     <busconfig>
-      <!-- Allow ${IGconf_device_user1} to offer this service -->
       <policy user="${IGconf_device_user1}">
         <allow own="com.raspberrypi.Connect1.RemoteUpdateManager"/>
+
+        <allow send_type="signal"
+          send_interface="com.raspberrypi.Connect1.RemoteUpdateManager"
+          send_member="NewDeployment"/>
       </policy>
 
-      <!-- Allow root to call this service -->
       <policy user="root">
         <allow send_destination="com.raspberrypi.Connect1.RemoteUpdateManager"
-               send_interface="com.raspberrypi.Connect1.RemoteUpdateManager"/>
+          send_interface="com.raspberrypi.Connect1.RemoteUpdateManager"
+          send_type="method_call"/>
 
         <allow send_destination="com.raspberrypi.Connect1.RemoteUpdateManager"
-               send_interface="org.freedesktop.DBus.Introspectable"/>
+          send_interface="org.freedesktop.DBus.Introspectable"
+          send_type="method_call"
+          send_member="Introspect"/>
       </policy>
     </busconfig>
     EOF
