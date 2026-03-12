@@ -79,6 +79,12 @@ def _pipeline_main(args):
         log_error(f"Error: {exc}")
         raise SystemExit(1)
 
+    try:
+        manager.run_generators_for_layers(build_order)
+    except ValueError as exc:
+        log_error(f"Error: {exc}")
+        raise SystemExit(1)
+
     if not _validate_layers(manager, build_order):
         raise SystemExit(1)
 
