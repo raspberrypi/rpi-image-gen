@@ -44,7 +44,7 @@ We will build three images starting with a single image for a single device. The
 
 Create a file called `my-image.yaml` with the following content:
 
-[,sh]
+[,yaml]
 ----
 layer:
   base: trixie-minbase
@@ -68,7 +68,7 @@ Go ahead and build using the instructions below. This will already produce a use
 
 Create a file called `my-image-location1.yaml` with the following content:
 
-[,sh]
+[,yaml]
 ----
 include:
   file: my-image.yaml
@@ -86,7 +86,7 @@ This will define an image with a hostname specific to the location and override 
 
 Create a file called `my-image-location1-rpi3.yaml` with the following content:
 
-[,sh]
+[,yaml]
 ----
 include:
   file: my-image-location1.yaml
