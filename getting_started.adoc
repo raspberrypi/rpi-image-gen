@@ -1,0 +1,107 @@
+= Getting Started
+
+This guide aims to get you started on building your own custom image using `rpi-image-gen` configs, without yet defining your own layers.
+
+== Requirements
+
+* The build environment needs 2GB RAM or more for tmpfs
+- RPi4 or later if building on RPi
+- Cross-building on a workstation or build server
+* The build environment needs 4GB storage or more for build artefacts and images
+- 8GB SD card is the absolute minimum when building on RPi, but larger is needed for bigger images
+* The build target can be any Raspberry Pi, but all features are available only on RPi4 or later
+- When building for older targets, some layers will not work
+
+== Building on Ubuntu or Debian amd64
+
+While not officially supported, cross building works well on a recent Debian or Ubuntu amd64. In lieu of the quick start, use the following:
+
+git clone https://github.com/raspberrypi/rpi-image-gen.git
+cd rpi-image-gen
+sudo ./install_deps.sh
+sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring wget
+wget -O keydir/raspberrypi.gpg.key https://archive.raspberrypi.com/debian/raspberrypi.gpg.key
+
+This will:
+* Install cross-build and further host dependencies
+* Install Debian keyring from package on Ubuntu
+* Add Raspberry Pi key to your `rpi-image-gen` keys
+
+[,sh]
+----
+git clone https://github.com/raspberrypi/rpi-image-gen.git
+cd rpi-image-gen
+sudo ./install_deps.sh
+sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring wget
+wget -O keydir/raspberrypi.gpg.key https://archive.raspberrypi.com/debian/raspberrypi.gpg.key
+----
+
+== Define Your Image
+
+We will build three images starting with a single image for a single device. Then we use includes to show how you can define multiple images to manage your whole landscape. In this example, we will assume you have various RPi generations deployed across different locations serving the same purpose. Switching them out should be easy.
+
+=== A Simple Base Configuration
+
+Create a file called `my-image.yaml` with the following content:
+
+[,sh]
+----
+layer:
+  base: trixie-minbase
+
+device:
+  user1: myuser
+
+ssh:
+  pubkey_user1: $(< ${HOME}/.ssh/id_rsa.pub)
+  pubkey_only: y
+
+locale:
+  default: en_DK.UTF-8
+  keyboard_keymap: fi
+  timezone: Etc/UTC
+----
+
+Go ahead and build using the instructions below. This will already produce a useable image, and the config will serve a shared base.
+
+=== Adding Image Identities
+
+Create a file called `my-image-location1.yaml` with the following content:
+
+[,sh]
+----
+include:
+  file: my-image.yaml
+
+device:
+  hostname: location1
+
+locale:
+  timezone: Europe/Helsinki
+----
+
+This will define an image with a hostname specific to the location and override the timezone. Again, you can build this and it will work if your device is compatible with the default target of `rpi-image-gen` at the time.
+
+=== Adding Device Specifications
+
+Create a file called `my-image-location1-rpi3.yaml` with the following content:
+
+[,sh]
+----
+include:
+  file: my-image-location1.yaml
+
+device:
+  layer: rpi3
+----
+
+Building this will produce the specific image for the device you are deploying to location1 at the time.
+
+== Build Your Image
+
+Once your image configuration is ready, you can build everything with specifying just one configuration file:
+
+[,sh]
+----
+./rpi-image-gen -c my-image.yaml
+----
