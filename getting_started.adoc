@@ -40,9 +40,21 @@ wget -O keydir/raspberrypi.gpg.key https://archive.raspberrypi.com/debian/raspbe
 
 We will build three images starting with a single image for a single device. Then we use includes to show how you can define multiple images to manage your whole landscape. In this example, we will assume you have various RPi generations deployed across different locations serving the same purpose. Switching them out should be easy.
 
+=== Project setup
+
+Let's set up a simple project that includes a configuration file for wifi to include in the image, and a script to install it.
+
+[,sh]
+----
+mkdir -p myproject/bdebstrap
+echo -e "network={\n    ssid=\"myssid\"\n    psk=\"mypsk\"\n}\n" > myproject/wpa_supplicant.conf
+echo -e '#!/bin/bash\n\nset -eu\n\ncp ../wpa_supplicant.conf $1/etc/\nchroot $1 sh -c "raspi-config nonint do_wifi_country fi"' > myproject/bdebstrap/customize90-wifi
+chmod 755 myproject/bdebstrap/customize90-wifi
+----
+
 === A Simple Base Configuration
 
-Create a file called `my-image.yaml` with the following content:
+Now create the base config file called `my-image.yaml` with the following content:
 
 [,yaml]
 ----
@@ -60,6 +72,9 @@ locale:
   default: en_DK.UTF-8
   keyboard_keymap: fi
   timezone: Etc/UTC
+
+packages:
+  - raspi-config
 ----
 
 Go ahead and build using the instructions below. This will already produce a useable image, and the config will serve a shared base.
@@ -99,9 +114,9 @@ Building this will produce the specific image for the device you are deploying t
 
 == Build Your Image
 
-Once your image configuration is ready, you can build everything with specifying just one configuration file:
+Once your image configuration is ready, you can build everything with specifying just one configuration file. `customize90-wifi` will be automatically included based on its name, location and executability.
 
 [,sh]
 ----
-./rpi-image-gen -c my-image.yaml
+./rpi-image-gen build -c my-image.yaml
 ----
