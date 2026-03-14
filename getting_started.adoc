@@ -16,50 +16,51 @@ This guide aims to get you started on building your own custom image using `rpi-
 
 While not officially supported, cross building works well on a recent Debian or Ubuntu amd64. In lieu of the quick start, use the following:
 
+[,sh]
+----
+sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring wget git
 git clone https://github.com/raspberrypi/rpi-image-gen.git
 cd rpi-image-gen
 sudo ./install_deps.sh
-sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring wget
 wget -O keydir/raspberrypi.gpg.key https://archive.raspberrypi.com/debian/raspberrypi.gpg.key
+----
 
 This will:
 * Install cross-build and further host dependencies
 * Install Debian keyring from package on Ubuntu
 * Add Raspberry Pi key to your `rpi-image-gen` keys
 
-[,sh]
-----
-git clone https://github.com/raspberrypi/rpi-image-gen.git
-cd rpi-image-gen
-sudo ./install_deps.sh
-sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring wget
-wget -O keydir/raspberrypi.gpg.key https://archive.raspberrypi.com/debian/raspberrypi.gpg.key
-----
-
 == Define Your Image
 
-We will build three images starting with a single image for a single device. Then we use includes to show how you can define multiple images to manage your whole landscape. In this example, we will assume you have various RPi generations deployed across different locations serving the same purpose. Switching them out should be easy.
+We will build three images starting with a single image for a single device. Then we use includes to show how you can define multiple images to manage your whole landscape. In this example, we will assume you have various RPi generations deployed across different locations serving as simple SSH servers on wifi.
 
 === Project setup
 
-Let's set up a simple project that includes a configuration file for wifi to include in the image, and a script to install it.
+Let's set up a simple project that includes a configuration file and a script to run installation.
 
 [,sh]
 ----
 mkdir -p myproject/bdebstrap
-echo -e "network={\n    ssid=\"myssid\"\n    psk=\"mypsk\"\n}\n" > myproject/wpa_supplicant.conf
-echo -e '#!/bin/bash\n\nset -eu\n\ncp ../wpa_supplicant.conf $1/etc/\nchroot $1 sh -c "raspi-config nonint do_wifi_country fi"' > myproject/bdebstrap/customize90-wifi
-chmod 755 myproject/bdebstrap/customize90-wifi
+echo -e 'ClientAliveInterval 60' > myproject/sshdkeepalive.conf
+echo -e '#!/bin/bash\n\nset -eu\n\nchroot $1 sh -c "apt-get -y install network-manager"\nchroot $1 sh -c "nmcli --offline connection add type wifi ssid $SSID wifi-sec.psk $PSK wifi-sec.key-mgmt wpa-psk > /etc/NetworkManager/system-connections/$SSID.nmconnection"\nchroot $1 sh -c "chmod 600 /etc/NetworkManager/system-connections/$SSID.nmconnection"' > myproject/bdebstrap/customize90-myscript
+chmod 755 myproject/bdebstrap/customize90-myscript
 ----
 
 === A Simple Base Configuration
 
-Now create the base config file called `my-image.yaml` with the following content:
+Now create the base config file called `myimage.yaml` in `myproject` with the following content:
 
 [,yaml]
 ----
-layer:
-  base: trixie-minbase
+device:
+  user1: myuser
+  user1pass: Fo0bar!!
+
+image:
+  layer: image-rpios
+  boot_part_size: 128m
+  root_part_size: 1920m
+  assetdir: $(pwd)/myproject/
 
 device:
   user1: myuser
@@ -68,46 +69,42 @@ ssh:
   pubkey_user1: $(< ${HOME}/.ssh/id_rsa.pub)
   pubkey_only: y
 
-locale:
-  default: en_DK.UTF-8
-  keyboard_keymap: fi
-  timezone: Etc/UTC
-
 packages:
-  - raspi-config
+  - wpasupplicant
 ----
 
-Go ahead and build using the instructions below. This will already produce a useable image, and the config will serve a shared base.
+Ensure you have an SSH key on the build host, or remove the pubkey_user1 line. Go ahead and build using the instructions below. This will already produce a bootable image, and the config will serve a shared base.
 
 === Adding Image Identities
 
-Create a file called `my-image-location1.yaml` with the following content:
+Create a file called `myimage-location1.yaml` in `myproject` with the following content:
 
 [,yaml]
 ----
 include:
-  file: my-image.yaml
+  file: myimage.yaml
 
 device:
   hostname: location1
 
-locale:
-  timezone: Europe/Helsinki
+env:
+  SSID: localssid
+  PSK: localpsk
 ----
 
 This will define an image with a hostname specific to the location and override the timezone. Again, you can build this and it will work if your device is compatible with the default target of `rpi-image-gen` at the time.
 
 === Adding Device Specifications
 
-Create a file called `my-image-location1-rpi3.yaml` with the following content:
+Create a file called `myimage-location1-rpi5.yaml` in `myproject` with the following content:
 
 [,yaml]
 ----
 include:
-  file: my-image-location1.yaml
+  file: myimage-location1.yaml
 
 device:
-  layer: rpi3
+  layer: rpi5
 ----
 
 Building this will produce the specific image for the device you are deploying to location1 at the time.
@@ -118,5 +115,5 @@ Once your image configuration is ready, you can build everything with specifying
 
 [,sh]
 ----
-./rpi-image-gen build -c my-image.yaml
+./rpi-image-gen build -c myproject/myimage.yaml
 ----
