@@ -71,6 +71,10 @@ ssh:
 
 packages:
   - wpasupplicant
+
+env:
+  SSID: default
+  PSK: 12345678
 ----
 
 Ensure you have an SSH key on the build host, or remove the pubkey_user1 line. Go ahead and build using the instructions below. This will already produce a bootable image, and the config will serve a shared base.
