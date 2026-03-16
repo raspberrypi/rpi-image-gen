@@ -245,3 +245,33 @@ with open(sys.argv[1], encoding='utf-8') as src:
       print(f'{key}="{value}"')
 PY
 }
+
+
+check_world_exec() {
+   local dir="$1"
+   [[ -d "$dir" ]] || die "Not a directory: $dir"
+   if namei -m "$dir" | grep -qE '^\s*d.{8}[^xt]'; then
+      return 1
+   fi
+   return 0
+}
+
+
+# apt (_apt user) requires world execute permissions on all leading paths. This
+# wraps a parent dir check with strict mkdir and policy decisions.
+xmkdir() {
+   local dir="$1"
+   [[ -n "$dir" ]] || die "xmkdir: missing directory"
+
+   local parent
+   parent=$(dirname "$dir")
+   check_world_exec "$parent" || die "xmkdir: parent of $dir is not world-executable"
+
+   if [[ -d "$dir" ]]; then
+      check_world_exec "$dir" || die "xmkdir: path is not world-executable: $dir"
+   elif [[ -e "$dir" ]]; then
+      die "xmkdir: not a directory: $dir"
+   else
+      install -d -m 0755 "$dir" || die "xmkdir: failed to create directory: $dir"
+   fi
+}

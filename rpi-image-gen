@@ -310,7 +310,7 @@ prepare_build_config()
       msg "-> $key : $value"
       case $key in
          IGconf_sys_apt_keydir)
-            mkdir -p -- "$value" || die
+            xmkdir "$value"
             [[ -d /usr/share/keyrings ]] && rsync -a /usr/share/keyrings/ "$value"
             if [[ -n ${HOME:-} && -d ${HOME}/.local/share/keyrings ]]; then
                rsync -a "${HOME}/.local/share/keyrings/" "$value"
