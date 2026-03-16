@@ -1,0 +1,5 @@
+X-IG-Signed-By: /usr/share/keyrings/docker.asc
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: trixie
+Components: stable
