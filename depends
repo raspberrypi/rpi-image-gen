@@ -1,6 +1,6 @@
 all:realpath:coreutils
 all:bash
-all::python-is-python3
+all::python3
 
 bootstrap::python3-yaml
 bootstrap::python3-debian
@@ -8,6 +8,7 @@ bootstrap:dpkg-architecture:dpkg-dev
 
 # build essential
 build:mmdebstrap
+build::debian-archive-keyring
 build:podman
 build:newuidmap:uidmap
 all::dbus-user-session
@@ -37,7 +38,7 @@ build::libtool
 build:autopoint
 build:flex
 build:gettext
-build:pkg-config
+build:pkg-config:pkgconf
 
 # maintainer only (docgen)
 # python3-markdown
