@@ -358,6 +358,18 @@ mmdebstrap:
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>The generator field supports optional arguments after the executable name. These are passed to the generator after <code>&lt;template-path&gt;</code> and <code>&lt;output-path&gt;</code>, so the full invocation is <code>generator &lt;template-path&gt; &lt;output-path&gt; [args&#8230;&#8203;]</code>. Environment variables in arguments are expanded before the generator is called. Both positional arguments and flags are supported.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Layer-Generator: myscript ${IGTOP}/path/to/some/file
+# X-Env-Layer-Generator: myscript -f ${IGTOP}/path/to/some/file -x</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Generators that use <code>argparse</code> or <code>getopt</code> should parse from <code>argv[3:]</code>, as <code>argv[1]</code> and <code>argv[2]</code> are always the fixed input and output paths respectively.</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -1023,6 +1035,15 @@ IGconf_layer_app=my-app</code></pre>
     <div class="layer-list">
         
         <div class="layer-item">
+            <a href="embedded-svelte.html">embedded-svelte</a><span class="layer-desc">- Excludes manpages, locales, and docs to minimise image size.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="embedded-svelte-static.html">embedded-svelte-static</a><span class="layer-desc">- Extends embedded-svelte by removing apt directories, for
+ images that will never run apt in the field.</span>
+        </div>
+        
+        <div class="layer-item">
             <a href="fs-base.html">fs-base</a><span class="layer-desc">- Filesystem base properties and tunables. Provides
  per-filesystem-type configuration consumed by image layers, includ...</span>
         </div>
@@ -1053,6 +1074,17 @@ IGconf_layer_app=my-app</code></pre>
         
         <div class="layer-item">
             <a href="target-config.html">target-config</a><span class="layer-desc">- bdebstrap output target configuration.</span>
+        </div>
+        
+    </div>
+    
+    <h3>Ci</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="container-policy.html">container-policy</a><span class="layer-desc">- APT and dpkg policy for container images.
+ Intended for use with a container base layer.
+ Derived from https://github...</span>
         </div>
         
     </div>
@@ -1135,6 +1167,14 @@ IGconf_layer_app=my-app</code></pre>
         
         <div class="layer-item">
             <a href="debian-trixie-arm64.html">debian-trixie-arm64</a><span class="layer-desc">- Debian Trixie apt base for arm64.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="debian-trixie-arm64-minbase-rolling.html">debian-trixie-arm64-minbase-rolling</a><span class="layer-desc">- Switches the Debian Trixie minbase snapshot to rolling repositories.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="debian-trixie-arm64-minbase-snapshot.html">debian-trixie-arm64-minbase-snapshot</a><span class="layer-desc">- Debian Trixie minbase for arm64 using a snapshot mirror.</span>
         </div>
         
         <div class="layer-item">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>debian-bookworm-arm64 - Layer Documentation</title>
+    <title>embedded-svelte-static - Layer Documentation</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
@@ -121,74 +121,23 @@
     </div>
 
     <div class="header">
-        <h1>debian-bookworm-arm64</h1>
-        <span class="badge">distribution</span>
-        <span class="badge">v2.0.0</span>
-        <p>Debian Bookworm apt base for arm64</p>
+        <h1>embedded-svelte-static</h1>
+        <span class="badge">base</span>
+        <span class="badge">v1.0.0</span>
+        <p>Extends embedded-svelte by removing apt directories, for
+ images that will never run apt in the field.</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
         <p><strong>Depends on:</strong></p>
         <div class="deps">
-            <a href="locale-base.html" class="dep-badge">locale-base</a>
+            <a href="embedded-svelte.html" class="dep-badge">embedded-svelte</a>
         </div>
-    </div>
-    <div class="section">
-        <h2>Configuration Variables</h2>
-        <p><strong>References:</strong>
-        <code>IGconf_locale_timezone</code>, 
-        <code>IGconf_locale_default</code>, 
-        <code>IGconf_locale_keyboard_layout</code>, 
-        <code>IGconf_locale_keyboard_keymap</code>
-        </p>
-    </div>
-    <div class="section">
-        <h2>mmdebstrap</h2>
-        
-        <h3>Suite</h3>
-        <ul>
-            <li><code>bookworm</code></li>
-        </ul>
-        
-        <h3>Variant</h3>
-        <p>Installs package set:</p>
-        <ul>
-            <li><code>apt</code></li>
-        </ul>
-        
-        <h3>Architectures</h3>
-        <ul>
-            <li><code>arm64</code></li>
-        </ul>
-        
-        <h3>Mirrors</h3>
-        <ul>
-            <li><code>${IGTOP}/templates/debian/apt/bookworm.sources</code></li>
-        </ul>
-        
-        <h3>dpkgopts</h3>
-        <ul>
-            <li><code>path-exclude=/usr/share/man/*</code></li>
-            <li><code>path-include=/usr/share/man/man[1-9]/*</code></li>
-            <li><code>path-exclude=/usr/share/locale/*</code></li>
-            <li><code>path-include=/usr/share/locale/locale.alias</code></li>
-            <li><code>path-exclude=/usr/share/doc/*</code></li>
-            <li><code>path-include=/usr/share/doc/*/copyright</code></li>
-            <li><code>path-include=/usr/share/doc/*/changelog.Debian.*</code></li>
-            <li><code>path-exclude=/usr/share/{doc,info,man,omf,help,gnome/help}/*</code></li>
-            <li><code>path-exclude=/usr/share/lintian/*</code></li>
-        </ul>
-        
-        <h3>aptopts</h3>
-        <ul>
-            <li><code>APT::Install-Suggests "false"</code></li>
-            <li><code>APT::Install-Recommends "false"</code></li>
-        </ul>
     </div>
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>debian/bookworm/arm64/base-apt.yaml</code></p>
+        <p><strong>File:</strong> <code>base/embedded-svelte-static.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
     </div>
 </body>
