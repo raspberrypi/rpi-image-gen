@@ -7,6 +7,6 @@ artefact:
 layer:
   - debian-trixie-arm64-minbase-rolling
   - rpi-debian-trixie
+  - rpios-ci-container-policy
   - ca-certificates
-  - container-policy
   - sbom-base

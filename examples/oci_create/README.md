@@ -12,25 +12,25 @@ $ rpi-image-gen build -S ./examples/oci_create -c ./config/ci/arm64-rpi-trixie-s
 
 This results in reproducible Debian Distribution packages installed in the base image. The image is set up so that apt can be run as normal to install packages from the rolling repositories.
 
-File arm64-rpi-trixie-slim.oci.tar.gz can be published / distributed. To load and run locally:
+File oci-arm64-rpi-rpios-trixie-slim.tar.gz can be published / distributed. To load and run locally:
 
 ```bash
-$ podman load -i ./work/ci-images/arm64-rpi-trixie-slim.oci.tar.gz
+$ podman load -i ./work/ci-images/oci-arm64-rpi-rpios-trixie-slim.tar.gz
 Getting image source signatures
-Copying blob 4fa1bf0cb76c done
-Copying config 5c72e79814 done
+Copying blob 646fb9ee0731 done
+Copying config 9773f20fc7 done
 Writing manifest to image destination
 Storing signatures
-Loaded image: localhost/rpi:arm64-trixie-slim
+Loaded image: localhost/raspberrypi/rpios:arm64-trixie-slim
 ```
 ```bash
-$ podman run --rm -it rpi:arm64-trixie-slim /bin/bash
-root@5c3ca53c2585:/# cat /usr/share/rpi-image-gen/origin
+$ podman run --rm -it localhost/raspberrypi/rpios:arm64-trixie-slim /bin/bash
+root@c6a98bd97537:/# cat /usr/share/rpi-image-gen/origin
 # Layer: base-minbase-snapshot
 # Source: trixie-snapshot.sources
-# Snapshot origin: 20260312T000000Z
-# SOURCE_DATE_EPOCH: 1773273600
-root@5c3ca53c2585:/# apt update
+# Snapshot origin: 20260318T000000Z
+# SOURCE_DATE_EPOCH: 1773792000
+root@c6a98bd97537:/# apt update
 Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]
 ...
 ```
@@ -38,7 +38,7 @@ Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]
 rpi-image-gen creates `/usr/share/rpi-image-gen/origin` which describes the snapshot used. The container can be inspected after loading, too:
 
 ```bash
-$ podman inspect rpi:arm64-trixie-slim
+$ podman inspect localhost/raspberrypi/rpios:arm64-trixie-slim
 ```
 
 The above uses podman, but docker works just as well.
