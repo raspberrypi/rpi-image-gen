@@ -42,7 +42,7 @@ Let's set up a simple project that includes a configuration file and a script to
 ----
 mkdir -p myproject/bdebstrap
 echo -e 'ClientAliveInterval 60' > myproject/sshdkeepalive.conf
-echo -e '#!/bin/bash\n\nset -eu\n\nchroot $1 sh -c "apt-get -y install network-manager"\nchroot $1 sh -c "nmcli --offline connection add type wifi ssid $SSID wifi-sec.psk $PSK wifi-sec.key-mgmt wpa-psk > /etc/NetworkManager/system-connections/$SSID.nmconnection"\nchroot $1 sh -c "chmod 600 /etc/NetworkManager/system-connections/$SSID.nmconnection"' > myproject/bdebstrap/customize90-myscript
+echo -e '#!/bin/bash\n\nset -eu\n\nchroot $1 sh -c "apt-get -y install network-manager"\ncp ../sshdkeepalive.conf $1/etc/sshd_config.d/\nchroot $1 sh -c "nmcli --offline connection add type wifi ssid $SSID wifi-sec.psk $PSK wifi-sec.key-mgmt wpa-psk autoconnect yes > /etc/NetworkManager/system-connections/$SSID.nmconnection"\nchroot $1 sh -c "chmod 600 /etc/NetworkManager/system-connections/$SSID.nmconnection"' > myproject/bdebstrap/customize90-myscript
 chmod 755 myproject/bdebstrap/customize90-myscript
 ----
 
@@ -61,9 +61,6 @@ image:
   boot_part_size: 128m
   root_part_size: 1920m
   assetdir: $(pwd)/myproject/
-
-device:
-  user1: myuser
 
 ssh:
   pubkey_user1: $(< ${HOME}/.ssh/id_rsa.pub)
@@ -115,7 +112,7 @@ Building this will produce the specific image for the device you are deploying t
 
 == Build Your Image
 
-Once your image configuration is ready, you can build everything with specifying just one configuration file. `customize90-wifi` will be automatically included based on its name, location and executability.
+Once your image configuration is ready, you can build everything with specifying just one configuration file. `customize90-myscript` will be automatically included based on its name, location and executability.
 
 [,sh]
 ----
