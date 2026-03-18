@@ -26,6 +26,7 @@ wget -O keydir/raspberrypi.gpg.key https://archive.raspberrypi.com/debian/raspbe
 ----
 
 This will:
+
 * Install cross-build and further host dependencies
 * Install Debian keyring from package on Ubuntu
 * Add Raspberry Pi key to your `rpi-image-gen` keys
@@ -34,7 +35,7 @@ This will:
 
 We will build three images starting with a single image for a single device. Then we use includes to show how you can define multiple images to manage your whole landscape. In this example, we will assume you have various RPi generations deployed across different locations serving as simple SSH servers on wifi.
 
-=== Project setup
+=== Project Setup
 
 Let's set up a simple project that includes a configuration file and a script to run installation.
 
