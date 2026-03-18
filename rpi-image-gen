@@ -289,8 +289,8 @@ prepare_build_config()
    mapfile_kv "${ctx[FINALENV]}" set_kv
 
    # Create output dirs
-   mkdir -p "$IGconf_target_dir" "$IGconf_sys_workroot" "$IGconf_sys_cachedir"
-   [[ -n "${IGconf_image_outputdir:-}" ]] && mkdir -p "$IGconf_image_outputdir"
+   install -d -m 0755 "$IGconf_target_dir" "$IGconf_sys_workroot" "$IGconf_sys_cachedir"
+   [[ -n "${IGconf_image_outputdir:-}" ]] && install -d -m 0755 "$IGconf_image_outputdir"
 
    # Build required host tools
    bootstrap_build_tools
