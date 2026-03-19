@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: build
 # X-Env-Layer-Desc: Build environment configuration including workspace, apt
 #  settings, and system foundation defaults.
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 1.1.1
 #
 # X-Env-VarPrefix: sys
 #
@@ -35,6 +35,8 @@
 #  chroot explicitly if a key contained in this directory points to a location
 #  that is not otherwise populated during chroot creation (for example by
 #  installing a keyring package).
+#  Note: apt requires world-executable permission on every component of the path
+#  to this directory, including the directory itself.
 # X-Env-Var-apt_keydir-Required: n
 # X-Env-Var-apt_keydir-Valid: string
 # X-Env-Var-apt_keydir-Set: y

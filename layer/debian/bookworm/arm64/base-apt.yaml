@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: debian-bookworm-arm64
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Debian Bookworm apt base for arm64
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: locale-base
 #
 # X-Env-VarRequires: IGconf_locale_timezone,
@@ -18,9 +18,7 @@ mmdebstrap:
   variant: apt
   suite: bookworm
   mirrors:
-    - deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+    - ${IGTOP}/templates/debian/apt/bookworm.sources
   essential-hooks:
     - echo tzdata tzdata/Areas select "${IGconf_locale_timezone%%/*}"
         | chroot $1 debconf-set-selections

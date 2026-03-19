@@ -19,11 +19,12 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y debian-archive-keyring
           sudo ./install_deps.sh
 
       - name: test harness
-        run: ./test/run-all.sh
+        run: |
+          stat -c '%a %n' "$HOME"
+          ./test/run-all.sh
 
       - name: build
         run: |
@@ -41,14 +42,16 @@ jobs:
       - name: enable qemu-user-static
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-user-static binfmt-support debian-archive-keyring
+          sudo apt-get install -y qemu-user-static binfmt-support
           sudo update-binfmts --enable qemu-aarch64
 
       - name: install dependencies
         run: sudo ./install_deps.sh
 
       - name: test harness
-        run: ./test/run-all.sh
+        run: |
+          stat -c '%a %n' "$HOME"
+          ./test/run-all.sh
 
       - name: build
         run: ./rpi-image-gen build -c ./config/trixie-minbase.yaml -f

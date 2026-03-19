@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Debian Bookworm custom layer for arm64 providing
 #  a usable and practical base.
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: locale-base
 #
 # X-Env-VarRequires: IGconf_locale_timezone,
@@ -19,9 +19,7 @@ mmdebstrap:
   variant: custom
   suite: bookworm
   mirrors:
-    - deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+    - ${IGTOP}/templates/debian/apt/bookworm.sources
   packages:
     - perl
     - findutils

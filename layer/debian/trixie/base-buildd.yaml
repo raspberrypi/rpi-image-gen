@@ -4,7 +4,7 @@
 # X-Env-Layer-Desc: Architecture agnostic Debian Trixie buildd base.
 #  This provides a base layer specifically designed for automated package
 #  building and software compilation.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: locale-base
 #
 # X-Env-VarRequires: IGconf_locale_timezone,
@@ -18,9 +18,7 @@ mmdebstrap:
   variant: buildd
   suite: trixie
   mirrors:
-    - deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
+    - ${IGTOP}/templates/debian/apt/trixie.sources
   essential-hooks:
     - echo tzdata tzdata/Areas select "${IGconf_locale_timezone%%/*}"
         | chroot $1 debconf-set-selections

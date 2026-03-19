@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+import os, pathlib, shutil, sys
+from datetime import datetime, timezone
+from debian import deb822
+
+if len(sys.argv) < 4:
+    sys.exit(1)
+
+if "DYNROOT" not in os.environ:
+    print("snapgen: DYNROOT not set", file=sys.stderr)
+    sys.exit(1)
+
+dynroot = pathlib.Path(os.environ["DYNROOT"])
+src_file = pathlib.Path(sys.argv[3])
+
+# Set snapshot time
+sde = os.environ.get("SOURCE_DATE_EPOCH")
+epoch = datetime.fromtimestamp(int(sde), tz=timezone.utc) if sde else datetime.now(tz=timezone.utc)
+snapshot = epoch.strftime("%Y%m%dT%H%M%SZ")
+
+dst_tpl = dynroot / "templates/debian/apt"
+dst_tpl.mkdir(parents=True, exist_ok=True)
+
+# Placeholder replacement
+stanzas = list(deb822.Deb822.iter_paragraphs(src_file.read_text()))
+for stanza in stanzas:
+    if "URIs" in stanza:
+        stanza["URIs"] = stanza["URIs"].replace("${SNAPSHOT_ISO8601}", snapshot)
+content = "\n\n".join(str(s).rstrip("\n") for s in stanzas) + "\n"
+(dst_tpl / src_file.name).write_text(content)
+
+# Write out info file
+with (dst_tpl / "rpi-image-gen.origin").open("a") as f:
+    f.write(f"# Layer: {pathlib.Path(sys.argv[1]).stem}\n")
+    f.write(f"# Source: {src_file.name}\n")
+    f.write(f"# Snapshot origin: {snapshot}\n")
+    if sde:
+        f.write(f"# SOURCE_DATE_EPOCH: {sde}\n")
+    f.write("\n")
+
+# Render layer
+shutil.copy2(sys.argv[1], sys.argv[2])

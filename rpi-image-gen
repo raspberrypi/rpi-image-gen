@@ -35,7 +35,7 @@ case $cmd in
    doc*)
       bind=$(hostname -I | cut -d' ' -f1)
       echo "Point your browser at http://${bind}:3142"
-      python -m http.server 3142 --directory "${IGTOP}/docs/" --bind "$bind"
+      python3 -m http.server 3142 --directory "${IGTOP}/docs/" --bind "$bind"
       exit 0
       ;;
    *) cli_help; die "Unknown command" ;;
@@ -289,8 +289,8 @@ prepare_build_config()
    mapfile_kv "${ctx[FINALENV]}" set_kv
 
    # Create output dirs
-   mkdir -p "$IGconf_target_dir" "$IGconf_sys_workroot" "$IGconf_sys_cachedir"
-   [[ -n "${IGconf_image_outputdir:-}" ]] && mkdir -p "$IGconf_image_outputdir"
+   install -d -m 0755 "$IGconf_target_dir" "$IGconf_sys_workroot" "$IGconf_sys_cachedir"
+   [[ -n "${IGconf_image_outputdir:-}" ]] && install -d -m 0755 "$IGconf_image_outputdir"
 
    # Build required host tools
    bootstrap_build_tools
@@ -310,7 +310,7 @@ prepare_build_config()
       msg "-> $key : $value"
       case $key in
          IGconf_sys_apt_keydir)
-            mkdir -p -- "$value" || die
+            xmkdir "$value"
             [[ -d /usr/share/keyrings ]] && rsync -a /usr/share/keyrings/ "$value"
             if [[ -n ${HOME:-} && -d ${HOME}/.local/share/keyrings ]]; then
                rsync -a "${HOME}/.local/share/keyrings/" "$value"
