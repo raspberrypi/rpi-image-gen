@@ -59,12 +59,11 @@ device:
 
 image:
   layer: image-rpios
-  boot_part_size: 128m
-  root_part_size: 1920m
-  assetdir: $(pwd)/myproject/
+  boot_part_size: 128M
+  root_part_size: 1536M
 
 ssh:
-  pubkey_user1: $(< ${HOME}/.ssh/id_rsa.pub)
+  pubkey_user1: $(cat ${HOME}/.ssh/id_rsa.pub)
   pubkey_only: y
 
 packages:
@@ -113,9 +112,9 @@ Building this will produce the specific image for the device you are deploying t
 
 == Build Your Image
 
-Once your image configuration is ready, you can build everything with specifying just one configuration file. `customize90-myscript` will be automatically included based on its name, location and executability.
+Once your image configuration is ready, you can build everything with specifying just one configuration file. `customize90-myscript` will be automatically included based on its name, executability and location in relation to the `-S` source directory flag.
 
 [,sh]
 ----
-./rpi-image-gen build -c myproject/myimage.yaml
+./rpi-image-gen build -S myproject/ -c myproject/myimage.yaml
 ----
