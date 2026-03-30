@@ -36,6 +36,9 @@ disable_overscan=1
 # Run as fast as firmware / board allows
 arm_boost=1
 
+# fw crypto lock permissions
+lock_device_private_key=1
+
 [pi02]
 # If don't care about Bluetooth use the line below to get the pl011 instead of 8250 UART
 # and use console=ttyAMA0,115200

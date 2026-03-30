@@ -36,7 +36,7 @@ LABEL=BOOTFS                    /bootfs        vfat defaults,rw,noatime,errors=p
 EOF
       ;;
    BOOT)
-      sed -i "s|root=[^ ]*|root=/dev/ram0|" "$IMAGEMOUNTPATH/cmdline.txt"
+      sed -i "s|root=[^ ]*|root=/dev/disk/by-slot/active/system|" "$IMAGEMOUNTPATH/cmdline.txt"
       case $IGconf_image_rootfs_type in
          erofs) sed -i 's|fsck\.repair=yes||g' "$IMAGEMOUNTPATH/cmdline.txt" ;;
       esac
