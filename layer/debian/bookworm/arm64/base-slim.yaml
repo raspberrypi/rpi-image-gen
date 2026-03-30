@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Debian Bookworm custom layer for arm64 providing
 #  a usable and practical base.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Requires: locale-base
 #
 # X-Env-VarRequires: IGconf_locale_timezone,
@@ -36,6 +36,7 @@ mmdebstrap:
     - gzip
     - udev
     - e2fsprogs
+    - debian-archive-keyring
   setup-hooks:
     - mkdir -p $1/bin
     - ln -s bash $1/bin/sh

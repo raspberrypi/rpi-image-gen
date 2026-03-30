@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Debian Trixie custom layer for arm64 providing
 #  a usable and practical base.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Requires: locale-base
 #
 # X-Env-VarRequires: IGconf_locale_timezone,
@@ -37,6 +37,7 @@ mmdebstrap:
     - udev
     - e2fsprogs
     - linux-sysctl-defaults
+    - debian-archive-keyring
   setup-hooks:
     - mkdir -p $1/usr/bin
     - ln -s bash $1/usr/bin/sh
