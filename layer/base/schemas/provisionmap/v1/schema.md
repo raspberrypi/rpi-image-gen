@@ -81,7 +81,7 @@
 
 |                      | Array restrictions |
 | -------------------- | ------------------ |
-| **Min items**        | N/A                |
+| **Min items**        | 1                  |
 | **Max items**        | N/A                |
 | **Items unicity**    | False              |
 | **Additional items** | False              |
@@ -784,7 +784,7 @@ Must be one of:
 
 |                      | Array restrictions |
 | -------------------- | ------------------ |
-| **Min items**        | N/A                |
+| **Min items**        | 1                  |
 | **Max items**        | N/A                |
 | **Items unicity**    | False              |
 | **Additional items** | False              |
@@ -806,4 +806,4 @@ Must be one of:
 **Description:** A single PMAP entry.
 
 ----------------------------------------------------------------------------------------------------------------------------
-Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-03-05 at 17:39:33 +0000
+Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-03-30 at 14:27:01 +0100

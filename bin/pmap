@@ -17,6 +17,9 @@ def pmap_version(data):
     value = get_key(data, "attributes.PMAPversion")
     if value is None:
         # Try parsing as fully assembled image.json
+        pmap_data = get_key(data, "layout.provisionmap")
+        if isinstance(pmap_data, list) and len(pmap_data) == 0:
+            return None
         value = get_key(data, "layout.provisionmap.attributes.PMAPversion")
         if value is None:
             sys.stderr.write("Error: No version\n")
@@ -283,7 +286,17 @@ if __name__ == '__main__':
         sys.stderr.write(f"Error: invalid JSON: {e}\n")
         sys.exit(1)
 
-    major, minor, patch = validate(data, args.schema)
+    version = validate(data, args.schema)
+
+    if version is None:
+        # IDP doc with no PMAP. schema validation passed but PMAP
+        # specific ops are not possible
+        if args.slotvars or args.cryptvars:
+            sys.stderr.write("Error: No PMAP in IDP doc\n")
+            sys.exit(1)
+        sys.exit(0)
+
+    major, minor, patch = version
 
     if args.get_key:
         value = get_key(data, args.get_key)
