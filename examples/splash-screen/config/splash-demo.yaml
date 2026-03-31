@@ -9,7 +9,7 @@
 #   work/image-deb13-arm64-splash/deb13-arm64-splash.img
 #
 # Before building, create your splash screen (24-bit TGA, max 1920x1080, <224 colours):
-#   ./layer/rpi/splash-screen/EXAMPLE-splash.sh "Your Text" splash.tga
+#   ./layer/rpi/device/splash-screen/EXAMPLE-splash.sh "Your Text" splash.tga
 #
 # Then update the image_path below to point to your splash screen.
 
