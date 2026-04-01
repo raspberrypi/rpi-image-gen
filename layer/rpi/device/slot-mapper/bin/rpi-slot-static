@@ -8,6 +8,10 @@ set -u
 # environments such as klibc, and be as POSIX compliant as possible.
 
 
+SLOTMAP=/boot/slot.map
+[ -r "$SLOTMAP" ] || exit 1
+
+
 err() {
    msg="ERROR: $*"
    if [ -w /dev/kmsg ]; then
@@ -91,7 +95,7 @@ triplet2dev() {
 # Static map for fallback / non-GPT
 # shellcheck disable=SC2120
 read_static_map() {
-   mapfile="${1:-/boot/slot.map}"
+   mapfile="${1:-$SLOTMAP}"
    a_boot_dev=""
    a_system_dev=""
    b_boot_dev=""

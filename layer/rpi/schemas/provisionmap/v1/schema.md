@@ -437,7 +437,7 @@ Must be one of:
 | ------------------------------------------------------------------------ | ------- | ----------------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | + [key_size](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_key_size ) | No      | enum (of integer) | No         | -          | The encryption key size in bits.                                                                                                                    |
 | + [cipher](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_cipher )     | No      | string            | No         | -          | The cipher and mode used for encryption, e.g. aes-xts-plain64.                                                                                      |
-| + [hash](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_hash )         | No      | string            | No         | -          | The hash algorithm used for key derivation, e.g. sha256.                                                                                            |
+| + [hash](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_hash )         | No      | string            | No         | -          | The hash algorithm used for metadata integrity, e.g. sha256.                                                                                        |
 | - [label](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label )       | No      | string            | No         | -          | An optional human-readable label for the LUKS2 container.                                                                                           |
 | + [uuid](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid )         | No      | string            | No         | -          | The UUID assigned to the LUKS2 container. Required so that the container can be identified and unlocked at runtime.                                 |
 | + [mname](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_mname )       | No      | string            | No         | -          | The device mapper name for the LUKS2 container, used as the mapped device name under /dev/mapper.                                                   |
@@ -473,7 +473,7 @@ Must be one of:
 | **Type**     | `string` |
 | **Required** | Yes      |
 
-**Description:** The hash algorithm used for key derivation, e.g. sha256.
+**Description:** The hash algorithm used for metadata integrity, e.g. sha256.
 
 ###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label"></a>1.1.3.1.1.2.1.4. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > label`
 
@@ -806,4 +806,4 @@ Must be one of:
 **Description:** A single PMAP entry.
 
 ----------------------------------------------------------------------------------------------------------------------------
-Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-03-30 at 14:27:01 +0100
+Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-03-31 at 17:28:56 +0100

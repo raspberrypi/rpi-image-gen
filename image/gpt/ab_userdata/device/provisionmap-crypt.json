@@ -48,9 +48,9 @@
    {
       "encrypted": {
          "luks2": {
-            "key_size": 512,
-            "cipher": "aes-xts-plain64",
-            "hash": "sha256",
+            "key_size": ${LUKS_KEYSIZE},
+            "cipher": "${LUKS_CIPHER}",
+            "hash": "${LUKS_HASH}",
             "label": "OSDATA",
             "uuid": "${CRYPT_UUID}",
             "mname": "osdata_crypt",

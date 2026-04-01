@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>debian-bookworm-arm64-slim - Layer Documentation</title>
+    <title>rpi-idp - Layer Documentation</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
@@ -121,96 +121,91 @@
     </div>
 
     <div class="header">
-        <h1>debian-bookworm-arm64-slim</h1>
-        <span class="badge">distribution</span>
-        <span class="badge">v2.1.0</span>
-        <p>Debian Bookworm custom layer for arm64 providing
- a usable and practical base.</p>
+        <h1>rpi-idp</h1>
+        <span class="badge">device</span>
+        <span class="badge">v1.0.0</span>
+        <p>Image Description Provisioning (IDP) configuration
+ for Raspberry Pi devices.</p>
+    </div>
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div class="sect1">
+<h2 id="_overview">Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>rpi-idp</code> layer family provides Image Description Provisioning (IDP) configuration defaults for Raspberry Pi device images. These layers define attributes used in Provisioning Map (PMAP) templates, such as encryption parameters.</p>
+</div>
+<div class="paragraph">
+<p><code>rpi-idp</code> is the top-level layer, pulling in sub-layers via dependencies for each supported provisioning feature:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Layer</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rpi-idp-luks2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Device scoped LUKS2 encrypted volume attributes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Links to these layers can be found below.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_defaults_vs_pmap_authorship">Layer Defaults vs. PMAP Authorship</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The variables defined here are <strong>defaults for convenience</strong>. An image layout is in full control of its own PMAP and is not required to use them at all. The PMAP is a JSON fragment authored per-image; these variables are available to PMAP templates but each PMAP itself is independent. This means:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An image with multiple LUKS containers can use different cipher parameters per volume by referencing different variables or hard-coding values directly in its PMAP template.</p>
+</li>
+<li>
+<p>A custom image can ignore these variables entirely.</p>
+</li>
+<li>
+<p>These variables are only meaningful when an image layout chooses to reference them.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>See the <a href="../../../../provisioning/index.html">IDP Provisioning Documentation</a> for a full description of the PMAP format and how it is embedded in the IDP document.</p>
+</div>
+</div>
+</div>
+
+        </div>
     </div>
     <div class="section">
         <h2>Relationships</h2>
         <p><strong>Depends on:</strong></p>
         <div class="deps">
-            <a href="locale-base.html" class="dep-badge">locale-base</a>
+            <a href="rpi-idp-luks2.html" class="dep-badge">rpi-idp-luks2</a>
         </div>
-    </div>
-    <div class="section">
-        <h2>Configuration Variables</h2>
-        <p><strong>References:</strong>
-        <code>IGconf_locale_timezone</code>, 
-        <code>IGconf_locale_default</code>, 
-        <code>IGconf_locale_keyboard_layout</code>, 
-        <code>IGconf_locale_keyboard_keymap</code>
-        </p>
-    </div>
-    <div class="section">
-        <h2>mmdebstrap</h2>
-        
-        <h3>Suite</h3>
-        <ul>
-            <li><code>bookworm</code></li>
-        </ul>
-        
-        <h3>Variant</h3>
-        <p>Installs package set:</p>
-        <ul>
-            <li><code>custom</code></li>
-        </ul>
-        
-        <h3>Architectures</h3>
-        <ul>
-            <li><code>arm64</code></li>
-        </ul>
-        
-        <h3>Packages</h3>
-        <p>Installs:</p>
-        <ul>
-            <li><code>perl</code></li>
-            <li><code>findutils</code></li>
-            <li><code>dpkg</code></li>
-            <li><code>libc-bin</code></li>
-            <li><code>base-files</code></li>
-            <li><code>base-passwd</code></li>
-            <li><code>debianutils</code></li>
-            <li><code>bash</code></li>
-            <li><code>diffutils</code></li>
-            <li><code>util-linux</code></li>
-            <li><code>sed</code></li>
-            <li><code>grep</code></li>
-            <li><code>gzip</code></li>
-            <li><code>udev</code></li>
-            <li><code>e2fsprogs</code></li>
-            <li><code>debian-archive-keyring</code></li>
-        </ul>
-        
-        <h3>Mirrors</h3>
-        <ul>
-            <li><code>${IGTOP}/templates/debian/apt/bookworm.sources</code></li>
-        </ul>
-        
-        <h3>dpkgopts</h3>
-        <ul>
-            <li><code>path-exclude=/usr/share/man/*</code></li>
-            <li><code>path-include=/usr/share/man/man[1-9]/*</code></li>
-            <li><code>path-exclude=/usr/share/locale/*</code></li>
-            <li><code>path-include=/usr/share/locale/locale.alias</code></li>
-            <li><code>path-exclude=/usr/share/doc/*</code></li>
-            <li><code>path-include=/usr/share/doc/*/copyright</code></li>
-            <li><code>path-include=/usr/share/doc/*/changelog.Debian.*</code></li>
-            <li><code>path-exclude=/usr/share/{doc,info,man,omf,help,gnome/help}/*</code></li>
-            <li><code>path-exclude=/usr/share/lintian/*</code></li>
-        </ul>
-        
-        <h3>aptopts</h3>
-        <ul>
-            <li><code>APT::Install-Suggests "false"</code></li>
-            <li><code>APT::Install-Recommends "false"</code></li>
-        </ul>
+        <p><strong>Required by:</strong></p>
+        <div class="deps">
+            
+            <a href="device-base.html" class="dep-badge">device-base</a>
+            
+        </div>
     </div>
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>debian/bookworm/arm64/base-slim.yaml</code></p>
+        <p><strong>File:</strong> <code>rpi/device/provisioning/idp.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
     </div>
 </body>

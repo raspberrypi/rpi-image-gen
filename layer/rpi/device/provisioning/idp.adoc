@@ -1,0 +1,27 @@
+= IDP Layers
+
+== Overview
+
+The `rpi-idp` layer family provides Image Description Provisioning (IDP) configuration defaults for Raspberry Pi device images. These layers define attributes used in Provisioning Map (PMAP) templates, such as encryption parameters.
+
+`rpi-idp` is the top-level layer, pulling in sub-layers via dependencies for each supported provisioning feature:
+
+[cols="1,3"]
+|===
+| Layer | Purpose
+
+| `rpi-idp-luks2` | Device scoped LUKS2 encrypted volume attributes
+
+|===
+
+Links to these layers can be found below.
+
+== Layer Defaults vs. PMAP Authorship
+
+The variables defined here are *defaults for convenience*. An image layout is in full control of its own PMAP and is not required to use them at all. The PMAP is a JSON fragment authored per-image; these variables are available to PMAP templates but each PMAP itself is independent. This means:
+
+* An image with multiple LUKS containers can use different cipher parameters per volume by referencing different variables or hard-coding values directly in its PMAP template.
+* A custom image can ignore these variables entirely.
+* These variables are only meaningful when an image layout chooses to reference them.
+
+See the link:../../../../provisioning/index.html[IDP Provisioning Documentation] for a full description of the PMAP format and how it is embedded in the IDP document.

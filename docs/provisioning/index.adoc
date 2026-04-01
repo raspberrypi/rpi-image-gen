@@ -37,9 +37,11 @@ The image description is split into two components using a simple schema:
 
 If an image layer is to support IDP, it must declare support of a provisioning map in its config settings and install the applicable JSON fragment as `${IGconf_image_outputdir}/provisionmap.json`. Typically this is handled by image layer specific hooks. If installed, rpi-image-gen will automatically include the PMAP in the final image description file (`image.json`). Please refer to the individual layer documentation for available PMAP options.
 
+rpi-image-gen provides the link:../layer/rpi-idp.html[rpi-idp layer] layer which supplies default IDP configuration variables (e.g., LUKS2 cipher, hash and key size) for use in PMAP templates. Image layouts are free to use these defaults, override them, or author their PMAP independently.
+
 === Schema Validation
 
-The IDP and PMAP document formats are formally defined by JSON schemas (draft-07), located in `layer/base/schemas/`. These decouple document validation from the rpi-image-gen build flow - any toolchain capable of producing a conforming IDP document can participate in the Raspberry Pi provisioning flow without depending on rpi-image-gen.
+The IDP and PMAP document formats are formally defined by JSON schemas (draft-07), located in `layer/rpi/schemas/`. These decouple document validation from the rpi-image-gen build flow - any toolchain capable of producing a conforming IDP document can participate in the Raspberry Pi provisioning flow without depending on rpi-image-gen.
 
 * link:../schemas/idp/v2/schema.html[IDP Schema Reference]
 * link:../schemas/provisionmap/v1/schema.html[PMAP Schema Reference]
@@ -65,6 +67,8 @@ Raspberry Pi provisioning tools such as `rpi-sb-provisioner` (https://github.com
 
 === Usage:
 
+rpi-sb-provisioner supports IDP. This enables seamless integration and secure deployment of rpi-image-gen created images on your Raspberry Pi device. Refer to the https://github.com/raspberrypi/rpi-sb-provisioner[*rpi-sb-provisioner* documentation] for further details.
+
 To use IDP *without* rpi-sb-provisioner:
 
 . Become familiar with *rpiboot* (https://github.com/raspberrypi/usbboot)
@@ -85,5 +89,3 @@ It's also possible to issue conventional fastboot commands from the client to th
 $ fastboot flash mmcblk0 /path/to/fullimage.sparse
 ----
 ====
-
-rpi-sb-provisioner will gain support for IDP which will enable seamless integration and secure deployment of rpi-image-gen created images on your Raspberry Pi device. Refer to the https://github.com/raspberrypi/rpi-sb-provisioner[*rpi-sb-provisioner* documentation] for further details.

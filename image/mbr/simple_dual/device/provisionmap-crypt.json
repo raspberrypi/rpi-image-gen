@@ -16,11 +16,11 @@
    {
       "encrypted": {
          "luks2": {
-            "key_size": 512,
-            "cipher": "aes-xts-plain64",
+            "key_size": ${LUKS_KEYSIZE},
+            "cipher": "${LUKS_CIPHER}",
             "label": "OSROOT",
             "uuid": "${CRYPT_UUID}",
-            "hash": "sha256",
+            "hash": "${LUKS_HASH}",
             "mname": "osroot_crypt",
             "etype": "raw"
          },
