@@ -210,11 +210,14 @@
 <div class="paragraph">
 <p>If an image layer is to support IDP, it must declare support of a provisioning map in its config settings and install the applicable JSON fragment as <code>${IGconf_image_outputdir}/provisionmap.json</code>. Typically this is handled by image layer specific hooks. If installed, rpi-image-gen will automatically include the PMAP in the final image description file (<code>image.json</code>). Please refer to the individual layer documentation for available PMAP options.</p>
 </div>
+<div class="paragraph">
+<p>rpi-image-gen provides the <a href="../layer/rpi-idp.html">rpi-idp layer</a> layer which supplies default IDP configuration variables (e.g., LUKS2 cipher, hash and key size) for use in PMAP templates. Image layouts are free to use these defaults, override them, or author their PMAP independently.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_schema_validation"><a class="anchor" href="#_schema_validation"></a><a class="link" href="#_schema_validation">Schema Validation</a></h3>
 <div class="paragraph">
-<p>The IDP and PMAP document formats are formally defined by JSON schemas (draft-07), located in <code>layer/base/schemas/</code>. These decouple document validation from the rpi-image-gen build flow - any toolchain capable of producing a conforming IDP document can participate in the Raspberry Pi provisioning flow without depending on rpi-image-gen.</p>
+<p>The IDP and PMAP document formats are formally defined by JSON schemas (draft-07), located in <code>layer/rpi/schemas/</code>. These decouple document validation from the rpi-image-gen build flow - any toolchain capable of producing a conforming IDP document can participate in the Raspberry Pi provisioning flow without depending on rpi-image-gen.</p>
 </div>
 <div class="ulist">
 <ul>
@@ -272,6 +275,9 @@
 <div class="sect2">
 <h3 id="_usage"><a class="anchor" href="#_usage"></a><a class="link" href="#_usage">Usage:</a></h3>
 <div class="paragraph">
+<p>rpi-sb-provisioner supports IDP. This enables seamless integration and secure deployment of rpi-image-gen created images on your Raspberry Pi device. Refer to the <a href="https://github.com/raspberrypi/rpi-sb-provisioner"><strong>rpi-sb-provisioner</strong> documentation</a> for further details.</p>
+</div>
+<div class="paragraph">
 <p>To use IDP <strong>without</strong> rpi-sb-provisioner:</p>
 </div>
 <div class="olist arabic">
@@ -313,9 +319,6 @@
 </td>
 </tr>
 </table>
-</div>
-<div class="paragraph">
-<p>rpi-sb-provisioner will gain support for IDP which will enable seamless integration and secure deployment of rpi-image-gen created images on your Raspberry Pi device. Refer to the <a href="https://github.com/raspberrypi/rpi-sb-provisioner"><strong>rpi-sb-provisioner</strong> documentation</a> for further details.</p>
 </div>
 </div>
 </div>

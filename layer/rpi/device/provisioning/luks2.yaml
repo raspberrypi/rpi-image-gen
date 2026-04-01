@@ -1,0 +1,45 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-idp-luks2
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Device specific LUKS2 provisioning attributes for IDP.
+#  A device layer may use these to describe preferences for its LUKS2
+#  encrypted volumes. Values are passed through to libcryptsetup.
+#  See https://gitlab.com/cryptsetup/cryptsetup and cryptsetup(8).
+#  Downstream layer implementation-dependent.
+# X-Env-Layer-Requires:
+# X-Env-Layer-RequiresProvider: device
+# X-Env-Layer-Version: 1.0.0
+#
+# X-Env-VarPrefix: device
+#
+# X-Env-Var-luks2_cipher: aes-xts-plain64
+# X-Env-Var-luks2_cipher-Desc: The cipher specification for LUKS2 creation.
+# X-Env-Var-luks2_cipher-Required: n
+# X-Env-Var-luks2_cipher-Valid: string
+# X-Env-Var-luks2_cipher-Set: lazy
+# X-Env-Var-luks2_cipher-Triggers:
+#  when=IGconf_device_class=pi5 set IGconf_device_luks2_cipher=aes-xts-plain64 policy=lazy
+#  when=IGconf_device_class=cm5 set IGconf_device_luks2_cipher=aes-xts-plain64 policy=lazy
+#  when=IGconf_device_class=pi4 set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
+#  when=IGconf_device_class=cm4 set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
+#  when=IGconf_device_class=pi3 set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
+#  when=IGconf_device_class=zero2w set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
+#
+# X-Env-Var-luks2_hash: sha256
+# X-Env-Var-luks2_hash-Desc: The hash algorithm used for LUKS2 metadata integrity.
+# X-Env-Var-luks2_hash-Required: n
+# X-Env-Var-luks2_hash-Valid: string
+# X-Env-Var-luks2_hash-Set: lazy
+#
+# X-Env-Var-luks2_keysize: 256
+# X-Env-Var-luks2_keysize-Desc: The LUKS2 encryption key size in bits.
+# X-Env-Var-luks2_keysize-Required: n
+# X-Env-Var-luks2_keysize-Valid: 128,256,512
+# X-Env-Var-luks2_keysize-Set: lazy
+# X-Env-Var-luks2_keysize-Triggers:
+#  when=IGconf_device_luks2_cipher=aes-xts-plain64 set IGconf_device_luks2_keysize=512 policy=lazy
+#  when=IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 set IGconf_device_luks2_keysize=256 policy=lazy
+#
+# METAEND
+---
+

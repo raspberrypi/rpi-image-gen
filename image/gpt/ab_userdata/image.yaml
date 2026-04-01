@@ -52,9 +52,8 @@
 #  crypt: All non-boot partitions will be provisioned encrypted.
 #  cryptslots: Only system OS partitions will be provisioned encrypted.
 #  cryptdata: Only the data partition will be provisioned encrypted.
-#  crypthybrid: B:system OS partition will be provisioned encrypted (dev only).
 # X-Env-Var-pmap-Required: n
-# X-Env-Var-pmap-Valid: clear,crypt,cryptslots,cryptdata,crypthybrid
+# X-Env-Var-pmap-Valid: clear,crypt,cryptslots,cryptdata
 # X-Env-Var-pmap-Set: y
 #
 # X-Env-Var-ptable_protect: n
