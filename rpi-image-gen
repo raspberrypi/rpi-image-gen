@@ -399,6 +399,8 @@ generate_filesystem()
 
    local -n _benv="${ctx[ENV_BDEBSTRAP]}" # via nameref
 
+   runenv "${ctx[FINALENV]}" ns runner pre-build "${ctx[LAYER_PLAN]}"
+
    rund "${ctx[SRCROOT]}" ns bdebstrap \
       "${_benv[@]}" \
       --setup-hook     "runner setup     '${ctx[LAYER_PLAN]}' \"\$@\"" \
