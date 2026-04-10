@@ -113,7 +113,8 @@ run_phase_scripts() {
       if compgen -G "${dir}/${phase}"* >/dev/null; then
          for script in "${dir}/${phase}"*; do
             s=$(basename "$script")
-            if [[ $s =~ ^[a-zA-Z0-9-]+$ ]]; then
+            stem="${s%%.*}"
+            if [[ $stem =~ ^[a-zA-Z0-9-]+$ ]]; then
                runhook "$script" "$@"
             else
                warn "runner: $dir [skipped $s]"
