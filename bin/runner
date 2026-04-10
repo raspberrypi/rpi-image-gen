@@ -11,8 +11,9 @@ add_dir() {
    fi
 }
 
-phase="$1"
-shift 1
+PHASE="$1"
+PLAN="$2"
+shift 2
 
 
 # Script bundles in these dirs are executed in this order
@@ -48,6 +49,12 @@ IGROOT:post-image.sh \
 IGdevice:post-image.sh IGimage:post-image.sh \
 DEVICE_ASSET:post-image.sh IMAGE_ASSET:post-image.sh \
 SRCROOT:post-image.sh"
+
+   [finalize]="\
+IGROOT:finalize.sh \
+IGdevice:finalize.sh IGimage:finalize.sh \
+DEVICE_ASSET:finalize.sh IMAGE_ASSET:finalize.sh \
+SRCROOT:finalize.sh"
 
    [sbom]='VAR:IGconf_sbom_hook'
    [deploy]='VAR:IGconf_deploy_hook'
@@ -174,30 +181,56 @@ phase_args() {
 }
 
 
-msg "runner: in $phase"
-case "$phase" in
+# Apply per-layer rootfs overlays using the layer plan.
+# YAML layer customize-hooks can execute before the discrete hooks get executed
+# by runner. This is because bdebstrap's --XXX-hook arg is invoked after the
+# merged YAML. Unfortunately, this means that a YAML layer's customize-hooks
+# cannot rely on the layer's overlay being applied before they run.
+apply_layer_overlays() {
+   local dest=$1
+   local plan=${PLAN:-}
+   [[ -n $plan && -f $plan ]] || return 0
+
+   local layer static resolved overlay
+   while IFS=: read -r layer static resolved; do
+      [[ -n $layer && -n $static ]] || continue
+      [[ $layer == \#* ]] && continue
+      overlay="${static%.yaml}.rootfs-overlay"
+      if [[ -d $overlay ]]; then
+         msg "runner: layer overlay ($layer) [$overlay -> $dest]"
+         rsync -a -- "$overlay"/ "$dest"/
+         local rc=$?
+         [[ $rc -eq 0 ]] || die "runner: error applying layer overlay for $layer ($rc)"
+      fi
+   done < "$plan"
+}
+
+
+msg "runner: in $PHASE"
+case "$PHASE" in
    setup)
-      run_hook_phase "$phase" "$@"
-      run_phase_scripts "$phase" "$@"
+      run_hook_phase "$PHASE" "$@"
+      run_phase_scripts "$PHASE" "$@"
       ;;
    customize)
-      run_phase_scripts "$phase" "$@"
-      apply_overlays "$phase" "$@"
-      run_hook_phase "$phase" "$@"
+      apply_layer_overlays "$@"
+      apply_overlays "$PHASE" "$@"
+      run_phase_scripts "$PHASE" "$@"
+      run_hook_phase "$PHASE" "$@"
       ;;
    extract|essential|cleanup)
-      run_phase_scripts "$phase" "$@"
+      run_phase_scripts "$PHASE" "$@"
       ;;
    post-build)
-      run_hook_phase "$phase" "$@"
+      run_hook_phase "$PHASE" "$@"
       ;;
    pre-image|post-image)
-      run_hook_phase "$phase" "$@"
+      run_hook_phase "$PHASE" "$@"
       ;;
-   sbom|deploy)
-      run_hook_phase "$phase" "$@"
+   finalize|sbom|deploy)
+      run_hook_phase "$PHASE" "$@"
       ;;
    *)
       ;;
 esac
-msg "runner: out $phase"
+msg "runner: out $PHASE"

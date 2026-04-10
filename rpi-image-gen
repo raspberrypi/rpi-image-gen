@@ -211,7 +211,7 @@ collect_layers()
       --layers "${layers[@]}" \
       --path "$HOST_LAYER_PATH" \
       --env-out "${TMPDIR}/env.out" \
-      --order-out "${TMPDIR}/layer.order" \
+      --plan-out "${TMPDIR}/layer.plan" \
       || die "pipeline failed"
 
    msg "PIPELINE: OK"
@@ -243,7 +243,7 @@ collect_layers()
       die "No bootstrap dir"
 
    mkdir -p "$bdir" || die
-   for f in final.env layer.order host.json ; do
+   for f in final.env layer.plan host.json ; do
       src="${TMPDIR}/$f"
       [[ -f "$src" ]] || die "Missing bootstrap file: $src"
       cp "$src" "$bdir" || die
@@ -253,7 +253,7 @@ collect_layers()
    fi
 
    ctx[FINALENV]="${bdir}/final.env"
-   ctx[LAYER_ORDER]="${bdir}/layer.order"
+   ctx[LAYER_PLAN]="${bdir}/layer.plan"
 }
 
 
@@ -346,24 +346,20 @@ prepare_build_config()
    msg "\nFINAL ENV"
    mapfile_kv "${ctx[FINALENV]}" process_conf_opt
 
-   # Translate layer paths and load those that contain an mmdebstrap mapping
+   # Load resolved layers from the plan that contain an mmdebstrap mapping
    msg "\nMMDEBSTRAP"
    local total=0 added=0 skipped=0
    local specs="${TMPDIR}/layer.resolved"
 
    : > $specs
-   while IFS='=' read -r layer spec; do
-      [[ -n $layer && -n $spec ]] || continue
+   while IFS=: read -r layer static resolved; do
+      [[ -n $layer && -n $resolved ]] || continue
       [[ $layer == \#* ]] && continue
-      spec=${spec#\"}
-      spec=${spec%\"}
-      [[ -n $spec ]] || continue
 
       ((total++))
-      local resolved=$(map_path "$spec") || die "Failed to resolve $spec"
       [[ -f $resolved ]] || die "Layer $layer ($resolved) not found"
       printf '%s="%s"\n' "$layer" "$resolved" >> "$specs"
-   done < "${ctx[LAYER_ORDER]}"
+   done < "${ctx[LAYER_PLAN]}"
 
    while IFS=: read -r layer yaml; do
       _bdebstrap+=( --config "$yaml" )
@@ -405,19 +401,19 @@ generate_filesystem()
 
    rund "${ctx[SRCROOT]}" ns bdebstrap \
       "${_benv[@]}" \
-      --setup-hook     'runner setup "$@"' \
-      --extract-hook   'runner extract "$@"' \
-      --essential-hook 'runner essential "$@"' \
-      --customize-hook 'runner customize "$@"' \
-      --cleanup-hook   'runner cleanup "$@"'
+      --setup-hook     "runner setup     '${ctx[LAYER_PLAN]}' \"\$@\"" \
+      --extract-hook   "runner extract   '${ctx[LAYER_PLAN]}' \"\$@\"" \
+      --essential-hook "runner essential '${ctx[LAYER_PLAN]}' \"\$@\"" \
+      --customize-hook "runner customize '${ctx[LAYER_PLAN]}' \"\$@\"" \
+      --cleanup-hook   "runner cleanup   '${ctx[LAYER_PLAN]}' \"\$@\""
 
-   runenv "${ctx[FINALENV]}" ns runner post-build
+   runenv "${ctx[FINALENV]}" ns runner post-build "${ctx[LAYER_PLAN]}"
 
    [[ ${ctx[INTERACTIVE]} == y ]] && \
       { ask "Filesystem complete. Proceed to SBOM?" y || exit 0 ; }
 
    msg "\nSBOM"
-   runenv "${ctx[FINALENV]}" ns runner sbom
+   runenv "${ctx[FINALENV]}" ns runner sbom "${ctx[LAYER_PLAN]}"
 }
 
 
@@ -439,7 +435,7 @@ generate_images() {
 
    msg "\nIMAGE"
 
-   runenv "${ctx[FINALENV]}" ns runner pre-image
+   runenv "${ctx[FINALENV]}" ns runner pre-image "${ctx[LAYER_PLAN]}"
 
    if [[ "$provider" == genimage && -d "$filesystem" ]] ; then
       mkdir -p "${TMPDIR}/genimage"
@@ -458,7 +454,7 @@ generate_images() {
       done
    fi
 
-   runenv "${ctx[FINALENV]}" ns runner post-image
+   runenv "${ctx[FINALENV]}" ns runner post-image "${ctx[LAYER_PLAN]}"
 }
 
 
@@ -468,12 +464,12 @@ generate_images() {
 #   Install build assets for distribution
 ###############################################################################
 deploy() {
-   runenv "${ctx[FINALENV]}" ns runner finalize
+   runenv "${ctx[FINALENV]}" ns runner finalize "${ctx[LAYER_PLAN]}"
 
    [[ ${ctx[INTERACTIVE]} == y ]] && { ask "Deploy assets?" y || exit 0 ; }
 
    msg "\nDEPLOY"
-   runenv "${ctx[FINALENV]}" ns runner deploy
+   runenv "${ctx[FINALENV]}" ns runner deploy "${ctx[LAYER_PLAN]}"
 }
 
 

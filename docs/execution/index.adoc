@@ -161,33 +161,40 @@ Hooks are optional but if a hook is to be executed, it must have executable perm
 
 === Hook Classification: bundle
 
-Runner scans for `setup*`, `extract*`, `essential*`, `customize*`, and `cleanup*` hooks inside `bdebstrap/` subdirectories of:
+Runner scans for `setup*`, `extract*`, `essential*`, `customize*`, and `cleanup*` hooks inside `bdebstrap/` subdirectories of the following in order:
 
-* Device asset directory (`DEVICE_ASSET`)
-* Image asset directory (`IMAGE_ASSET`)
-* Source tree (`SRCROOT/bdebstrap`)
-* Built-in (`IGROOT/scripts/bdebstrap`)
+. Device asset directory (`DEVICE_ASSET`)
+. Image asset directory (`IMAGE_ASSET`)
+. Source tree (`SRCROOT/bdebstrap`)
+. Built-in (`IGROOT/scripts/bdebstrap`)
 
 It executes matching hooks (alphanumeric basename) in that order for each phase. Subdirectories aren’t traversed; the file extension is ignored.
 
 === Hook Classification: single
 
-With the exception of sbom and deploy, all `single` hooks are customisable and optional. Runner scans for `<phase>.sh` inside:
+Runner looks for `<phase>.sh` at each of the following locations in order:
 
-* Device asset directory (if set)
-* Image asset directory (if set)
-* Built-in (IGROOT)
-* Source tree (SRCROOT)
+. Built-in root (`IGROOT`)
+. Built-in device subdir (`IGROOT/device`)
+. Built-in image subdir (`IGROOT/image`)
+. Device asset directory - `DEVICE_ASSET`
+. Image asset directory - `IMAGE_ASSET`
+. Source tree - `SRCROOT`
 
-Execution takes place from the parent directory of the hook.
+Each location is independent: all present hooks run. Execution takes place from the parent directory of the hook.
+
+`sbom` and `deploy` are resolved differently - via config variables, which may point to any path.
 
 === Overlays
 
-Filesystem overlays are applied during `customize`. The following overlay directories are supported:
+Filesystem overlays are applied during `customize`, in the following order (later entries take precedence):
 
-* `DEVICE_ASSET:device/rootfs-overlay`
-* `IMAGE_ASSET:device/rootfs-overlay`
-* `SRCROOT:rootfs-overlay`
+. **Per-layer overlays** - For each layer in build-plan order, if a directory named `<layer-stem>.rootfs-overlay` exists alongside the layer YAML file on disk (e.g. `my-layer.yaml` has `my-layer.rootfs-overlay/`), it is applied. This allows a layer to ship files into the target filesystem without hooks.
+. **Device asset overlay** - `DEVICE_ASSET/device/rootfs-overlay`
+. **Image asset overlay** - `IMAGE_ASSET/device/rootfs-overlay`
+. **Source tree overlay** - `SRCROOT:rootfs-overlay`
+
+With the exception of YAML `customize-hooks`, all overlays are applied before `customize` hook scripts execute.
 
 === Core
 

@@ -32,7 +32,7 @@ def Pipeline_register_parser(subparsers, root=None):
     parser.add_argument("--layers", nargs="+", help="Layers to apply (names)")
     parser.add_argument("--path", "-p", default=default_paths, help=help_text)
     parser.add_argument("--env-out", required=True, help="Write fully resolved env (anchors expanded)")
-    parser.add_argument("--order-out", help="Write layer order (tag:relative) to this file (host mode only)")
+    parser.add_argument("--plan-out", help="Write layer build plan (name:static:resolved) to this file (host mode only)")
     parser.set_defaults(func=_pipeline_main)
 
 
@@ -108,8 +108,8 @@ def _pipeline_main(args):
         log_error("Error: Validation failed for target layers")
         raise SystemExit(1)
 
-    if args.order_out:
-        _write_layer_order(args.order_out, build_order, manager)
+    if args.plan_out:
+        _write_layer_plan(args.plan_out, build_order, manager)
 
     layer_anchor_map = _build_anchor_map_from_layers(manager, build_order)
     source_anchors = layer_anchor_map or {}
@@ -147,18 +147,16 @@ def _inject_root_anchors(anchor_map: Dict[str, Dict[str, Optional[str]]], env_as
             anchor_map.setdefault(f"@{root_var}", {"var": root_var, "value": value})
 
 
-def _write_layer_order(path: str, build_order: List[str], manager: LayerManager) -> None:
+def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) -> None:
     try:
         with open(path, "w", encoding="utf-8") as handle:
             for layer in build_order:
-                rel_spec = manager.get_layer_relative_spec(layer)
-                if rel_spec:
-                    handle.write(f'{layer}="{rel_spec}"\n')
-                else:
-                    handle.write(f"{layer}\n")
-        print(f"Layer order written to: {path}")
+                static = manager.layer_source_files.get(layer, "")
+                resolved = manager.layer_files.get(layer, "")
+                handle.write(f'{layer}:{static}:{resolved}\n')
+        print(f"Layer plan written to: {path}")
     except Exception as exc:
-        print(f"Error writing layer order to {path}: {exc}")
+        print(f"Error writing layer plan to {path}: {exc}")
         raise SystemExit(1)
 
 
