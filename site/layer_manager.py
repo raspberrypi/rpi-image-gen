@@ -44,7 +44,8 @@ class LayerManager:
         self.search_paths = [root.path for root in self.search_roots]
         self.file_patterns = file_patterns
         self.layers: Dict[str, Metadata] = {}  # layer_name -> Metadata object
-        self.layer_files: Dict[str, str] = {}  # layer_name -> file_path
+        self.layer_files: Dict[str, str] = {}  # layer_name -> file_path (resolved; may be tmpfs for dynamic)
+        self.layer_source_files: Dict[str, str] = {}  # layer_name -> original source file path (never updated)
         self.layer_tags: Dict[str, str] = {}  # layer_name -> search path tag
         self.layer_relpaths: Dict[str, str] = {}  # layer_name -> relative path under tagged root
         self.tag_to_path: Dict[str, Path] = {root.tag: root.path for root in self.search_roots}
@@ -251,6 +252,7 @@ class LayerManager:
 
                 self.layers[layer_name] = meta
                 self.layer_files[layer_name] = str(abs_file)
+                self.layer_source_files[layer_name] = str(abs_file)
                 self.layer_tags[layer_name] = tag
                 self.layer_relpaths[layer_name] = str(rel_path)
                 loaded_layers.add(layer_name)
