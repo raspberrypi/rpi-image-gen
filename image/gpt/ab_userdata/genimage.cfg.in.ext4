@@ -4,9 +4,9 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX>.sparse {
    }
 }
 
-image config.sparse {
+image bootconfig.sparse {
    android-sparse {
-      image = config.vfat
+      image = bootconfig.vfat
    }
 }
 
@@ -35,9 +35,9 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX> {
       fill = true
    }
 
-   partition config {
+   partition bootconfig {
       in-partition-table = true
-      image = config.vfat
+      image = bootconfig.vfat
       partition-type-uuid = F
       bootable = true
    }
@@ -75,9 +75,9 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX> {
    }
 }
 
-image config.vfat {
+image bootconfig.vfat {
    vfat {
-      label = "BOOTFS"
+      label = "BOOTCONFIG"
       file "autoboot.txt" { image = "autoboot.txt" }
       extraargs = "-s 1 -S <SECTOR_SIZE>"
    }

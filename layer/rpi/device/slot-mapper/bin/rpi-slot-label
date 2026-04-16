@@ -120,6 +120,12 @@ else
 fi
 
 
+# Emit boot device membership marker
+if [ "$udev_fmt" -eq 1 ]; then
+   echo "RPI_ONBOOTDEV=1"
+fi
+
+
 case "$ID_PART_ENTRY_NAME" in
    "$ACTIVE_BOOT")       slot="active/boot" ;;
    "$ACTIVE_SYS")     slot="active/system" ;;

@@ -9,7 +9,7 @@
       "partitions": [
          {
             "comment": "boot configuration",
-            "image": "config"
+            "image": "bootconfig"
          }
       ]
    },
