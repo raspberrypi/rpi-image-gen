@@ -1,0 +1,14 @@
+# Tag partitions and DM devices backed by the boot storage device.
+# RPI_ONBOOTDEV=1 is set in the udev environment for any matching device.
+
+# Non-DM partitions: mmc (sd or emmc)
+SUBSYSTEM=="block", KERNEL=="mmcblk0p*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-bootdev-tag -u -d $env{DEVNAME}"
+
+# Non-DM partitions: nvme
+SUBSYSTEM=="block", KERNEL=="nvme0n1p*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-bootdev-tag -u -d $env{DEVNAME}"
+
+# DM devices
+SUBSYSTEM=="block", KERNEL=="dm-*", ENV{DM_NAME}=="?*", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-bootdev-tag -u -d $env{DEVNAME} -m $env{DM_NAME}"
