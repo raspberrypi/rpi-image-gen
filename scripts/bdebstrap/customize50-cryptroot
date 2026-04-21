@@ -37,8 +37,6 @@ installer=/dev/null
 
 # Backend selection
 if [ -d "$1/etc/initramfs-tools" ]; then
-   #pkgs+=(cryptsetup-bin libgcc-s1 rpifwcrypto block-device-id)
-   #installer=install-initramfs-tools.sh
    pkgs+=(cryptsetup-initramfs rpifwcrypto block-device-id)
    installer=install-initramfs-tools-debian.sh
 

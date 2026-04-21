@@ -1,10 +1,11 @@
 # METABEGIN
 # X-Env-Layer-Name: rpi-ab-slot-mapper
-# X-Env-Layer-Category: image
+# X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Dynamic slot device management for A/B boot: udev rules and
 #  helpers that create stable by-slot symlinks from GPT PARTLABELs (preferred)
 #  or a static slot map (fallback), with device-mapper and initramfs support.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 3.0.0
+# X-Env-Layer-Requires: rpi-storage-binder
 #
 # X-Env-VarPrefix: abslot
 #
@@ -13,7 +14,7 @@
 #  support slot management and selection.
 # X-Env-Var-overlay-Required: n
 # X-Env-Var-overlay-Valid: string
-# X-Env-Var-overlay-Set: y
+# X-Env-Var-overlay-Set: force
 # METAEND
 ---
 mmdebstrap:

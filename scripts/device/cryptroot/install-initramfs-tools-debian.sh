@@ -8,15 +8,16 @@ set -eu
 : "${CRYPT_CONTAINERS_FILE:?not set}"
 
 
-. $CRYPT_CONTAINERS_FILE
+# Auto-generate crypttab if not present
+if [[ ! -f "${1}/etc/crypttab" ]] || ! grep -qvE '^\s*(#|$)' "${1}/etc/crypttab"; then
+  source $CRYPT_CONTAINERS_FILE
 
-
-# Write crypttab
-for container in "$CONTAINERS"; do
-   eval "uuid=\$${container}_UUID"
-   eval "name=\$${container}_MNAME"
-   echo "$name UUID=$uuid none luks,initramfs,keyscript=/lib/cryptsetup/keyscripts/hwkey"
-done > "$1/etc/crypttab"
+  for container in "$CONTAINERS"; do
+     eval "label=\$${container}_LABEL"
+     eval "name=\$${container}_MNAME"
+     echo "$name LABEL=$label none luks,initramfs,keyscript=/lib/cryptsetup/keyscripts/hwkey"
+  done > "$1/etc/crypttab"
+fi
 
 
 install -m 0755 -D hwkey "$1/lib/cryptsetup/keyscripts/hwkey"
