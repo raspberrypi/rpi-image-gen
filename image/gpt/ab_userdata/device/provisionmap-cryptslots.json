@@ -51,7 +51,7 @@
             "key_size": ${LUKS_KEYSIZE},
             "cipher": "${LUKS_CIPHER}",
             "hash": "${LUKS_HASH}",
-            "label": "OSAB",
+            "label": "OSAB_CRYPT",
             "uuid": "${CRYPT_UUID}",
             "mname": "osab_crypt",
             "etype": "partitioned"

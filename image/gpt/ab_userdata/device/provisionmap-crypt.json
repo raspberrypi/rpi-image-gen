@@ -51,7 +51,7 @@
             "key_size": ${LUKS_KEYSIZE},
             "cipher": "${LUKS_CIPHER}",
             "hash": "${LUKS_HASH}",
-            "label": "OSDATA",
+            "label": "OSDATA_CRYPT",
             "uuid": "${CRYPT_UUID}",
             "mname": "osdata_crypt",
             "etype": "partitioned"

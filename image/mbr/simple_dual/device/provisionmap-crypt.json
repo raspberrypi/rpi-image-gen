@@ -18,7 +18,7 @@
          "luks2": {
             "key_size": ${LUKS_KEYSIZE},
             "cipher": "${LUKS_CIPHER}",
-            "label": "OSROOT",
+            "label": "OSROOT_CRYPT",
             "uuid": "${CRYPT_UUID}",
             "hash": "${LUKS_HASH}",
             "mname": "osroot_crypt",
