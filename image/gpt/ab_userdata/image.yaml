@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
 #  boot/system redundancy, and a shared persistent data partition.
-# X-Env-Layer-Version: 5.3.0
+# X-Env-Layer-Version: 5.4.0
 # X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
 # X-Env-Layer-Provides: image
 #
@@ -79,3 +79,4 @@ mmdebstrap:
   packages:
     - dosfstools
     - e2fsprogs
+    - initramfs-tools
