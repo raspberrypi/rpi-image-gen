@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -eu
+
+# Install packages declared via IGconf_packages_* variables.
+#
+# Values that resolve to an existing file are treated as local .deb packages.
+# Others are treated as package names.
+# All are installed by apt.
+
+apt_pkgs=()
+deb_files=()
+
+for var in "${!IGconf_packages_@}"; do
+    val="${!var}"
+    [[ -z "$val" ]] && continue
+
+    orig_val="$val"
+    if [[ "$val" != /* ]]; then
+        val="${SRCROOT:-${IGTOP}}/$val"
+    fi
+
+    if [[ -f "$val" ]]; then
+        deb_files+=("$val")
+    elif [[ "$orig_val" == *.deb || "$orig_val" == */* ]]; then
+        echo "packages: $var: file not found: $orig_val" >&2
+        exit 1
+    else
+        apt_pkgs+=("$orig_val")
+    fi
+done
+
+# No packages = nothing to do
+[[ ${#deb_files[@]} -eq 0 && ${#apt_pkgs[@]} -eq 0 ]] && exit 0
+
+# Install now.
+# debs are installed first so apt can satisfy dependencies the introduce.
+if [[ ${#deb_files[@]} -gt 0 ]]; then
+    tmpdir=$(mktemp -d "$1/tmp/packages.XXXXXX")
+    trap 'rm -rf "$tmpdir"' EXIT
+    chroot_tmp="/tmp/$(basename "$tmpdir")"
+    chroot_debs=()
+    for f in "${deb_files[@]}"; do
+        cp "$f" "$tmpdir/"
+        chroot_debs+=("$chroot_tmp/$(basename "$f")")
+    done
+    chroot "$1" apt install -y "${chroot_debs[@]}"
+fi
+
+if [[ ${#apt_pkgs[@]} -gt 0 ]]; then
+    chroot "$1" apt install -y "${apt_pkgs[@]}"
+fi

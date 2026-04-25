@@ -1,0 +1,24 @@
+# METABEGIN
+# X-Env-Layer-Name: test-validation-failures
+# X-Env-Layer-Desc: Test layer with validation that will fail
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: valfail
+# X-Env-Var-port: 99999
+# X-Env-Var-port-Desc: Port number (will fail validation)
+# X-Env-Var-port-Valid: int:1024-65535
+# X-Env-Var-email: not-an-email
+# X-Env-Var-email-Desc: Email address (will fail validation)
+# X-Env-Var-email-Valid: regex:^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+# X-Env-Var-required:
+# X-Env-Var-required-Desc: Required field (will fail validation)
+# X-Env-Var-required-Valid: string
+# X-Env-Var-required-Required: true
+# X-Env-VarRequires: NONEXISTENT_VAR
+# X-Env-VarRequires-Valid: string
+# METAEND
+
+test:
+  port: ${IGconf_valfail_port}
+  email: "${IGconf_valfail_email}"
+  required: "${IGconf_valfail_required}"

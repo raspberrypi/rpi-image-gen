@@ -17,10 +17,11 @@ def main() -> None:
     tools_dir = layers_dir / "tools"
     with tempfile.TemporaryDirectory(prefix="dynamic-layer-") as tmpdir:
         os.environ["PATH"] = f"{tools_dir}:{os.environ['PATH']}"
-        manager = LayerManager([f"TMPROOT_layer={tmpdir}", str(layers_dir)])
+        manager = LayerManager([f"DYNlayer={tmpdir}", str(layers_dir)])
         order = manager.get_build_order(["dynamic-test"])
         if "dynamic-test" not in order:
             raise SystemExit("dynamic-test not in build order")
+        manager.run_generators_for_layers(order)
         generated = Path(manager.layer_files["dynamic-test"])
         if tmpdir not in str(generated):
             raise SystemExit("generated file not in dynamic layer directory")

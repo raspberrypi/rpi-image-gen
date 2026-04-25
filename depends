@@ -1,15 +1,17 @@
 all:realpath:coreutils
 all:bash
-all:mmdebstrap
-all:podman
-all:newuidmap:uidmap
-all::python-is-python3
-all::dbus-user-session
+all::python3
 
 bootstrap::python3-yaml
 bootstrap::python3-debian
+bootstrap:dpkg-architecture:dpkg-dev
 
-# image build essential
+# build essential
+build:mmdebstrap
+build::debian-archive-keyring
+build:podman
+build:newuidmap:uidmap
+all::dbus-user-session
 build:zip
 build:mkdosfs:dosfstools
 build:mke2fs:e2fsprogs
@@ -17,7 +19,6 @@ build:grep
 build:rsync
 build:curl
 build:mtools
-build:zstd
 build:pv
 build:mkfs.btrfs:btrfs-progs
 build::dctrl-tools
@@ -25,6 +26,7 @@ build:uuidgen:uuid-runtime
 build:fdisk
 build::python3-jsonschema
 build::dpkg-dev
+build:veritysetup:cryptsetup
 
 # pkg buildsys
 build::python3-pip
@@ -36,9 +38,10 @@ build::libtool
 build:autopoint
 build:flex
 build:gettext
-build:pkg-config
+build:pkg-config:pkgconf
 
 # maintainer only (docgen)
 # python3-markdown
 # asciidoctor
 # python3-jinja2
+# pip install json-schema-for-humans

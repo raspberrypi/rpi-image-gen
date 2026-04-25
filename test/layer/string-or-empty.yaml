@@ -1,4 +1,8 @@
 # METABEGIN
+# X-Env-Layer-Name: test-string-or-empty
+# X-Env-Layer-Desc: Test layer for string-or-empty validation
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
 # X-Env-VarPrefix: test
 #
 # X-Env-Var-pmap:

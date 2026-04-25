@@ -1,0 +1,9 @@
+# METABEGIN
+# X-Env-Layer-Name: example-ota
+# X-Env-Layer-Category: example
+# X-Env-Layer-Desc: Example layer that can be remotely deployed and updated by
+#  Raspberry Pi Connect.
+# X-Env-Layer-Requires: rpi-connect-lite,rpi-connect-ota
+#
+# METAEND
+---

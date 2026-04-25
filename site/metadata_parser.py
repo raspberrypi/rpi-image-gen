@@ -1,8 +1,11 @@
 import os
+import sys
 import argparse
+import yaml
 from debian import deb822
+from typing import Dict
 from validators import parse_validator
-from env_types import EnvVariable, EnvLayer, MetadataContainer, XEnv
+from env_types import EnvVariable, EnvLayer, MetadataContainer, XEnv, VariableResolver
 from logger import log_error
 
 
@@ -34,13 +37,23 @@ class ValidationResultBuilder:
             message=f"{XEnv.VAR_PREFIX}* fields are defined but {XEnv.var_prefix()} is missing. Environment variables require a valid prefix."
         )
 
+    def unexpected_var_prefix(self):
+        """Build result for VarPrefix present without layer fields."""
+        return self.build_result(
+            status="unexpected_var_prefix",
+            valid=False,
+            required=True,
+            message=f"{self.filepath}: {XEnv.var_prefix()} is set but no X-Env-Layer-* fields are present. "
+                    f"VarPrefix is only valid in layer metadata."
+        )
+
     def orphaned_attributes(self, varname: str):
         """Build result for orphaned variable attributes."""
         return self.build_result(
             status="orphaned_attributes",
             valid=False,
             required=False,
-            message=f"{self.filepath}: Found attribute fields for variable '{varname}' but no base {XEnv.var_base(varname)} definition"
+            message=f"{self.filepath}: Found attribute fields for variable '{varname}' but no base {XEnv.VAR_PREFIX}{varname} definition"
         )
 
     def unsupported_validation_rule(self, var_name: str, rule: str, value=None, required=False):
@@ -74,6 +87,19 @@ class ValidationResultBuilder:
             required=True
         )
 
+    def conflict(self, var_a: str, var_b: str, value_a=None, value_b=None):
+        """Build result for conflicting variables."""
+        value_a = "<unset>" if value_a is None else value_a
+        value_b = "<unset>" if value_b is None else value_b
+        return self.build_result(
+            status="conflict",
+            valid=False,
+            message=f"Conflict: {var_a}={value_a} {var_b}={value_b}",
+            conflict_with=var_b,
+            value=value_a,
+            other_value=value_b,
+        )
+
     def lazy_overridden(self, current_value, required: bool):
         """Build result for lazy variable that was overridden."""
         return self.build_result(
@@ -100,6 +126,7 @@ SUPPORTED_FIELD_PATTERNS = {
     XEnv.layer_generator(): {"type": "single", "description": "Generator executable for dynamic layers"},
     XEnv.layer_provides(): {"type": "single", "description": "Capabilities provided by this layer"},
     XEnv.layer_requires_provider(): {"type": "single", "description": "Capabilities required (virtual)"},
+    XEnv.layer_sets(): {"type": "single", "description": "Internal variables set when this layer is present (KEY=VALUE)"},
 
     # Variable definition patterns (these match multiple fields)
     f"{XEnv.VAR_PREFIX}": {"type": "pattern", "description": "Environment variable definition"},
@@ -107,6 +134,9 @@ SUPPORTED_FIELD_PATTERNS = {
     XEnv.var_required_pattern(): {"type": "pattern", "description": "Whether variable is required"},
     XEnv.var_valid_pattern(): {"type": "pattern", "description": "Variable validation rule"},
     XEnv.var_set_pattern(): {"type": "pattern", "description": "Whether to auto-set variable"},
+    XEnv.var_anchor_pattern(): {"type": "pattern", "description": "Anchor mapping for environment variable"},
+    XEnv.var_conflicts_pattern(): {"type": "pattern", "description": "Conflicts list for environment variable"},
+    f"{XEnv.VAR_PREFIX}*-Triggers": {"type": "pattern", "description": "Trigger rules to set other variables when this variable matches a value"},
 
     # Variable requirements (any environment variables)
     XEnv.var_requires(): {"type": "single", "description": "Environment variables required by this layer"},
@@ -156,6 +186,7 @@ class Metadata:
 
     def __init__(self, filepath, doc_mode: bool = False):
         self.filepath = filepath
+        self._resolved_vars = None
         raw_metadata = self._load_metadata(filepath)
 
         # Create the container (applies placeholder substitutions internally)
@@ -174,14 +205,12 @@ class Metadata:
         if not meta_lines:
             return
 
-        # Check line contination syntax
-        for i, line in enumerate(meta_lines):
-            # Check for invalid continuation lines
+        # Check line continuation syntax
+        for line in meta_lines:
             if (':' not in line and  # Not a field definition
                 not line.startswith(' ') and  # Not indented with space
                 not line.startswith('\t') and  # Not indented with tab
-                line.strip() and  # Not empty
-                i > 0):  # Not the first line
+                line.strip()):  # Not empty
 
                 raise ValueError(f"Invalid DEB822 format: line '{line}' appears to be a continuation but is not indented. "
                                f"Continuation lines must start with a space or tab.")
@@ -202,8 +231,19 @@ class Metadata:
         with open(path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
 
+        has_meta_markers = any(line.strip() == '# METABEGIN' for line in lines)
+
+        # YAML validation only applies to files with embedded metadata (layer .yaml files)
+        if has_meta_markers:
+            yaml_text = "".join(lines).strip()
+            if yaml_text:
+                try:
+                    yaml.safe_load(yaml_text)
+                except yaml.YAMLError as exc:
+                    raise ValueError(f"Failed to parse YAML body in {path}: {exc}") from exc
+
         # Extract metadata block if embedded
-        if any(line.strip() == '# METABEGIN' for line in lines):
+        if has_meta_markers:
             # Find METABEGIN and METAEND markers in comment blocks
             in_meta = False
             meta_lines = []
@@ -227,35 +267,31 @@ class Metadata:
                         clean_line = line[1:].rstrip()
                         if clean_line.strip():
                             meta_lines.append(clean_line)
-
-            # Validate before parsing
-            self._validate_deb822_format(meta_lines)
-            meta_str = "\n".join(meta_lines)
         else:
-            # Handle files with direct X-Env-* fields (no comment wrapper)
+            # Handle files with direct deb822 fields (no comment wrapper)
             meta_lines = []
             for line in lines:
                 line = line.rstrip()
-                # Only keep non-comment, non-empty lines that look like metadata
-                if line and not line.startswith('#') and ':' in line:
-                    field_name = line.split(':', 1)[0].strip()
-                    if field_name.startswith('X-Env-'):
-                        meta_lines.append(line)
+                if not line or line.startswith('#'):
+                    continue
+                meta_lines.append(line)
 
-            # Validate before parsing
-            self._validate_deb822_format(meta_lines)
-            meta_str = "\n".join(meta_lines)
+        # Common path: validate format, parse, check field names
+        self._validate_deb822_format(meta_lines)
+        meta_str = "\n".join(meta_lines)
 
-        # Throw directly at deb822 module
         try:
             result = deb822.Deb822(meta_str)
 
             # Minimal post-processing: validate field names and check for empty metadata
             if result:
-                # Check all fields are X-Env-
-                invalid_fields = [field for field in result.keys() if not field.startswith('X-Env-')]
+                xenv_fields = [f for f in result.keys() if f.startswith('X-Env-')]
+                invalid_fields = [f for f in result.keys() if not f.startswith('X-Env-')]
                 if invalid_fields:
-                    raise ValueError(f"Invalid field names (must start with 'X-Env-'): {', '.join(invalid_fields)}")
+                    if xenv_fields or has_meta_markers:
+                        raise ValueError(f"Invalid field names (must start with 'X-Env-'): {', '.join(invalid_fields)}")
+                    # No X-Env fields and no markers — not a metadata file
+                    return deb822.Deb822()
             elif meta_str.strip():
                 # File has data but not X-Env
                 raise ValueError(f"No valid X-Env-* fields found in metadata")
@@ -287,8 +323,8 @@ class Metadata:
         if unsupported_fields:
             raise ValueError(f"Cannot process variables with unsupported fields: {list(unsupported_fields.keys())}. Run 'validate' command for details.")
 
-        # Check if variables are defined but no prefix is provided
-        if self._container.variables and not self._container.var_prefix:
+        # Prefix is required for layer metadata but optional for standalone registry files
+        if self._container.variables and not self._container.var_prefix and self._has_layer_fields():
             raise ValueError("Cannot process variables: X-Env-Var-* fields are defined but X-Env-VarPrefix is missing. Environment variables require a valid prefix.")
 
         for var_name, env_var in self._container.variables.items():
@@ -331,18 +367,6 @@ class Metadata:
             "value": env_var_obj.value
         }
 
-    def _parse_boolean(self, value, default=False):
-        """Parse a boolean value from string using same logic as bool validation"""
-        if not value:
-            return default
-        return str(value).lower() in ["true", "1", "yes", "y", "lazy", "force"]
-
-    def _is_supported_set_policy(self, value) -> bool:
-        if value is None:
-            return True
-        val = str(value).strip().lower()
-        return val in ["false", "0", "no", "n", "true", "1", "yes", "y", "lazy", "force", "immediate"]
-
     def _is_valid(self, value, rule):
         """Validate a value using the new validator system"""
         try:
@@ -380,8 +404,28 @@ class Metadata:
                 unsupported_fields[field_name] = f"'{field_name}' is not supported"
         return unsupported_fields
 
+    def _check_unknown_xenv_fields(self):
+        """Check for unknown X-Env-* field names not matching known namespaces."""
+        unknown_fields = {}
+        for field_name in self._container.raw_metadata.keys():
+            if not field_name.startswith("X-Env-"):
+                continue
+            if XEnv.is_layer_field(field_name) or XEnv.is_var_field(field_name):
+                continue
+            if not is_field_supported(field_name):
+                unknown_fields[field_name] = f"'{field_name}' is not supported"
+        return unknown_fields
+
+    def validate_layer_schema(self):
+        """Return layer-schema issues independent of env/value resolution."""
+        return self._check_unsupported_layer_fields()
+
     def validate_env_vars(self):
         """Validate environment variables - now broken into focused smaller methods"""
+        # Always recompute resolved vars per validation pass to reflect current
+        # environment and any trigger-injected values from prior steps.
+        self._resolved_vars = None
+
         # Schema validation first
         schema_errors = self._validate_schema()
         if schema_errors:
@@ -401,6 +445,9 @@ class Metadata:
         results.update(self._validate_required_variables())
         results.update(self._validate_optional_variables())
 
+        # Conflicts check on final resolved values
+        results.update(self._validate_conflicts())
+
         # Check layer-level unsupported fields
         results.update(self._validate_layer_fields())
 
@@ -410,13 +457,23 @@ class Metadata:
         """Validate schema and return errors if any."""
         return self._collect_schema_errors()
 
+    def _has_layer_fields(self):
+        """Check if this metadata contains any X-Env-Layer-* fields."""
+        return any(k.startswith("X-Env-Layer-") for k in self._container.raw_metadata.keys())
+
     def _validate_prefix_and_orphans(self):
         """Check for missing prefix and orphaned variable attributes."""
         results = {}
 
-        # Check if variables are defined but no prefix is provided
-        if self._container.variables and not self._container.var_prefix:
+        has_layer = self._has_layer_fields()
+        has_prefix = bool(self._container.var_prefix)
+
+        if has_layer and not has_prefix and self._container.variables:
             results["MISSING_VAR_PREFIX"] = self._result_builder.missing_var_prefix()
+            return results
+
+        if not has_layer and has_prefix:
+            results["UNEXPECTED_VAR_PREFIX"] = self._result_builder.unexpected_var_prefix()
             return results
 
         # Check for orphaned variable attribute fields
@@ -426,85 +483,232 @@ class Metadata:
         for key in self._container.raw_metadata.keys():
             if XEnv.is_var_field(key) and is_field_supported(key):
                 if XEnv.is_base_var_field(key):
-                    # Base variable definition
-                    base_vars.add(XEnv.extract_base_var_name(key).lower())
-                elif any(key.endswith(suffix) for suffix in ["-Desc", "-Valid", "-Required", "-Set"]):
-                    # Attribute field - extract variable name
+                    base_vars.add(XEnv.extract_base_var_name(key))
+                elif any(key.endswith(suffix) for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor", "-Conflicts"]):
                     var_part = XEnv.extract_var_name(key)
-                    for suffix in ["-Desc", "-Valid", "-Required", "-Set"]:
+                    for suffix in ["-Desc", "-Valid", "-Required", "-Set", "-Anchor", "-Conflicts"]:
                         if var_part.endswith(suffix):
-                            varname = var_part[:-len(suffix)].lower()
-                            attribute_vars.add(varname)
+                            attribute_vars.add(var_part[:-len(suffix)])
                             break
 
         orphaned_vars = attribute_vars - base_vars
         for varname in orphaned_vars:
-            results[f"ORPHANED_ATTRS_{varname.upper()}"] = self._result_builder.orphaned_attributes(varname)
+            results[f"ORPHANED_ATTRS_{varname}"] = self._result_builder.orphaned_attributes(varname)
 
+        return results
+
+    @staticmethod
+    def _parse_conflict_spec(spec: str):
+        """Parse a conflict spec into (name, op, value, when_value). op is None for unconditional."""
+        if not spec:
+            return None, None, None, None
+        when_value = None
+        spec = spec.strip()
+        if spec.startswith("when="):
+            parts = spec.split(None, 1)
+            if len(parts) < 2:
+                return None, None, None, None
+            when_value = parts[0][len("when="):].strip()
+            if not when_value:
+                return None, None, None, None
+            spec = parts[1].strip()
+            if not spec:
+                return None, None, None, None
+
+        if "!=" in spec:
+            name, value = spec.split("!=", 1)
+            op = "!="
+        elif "=" in spec:
+            name, value = spec.split("=", 1)
+            op = "="
+        else:
+            # Unconditional conflict (just the variable name).
+            return spec, None, None, when_value
+        name = name.strip()
+        value = value.strip()
+        if not name or not value:
+            return None, None, None, None
+        return name, op, value, when_value
+
+    def _validate_conflicts(self):
+        """Validate that conflicting variables are not both set (final resolved values)."""
+        results = {}
+
+        # Ensure we have resolved variables available for validation.
+        if self._resolved_vars is None:
+            resolver = VariableResolver()
+            variable_definitions = {name: [env_var] for name, env_var in self._container.variables.items()}
+            self._resolved_vars = resolver.resolve(variable_definitions)
+
+        # Track unconditional pairs to avoid duplicate conditional reporting.
+        unconditional_pairs = set()
+        for var_name, env_var in self._resolved_vars.items():
+            conflicts = getattr(env_var, "conflicts", None) or []
+            for other in conflicts:
+                conflict_var_name, op, _, when_value = self._parse_conflict_spec(other)
+                if not conflict_var_name or op is not None or when_value is not None:
+                    continue
+                pair = tuple(sorted([var_name, conflict_var_name]))
+                unconditional_pairs.add(pair)
+
+        # Track reported pairs (including conditional spec string) to dedupe.
+        seen_pairs = set()
+        for var_name, env_var in self._resolved_vars.items():
+            conflicts = getattr(env_var, "conflicts", None) or []
+            if not conflicts:
+                continue
+            for conflict in conflicts:
+                conflict_var_name, op, conflict_value, when_value = self._parse_conflict_spec(conflict)
+                if not conflict_var_name:
+                    continue
+                if op is not None:
+                    # If an unconditional conflict exists for the same pair, it wins.
+                    pair_base = tuple(sorted([var_name, conflict_var_name]))
+                    if pair_base in unconditional_pairs:
+                        continue
+
+                pair = tuple(sorted([var_name, conflict]))
+                if pair in seen_pairs:
+                    continue
+                seen_pairs.add(pair)
+
+                # Retrieve the conflicting var from the final resolved variable set
+                conflict_var = self._resolved_vars.get(conflict_var_name)
+                if not conflict_var:
+                    continue
+
+                # A unconditional conflict only applies if this variable and the conflicting
+                # variable are both set. For skip policy, only env counts as "set".
+                if getattr(env_var, "set_policy", None) == "skip":
+                    this_value = str(os.environ.get(var_name, ""))
+                else:
+                    this_value = str(env_var.value)
+                if when_value is not None and this_value != when_value:
+                    continue
+                if getattr(conflict_var, "set_policy", None) == "skip":
+                    conflict_target_value = str(os.environ.get(conflict_var_name, ""))
+                else:
+                    conflict_target_value = str(conflict_var.value)
+                if not this_value or not conflict_target_value:
+                    continue
+
+                # For conditional conflicts, the conflicting variable must match / not match
+                # the specified conflicting value for the conflict to apply.
+                if op == "=" and conflict_target_value != conflict_value:
+                    continue
+                if op == "!=" and conflict_target_value == conflict_value:
+                    continue
+
+                results[f"CONFLICT_{var_name}_{conflict}"] = self._result_builder.conflict(
+                    var_name, conflict_var_name, this_value, conflict_target_value
+                )
         return results
 
     def _validate_defined_variables(self):
         """Validate all defined variables from the metadata."""
         results = {}
 
-        for var_name, env_var in self._container.variables.items():
+        # Use resolved variables so trigger-injected values (and their validation metadata)
+        # are validated, not just the base metadata defaults.
+        if self._resolved_vars is None:
+            resolver = VariableResolver()
+            variable_definitions = {name: [env_var] for name, env_var in self._container.variables.items()}
+            self._resolved_vars = resolver.resolve(variable_definitions)
+        else:
+            resolver = VariableResolver()
+
+        # Validate the resolved set (includes triggers) plus any original definitions
+        # that did not resolve (e.g., Set: n/skip) so required checks still apply.
+        combined_vars: Dict[str, EnvVariable] = dict(self._resolved_vars)
+        for name, env_var in self._container.variables.items():
+            if name not in combined_vars:
+                combined_vars[name] = env_var
+
+        # Also validate injected trigger definitions even if they do not "win" resolution,
+        # to catch invalid trigger values.
+        trigger_defs = resolver._collect_trigger_definitions(self._resolved_vars)
+
+        # Build a list of all definitions to validate, deduped by (name, value, policy, position)
+        seen_defs = set()
+        all_vars: List[EnvVariable] = []
+        for env_var in combined_vars.values():
+            key = (env_var.name, env_var.value, env_var.set_policy, env_var.position)
+            if key not in seen_defs:
+                seen_defs.add(key)
+                all_vars.append(env_var)
+        for defs in trigger_defs.values():
+            for env_var in defs:
+                key = (env_var.name, env_var.value, env_var.set_policy, env_var.position)
+                if key not in seen_defs:
+                    seen_defs.add(key)
+                    all_vars.append(env_var)
+
+        for env_var in all_vars:
+            var_name = env_var.name
             current_value = os.environ.get(var_name)
 
             # First check for unsupported validation rules - this should always be checked
             var_short_name = var_name.split('_')[-1].upper()
             valid_rule_str = self._container.raw_metadata.get(XEnv.var_valid(var_short_name))
             if valid_rule_str and not self._is_supported_rule(valid_rule_str):
-                # Unsupported validation rule trumps everything else
-                results[f"DEFAULT_{var_name}"] = self._result_builder.unsupported_validation_rule(
-                    var_name, valid_rule_str, env_var.value, env_var.required
-                )
+                if results.get(var_name, {}).get("status") != "invalid_value":
+                    results[var_name] = self._result_builder.unsupported_validation_rule(
+                        var_name, valid_rule_str, env_var.value, env_var.required
+                    )
                 continue
 
             # Check if this variable was lazy and did not win
             if env_var.set_policy == "lazy" and current_value is not None and current_value != env_var.value:
-                results[var_name] = self._result_builder.lazy_overridden(current_value, env_var.required)
+                if var_name not in results:
+                    results[var_name] = self._result_builder.lazy_overridden(current_value, env_var.required)
                 continue
 
             # Validate default value if validator exists and can be set
             if env_var.validator and env_var.should_set_in_environment():
                 validation_errors = env_var.validate_value()
                 if validation_errors:
-                    results[f"DEFAULT_{var_name}"] = self._result_builder.build_result(
-                        status="invalid_default",
-                        value=env_var.value,
-                        valid=False,
-                        required=env_var.required,
-                        rule=env_var.get_validation_description(),
-                        message=f"Default value '{env_var.value}' for {var_name} doesn't match validation rule '{env_var.get_validation_description()}'"
-                    )
+                    # Preserve first invalid_value result (e.g., triggered)
+                    if results.get(var_name, {}).get("status") != "invalid_value":
+                        results[var_name] = self._result_builder.build_result(
+                            status="invalid_value",
+                            value=env_var.value,
+                            valid=False,
+                            required=env_var.required,
+                            rule=env_var.get_validation_description(),
+                            message=f"Resolved value '{env_var.value}' for {var_name} doesn't match validation rule '{env_var.get_validation_description()}'"
+                        )
 
             # Check if required variable is missing
             if env_var.required and current_value is None:
-                results[var_name] = self._result_builder.missing_required()
+                if var_name not in results:
+                    results[var_name] = self._result_builder.missing_required()
             elif current_value is not None:
                 # Variable is set - validate it
                 if env_var.validator:
                     validation_errors = env_var.validate_value(current_value)
                     is_valid = len(validation_errors) == 0
-                    results[var_name] = self._result_builder.variable_validated(
-                        current_value, is_valid, env_var.required, env_var.get_validation_description(),
-                        validation_errors if not is_valid else None
-                    )
+                    if var_name not in results:
+                        results[var_name] = self._result_builder.variable_validated(
+                            current_value, is_valid, env_var.required, env_var.get_validation_description(),
+                            validation_errors if not is_valid else None
+                        )
                 else:
-                    results[var_name] = self._result_builder.build_result(
-                        status="no_validation",
-                        value=current_value,
-                        valid=None,
-                        required=env_var.required
-                    )
+                    if var_name not in results:
+                        results[var_name] = self._result_builder.build_result(
+                            status="no_validation",
+                            value=current_value,
+                            valid=None,
+                            required=env_var.required
+                        )
             else:
                 # Variable not set and not required
-                results[var_name] = self._result_builder.build_result(
-                    status="optional_unset",
-                    value=None,
-                    valid=None,
-                    required=False
-                )
+                if var_name not in results:
+                    results[var_name] = self._result_builder.build_result(
+                        status="optional_unset",
+                        value=None,
+                        valid=None,
+                        required=False
+                    )
 
         return results
 
@@ -521,18 +725,22 @@ class Metadata:
                 valid_rule = valid_rules[i] if i < len(valid_rules) else None
 
                 if current_value is None:
-                    results[f"REQUIRED_{req_var}"] = self._result_builder.build_result(
-                        status="missing_required_var",
-                        valid=False,
-                        required=True,
-                        required_var=req_var
-                    )
+                    key = f"REQUIRED_{req_var}"
+                    if key not in results:
+                        results[key] = self._result_builder.build_result(
+                            status="missing_required_var",
+                            valid=False,
+                            required=True,
+                            required_var=req_var
+                        )
                 else:
                     # Required variable is set - validate it if rule provided
                     if valid_rule and not self._is_supported_rule(valid_rule):
-                        results[f"REQUIRED_{req_var}"] = self._result_builder.unsupported_validation_rule(
-                            req_var, valid_rule, current_value, True
-                        )
+                        key = f"REQUIRED_{req_var}"
+                        if key not in results:
+                            results[key] = self._result_builder.unsupported_validation_rule(
+                                req_var, valid_rule, current_value, True
+                            )
                     elif valid_rule:
                         validation_errors = []
                         is_valid = True
@@ -543,25 +751,29 @@ class Metadata:
                         except:
                             is_valid = False
 
-                        result = self._result_builder.build_result(
-                            status="required_validated",
-                            value=current_value,
-                            valid=is_valid,
-                            required=True,
-                            rule=valid_rule,
-                            required_var=req_var
-                        )
-                        if not is_valid and validation_errors:
-                            result['errors'] = validation_errors
-                        results[f"REQUIRED_{req_var}"] = result
+                        key = f"REQUIRED_{req_var}"
+                        if key not in results:
+                            result = self._result_builder.build_result(
+                                status="required_validated",
+                                value=current_value,
+                                valid=is_valid,
+                                required=True,
+                                rule=valid_rule,
+                                required_var=req_var
+                            )
+                            if not is_valid and validation_errors:
+                                result['errors'] = validation_errors
+                            results[key] = result
                     else:
-                        results[f"REQUIRED_{req_var}"] = self._result_builder.build_result(
-                            status="required_no_validation",
-                            value=current_value,
-                            valid=None,
-                            required=True,
-                            required_var=req_var
-                        )
+                        key = f"REQUIRED_{req_var}"
+                        if key not in results:
+                            results[key] = self._result_builder.build_result(
+                                status="required_no_validation",
+                                value=current_value,
+                                valid=None,
+                                required=True,
+                                required_var=req_var
+                            )
 
         return results
 
@@ -578,36 +790,44 @@ class Metadata:
                 valid_rule = valid_rules[i] if i < len(valid_rules) else None
 
                 if current_value is None:
-                    results[f"OPTIONAL_{opt_var}"] = self._result_builder.build_result(
-                        status="optional_var_unset",
-                        valid=None,
-                        required=False,
-                        optional_var=opt_var
-                    )
-                else:
-                    # Optional variable is set - validate it if rule provided
-                    if valid_rule and not self._is_supported_rule(valid_rule):
-                        results[f"OPTIONAL_{opt_var}"] = self._result_builder.unsupported_validation_rule(
-                            opt_var, valid_rule, current_value, False
-                        )
-                    elif valid_rule:
-                        is_valid = self._is_valid(current_value, valid_rule)
-                        results[f"OPTIONAL_{opt_var}"] = self._result_builder.build_result(
-                            status="optional_validated",
-                            value=current_value,
-                            valid=is_valid,
-                            required=False,
-                            rule=valid_rule,
-                            optional_var=opt_var
-                        )
-                    else:
-                        results[f"OPTIONAL_{opt_var}"] = self._result_builder.build_result(
-                            status="optional_no_validation",
-                            value=current_value,
+                    key = f"OPTIONAL_{opt_var}"
+                    if key not in results:
+                        results[key] = self._result_builder.build_result(
+                            status="optional_var_unset",
                             valid=None,
                             required=False,
                             optional_var=opt_var
                         )
+                else:
+                    # Optional variable is set - validate it if rule provided
+                    if valid_rule and not self._is_supported_rule(valid_rule):
+                        key = f"OPTIONAL_{opt_var}"
+                        if key not in results:
+                            results[key] = self._result_builder.unsupported_validation_rule(
+                                opt_var, valid_rule, current_value, False
+                            )
+                    elif valid_rule:
+                        is_valid = self._is_valid(current_value, valid_rule)
+                        key = f"OPTIONAL_{opt_var}"
+                        if key not in results:
+                            results[key] = self._result_builder.build_result(
+                                status="optional_validated",
+                                value=current_value,
+                                valid=is_valid,
+                                required=False,
+                                rule=valid_rule,
+                                optional_var=opt_var
+                            )
+                    else:
+                        key = f"OPTIONAL_{opt_var}"
+                        if key not in results:
+                            results[key] = self._result_builder.build_result(
+                                status="optional_no_validation",
+                                value=current_value,
+                                valid=None,
+                                required=False,
+                                optional_var=opt_var
+                            )
 
         return results
 
@@ -629,18 +849,96 @@ class Metadata:
         return results
 
     def lint_metadata_syntax(self):
-        """Lint metadata for syntax errors by filtering validation results that don't require environment variables."""
-        # Reuse existing validation infrastructure
-        all_results = self.validate_env_vars()
+        """Lint metadata using schema-only checks (no environment dependence)."""
+        results = {}
 
-        # Filter to only syntax-related errors (don't require environment variables)
-        lint_statuses = {
-            "unsupported_field", "missing_var_prefix", "orphaned_attributes",
-            "invalid_default", "invalid_validation_rule"
-        }
+        # 0) Require at least some X-Env-* fields; otherwise treat as lint error
+        raw_meta = getattr(self._container, "raw_metadata", {}) if hasattr(self, "_container") else {}
+        if not raw_meta:
+            results["NO_METADATA_FIELDS"] = self._result_builder.build_result(
+                status="no_metadata_fields",
+                valid=False,
+                required=True,
+                message=f"{self.filepath}: no X-Env-* metadata fields found",
+            )
+            return results
 
-        return {key: result for key, result in all_results.items()
-                if result.get("status") in lint_statuses}
+        has_any_xenv = any(k.startswith("X-Env-") for k in raw_meta.keys())
+        if not has_any_xenv:
+            results["NO_METADATA_FIELDS"] = self._result_builder.build_result(
+                status="no_metadata_fields",
+                valid=False,
+                required=True,
+                message=f"{self.filepath}: no X-Env-* metadata fields found",
+            )
+            return results
+
+        # 1) Schema errors (unsupported fields, etc.)
+        results.update(self._collect_schema_errors())
+
+        # 2) Missing layer name if any X-Env-Layer-* is present
+        has_layer_fields = any(k.startswith("X-Env-Layer-") for k in raw_meta.keys())
+        if has_layer_fields and not raw_meta.get(XEnv.layer_name()):
+            results["MISSING_LAYER_NAME"] = {
+                "status": "missing_layer_name",
+                "valid": False,
+                "required": True,
+                "message": f"{self.filepath}: X-Env-Layer-* fields present but {XEnv.layer_name()} is missing",
+            }
+
+        # 3) Var prefix + orphaned attribute checks (schema-only)
+        results.update(self._validate_prefix_and_orphans())
+
+        # 4) Validation rule sanity checks (schema-only)
+        results.update(self._lint_validation_rules(raw_meta))
+
+        return results
+
+    def _lint_validation_rules(self, raw_meta: dict) -> dict:
+        """Check validation rules for invalid/unsupported definitions without using env."""
+        issues = {}
+
+        # Treat each invalid rule as a lint entry to surface mistakes early
+        def _add_issue(key: str, rule: str, msg: str):
+            issues[key] = self._result_builder.build_result(
+                status="invalid_validation_rule",
+                value=None,
+                valid=False,
+                required=False,
+                rule=rule,
+                message=msg,
+            )
+
+        # Per-variable -Valid fields
+        for field_name, rule in raw_meta.items():
+            if not (field_name.startswith(XEnv.VAR_PREFIX) and field_name.endswith("-Valid")):
+                continue
+            rule_str = (rule or "").strip()
+            if not rule_str:
+                continue
+            try:
+                parse_validator(rule_str)
+            except Exception as exc:
+                base_var = XEnv.extract_base_var_name(field_name) or field_name
+                key = f"INVALID_RULE_{base_var}"
+                _add_issue(key, rule_str, f"{self.filepath}: Invalid validation rule '{rule_str}' for {base_var}: {exc}")
+
+        # VarRequires-Valid and VarOptional-Valid lists
+        def _check_rule_list(field_name: str):
+            rules_raw = (raw_meta.get(field_name, "") or "").strip()
+            if not rules_raw:
+                return
+            for idx, rule in enumerate([r.strip() for r in rules_raw.split(",") if r.strip()]):
+                try:
+                    parse_validator(rule)
+                except Exception as exc:
+                    key = f"INVALID_RULE_{field_name}_{idx}"
+                    _add_issue(key, rule, f"{self.filepath}: Invalid validation rule '{rule}' in {field_name}: {exc}")
+
+        _check_rule_list(XEnv.var_requires_valid())
+        _check_rule_list(XEnv.var_optional_valid())
+
+        return issues
 
     def _collect_schema_errors(self):
         """Return dict {key: info_dict} for unsupported fields / invalid defaults."""
@@ -648,7 +946,8 @@ class Metadata:
         # Unsupported layer / env-var fields
         unsupported_layer = self._check_unsupported_layer_fields()
         unsupported_var   = self._check_unsupported_fields()
-        for fld, msg in {**unsupported_layer, **unsupported_var}.items():
+        unknown_xenv = self._check_unknown_xenv_fields()
+        for fld, msg in {**unsupported_layer, **unsupported_var, **unknown_xenv}.items():
             results[f"UNSUPPORTED_FIELD_{fld}"] = {
                 "status": "unsupported_field",
                 "value": self._container.raw_metadata.get(fld),
@@ -667,21 +966,35 @@ class Metadata:
         if unsupported_fields:
             raise ValueError(f"Cannot process variables with unsupported fields: {list(unsupported_fields.keys())}. Run 'validate' command for details.")
 
-        # Check if variables are defined but no prefix is provided
-        if self._container.variables and not self._container.var_prefix:
+        # Prefix is required for layer metadata but optional for standalone registry files
+        if self._container.variables and not self._container.var_prefix and self._has_layer_fields():
             raise ValueError("Cannot process variables: X-Env-Var-* fields are defined but X-Env-VarPrefix is missing. Environment variables require a valid prefix.")
 
-        for var_name, env_var in self._container.variables.items():
-            current_value = os.environ.get(var_name)
+        resolver = VariableResolver()
+        variable_definitions = {name: [env_var] for name, env_var in self._container.variables.items()}
+        resolved_vars = resolver.resolve(variable_definitions)
+        self._resolved_vars = resolved_vars
 
-            if env_var.set_policy == "skip":
+        ordered_vars = sorted(resolved_vars.values(), key=lambda env_var: env_var.position)
+
+        for env_var in ordered_vars:
+            var_name = env_var.name
+            current_value = os.environ.get(var_name)
+            policy = env_var.set_policy
+
+            if policy == "already_set":
+                results[var_name] = {
+                    "status": "already_set",
+                    "value": current_value,
+                    "reason": "already in environment"
+                }
+            elif policy == "skip":
                 results[var_name] = {
                     "status": "no_set_policy",
                     "value": None,
                     "reason": "marked as Set: false/skip"
                 }
-            elif env_var.set_policy == "force":
-                # Always overwrite, but skip if empty and rule allows unset
+            elif policy == "force":
                 if env_var.validator and hasattr(env_var.validator, 'allow_unset') and env_var.validator.allow_unset and not env_var.value.strip():
                     results[var_name] = {
                         "status": "no_set_policy",
@@ -695,7 +1008,7 @@ class Metadata:
                         "value": env_var.value,
                         "reason": "Set: force override"
                     }
-            elif env_var.set_policy == "immediate":
+            elif policy == "immediate":
                 if current_value is None:
                     os.environ[var_name] = env_var.value
                     results[var_name] = {
@@ -709,8 +1022,7 @@ class Metadata:
                         "value": current_value,
                         "reason": "already in environment"
                     }
-            elif env_var.set_policy == "lazy":
-                # For single-layer context, treat like immediate
+            elif policy == "lazy":
                 if current_value is None:
                     if env_var.validator and hasattr(env_var.validator, 'allow_unset') and env_var.validator.allow_unset and not env_var.value.strip():
                         results[var_name] = {
@@ -734,6 +1046,12 @@ class Metadata:
 
         return results
 
+    def get_resolved_env_vars(self) -> Dict[str, EnvVariable]:
+        """Return the most recently resolved env vars (includes trigger injections)."""
+        if self._resolved_vars is not None:
+            return self._resolved_vars
+        return self._container.get_settable_variables()
+
     def get_layer_info(self):
         """Get layer management information from X-Env-Layer metadata fields"""
         if self._container.layer is None:
@@ -754,57 +1072,60 @@ def print_env_var_descriptions(meta: 'Metadata', indent: int = 0):
         return
 
     pad = " " * indent
+    use_colour = sys.stdout.isatty()
+    bold = "\033[1m" if use_colour else ""
+    reset = "\033[0m" if use_colour else ""
+
     print(f"{pad}Environment Variables:")
 
-    # Display the variable prefix if it exists
     if meta._container.var_prefix:
         print(f"{pad}  Variable Prefix: {meta._container.var_prefix}")
     print()
 
-    # Fetch from the container
     for var_name, env_var in meta._container.variables.items():
-        var_short_name = var_name.split('_')[-1].upper()  # Extract short name
-
-        #print(f"{pad}  Variable: {var_short_name}")
-        BOLD="\033[1m"; RESET="\033[0m"
-        print(f"{pad}  Variable: {BOLD}{var_name}{RESET}")
+        print(f"{pad}  Variable: {bold}{var_name}{reset}")
         print(f"{pad}    Default Value: {env_var.value}")
         if env_var.description:
             print(f"{pad}    Description: {env_var.description}")
+        if getattr(env_var, "anchor_name", None):
+            print(f"{pad}    Anchor: {env_var.anchor_name}")
         if env_var.validator:
             rule_display = f"type:{env_var.validation_rule}" if env_var.validation_rule else "custom"
             description = env_var.get_validation_description()
             print(f"{pad}    Validation: {rule_display} [{description}]")
         print(f"{pad}    Set Policy: {env_var.set_policy}")
+        if env_var.triggers:
+            print(f"{pad}    Triggers:")
+            for t in env_var.triggers:
+                cond = f"when={t.condition} " if t.condition else ""
+                print(f"{pad}      {cond}{t.action} {t.target}={t.value} policy={t.policy}")
+        if env_var.conflicts:
+            print(f"{pad}    Conflicts: {', '.join(env_var.conflicts)}")
         print()
 
 
 # Keep all the CLI and boilerplate functions from the original file
 def _generate_boilerplate():
-    """Generate boilerplate metadata with all supported fields and examples"""
+    """Generate boilerplate metadata with examples"""
     boilerplate = """# METABEGIN
-# Layer Management Fields
 # X-Env-Layer-Name: my-layer
 # X-Env-Layer-Desc: Layer description
 # X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: general
+# X-Env-Layer-Sets: KEY=VALUE
 #
-# Dependencies (comma-separated layer names)
 # X-Env-Layer-Requires:
 # X-Env-Layer-Conflicts:
+# X-Env-Layer-Sets:
 #
-# Environment Variables
 # X-Env-VarPrefix: my
 #
-# Variable requirements (any environment variables)
 # X-Env-VarRequires: HOME,IGconf_device_user1,DOCKER_HOST
 # X-Env-VarRequires-Valid: regex:^/.*,string,regex:^(unix|tcp)://.*
 #
-# Optional variables (validated if present, not required)
-# X-Env-VarOptional: IGconf_device_user1pass,LOG_LEVEL
-# X-Env-VarOptional-Valid: string,debug,info,warn,error
+# X-Env-VarOptional: LOG_LEVEL
+# X-Env-VarOptional-Valid: string
 #
-# Example variables with different validation schemes:
 # X-Env-Var-hostname: localhost
 # X-Env-Var-hostname-Desc: Server hostname
 # X-Env-Var-hostname-Required: false
@@ -841,7 +1162,6 @@ def _generate_boilerplate():
 # X-Env-Var-component-Valid: keywords:frontend,backend,database,cache,worker
 # X-Env-Var-component-Set: true
 #
-# Validation schemes: run 'ig metadata help-validation' for details
 # METAEND"""
 
     print(boilerplate)
@@ -857,6 +1177,7 @@ def Metadata_register_parser(subparsers):
     parser.add_argument("--validate", metavar="PATH", help="Validate metadata and environment variables")
     parser.add_argument("--describe", metavar="PATH", help="Describe layer and variable information")
     parser.add_argument("--lint", metavar="PATH", help="Lint metadata syntax and field names (no env var validation)")
+    parser.add_argument("--emit", metavar="PATH", help="Lint and emit variables as shell key=value pairs")
     parser.add_argument("--gen", action="store_true", help="Generate boilerplate metadata template")
     parser.add_argument("--help-validation", action="store_true", help="Show validation help")
     parser.add_argument("--write-out", metavar="FILE", help="Write key=value pairs to file (works with --parse)")
@@ -879,14 +1200,15 @@ def _main(args):
     if args.parse:
         command = "parse"
         path = args.parse
+    elif args.emit:
+        command = "emit"
+        path = args.emit
     elif args.validate:
         command = "validate"
         path = args.validate
     elif args.describe:
         command = "describe"
         path = args.describe
-
-
     elif args.lint:
         command = "lint"
         path = args.lint
@@ -948,10 +1270,13 @@ def _main(args):
                 elif result["status"] == "unsupported_field":
                     log_error(result['message'])
                     has_validation_errors = True
-                elif result["status"] == "missing_var_prefix":
+                elif result["status"] in ("missing_var_prefix", "unexpected_var_prefix"):
                     log_error(result['message'])
                     has_validation_errors = True
-                elif result["status"] == "invalid_default":
+                elif result["status"] == "invalid_value":
+                    log_error(result['message'])
+                    has_validation_errors = True
+                elif result["status"] == "conflict":
                     log_error(result['message'])
                     has_validation_errors = True
                 elif result["status"] == "orphaned_attributes":
@@ -964,7 +1289,8 @@ def _main(args):
             # Write key=value pairs to file if write_out is specified
             if hasattr(args, 'write_out') and args.write_out:
                 try:
-                    settable_vars = {name: var.value for name, var in meta._container.get_settable_variables().items()}
+                    resolved_vars = meta.get_resolved_env_vars()
+                    settable_vars = {name: var.value for name, var in resolved_vars.items() if var.should_set_in_environment()}
                     with open(args.write_out, 'w') as f:
                         for fullvar, default_value in settable_vars.items():
                             env_value = os.environ.get(fullvar, default_value)
@@ -1010,6 +1336,9 @@ def _main(args):
                 print(f"[{status}] {var}={result['value']} (rule: {result['rule']})")
                 if not result["valid"]:
                     has_errors = True
+            elif result["status"] == "conflict":
+                print(f"[ERROR] {result['message']}")
+                has_errors = True
             elif result["status"] == "required_validated":
                 status = "OK" if result["valid"] else "FAIL"
                 print(f"[{status}] {result['required_var']}={result['value']} (required, rule: {result['rule']})")
@@ -1029,10 +1358,10 @@ def _main(args):
                 print(f"[SKIP] {result['optional_var']}={result['value']} (optional, no validation rule)")
             elif result["status"] == "optional_unset":
                 print(f"[INFO] {var} - optional, not set")
-            elif result["status"] == "missing_var_prefix":
+            elif result["status"] in ("missing_var_prefix", "unexpected_var_prefix"):
                 print(f"[ERROR] {result['message']}")
                 has_errors = True
-            elif result["status"] == "invalid_default":
+            elif result["status"] == "invalid_value":
                 print(f"[ERROR] {result['message']}")
                 has_errors = True
             elif result["status"] == "orphaned_attributes":
@@ -1061,7 +1390,14 @@ def _main(args):
                 print(f"[ERROR] {result['message']}")
                 has_errors = True
                 unsupported_count += 1
-            elif result["status"] in ["missing_var_prefix", "orphaned_attributes", "invalid_default"]:
+            elif result["status"] in [
+                "missing_var_prefix",
+                "unexpected_var_prefix",
+                "orphaned_attributes",
+                "invalid_validation_rule",
+                "missing_layer_name",
+                "no_metadata_fields",
+            ]:
                 print(f"[ERROR] {result['message']}")
                 has_errors = True
 
@@ -1077,48 +1413,53 @@ def _main(args):
             exit(1)
         else:
             print("OK")
+
+    elif command == "emit":
+        lint_results = meta.lint_metadata_syntax()
+        has_errors = False
+        for key, result in lint_results.items():
+            if not result.get("valid", True):
+                print(f"[ERROR] {result.get('message', key)}", file=sys.stderr)
+                has_errors = True
+        if has_errors:
+            exit(1)
+
+        validation_results = meta.validate_env_vars()
+        for var, result in validation_results.items():
+            if result.get("valid") is False:
+                msg = result.get("message", f"{var}: validation failed")
+                print(f"[ERROR] {msg}", file=sys.stderr)
+                has_errors = True
+        if has_errors:
+            exit(1)
+
+        resolved = meta.get_resolved_env_vars()
+        for key in sorted(resolved.keys()):
+            var = resolved[key]
+            if not var.should_set_in_environment():
+                continue
+            print(f'{key}="{var.value if var.value is not None else ""}"')
+
     elif command == "describe":
         try:
             if not varname:
-                # Show all information when no specific variable requested
                 has_content = False
+                raw = meta.get_metadata()
 
-                # Check and display layer information
-                layer_info = meta.get_layer_info()
-                if layer_info:
-                    print("Layer Information:")
-                    print(f"  Name: {layer_info['name']}")
-                    print(f"  Version: {layer_info['version']}")
-                    print(f"  Category: {layer_info['category']}")
+                print(f"  File: {path}")
 
-                    if layer_info['description']:
-                        print(f"  Description: {layer_info['description']}")
+                for field, info in SUPPORTED_FIELD_PATTERNS.items():
+                    if info["type"] != "single":
+                        continue
+                    value = raw.get(field, "")
+                    label = field.removeprefix("X-Env-").replace("-", " ")
+                    print(f"  {label}: {value or '-'}")
+                has_content = bool(raw)
 
-                    deps = ', '.join(layer_info['depends']) if layer_info['depends'] else 'none'
-                    print(f"  Required Dependencies: {deps}")
-
-                    opt_deps = ', '.join(layer_info['optional_depends']) if layer_info['optional_depends'] else 'none'
-                    print(f"  Optional Dependencies: {opt_deps}")
-
-                    conflicts = ', '.join(layer_info['conflicts']) if layer_info['conflicts'] else 'none'
-                    print(f"  Conflicts: {conflicts}")
-
-                    print(f"  Filename: {layer_info['config_file']}")
-
-                    # Show required environment variables if any
-                    if meta._container.required_vars:
-                        req_vars = ', '.join(meta._container.required_vars)
-                        print(f"  Required Variables: {req_vars}")
-
-                    # Show optional environment variables if any
-                    if meta._container.optional_vars:
-                        opt_vars = ', '.join(meta._container.optional_vars)
-                        print(f"  Optional Variables: {opt_vars}")
-
+                if has_content:
                     print()
-                    has_content = True
 
-                # Display environment variables via helper
+                # Display per-variable detail via existing helper
                 if meta.get_all_env_vars():
                     print_env_var_descriptions(meta)
                     has_content = True

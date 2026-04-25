@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Debian Trixie custom layer for arm64 providing
 #  a usable and practical base.
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Requires: locale-base
 #
 # X-Env-VarRequires: IGconf_locale_timezone,
@@ -19,10 +19,9 @@ mmdebstrap:
   variant: custom
   suite: trixie
   mirrors:
-    - deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
-    - deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
+    - ${IGTOP}/templates/debian/apt/trixie.sources
   packages:
+    - perl-base
     - findutils
     - dpkg
     - libc-bin
@@ -38,6 +37,7 @@ mmdebstrap:
     - udev
     - e2fsprogs
     - linux-sysctl-defaults
+    - debian-archive-keyring
   setup-hooks:
     - mkdir -p $1/usr/bin
     - ln -s bash $1/usr/bin/sh

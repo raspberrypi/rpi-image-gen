@@ -1,0 +1,8 @@
+include:
+  file: trixie-minbase.yaml
+
+image:
+  name: debstore-test
+
+layer:
+  app: example-debstore

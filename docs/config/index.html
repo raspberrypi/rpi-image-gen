@@ -138,11 +138,17 @@
 <li><a href="#_variable_prefix">Variable Prefix</a></li>
 </ul>
 </li>
+<li><a href="#_anchors">Anchors</a></li>
 </ul>
 </li>
 <li><a href="#_configuration_file_support">Configuration File Support</a>
 <ul class="sectlevel2">
-<li><a href="#_yaml_configuration_format">YAML Configuration Format</a></li>
+<li><a href="#_yaml_configuration_format">YAML Configuration Format</a>
+<ul class="sectlevel3">
+<li><a href="#_mapping_sections">Mapping Sections</a></li>
+<li><a href="#_list_sections">List Sections</a></li>
+</ul>
+</li>
 <li><a href="#_ini_configuration_format">INI Configuration Format</a></li>
 <li><a href="#_configuration_includes">Configuration Includes</a>
 <ul class="sectlevel3">
@@ -150,6 +156,14 @@
 <li><a href="#_ini_includes">INI Includes</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a href="#_section_names">Section Names</a>
+<ul class="sectlevel2">
+<li><a href="#_device">device</a></li>
+<li><a href="#_image">image</a></li>
+<li><a href="#_layer">layer</a></li>
+<li><a href="#_packages">packages</a></li>
 </ul>
 </li>
 <li><a href="#_variable_sources_and_precedence">Variable Sources and Precedence</a>
@@ -160,10 +174,9 @@
 <li><a href="#_variable_expansion">Variable Expansion</a>
 <ul class="sectlevel2">
 <li><a href="#_environment_variable_expansion">Environment Variable Expansion</a></li>
-<li><a href="#_cross_reference_expansion">Cross-Reference Expansion</a></li>
-<li><a href="#_environment_variable_dependencies">Environment Variable Dependencies</a></li>
 <li><a href="#_expansion_context">Expansion Context</a></li>
-<li><a href="#_conditional_variables">Conditional Variables</a></li>
+<li><a href="#_cross_reference_expansion">Cross-Reference Expansion</a></li>
+<li><a href="#_layer_variable_dependencies">Layer Variable Dependencies</a></li>
 </ul>
 </li>
 <li><a href="#_configuration_loading">Configuration Loading</a>
@@ -339,6 +352,75 @@ IGconf_device_storage_type=sd</code></pre>
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_anchors"><a class="anchor" href="#_anchors"></a><a class="link" href="#_anchors">Anchors</a></h3>
+<div class="paragraph">
+<p>Anchors are declared in a variable&#8217;s metadata and are definitive remapping points for paths and other environment values. They allow locations to be described in an abstract way (eg, <code>@IGROOT</code>, <code>@SRCROOT</code>) and are resolved by the engine automatically, never leaking to the shell. Anchors enable support of different contexts (eg, host vs. container, with different root paths) without rewriting layer or config files. The resolver replaces ${@ANCHOR} with the concrete value from the anchor registry when producing the final environment. From a simplistic viewpoint, an anchor is essentially a shortcut to a variable&#8217;s value.</p>
+</div>
+<div class="paragraph">
+<p>The engine automatically sets a small number of default anchors. These are listed below:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 66.6668%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Anchor</th>
+<th class="tableblock halign-left valign-top">Scope</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@IGROOT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Always</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Root path of rpi-image-gen tree</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">@SRCROOT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-S only</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Root path of source directory</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>An Anchor is declared in layer metadata as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml"># X-Env-Var-dir: ${IGconf_sys_workroot}/${IGconf_target_context}
+# X-Env-Var-dir-Anchor: @TARGETDIR
+# X-Env-Var-dir-Desc: Directory containing the target and related build artefacts.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An anchor can be used in a config file as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  app: example-kiosk
+  extra: rpi-splash-screen
+
+splash:
+  image_path: ${@SRCROOT}/my.tga</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, when building sources via <code>-S</code>, <code>IGconf_splash_image_path</code> resolves to <code>/path/to/source/dir/my.tga</code>. This can be observed in the output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen build -S ./examples/webkiosk/ -c kiosk.yaml
+...
+FINAL ENV
+-&gt; IGconf_splash_image_path : /path/to/repos/raspberrypi/rpi-image-gen/examples/webkiosk/my.tga</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -350,8 +432,10 @@ IGconf_device_storage_type=sd</code></pre>
 <div class="sect2">
 <h3 id="_yaml_configuration_format"><a class="anchor" href="#_yaml_configuration_format"></a><a class="link" href="#_yaml_configuration_format">YAML Configuration Format</a></h3>
 <div class="paragraph">
-<p>YAML provides the most flexible configuration format with native support for hierarchical data and includes:</p>
+<p>YAML provides the most flexible configuration format with native support for hierarchical data and includes.</p>
 </div>
+<div class="sect3">
+<h4 id="_mapping_sections"><a class="anchor" href="#_mapping_sections"></a><a class="link" href="#_mapping_sections">Mapping Sections</a></h4>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">include:
@@ -369,6 +453,59 @@ image:
   compression: zstd
   boot_part_size: 200%
   root_part_size: 300%</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_list_sections"><a class="anchor" href="#_list_sections"></a><a class="link" href="#_list_sections">List Sections</a></h4>
+<div class="paragraph">
+<p>In addition to mapping (key-value) sections, YAML configuration files support sequence (list) sections. List items are assigned 0-based numeric keys, producing the same <code>IGconf_&lt;section&gt;_&lt;key&gt;</code> variable format as mapping sections.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  - vim
+  - git
+  - curl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This produces the following variables:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">IGconf_packages_0=vim
+IGconf_packages_1=git
+IGconf_packages_2=curl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is equivalent to the explicit mapping form:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  0: vim
+  1: git
+  2: curl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List sections are useful when the key names are not meaningful and only ordering matters. They follow the same include merging and override rules as mapping sections.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>List sections do not merge with includes in the same way as mapping sections. Because list items are internally keyed by their position index, an include merge between two files defining the same list section produces a positional override rather than an append or replacement. For predictable results, avoid defining the same list section in both a base file and a file that includes it.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -466,6 +603,86 @@ root_part_size = 300%</code></pre>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_section_names"><a class="anchor" href="#_section_names"></a><a class="link" href="#_section_names">Section Names</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Any section name used in a configuration file maps directly to the <code>IGconf_&lt;section&gt;_*</code> variable namespace. A layer can declare a section via <code>X-Env-VarPrefix</code> in its metadata. This means that the set of meaningful section names in a build is determined by the layers included. Declaring a section allows a layer to expose a group of configuration variables. Some section names carry specific functional meaning because the build system actively responds to them.</p>
+</div>
+<div class="sect2">
+<h3 id="_device"><a class="anchor" href="#_device"></a><a class="link" href="#_device">device</a></h3>
+<div class="paragraph">
+<p>The <code>device</code> section (<code>X-Env-VarPrefix: device</code>) holds variables describing the target hardware. Variables in this section are declared by <code>device-base</code> and downstream device layers.</p>
+</div>
+<div class="paragraph">
+<p>The <code>device.layer</code> key has functional meaning: it&#8217;s one way to specify the device layer to include in the build.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_image"><a class="anchor" href="#_image"></a><a class="link" href="#_image">image</a></h3>
+<div class="paragraph">
+<p>The <code>image</code> section (<code>X-Env-VarPrefix: image</code>) holds variables that control image construction. Variables in this section are declared by <code>image-base</code> and downstream image layers.</p>
+</div>
+<div class="paragraph">
+<p>The <code>image.layer</code> key has functional meaning: it&#8217;s one way to specify the image layer to include in the build.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_layer"><a class="anchor" href="#_layer"></a><a class="link" href="#_layer">layer</a></h3>
+<div class="paragraph">
+<p>The <code>layer</code> section is used to specify layers to include in the build. Each key names an extra layer:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  app: my-app-layer
+  extra: rpi-splash-screen</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The key names are arbitrary - only the values matter. Lists are also supported. This is the primary mechanism for composing a build from multiple optional layers. Device and image layers can be specified here, too:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
+  - rpi-cm5
+  - image-rota</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_packages"><a class="anchor" href="#_packages"></a><a class="link" href="#_packages">packages</a></h3>
+<div class="paragraph">
+<p>The <code>packages</code> section triggers automatic package installation into the target rootfs during the build. Each entry is either an apt package name or a path to a local <code>.deb</code> file on the build host.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  - curl
+  - vim
+  - git</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Local <code>.deb</code> files are specified by path and are detected by the presence of the file on the build host at the time the hook runs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">packages:
+  apt: curl
+  local1: /path/to/mypkg_1.0_arm64.deb
+  local2: myotherpkg_2.0_arm64.deb</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both list and mapping forms are supported. Local <code>.deb</code> files are installed before apt packages so that apt can satisfy any dependencies they introduce.</p>
+</div>
+<div class="paragraph">
+<p>Absolute paths are fully supported. Relative paths are resolved from the source directory and require <code>-S</code> to be specified, falling back to the rpi-image-gen root directory.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_variable_sources_and_precedence"><a class="anchor" href="#_variable_sources_and_precedence"></a><a class="link" href="#_variable_sources_and_precedence">Variable Sources and Precedence</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -512,6 +729,9 @@ root_part_size = 300%</code></pre>
 <pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen build -c config.yaml -- IGconf_device_class=pi5 IGconf_image_compression=xz</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Command-line overrides are handled by the calling shell before the engine sees them.</p>
+</div>
 </div>
 </div>
 </div>
@@ -519,10 +739,26 @@ root_part_size = 300%</code></pre>
 <h2 id="_variable_expansion"><a class="anchor" href="#_variable_expansion"></a><a class="link" href="#_variable_expansion">Variable Expansion</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The configuration system supports variable expansion in configuration values using shell-style syntax:</p>
+<p>The engine supports deferred variable expansion, meaning that it&#8217;s possible to forward-declare references to other variables. Variables are resolved in the pipeline phase rather than the config file parsing phase. Provided a variable is declared, the engine will resolve it. Values assigned to all variables must adhere to POSIX‑sh syntax.</p>
 </div>
 <div class="sect2">
 <h3 id="_environment_variable_expansion"><a class="anchor" href="#_environment_variable_expansion"></a><a class="link" href="#_environment_variable_expansion">Environment Variable Expansion</a></h3>
+<div class="paragraph">
+<p>Variable values may include parameter expansion or command substitution. To be expanded by the engine, they must use one of these forms:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>${variable}</code></p>
+</li>
+<li>
+<p><code>$(command)</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Any other <code>$</code> (eg, <code>$VAR</code> or <code>$6$&#8230;&#8203;</code>) is treated as literal and will be escaped.</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">device:
@@ -534,9 +770,61 @@ image:
   assetdir: ${WORKSPACE}/build/assets/${IGconf_device_name}-rev${IGconf_device_rev}
 
 ssh:
-  pubkey_user1=$(&lt; ${DEPLOY}/device/baseassets/id_rsa.pub)
-  pubkey_only=y</code></pre>
+  pubkey_user1: ${DEPLOY}/device/baseassets/id_rsa.pub
+  pubkey_only: y</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Care must be taken if using the command line to assign a value to a variable if the value contains spaces or newlines. Making sure the calling shell expands it into a single argument ensures the command substitution happens once and stays on one line:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen build -c config.yaml -- "IGconf_ssh_pubkey_user1=$(&lt; /path/to/.ssh/id_rsa.pub)"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Assigning a variable and preserving the literal value can be performed using single quotes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen build -c config.yaml -- 'IGconf_ssh_pubkey_user1=$(cat /path/to/.ssh/id_rsa.pub)'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above yield identical results in the build configuration for the value of <code>IGconf_ssh_pubkey_user1</code>. The difference is that the first expands the value immediately upon assignment using the calling shell (eg Bash) before engine processing. The second keeps the literal text, which is expanded during engine processing using POSIX-sh.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_expansion_context"><a class="anchor" href="#_expansion_context"></a><a class="link" href="#_expansion_context">Expansion Context</a></h3>
+<div class="paragraph">
+<p>Variables are resolved after configuration parsing and layer assembly, and then expanded. Expansion is performed with a <strong>strict policy</strong> using <code>/bin/sh</code> with <code>POSIXLY_CORRECT=1</code> under <code>set -eu</code> in a 'clean room' environment. This means:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>errexit (set -e)</strong>: Exit immediately if any command returns a non-zero exit status, including when variable expansion fails or returns an error.</p>
+</li>
+<li>
+<p><strong>nounset (set -u)</strong>: Treat unset variables as errors during expansion - attempting to expand a variable that hasn&#8217;t been set will exit with an error instead of expanding to an empty string.</p>
+</li>
+<li>
+<p>When these are combined, variable expansion is strict and fails quickly. Any attempt to expand an undefined variable will cause the build to exit immediately.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>There may be a need to handle non-alphanumeric characters in config files and/or command line arguments. Input files are parsed as-is, without stripping quotes. In YAML, quote only when you need YAML to treat the value as a string (eg, URLs can be unquoted: <code>url: <a href="https://&#8230;&#8203" class="bare">https://&#8230;&#8203</a>;</code>). On the command line, use shell quoting when needed to protect special characters or expansions (eg, <code>rpi-image-gen build -c &lt;args&gt;&#8201;&#8212;&#8201;IGconf_device_user1pass='Fo0bar!!'</code>).</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -556,9 +844,9 @@ image:
 </div>
 </div>
 <div class="sect2">
-<h3 id="_environment_variable_dependencies"><a class="anchor" href="#_environment_variable_dependencies"></a><a class="link" href="#_environment_variable_dependencies">Environment Variable Dependencies</a></h3>
+<h3 id="_layer_variable_dependencies"><a class="anchor" href="#_layer_variable_dependencies"></a><a class="link" href="#_layer_variable_dependencies">Layer Variable Dependencies</a></h3>
 <div class="paragraph">
-<p>Layer dependencies can use environment variable expansion to create dynamic dependency resolution:</p>
+<p>Layer dependencies can use config or command line variable assignments to create dynamic dependency resolution:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -569,14 +857,13 @@ image:
 </div>
 </div>
 <div class="paragraph">
-<p>This allows layers to dynamically depend on other layers based on build-time environment variables:</p>
+<p>This allows layers to dynamically depend on other layers based on build-time set variables:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Set environment variables before processing
-export ARCH=arm64
-export DISTRO=debian
-
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Set variables on the command line
+$ rpi-image-gen build -c &lt;args&gt; -- ARCH=arm64 DISTRO=debian
+...
 # Layer dependencies will be equivalent to:
 # X-Env-Layer-Requires: base-layer, arm64-toolchain, debian-packages</code></pre>
 </div>
@@ -592,7 +879,7 @@ export DISTRO=debian
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Layer discovery will fail if variables referenced in dependencies are not set in the environment.</p>
+<p>Layer discovery will fail if variables referenced in dependencies are not set.</p>
 </div>
 </td>
 </tr>
@@ -606,20 +893,7 @@ export DISTRO=debian
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Environment variable dependencies are evaluated during layer discovery, not during layer variable expansion. This ensures dependencies are resolved before layer processing begins. Because of this, only variables <strong>already present</strong> in the environment can be used in layer dependencies.</p>
-</div>
-<div class="paragraph">
-<p>For example:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>System or custom environment variables (e.g., <code>USER</code>, <code>ARCH</code>, <code>DISTRO</code>)</p>
-</li>
-<li>
-<p>Configuration file variables or command line overrides</p>
-</li>
-</ul>
+<p>Variable dependencies are evaluated during layer discovery, not during layer variable expansion. This ensures dependencies are resolved before layer processing begins. Only variables set in the config file or on the command line can be used in layer dependencies.</p>
 </div>
 <div class="paragraph">
 <p>All dependencies are always included, i.e. variable names result in actual layer names at build-time. For example, <code>${ARCH}-toolchain</code> always results in a dependency, but the specific layer name depends on the <code>ARCH</code> environment variable value.</p>
@@ -627,106 +901,6 @@ export DISTRO=debian
 </td>
 </tr>
 </table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_expansion_context"><a class="anchor" href="#_expansion_context"></a><a class="link" href="#_expansion_context">Expansion Context</a></h3>
-<div class="paragraph">
-<p>During configuration processing, variables are expanded using:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Previously loaded configuration values</strong></p>
-</li>
-<li>
-<p><strong>System environment variables</strong> (for shell-style expansion like <code>${HOME}</code>)</p>
-</li>
-<li>
-<p>A <strong>Strict Policy</strong> (using <code>bash</code> under <code>set -eu</code>). This means:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>errexit (set -e)</strong>: Exit immediately if any command returns a non-zero exit status, including when variable expansion fails or returns an error.</p>
-</li>
-<li>
-<p><strong>nounset (set -u)</strong>: Treat unset variables as errors during expansion - attempting to expand a variable that hasn&#8217;t been set will exit with an error instead of expanding to an empty string.</p>
-</li>
-<li>
-<p>When these are combined, variable expansion is strict and fails quickly. Any attempt to expand an undefined variable will cause the build to exit immediately.</p>
-</li>
-</ul>
-</div>
-</li>
-</ol>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>There may be a need to handle non-alphanumeric characters in config files and/or command line arguments. Best practices advise encapsulating the text for a more robust approach, even if it&#8217;s not always technically necessary. For YAML files, use single quotes for literal strings. For example <code>password: 'Fo0bar!!'</code>. For INI files, quote values containing special characters. For example <code>password = "Fo0bar!!"</code>. For command line arguments, use single quotes to preserve the literal text. For example <code>rpi-image-gen build -c &lt;args&gt;&#8201;&#8212;&#8201;IGconf_device_user1pass='Fo0bar!!'</code>.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_conditional_variables"><a class="anchor" href="#_conditional_variables"></a><a class="link" href="#_conditional_variables">Conditional Variables</a></h3>
-<div class="paragraph">
-<p>The expansion of variables during configuration processing means it&#8217;s possible to use conditional expressions to assign variables based on other variables via <em>parameter expansion</em>. This provides quite a powerful feature for adapting configuration based characteristics or other settings.</p>
-</div>
-<div class="paragraph">
-<p>For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># METABEGIN
-# X-Env-Layer-Name: image-rescue
-# X-Env-Layer-Requires: image-base,device-base
-# X-Env-Layer-Provides: image
-#
-# X-Env-VarRequires: IGconf_device_storage_type
-#
-# X-Env-VarPrefix: image
-#
-# X-Env-Var-ptable_protect: $( ["${IGconf_device_storage_type}" = "emmc"] &amp;&amp; echo y || echo n )
-# X-Env-Var-ptable_protect-Desc: Enable eMMC Power-On Write Protection of the partition table
-# X-Env-Var-ptable_protect-Required: n
-# X-Env-Var-ptable_protect-Valid: string
-# X-Env-Var-ptable_protect-Set: y
-# METAEND</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This results in <code>IGconf_image_ptable_protect=y</code> if <code>IGconf_device_storage_type=emmc</code>, else <code>IGconf_image_ptable_protect=n</code>. Because configuration variable validation operates on literal values prior to expansion, this will only pass validation if the variable being assigned is a derivative of type <code>X-Env-Var-X-Valid: string</code>.</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Care must be taken when using parameter expansion if input variables to the expression are optional. Due to the strict expansion rules, variables referenced in conditional expressions are recommended to use the <code>:-</code> fallback syntax to avoid errors.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># X-Env-VarOptional: IGconf_device_storage_type
-# X-Env-Var-ptable_protect: $( ["${IGconf_device_storage_type:-}" = "emmc"] &amp;&amp; echo y || echo n )</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>References: <a href="https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html" target="_blank" rel="noopener">GNU Bash Manual</a></p>
 </div>
 </div>
 </div>
@@ -749,12 +923,6 @@ export DISTRO=debian
 </li>
 <li>
 <p><strong>Apply command line overrides</strong> - Processes variables specified after <code>--</code></p>
-</li>
-<li>
-<p><strong>Expand variables</strong> - Resolves variable references using configuration context</p>
-</li>
-<li>
-<p><strong>Set environment variables</strong> - Applies final values following precedence rules</p>
 </li>
 <li>
 <p><strong>Generate output</strong> - Either loads into environment or writes to file</p>

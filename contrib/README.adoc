@@ -1,0 +1,25 @@
+= rpi-image-gen
+
+- **Project Information**: https://github.com/raspberrypi/rpi-image-gen[here,window=_blank]
+- **Technical Documentation**: https://raspberrypi.github.io/rpi-image-gen[here,window=_blank]
+
+== Contrib
+
+The `contrib/` directory contains supplementary, community-contributed additions and tooling that complement the project but are not required for core functionality. These components may follow different maintenance and support paths, may be experimental, and are provided on a best-effort basis without stability guarantees.
+
+Contributions should be submitted via pull request and aim to utilise a sensible directory hierarchy that relates to their intended purpose/functionality. For example:
+
+- Networking-specific additions under `net/`, e.g. interface setup/selection, management daemon/stack config, WiFi profiles, VPN preconfiguration
+- Automation and provisioning under `tools/`, e.g. cloud-init snippets or helper scripts for image generation
+- Storage/layout under `storage/`, e.g. btrfs/subvol presets, overlay setups
+- Package bundles under `layers/`, e.g. Docker host, Kubernetes node, IoT sensor stack
+- CI/build automation under `ci/`, e.g. GitHub Actions helpers, reproducible build scripts
+- Buildable configurations under `src/` for invocation via `rpi-image-gen build -S contrib/src/foo ...`
+
+[IMPORTANT]
+====
+Compatibility: contents may lag mainline releases or require specific versions.
+
+Security: contributions should avoid secrets and use placeholders.
+====
+

@@ -1,0 +1,10 @@
+#!/bin/bash
+set -eu
+
+origin_dir="${DYNROOT}/templates/debian/apt"
+origin_src="${origin_dir}/rpi-image-gen.origin"
+
+[ -f "$origin_src" ] || exit 0
+
+mkdir -p "${1}/usr/share/rpi-image-gen"
+cat "$origin_src" >> "${1}/usr/share/rpi-image-gen/origin"

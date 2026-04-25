@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: rpi4
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi 4 specific device layer
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 # X-Env-Layer-Requires: rpi-generic64
 # X-Env-Layer-Provides: device
 #
@@ -15,9 +15,10 @@
 # X-Env-Var-class-Set: y
 #
 # X-Env-Var-storage_type: sd
-# X-Env-Var-storage_type-Desc: Storage media type.
+# X-Env-Var-storage_type-Desc: Storage media the image is intended for, as seen
+#  by the OS.
 # X-Env-Var-storage_type-Required: n
-# X-Env-Var-storage_type-Valid: keywords:sd
+# X-Env-Var-storage_type-Valid: sd,usb
 # X-Env-Var-storage_type-Set: y
 #
 # X-Env-Var-assetdir: ${DIRECTORY}

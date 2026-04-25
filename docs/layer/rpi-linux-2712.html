@@ -123,11 +123,15 @@
     <div class="header">
         <h1>rpi-linux-2712</h1>
         <span class="badge">kernel</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v2.0.0</span>
         <p>Raspberry Pi 2712 kernel</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="linux-base.html" class="dep-badge">linux-base</a>
+        </div>
         <p><strong>Required by:</strong></p>
         <div class="deps">
             
@@ -136,6 +140,34 @@
             <a href="rpi5.html" class="dep-badge">rpi5</a>
             
         </div>
+    </div>
+    <div class="section">
+        <h2>Configuration Variables</h2>
+        <p><strong>Declares</strong> (prefix: <code>linux</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>IGconf_linux_page_size</code></td>
+                    <td>2712 uses a 16K page size kernel</td>
+                    <td>
+                           <code>16384</code>
+                    </td>
+                    <td>Integer value in range 16384 to 16384</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-force" title="Click for policy and validation help">force</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <div class="section">
         <h2>mmdebstrap</h2>

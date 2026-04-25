@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: test-circular-a
+# X-Env-Layer-Desc: Test layer A for circular dependency
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: test-circular-b
+# X-Env-VarPrefix: circa
+# X-Env-Var-value: from-a
+# METAEND
+
+layer_a:
+  value: "${IGconf_circa_value}"

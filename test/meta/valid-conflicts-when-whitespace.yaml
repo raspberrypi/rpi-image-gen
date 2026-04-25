@@ -1,0 +1,14 @@
+# METABEGIN
+# X-Env-Layer-Name: test-conflict-when-whitespace
+# X-Env-Layer-Desc: when= allows extra whitespace before conflict
+# X-Env-VarPrefix: cft
+#
+# X-Env-Var-compression: none
+# X-Env-Var-compression-Conflicts: when=zstd    rootfs_type=ext4
+#
+# X-Env-Var-rootfs_type: ext4
+# METAEND
+
+conflict_when_whitespace:
+  compression: ${IGconf_cft_compression}
+  rootfs_type: ${IGconf_cft_rootfs_type}

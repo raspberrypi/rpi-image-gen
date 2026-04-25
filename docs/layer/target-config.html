@@ -123,7 +123,7 @@
     <div class="header">
         <h1>target-config</h1>
         <span class="badge">build</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v1.1.0</span>
         <p>bdebstrap output target configuration.</p>
     </div>
     <div class="section">
@@ -228,12 +228,41 @@
  This path is used for the filesystem target and remains neutral/reusable.
  Image-specific artefacts are organised separately using image-specific paths.</td>
                     <td>
-                           <code class="long-default">${IGconf_target_dir}/${IGconf_artefact_target_name}</code>
+                           <code class="long-default">${@TARGETDIR}/${IGconf_artefact_target_name}</code>
                     </td>
                     <td>Non-empty string value</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Anchors</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Anchor</th>
+                    <th>Variable</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>@TARGETDIR</code></td>
+                    <td><code>IGconf_target_dir</code></td>
+                    <td>Directory containing the target and related build artefacts.
+ This is the working directory for the current build context, containing the
+ bdebstrap target along with any build logs, intermediate files, or other
+ artefacts generated during the build process.</td>
+                </tr>
+                <tr>
+                    <td><code>@TARGET</code></td>
+                    <td><code>IGconf_target_path</code></td>
+                    <td>Path to the bdebstrap target for filesystem creation.
+ This path is used for the filesystem target and remains neutral/reusable.
+ Image-specific artefacts are organised separately using image-specific paths.</td>
                 </tr>
             </tbody>
         </table>

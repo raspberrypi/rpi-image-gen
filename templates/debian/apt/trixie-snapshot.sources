@@ -1,0 +1,12 @@
+X-IG-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+Types: deb
+URIs: https://snapshot.debian.org/archive/debian/${SNAPSHOT_ISO8601}
+Suites: trixie
+Components: main contrib non-free non-free-firmware
+Options: check-valid-until=no
+
+Types: deb
+URIs: https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_ISO8601}
+Suites: trixie-security
+Components: main contrib non-free non-free-firmware
+Options: check-valid-until=no

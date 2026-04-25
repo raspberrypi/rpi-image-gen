@@ -123,7 +123,7 @@
     <div class="header">
         <h1>debian-trixie-buildd</h1>
         <span class="badge">distribution</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v2.0.0</span>
         <p>Architecture agnostic Debian Trixie buildd base.
  This provides a base layer specifically designed for automated package
  building and software compilation.</p>
@@ -160,9 +160,7 @@
         
         <h3>Mirrors</h3>
         <ul>
-            <li><code>deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware</code></li>
+            <li><code>${IGTOP}/templates/debian/apt/trixie.sources</code></li>
         </ul>
     </div>
 

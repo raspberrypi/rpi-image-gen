@@ -1,0 +1,15 @@
+# METABEGIN
+# X-Env-Layer-Name: test-layer-sets
+# X-Env-Layer-Desc: Layer that sets internal build variables via X-Env-Layer-Sets
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Sets: IG_ENABLE_HOST_BDEBSTRAP=y IG_TEST_LAYER_SETS=active
+# X-Env-VarPrefix: lsets
+#
+# X-Env-Var-marker: present
+# X-Env-Var-marker-Desc: Marker variable to confirm layer was applied
+# X-Env-Var-marker-Set: lazy
+# METAEND
+---
+layer_sets_test:
+  marker: ${IGconf_lsets_marker}

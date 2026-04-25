@@ -1,0 +1,41 @@
+# METABEGIN
+# X-Env-Layer-Name: network-setup
+# X-Env-Layer-Desc: Network configuration layer
+# X-Env-Layer-Category: infrastructure
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires:
+#
+# X-Env-VarPrefix: net
+#
+# X-Env-Var-INTERFACE: eth0
+# X-Env-Var-INTERFACE-Desc: Primary network interface
+# X-Env-Var-INTERFACE-Required: true
+# X-Env-Var-INTERFACE-Valid: string-or-unset
+# X-Env-Var-INTERFACE-Set: n
+#
+# X-Env-Var-IP: 192.168.1.100
+# X-Env-Var-IP-Desc: Static IP address
+# X-Env-Var-IP-Required: false
+# X-Env-Var-IP-Valid: regex:^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$
+#
+# X-Env-Var-DNS: 8.8.8.8
+# X-Env-Var-DNS-Desc: Primary DNS server
+# X-Env-Var-DNS-Required: false
+# X-Env-Var-DNS-Valid: regex:^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$
+# METAEND
+
+# Network configuration
+network:
+  interface: "${IGconf_net_interface}"
+  static_ip: "${IGconf_net_ip}"
+  dns_servers:
+    - "${IGconf_net_dns}"
+    - "8.8.4.4"
+
+routing:
+  default_gateway: "192.168.1.1"
+
+firewall:
+  enabled: true
+  rules:
+    - allow_ssh: "port 22"

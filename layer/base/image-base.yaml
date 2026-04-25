@@ -2,8 +2,8 @@
 # X-Env-Layer-Name: image-base
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Default image settings and build attributes.
-# X-Env-Layer-Version: 1.1.0
-# X-Env-Layer-Requires: sys-build-base,sbom-base,target-config,artefact-base,deploy-base
+# X-Env-Layer-Version: 2.2.3
+# X-Env-Layer-Requires: sys-build-base,sbom-base,target-config,artefact-base,deploy-base,fs-base
 # X-Env-Layer-RequiresProvider: device
 #
 # X-Env-VarRequires: IGconf_sys_workroot,IGconf_artefact_version
@@ -17,12 +17,13 @@
 # X-Env-Var-suffix-Valid: string
 # X-Env-Var-suffix-Set: y
 #
-# X-Env-Var-compression: none
-# X-Env-Var-compression-Desc: Identifier for the compression scheme used when
-#  deploying image assets.
+# X-Env-Var-compression:
+# X-Env-Var-compression-Desc: Compression scheme for generating image assets, eg
+#  update payloads. Downstream layer implementation-dependent.
 # X-Env-Var-compression-Required: n
-# X-Env-Var-compression-Valid: none,zstd
-# X-Env-Var-compression-Set: y
+# X-Env-Var-compression-Valid: string
+# X-Env-Var-compression-Set: n
+# X-Env-Var-compression-Triggers: when=zstd set IG_ENABLE_HOST_ZSTD=y policy=force
 #
 # X-Env-Var-version: ${IGconf_artefact_version}
 # X-Env-Var-version-Desc: Version string of generated images. This always maps
@@ -47,11 +48,17 @@
 # X-Env-Var-pmap-Valid: string-or-empty
 # X-Env-Var-pmap-Set: lazy
 #
-# X-Env-Var-pmap_schema: ${DIRECTORY}/schemas/provisionmap/v1/schema.json
+# X-Env-Var-pmap_schema: ${@IGROOT}/layer/rpi/schemas/provisionmap/v1/schema.json
 # X-Env-Var-pmap_schema-Desc: Image Description PMAP schema for validation
 # X-Env-Var-pmap_schema-Required: n
 # X-Env-Var-pmap_schema-Valid: string
 # X-Env-Var-pmap_schema-Set: lazy
+#
+# X-Env-Var-idp_schema: ${@IGROOT}/layer/rpi/schemas/idp/v2/schema.json
+# X-Env-Var-idp_schema-Desc: Image Description Provisioning (IDP) schema for validation
+# X-Env-Var-idp_schema-Required: n
+# X-Env-Var-idp_schema-Valid: string
+# X-Env-Var-idp_schema-Set: lazy
 #
 # X-Env-Var-outputdir: ${IGconf_sys_workroot}/image-${IGconf_image_name}
 # X-Env-Var-outputdir-Desc: Location of all image build artefacts.
@@ -64,6 +71,7 @@
 # X-Env-Var-provider-Required: n
 # X-Env-Var-provider-Valid: keywords:genimage
 # X-Env-Var-provider-Set: lazy
+# X-Env-Var-provider-Triggers: when=genimage set IG_ENABLE_HOST_GENIMAGE=y policy=force
 #
 # X-Env-Var-assetdir: /dev/null
 # X-Env-Var-assetdir-Desc: Image specific asset location. Use this directory
@@ -73,13 +81,14 @@
 # X-Env-Var-assetdir-Valid: string
 # X-Env-Var-assetdir-Set: lazy
 #
-# X-Env-Var-pmapfile: ${IGconf_image_pmap:+${IGconf_image_assetdir}/device/provisionmap-${IGconf_image_pmap}.json}
-# X-Env-Var-pmapfile-Desc: Full path to the Provisioning Map file. When
-#  IGconf_image_pmap is specified, this provides the complete path to the pmap
-#  file. If no pmap identifier is set, this variable remains empty.
-# X-Env-Var-pmapfile-Required: n
-# X-Env-Var-pmapfile-Valid: string-or-empty
-# X-Env-Var-pmapfile-Set: lazy
+# X-Env-Var-rootfs_type: none
+# X-Env-Var-rootfs_type-Desc: Root filesystem type. Implementation-dependent. May
+#  set host tooling requirements / dependencies.
+# X-Env-Var-rootfs_type-Required: n
+# X-Env-Var-rootfs_type-Valid: string
+# X-Env-Var-rootfs_type-Set: n
+# X-Env-Var-rootfs_type-Triggers:
+#  when=erofs set IG_ENABLE_HOST_EROFS_UTILS=y policy=force
 #
 # METAEND
 ---

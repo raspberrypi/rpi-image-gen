@@ -1,3 +1,21 @@
+image <IMAGE_DIR>/<IMAGE_NAME>.<IMAGE_SUFFIX>.sparse {
+   android-sparse {
+      image = <IMAGE_DIR>/<IMAGE_NAME>.<IMAGE_SUFFIX>
+   }
+}
+
+image boot.vfat.sparse {
+   android-sparse {
+      image = boot.vfat
+   }
+}
+
+image root.ext4.sparse {
+   android-sparse {
+      image = root.ext4
+   }
+}
+
 image <IMAGE_DIR>/<IMAGE_NAME>.<IMAGE_SUFFIX> {
    hdimage {
       partition-table-type = "mbr"

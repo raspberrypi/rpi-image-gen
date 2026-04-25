@@ -123,7 +123,7 @@
     <div class="header">
         <h1>debian-trixie-arm64-slim</h1>
         <span class="badge">distribution</span>
-        <span class="badge">v1.1.0</span>
+        <span class="badge">v2.1.0</span>
         <p>Debian Trixie custom layer for arm64 providing
  a usable and practical base.</p>
     </div>
@@ -165,6 +165,7 @@
         <h3>Packages</h3>
         <p>Installs:</p>
         <ul>
+            <li><code>perl-base</code></li>
             <li><code>findutils</code></li>
             <li><code>dpkg</code></li>
             <li><code>libc-bin</code></li>
@@ -180,13 +181,12 @@
             <li><code>udev</code></li>
             <li><code>e2fsprogs</code></li>
             <li><code>linux-sysctl-defaults</code></li>
+            <li><code>debian-archive-keyring</code></li>
         </ul>
         
         <h3>Mirrors</h3>
         <ul>
-            <li><code>deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware</code></li>
+            <li><code>${IGTOP}/templates/debian/apt/trixie.sources</code></li>
         </ul>
         
         <h3>dpkgopts</h3>

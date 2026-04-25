@@ -1,47 +1,57 @@
 #!/bin/bash
 
+# Dynamic package build selection. Typically, X-Env Triggers set defined
+# variables which map to the package registry below. These compoments are
+# built and installed as prerequisites in a reusable mini-sysroot.
+# Can scale as needed, eg move away from bash array to file. Main thing
+# is to retain functionality: vars -> registry -> selection -> action
+#
+# See registry.defs
+readonly -a IG_TOOLS_REGISTRY=(
+   "IG_ENABLE_HOST_BDEBSTRAP|y|bdebstrap"
+   "IG_ENABLE_HOST_GENIMAGE|y|genimage"
+   "IG_ENABLE_HOST_ZSTD|y|zstd"
+   "IG_ENABLE_HOST_EROFS_UTILS|y|erofs-utils"
+)
+
+collect_build_deps() {
+   local envfile="${1:?missing env file}"
+   local packages=
+   local var value pkg
+
+   for entry in "${IG_TOOLS_REGISTRY[@]}"; do
+      IFS='|' read -r var value pkg <<< "$entry"
+      if value_read=$(get_var "$var" "$envfile") && [[ "$value_read" == "$value" ]]; then
+         packages+=("$pkg")
+      fi
+   done
+   echo "${packages[*]}"
+}
+
+
 bootstrap_build_tools() {
    : "${ctx[FINALENV]?missing ctx[FINALENV]}"
-   : "${ctx[EXEC_PATH]?missing ctx[EXEC_PATH]}"
-   : "${ctx[PYTHON_PATH]?missing ctx[PYTHON_PATH]}"
-   : "${IGconf_sys_workroot?missing IGconf_sys_workroot}
-   : "${DEB_BUILD_GNU_TYPE?missing DEB_BUILD_GNU_TYPE}
+   : "${IGconf_sys_workroot?missing IGconf_sys_workroot}"
+   : "${DEB_BUILD_GNU_TYPE?missing DEB_BUILD_GNU_TYPE}"
 
-   # Mission critical
-   local tools=(bdebstrap)
-
-   if value=$(get_var IGconf_image_provider "${ctx[FINALENV]}") \
-      && [[ $value == genimage ]]; then
-         tools+=(genimage)
-   fi
-
-   # Build and install tools to this location
-   local destdir=${IGconf_sys_workroot}/${DEB_BUILD_GNU_TYPE}
+   local tools=( $(collect_build_deps "${ctx[FINALENV]}") )
+   local destdir="${IGconf_sys_workroot}/${DEB_BUILD_GNU_TYPE}"
    local prefix=/usr
+   local start=$SECONDS
 
    runenv "${ctx[FINALENV]}" \
-      make -s -j$(nproc) -C ${IGTOP}/package "${tools[@]}" \
-      PKG_DESTDIR=$destdir PKG_PREFIX=$prefix
+      make -s -j"$(nproc)" -C "${IGTOP}/package" "${tools[@]}" \
+      PKG_DESTDIR="$destdir" PKG_PREFIX="$prefix"
 
-   # Fixup paths to ensure installed tools run transparently. There are many
-   # caveats with this approach, and it risks env leakage. Leveraging a
-   # containerised build vehicle approach is preferred.
-   local paths=(
-      "${destdir}${prefix}/local/bin"\
-      "${destdir}${prefix}/bin"\
-      "${ctx[EXEC_PATH]}"
-      )
-   ctx[EXEC_PATH]="$(IFS=:; echo "${paths[*]}")"
-   PATH="${ctx[EXEC_PATH]}"
+   local elapsed=$(( SECONDS - start ))
+   msg "Building host support took $((elapsed / 60))m$((elapsed % 60))s"
+
+   # prepend host tool paths
+   PATH="${destdir}${prefix}/local/bin:${destdir}${prefix}/bin:${PATH}"
    export PATH
 
-   local pyver="$(python3 -c 'import sysconfig; print("python"+sysconfig.get_python_version())')"
-   paths=(\
-      "${destdir}${prefix}/local/lib/${pyver}/dist-packages"\
-      "${destdir}${prefix}/lib/${pyver}/dist-packages"\
-      "${ctx[PYTHON_PATH]}"
-   )
-   ctx[PYTHON_PATH]="$(IFS=:; echo "${paths[*]}")"
-   PYTHONPATH="${ctx[PYTHON_PATH]}"
+   local pyver
+   pyver=$(python3 -c 'import sysconfig; print("python"+sysconfig.get_python_version())')
+   PYTHONPATH="${destdir}${prefix}/local/lib/${pyver}/dist-packages:${destdir}${prefix}/lib/${pyver}/dist-packages:${PYTHONPATH:-}"
    export PYTHONPATH
 }

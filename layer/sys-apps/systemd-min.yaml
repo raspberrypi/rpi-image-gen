@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: systemd-min
 # X-Env-Layer-Desc: Core systemd components for init, SysV compatibility
 #  and timesyncd, without networkd and resolved services.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 # METAEND
 ---
 mmdebstrap:
@@ -12,5 +12,11 @@ mmdebstrap:
     - systemd-timesyncd
   customize-hooks:
     - $BDEBSTRAP_HOOKS/enable-units "$1" systemd-timesyncd
+    - |-
+      set -eu
+      if [ -n "${SOURCE_DATE_EPOCH:-}" ] ; then
+        install -d -m0755 $1/var/lib/systemd/timesync
+        touch -m -d "@${SOURCE_DATE_EPOCH}" $1/var/lib/systemd/timesync/clock
+      fi
     - mkdir -p $1/etc/systemd/system/getty@tty1.service.d
     - $LAYER_HOOKS/systemd/ttyset noclear > $1/etc/systemd/system/getty@tty1.service.d/noclear.conf

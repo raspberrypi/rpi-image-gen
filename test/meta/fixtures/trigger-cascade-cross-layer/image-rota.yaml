@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: cascade-image-rota
+# X-Env-Layer-Desc: Image trigger keyed on effective storage type
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: cascade-image-base,cascade-device-cm4
+# X-Env-VarPrefix: cascade
+# X-Env-Var-ptable_protect: n
+# X-Env-Var-ptable_protect-Valid: bool
+# X-Env-Var-ptable_protect-Set: lazy
+# X-Env-Var-ptable_protect-Triggers: when=IGconf_cascade_storage_type=emmc set IGconf_cascade_ptable_protect=y policy=lazy
+# METAEND

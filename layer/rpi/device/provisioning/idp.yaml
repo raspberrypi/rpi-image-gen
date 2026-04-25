@@ -1,0 +1,9 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-idp
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Image Description Provisioning (IDP) configuration
+#  for Raspberry Pi devices.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: rpi-idp-luks2
+# METAEND
+---

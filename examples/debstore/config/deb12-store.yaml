@@ -1,8 +1,0 @@
-include:
-  file: bookworm-minbase.yaml
-
-image:
-  name: debstore-test
-
-layer:
-  app: example-debstore

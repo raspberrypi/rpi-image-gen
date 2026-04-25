@@ -1,0 +1,17 @@
+# METABEGIN
+# X-Env-Layer-Name: debian-trixie-arm64-minbase-snapshot
+# X-Env-Layer-Category: distribution
+# X-Env-Layer-Desc: Debian Trixie minbase for arm64 using a snapshot mirror.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Type: dynamic
+# X-Env-Layer-Generator: snapgen ${IGTOP}/templates/debian/apt/trixie-snapshot.sources
+# METAEND
+---
+mmdebstrap:
+  architectures:
+    - arm64
+  mode: auto
+  variant: minbase
+  suite: trixie
+  mirrors:
+    - ${DYNROOT}/templates/debian/apt/trixie-snapshot.sources

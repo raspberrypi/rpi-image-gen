@@ -2,19 +2,11 @@
 # X-Env-Layer-Name: rpi-debian-bookworm
 # X-Env-Layer-Provides: rpi-debian
 # X-Env-Layer-Desc: Raspberry Pi Debian Bookworm APT repository
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 # METAEND
 ---
 mmdebstrap:
   mirrors:
-    - deb http://archive.raspberrypi.com/debian bookworm main
+    - ${IGTOP}/templates/debian/apt/rpi-bookworm.sources
   packages:
     - raspberrypi-archive-keyring
-  customize-hooks:
-    - test -f $1/usr/share/keyrings/raspberrypi-archive-keyring.gpg || false
-    - mkdir -p $1/etc/apt/sources.list.d
-    - |-
-      cat <<- EOF > $1/etc/apt/sources.list.d/raspberrypi.list
-      deb [signed-by=/usr/share/keyrings/raspberrypi-archive-keyring.gpg] http://archive.raspberrypi.com/debian bookworm main
-      EOF
-    - sed -i '/archive\.raspberrypi\.com/d' $1/etc/apt/sources.list

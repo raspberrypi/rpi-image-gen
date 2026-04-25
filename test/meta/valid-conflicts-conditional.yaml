@@ -1,0 +1,13 @@
+# METABEGIN
+# X-Env-Layer-Name: test-conflict-conditional-valid
+# X-Env-Layer-Desc: Conditional conflicts only apply when condition matches
+# X-Env-VarPrefix: cft
+#
+# X-Env-Var-class: cm5
+# X-Env-Var-test: foo
+# X-Env-Var-test-Conflicts: class=cm4
+# METAEND
+
+conflict_conditional:
+  class: ${IGconf_cft_class}
+  test: ${IGconf_cft_test}

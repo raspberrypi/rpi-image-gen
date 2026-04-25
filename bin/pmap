@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Provisioning Map Helper
 
@@ -17,6 +17,9 @@ def pmap_version(data):
     value = get_key(data, "attributes.PMAPversion")
     if value is None:
         # Try parsing as fully assembled image.json
+        pmap_data = get_key(data, "layout.provisionmap")
+        if isinstance(pmap_data, list) and len(pmap_data) == 0:
+            return None
         value = get_key(data, "layout.provisionmap.attributes.PMAPversion")
         if value is None:
             sys.stderr.write("Error: No version\n")
@@ -73,19 +76,9 @@ def validate(data, schema_path=None):
         validator = _load_validator(schema_path)
 
     if validator is not None:
-        # Always validate only the provisionmap subtree
-        if isinstance(data, list):
-            pmap = data
-        else:
-            pmap = get_key(data, "layout.provisionmap")
-            if pmap is None:
-                sys.stderr.write("Error: layout.provisionmap not found in JSON.\n")
-                sys.exit(1)
-        doc = {"layout": {"provisionmap": pmap}}
-
-        errors = sorted(validator.iter_errors(doc), key=lambda e: list(e.path))
+        errors = sorted(validator.iter_errors(data), key=lambda e: list(e.path))
         if errors:
-            sys.stderr.write(f"Error: provisionmap schema validation failed ({len(errors)} errors)\n")
+            sys.stderr.write(f"Error: schema validation failed ({len(errors)} errors)\n")
             for e in errors:
                 path = "/".join(str(p) for p in e.path)
                 if path:
@@ -197,6 +190,42 @@ def slotvars(data):
 
 
 
+def cryptvars(data):
+    # Walk the PMAP and emit LUKS2 mapper metadata
+    containers = []
+    seen = set()
+
+    def walk(obj):
+        if isinstance(obj, dict):
+            enc = obj.get("encrypted")
+            if isinstance(enc, dict):
+                luks2 = enc.get("luks2")
+                if isinstance(luks2, dict):
+                    mname = luks2.get("mname")
+                    if isinstance(mname, str) and mname not in seen:
+                        seen.add(mname)
+                        containers.append(mname)
+                        print(f'{mname}_MNAME="{mname}"')
+                        uuid_val = luks2.get("uuid")
+                        if isinstance(uuid_val, str):
+                            print(f'{mname}_UUID="{uuid_val}"')
+                        etype_val = luks2.get("etype")
+                        if isinstance(etype_val, str):
+                            print(f'{mname}_ETYPE="{etype_val}"')
+            for value in obj.values():
+                walk(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                walk(item)
+
+    walk(data)
+
+    if not containers:
+        sys.stderr.write("pmap: No LUKS2 containers found\n")
+
+    print(f'CONTAINERS="{" ".join(containers)}"')
+
+
 # Best effort general purpose JSON key retrieval
 def get_key(data, key_path, default=None):
     keys = key_path.split('.')
@@ -235,11 +264,15 @@ if __name__ == '__main__':
                         required=True)
 
     parser.add_argument("--schema",
-                        help="Path to JSON schema")
+                        help="Path to JSON schema to validate the supplied file against")
 
     parser.add_argument("-s", "--slotvars",
                         action="store_true",
                         help="Print slot.map triplets")
+
+    parser.add_argument("-c", "--cryptvars",
+                        action="store_true",
+                        help="Print LUKS2 container variables")
 
     parser.add_argument("--get-key",
                         help="Dot-separated key path to retrieve from PMAP JSON")
@@ -253,7 +286,17 @@ if __name__ == '__main__':
         sys.stderr.write(f"Error: invalid JSON: {e}\n")
         sys.exit(1)
 
-    major, minor, patch = validate(data, args.schema)
+    version = validate(data, args.schema)
+
+    if version is None:
+        # IDP doc with no PMAP. schema validation passed but PMAP
+        # specific ops are not possible
+        if args.slotvars or args.cryptvars:
+            sys.stderr.write("Error: No PMAP in IDP doc\n")
+            sys.exit(1)
+        sys.exit(0)
+
+    major, minor, patch = version
 
     if args.get_key:
         value = get_key(data, args.get_key)
@@ -262,6 +305,14 @@ if __name__ == '__main__':
         else:
             print(value)
             sys.exit(0)
+
+    if args.cryptvars:
+        pmap = data if isinstance(data, list) else get_key(data, "layout.provisionmap")
+        if pmap is None:
+            sys.stderr.write("Error: layout.provisionmap not found in JSON.\n")
+            sys.exit(1)
+        cryptvars(pmap)
+        sys.exit(0)
 
     if args.slotvars:
         pmap = data if isinstance(data, list) else get_key(data, "layout.provisionmap")

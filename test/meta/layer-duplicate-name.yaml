@@ -1,0 +1,11 @@
+# METABEGIN
+# X-Env-Layer-Name: test-basic
+# X-Env-Layer-Desc: Duplicate layer name test
+# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: dup
+# X-Env-Var-value: duplicate
+# METAEND
+
+duplicate:
+  value: "${IGconf_dup_value}"

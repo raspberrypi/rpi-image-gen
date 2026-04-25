@@ -4,7 +4,7 @@
 # X-Env-Layer-Desc: Dynamic slot device management for A/B boot: udev rules and
 #  helpers that create stable by-slot symlinks from GPT PARTLABELs (preferred)
 #  or a static slot map (fallback), with device-mapper and initramfs support.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 #
 # X-Env-VarPrefix: abslot
 #
@@ -19,7 +19,6 @@
 mmdebstrap:
   packages:
     - udev
-    - initramfs-tools
     - sed
     - coreutils
   customize-hooks:
@@ -27,5 +26,11 @@ mmdebstrap:
     - install -D -m 0755 "${IGconf_abslot_overlay}/bin/rpi-slot-static" "$1/usr/bin/rpi-slot-static"
     - install -D -m 0755 "${IGconf_abslot_overlay}/bin/rpi-slot-tryboot" "$1/usr/bin/rpi-slot-tryboot"
     - install -D -m 0644 "${IGconf_abslot_overlay}/udev/rules.d/slot.rules" "$1/etc/udev/rules.d/99-rpi-slot.rules"
-    - install -D -m 0755 "${IGconf_abslot_overlay}/initramfs-tools/hooks/rpi-ab-install-files" "$1/etc/initramfs-tools/hooks/rpi-ab-install-files"
-    - install -D -m 0755 "${IGconf_abslot_overlay}/initramfs-tools/scripts/local-top/rpi-ab-root.sh" "$1/usr/share/initramfs-tools/scripts/local-top/rpi-ab-root.sh"
+    - |
+      set -eu
+      if [ -d "$1/etc/initramfs-tools" ]; then
+        rsync -a --chmod=F755,D755 "${IGconf_abslot_overlay}/initramfs-tools/" "$1/etc/initramfs-tools/";
+      fi
+      if [ -d "$1/usr/lib/dracut" ]; then
+        rsync -a --chmod=F755,D755 "${IGconf_abslot_overlay}/dracut/" "$1/usr/lib/dracut/";
+      fi

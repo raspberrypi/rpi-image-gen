@@ -1,0 +1,12 @@
+target:
+  context: ci-images
+
+artefact:
+  target_name: arm64-rpi-trixie-slim.tgz
+
+layer:
+  - debian-trixie-arm64-minbase-rolling
+  - rpi-debian-trixie
+  - rpios-ci-container-policy
+  - ca-certificates
+  - sbom-base

@@ -8,7 +8,7 @@ This system uses an A/B, read‑only root with all writable state on a single pe
 |===
 | Mount point | Backing | Type | Notes
 
-| / | /dev/disk/by-slot/active/system | ext4 | ro System root (active slot A or B)
+| / | /dev/disk/by-slot/active/system | erofs or ext4 | ro System root (active slot A or B)
 | /boot/firmware | /dev/disk/by-slot/active/boot | vfat | ro Boot files (active slot A or B)
 | /bootfs | BOOTFS | vfat | rw Boot metadata
 | /persistent | PERSISTENT | ext4 | rw Shared persistent storage

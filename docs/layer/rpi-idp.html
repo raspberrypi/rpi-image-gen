@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rpi-idp - Layer Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .badge { display: inline-block; background: #007acc; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-right: 10px; }
+        .policy-immediate { background: #28a745; color: white; text-decoration: none; }
+        .policy-lazy { background: #ffc107; color: #212529; text-decoration: none; }
+        .policy-force { background: #dc3545; color: white; text-decoration: none; }
+        .policy-skip { background: #6c757d; color: white; text-decoration: none; }
+        .policy-immediate:hover { background: #1e7e34; }
+        .policy-lazy:hover { background: #e0a800; }
+        .policy-force:hover { background: #c82333; }
+        .policy-skip:hover { background: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+        td:nth-child(3) {
+            width: auto;
+        }
+        code { background: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: 'Monaco', monospace; font-size: 14px; }
+        code.long-default { word-break: break-all; white-space: pre-wrap; display: block; min-width: 30ch; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { text-decoration: none; color: #007acc; }
+        .deps { display: flex; flex-wrap: wrap; gap: 5px; }
+        .dep-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; text-decoration: none; }
+        .dep-badge:hover { background: #1e7e34; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        /* Companion documentation content styling */
+        .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        .companion-content p { margin: 10px 0; }
+        .companion-content ul, .companion-content ol { margin: 10px 0; padding-left: 30px; }
+        .companion-content blockquote { border-left: 4px solid #007acc; padding-left: 15px; margin: 15px 0; color: #666; background: #f8f9fa; padding: 10px 15px; }
+        .companion-content pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #007acc; }
+        .companion-content table { border: 1px solid #ddd; }
+        .companion-content th, .companion-content td { border: 1px solid #ddd; }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="index.html">← Back to Layer Index</a>
+    </div>
+
+    <div class="header">
+        <h1>rpi-idp</h1>
+        <span class="badge">device</span>
+        <span class="badge">v1.0.0</span>
+        <p>Image Description Provisioning (IDP) configuration
+ for Raspberry Pi devices.</p>
+    </div>
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div class="sect1">
+<h2 id="_overview">Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>rpi-idp</code> layer family provides Image Description Provisioning (IDP) configuration defaults for Raspberry Pi device images. These layers define attributes used in Provisioning Map (PMAP) templates, such as encryption parameters.</p>
+</div>
+<div class="paragraph">
+<p><code>rpi-idp</code> is the top-level layer, pulling in sub-layers via dependencies for each supported provisioning feature:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Layer</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rpi-idp-luks2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Device scoped LUKS2 encrypted volume attributes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Links to these layers can be found below.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_defaults_vs_pmap_authorship">Layer Defaults vs. PMAP Authorship</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The variables defined here are <strong>defaults for convenience</strong>. An image layout is in full control of its own PMAP and is not required to use them at all. The PMAP is a JSON fragment authored per-image; these variables are available to PMAP templates but each PMAP itself is independent. This means:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An image with multiple LUKS containers can use different cipher parameters per volume by referencing different variables or hard-coding values directly in its PMAP template.</p>
+</li>
+<li>
+<p>A custom image can ignore these variables entirely.</p>
+</li>
+<li>
+<p>These variables are only meaningful when an image layout chooses to reference them.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>See the <a href="../../../../provisioning/index.html">IDP Provisioning Documentation</a> for a full description of the PMAP format and how it is embedded in the IDP document.</p>
+</div>
+</div>
+</div>
+
+        </div>
+    </div>
+    <div class="section">
+        <h2>Relationships</h2>
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="rpi-idp-luks2.html" class="dep-badge">rpi-idp-luks2</a>
+        </div>
+        <p><strong>Required by:</strong></p>
+        <div class="deps">
+            
+            <a href="device-base.html" class="dep-badge">device-base</a>
+            
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Attributes</h2>
+        <p><strong>File:</strong> <code>rpi/device/provisioning/idp.yaml</code></p>
+        <p><strong>Type:</strong> <code>static</code></p>
+    </div>
+</body>
+</html>

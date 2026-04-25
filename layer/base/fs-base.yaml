@@ -1,0 +1,40 @@
+# METABEGIN
+# X-Env-Layer-Name: fs-base
+# X-Env-Layer-Category: base
+# X-Env-Layer-Desc: Filesystem base properties and tunables. Provides
+#  per-filesystem-type configuration consumed by image layers, including
+#  mkfs arguments and other fs-level settings. Downstream layers may
+#  ignore, override, prepend or append additional arguments as required.
+# X-Env-Layer-Version: 1.0.0
+#
+# X-Env-VarPrefix: fs
+#
+# X-Env-Var-ext4_mkfs_args:
+# X-Env-Var-ext4_mkfs_args-Desc: System-wide ext4 mkfs arguments passed
+#  verbatim to mkfs.ext4.
+# X-Env-Var-ext4_mkfs_args-Required: n
+# X-Env-Var-ext4_mkfs_args-Valid: string-or-empty
+# X-Env-Var-ext4_mkfs_args-Set: lazy
+#
+# X-Env-Var-vfat_mkfs_args:
+# X-Env-Var-vfat_mkfs_args-Desc: System-wide vfat mkfs arguments passed
+#  verbatim to mkfs.vfat.
+# X-Env-Var-vfat_mkfs_args-Required: n
+# X-Env-Var-vfat_mkfs_args-Valid: string-or-empty
+# X-Env-Var-vfat_mkfs_args-Set: lazy
+#
+# X-Env-Var-erofs_mkfs_args:
+# X-Env-Var-erofs_mkfs_args-Desc: System-wide erofs mkfs arguments passed
+#  verbatim to mkfs.erofs.
+# X-Env-Var-erofs_mkfs_args-Required: n
+# X-Env-Var-erofs_mkfs_args-Valid: string-or-empty
+# X-Env-Var-erofs_mkfs_args-Set: n
+#
+# X-Env-Var-btrfs_mkfs_args:
+# X-Env-Var-btrfs_mkfs_args-Desc: System-wide btrfs mkfs arguments passed
+#  verbatim to mkfs.btrfs.
+# X-Env-Var-btrfs_mkfs_args-Required: n
+# X-Env-Var-btrfs_mkfs_args-Valid: string-or-empty
+# X-Env-Var-btrfs_mkfs_args-Set: n
+# METAEND
+---

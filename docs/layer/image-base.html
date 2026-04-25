@@ -123,7 +123,7 @@
     <div class="header">
         <h1>image-base</h1>
         <span class="badge">image</span>
-        <span class="badge">v1.1.0</span>
+        <span class="badge">v2.2.3</span>
         <p>Default image settings and build attributes.</p>
     </div>
     <div class="section">
@@ -194,6 +194,7 @@ Unless otherwise stated, the following apply to all image layers:</p>
             <a href="target-config.html" class="dep-badge">target-config</a>
             <a href="artefact-base.html" class="dep-badge">artefact-base</a>
             <a href="deploy-base.html" class="dep-badge">deploy-base</a>
+            <a href="fs-base.html" class="dep-badge">fs-base</a>
         </div>
         <p><strong>Required by:</strong></p>
         <div class="deps">
@@ -236,14 +237,14 @@ Unless otherwise stated, the following apply to all image layers:</p>
                 </tr>
                 <tr>
                     <td><code>IGconf_image_compression</code></td>
-                    <td>Identifier for the compression scheme used when
- deploying image assets.</td>
+                    <td>Compression scheme for generating image assets, eg
+ update payloads. Downstream layer implementation-dependent.</td>
                     <td>
-                           <code>none</code>
+                           <code>&lt;disabled&gt;</code>
                     </td>
-                    <td>Must be one of: none, zstd</td>
+                    <td>Non-empty string value</td>
                     <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
                     </td>
                 </tr>
                 <tr>
@@ -288,7 +289,18 @@ Unless otherwise stated, the following apply to all image layers:</p>
                     <td><code>IGconf_image_pmap_schema</code></td>
                     <td>Image Description PMAP schema for validation</td>
                     <td>
-                           <code class="long-default">${DIRECTORY}/schemas/provisionmap/v1/schema.json</code>
+                           <code class="long-default">${@IGROOT}/layer/rpi/schemas/provisionmap/v1/schema.json</code>
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_idp_schema</code></td>
+                    <td>Image Description Provisioning (IDP) schema for validation</td>
+                    <td>
+                           <code class="long-default">${@IGROOT}/layer/rpi/schemas/idp/v2/schema.json</code>
                     </td>
                     <td>Non-empty string value</td>
                     <td>
@@ -331,16 +343,15 @@ Unless otherwise stated, the following apply to all image layers:</p>
                     </td>
                 </tr>
                 <tr>
-                    <td><code>IGconf_image_pmapfile</code></td>
-                    <td>Full path to the Provisioning Map file. When
- IGconf_image_pmap is specified, this provides the complete path to the pmap
- file. If no pmap identifier is set, this variable remains empty.</td>
+                    <td><code>IGconf_image_rootfs_type</code></td>
+                    <td>Root filesystem type. Implementation-dependent. May
+ set host tooling requirements / dependencies.</td>
                     <td>
-                           <code class="long-default">${IGconf_image_pmap:+${IGconf_image_assetdir}/device/provisionmap-${IGconf_image_pmap}.json}</code>
+                           <code>none</code>
                     </td>
-                    <td>String value (may be empty)</td>
+                    <td>Non-empty string value</td>
                     <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
                     </td>
                 </tr>
             </tbody>

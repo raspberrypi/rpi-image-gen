@@ -1,0 +1,11 @@
+# METABEGIN
+# X-Env-Layer-Name: cascade-image-base
+# X-Env-Layer-Desc: Base image defaults
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Requires: cascade-device-base
+# X-Env-VarPrefix: cascade
+# X-Env-Var-ptable_protect: n
+# X-Env-Var-ptable_protect-Valid: bool
+# X-Env-Var-ptable_protect-Set: lazy
+# METAEND

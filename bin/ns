@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Used to run a command inside a linux user namespace, remapping uid/gid
+# so that permissions may be elevated (eg like inside a container).
+# May be needed for execution of certain commands / tools.
+
+set -eu
+uid=$(id -u)
+if [ "$uid" -eq 0 ]; then
+   exec "$@"
+else
+   exec podman unshare "$@"
+fi
