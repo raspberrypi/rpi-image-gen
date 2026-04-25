@@ -1,0 +1,103 @@
+#!/bin/sh
+# shellcheck shell=sh
+
+set -u
+
+# Tag an incoming block device as boot-device-backed for udev IMPORT.
+# This script is boot critical and must be compatible with minimal shell
+# environments such as klibc, and be as POSIX compliant as possible.
+
+die() {
+   msg="ERROR: $*"
+   if [ -w /dev/kmsg ]; then
+      echo "$msg" > /dev/kmsg 2>/dev/null || :
+   fi
+   echo "$msg" >&2
+   exit 1
+}
+
+udev_fmt=0
+
+DEVNAME=${DEVNAME-}
+DM_NAME=${DM_NAME-}
+
+while getopts "d:m:u" opt; do
+   case $opt in
+      d) DEVNAME="$OPTARG";;
+      m) DM_NAME="$OPTARG";;
+      u) udev_fmt=1;;
+      *) ;;
+   esac
+done
+
+[ -n "$DEVNAME" ] || die "missing dev"
+
+
+read_dt_u32() {
+   # shellcheck disable=SC2046
+   # shellcheck disable=SC2312
+   set -- $(od -An -tu1 -N4 "$1" 2>/dev/null)
+   [ $# -eq 4 ] || return 1
+   echo $(( $1*16777216 + $2*65536 + $3*256 + $4 ))
+}
+
+
+BOOT_MODE=$(read_dt_u32 /proc/device-tree/chosen/bootloader/boot-mode) || die "no boot-mode"
+BOOT_PARTN=$(read_dt_u32 /proc/device-tree/chosen/bootloader/partition) || die "no boot-part"
+
+case $BOOT_MODE in
+   1) BOOT_DEV=mmcblk0; PART_SEP=p;;
+   6) BOOT_DEV=nvme0n1; PART_SEP=p;;
+   *) exit 1;; # Not a storage device, or one we can associate to a linux blkdev
+esac
+
+BOOT_BLKDEV="/dev/${BOOT_DEV}${PART_SEP}${BOOT_PARTN}"
+test -b "$BOOT_BLKDEV" || die "Unsupported blkdev $BOOT_DEV for boot mode $BOOT_MODE"
+
+
+# Slow-path (supports DM devices).
+# Walk sysfs slaves chain to check if a device is backed by the boot device.
+on_bootdev() {
+   dev=${1#/dev/}
+   boot=${2#/dev/}
+
+   is_boot_kname "$dev" "$boot" && return 0
+
+   d="/sys/class/block/$dev/slaves"
+   [ -d "$d" ] || return 1
+
+   for s in "$d"/*; do
+      [ -e "$s" ] || continue
+      sname=${s##*/}
+      on_bootdev "$sname" "$boot" && return 0
+   done
+
+   return 1
+}
+
+
+# Fast-path (non-DM).
+# Check if a kernel name is a partition of the boot device.
+is_boot_kname() {
+   dev=${1#/dev/}
+   boot=${2#/dev/}
+
+   case "$dev" in
+      "$boot"p[0-9]*) return 0 ;;   # eg mmcblk0p1, nvme0n1p1
+      "$boot"[0-9]*)  return 0 ;;   # eg sda1
+   esac
+   return 1
+}
+
+
+if [ -n "$DM_NAME" ]; then
+   on_bootdev "$DEVNAME" "$BOOT_DEV" || exit 1
+else
+   is_boot_kname "$DEVNAME" "$BOOT_DEV" || exit 1
+fi
+
+if [ "$udev_fmt" -eq 1 ]; then
+   echo "RPI_ONBOOTDEV=1"
+fi
+
+exit 0

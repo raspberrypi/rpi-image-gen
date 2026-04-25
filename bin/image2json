@@ -265,7 +265,6 @@ def parse_genimage_config(config_path):
         return (None,None,None)
 
     disk_attr = {}
-    ptable = {}
 
     partitions = find_sections("partition", hdimage_data)
     images = find_sections("image", data)
@@ -280,13 +279,72 @@ def parse_genimage_config(config_path):
         if sz:
             disk_attr["image-size"] = sz
 
+    # IDP targets block devices directly and has no concept of data outside the
+    # partition table, so reject configs that use in-partition-table=false.
+    for pname, pattr in partitions.items():
+        if str(pattr.get("in-partition-table", "true")).lower() == "false":
+            raise ValueError(
+                f"Partition '{pname}' sets in-partition-table=false; "
+                "IDP does not support partitions outside the partition table"
+            )
+
+    # Read the partition table from the disk image first - partition sizes and
+    # GPT attributes are derived from this rather than from genimage config or
+    # on-disk file sizes.
+    img_path = get_artefact_path(img_name, "IGconf_image_outputdir")
+    try:
+        res = subprocess.run(
+                ["sfdisk", "--verify", "--json", img_path],
+                capture_output=True,
+                text=True,
+                check=True
+        )
+    except Exception as e:
+        raise RuntimeError(f"{e} Failed to read partition table from {img_path}")
+
+    ptable = json.loads(res.stdout)
+    pt_header = ptable.get("partitiontable", {})
+
+    sfdisk_sectorsize = pt_header.get("sectorsize")
+    if sfdisk_sectorsize is None:
+        raise RuntimeError("sfdisk did not return sectorsize in partition table JSON")
+
+    conf_sectorsize = os.environ.get("IGconf_device_sector_size")
+    if conf_sectorsize and int(conf_sectorsize) != sfdisk_sectorsize:
+        raise ValueError(
+            f"IGconf_device_sector_size={conf_sectorsize} does not match "
+            f"sfdisk sectorsize={sfdisk_sectorsize}"
+        )
+
+    # Sort sfdisk partitions by start offset for authoritative on-disk ordering
+    sfdisk_parts = sorted(
+        pt_header.get("partitions", []),
+        key=lambda p: p.get("start", 0)
+    )
+
+    # IDP does not support DOS/MBR extended partitions
+    if pt_header.get("label", "").lower() == "dos" and len(sfdisk_parts) > 4:
+        raise ValueError("IDP requires GPT for an image with more than 4 partitions")
+
+    partition_names = list(partitions.keys())
+    if len(partition_names) != len(sfdisk_parts):
+        raise ValueError(
+            f"Partition count mismatch: genimage has {len(partition_names)}, "
+            f"sfdisk found {len(sfdisk_parts)}"
+        )
+
     # https://github.com/pengutronix/genimage?tab=readme-ov-file#the-image-configuration-options
     gtypes = ["android-sparse", "btrfs", "cpio", "cramfs", "ext2", "ext3",
               "ext4", "f2fs", "file", "FIT", "fip", "flash", "iso", "jffs2",
               "qemu", "rauc", "squashfs," "tar", "ubi", "vfat", "erofs"]
 
-    # Associate partitions in the hdimage with their images
-    for pname, pattr in partitions.items():
+    is_gpt = pt_header.get("label", "").lower() == "gpt"
+
+    # Associate partitions in the hdimage with their images.
+    # Genimage config order corresponds positionally to sfdisk partitions sorted by start.
+    for pname, sfdisk_part in zip(partition_names, sfdisk_parts):
+        pattr = partitions[pname]
+
         if "image" in pattr:
             piname = pattr["image"]
             if piname in images:
@@ -306,70 +364,28 @@ def parse_genimage_config(config_path):
                             if attr:
                                 partitions[pname].update(attr)
 
-                # Establish the actual size of the partition image rather than relying on
-                # the size described by the genimage config (which may be expressed in
-                # percent). The actual size is required for provisioning purposes.
-                sz = get_artefact_size(piname)
-                if sz:
-                    partitions[pname]["size"] = sz
-
                 # If this image has a sparse derivative, tag it
                 for sname, sdata in simgs.items():
                     simg = sdata.get("android-sparse")
                     if piname == simg.get("image"):
                         partitions[pname]["simage"] = sname
 
+        # Partition size and GPT attributes come from sfdisk for all partitions
+        partitions[pname]["size"] = sfdisk_part["size"] * sfdisk_sectorsize
+
+        # Populate GPT attributes from the partition table
+        if is_gpt:
+            gpt_name = sfdisk_part.get("name")
+            if gpt_name:
+                partitions[pname]["partition-label"] = gpt_name
+            gpt_uuid = sfdisk_part.get("uuid")
+            if gpt_uuid:
+                partitions[pname]["partition-uuid"] = gpt_uuid
+
     # Remove filesystem attributes from all partitions
     for part in partitions.values():
         fs_key = str(part.get("type", "")).lower()
         part.pop(fs_key, None)
-
-    # Read the partition table from the image
-    img_path = get_artefact_path(img_name, "IGconf_image_outputdir")
-    try:
-        res = subprocess.run(
-                ["sfdisk", "--verify", "--json", img_path],
-                capture_output=True,
-                text=True,
-                check=True
-        )
-    except Exception as e:
-        raise RuntimeError(f"{e} Failed to read partition table from {img_path}")
-
-    ptable = json.loads(res.stdout)
-
-    # Populate genimage partition entries with GPT attributes
-    def insert_gptattr(genimage_partitions, table_json):
-        try:
-            label = table_json.get("partitiontable", {}).get("label", "").lower()
-        except Exception:
-            label = ""
-        if label != "gpt":
-            return genimage_partitions
-
-        disk_parts = table_json.get("partitiontable", {}).get("partitions", [])
-
-        # Relies on ordering: genimage partitions are emitted in config order
-        # and sfdisk JSON lists partitions in on-disk order. In this flow they
-        # correspond positionally (1-1) provided in-partition-table != false.
-        idx = 0
-        for _pname, pdata in genimage_partitions.items():
-            if idx >= len(disk_parts):
-                break
-            # Only populate partitions that are indicated as present by genimage
-            if str(pdata.get("in-partition-table", "true")).lower() != "false":
-                gpt_name = disk_parts[idx].get("name")
-                if gpt_name:
-                    pdata["partition-label"] = gpt_name
-                gpt_uuid = disk_parts[idx].get("uuid")
-                if gpt_uuid:
-                    pdata["partition-uuid"] = gpt_uuid
-            idx += 1
-
-        return genimage_partitions
-
-    # Assign GPT attributes from the partition table probe to each genimage partition
-    partitions = insert_gptattr(partitions, ptable)
 
     # Prune non-essential partition table info
     pt = ptable.get("partitiontable")

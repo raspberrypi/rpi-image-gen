@@ -484,6 +484,10 @@ Must be one of:
 
 **Description:** An optional human-readable label for the LUKS2 container.
 
+| Restrictions   |    |
+| -------------- | -- |
+| **Max length** | 36 |
+
 ###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid"></a>1.1.3.1.1.2.1.5. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > uuid`
 
 |              |          |
@@ -806,4 +810,4 @@ Must be one of:
 **Description:** A single PMAP entry.
 
 ----------------------------------------------------------------------------------------------------------------------------
-Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-03-31 at 17:28:56 +0100
+Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-04-17 at 10:37:20 +0100

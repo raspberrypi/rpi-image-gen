@@ -18,7 +18,7 @@
       "required": ["IGconf_device_class", "IGconf_device_variant", "IGconf_device_storage_type", "IGconf_device_sector_size", "IGconf_image_version"],
       "additionalProperties": false,
       "properties": {
-        "IGconf_device_class":        { "description": "The Raspberry Pi device family the image is intended for.", "type": "string", "enum": ["zero2w", "pi4", "cm4", "pi5", "cm5"] },
+        "IGconf_device_class":        { "description": "The Raspberry Pi device family the image is intended for.", "type": "string", "enum": ["zero2w", "pi3", "pi4", "cm4", "pi5", "cm5"] },
         "IGconf_device_variant":      { "description": "An optional device variant identifier, e.g. memory size or edition (8G, lite). Use 'none' if no variant applies.", "type": "string" },
         "IGconf_device_storage_type": { "description": "The storage media type the image is intended for, as seen by the OS. Determines which block device the provisioning tool will target.", "type": "string", "enum": ["sd", "emmc", "nvme"] },
         "IGconf_device_sector_size":  { "description": "The logical sector size in bytes of the target storage device. Used to guide image layout decisions such as alignment and padding.", "type": "integer", "enum": [512, 4096] },

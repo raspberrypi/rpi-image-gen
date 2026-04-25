@@ -1,10 +1,11 @@
 # METABEGIN
 # X-Env-Layer-Name: rpi-ab-slot-mapper
-# X-Env-Layer-Category: image
+# X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Dynamic slot device management for A/B boot: udev rules and
 #  helpers that create stable by-slot symlinks from GPT PARTLABELs (preferred)
 #  or a static slot map (fallback), with device-mapper and initramfs support.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 3.0.0
+# X-Env-Layer-Requires: rpi-storage-binder
 #
 # X-Env-VarPrefix: abslot
 #
@@ -13,7 +14,7 @@
 #  support slot management and selection.
 # X-Env-Var-overlay-Required: n
 # X-Env-Var-overlay-Valid: string
-# X-Env-Var-overlay-Set: y
+# X-Env-Var-overlay-Set: force
 # METAEND
 ---
 mmdebstrap:
@@ -25,7 +26,7 @@ mmdebstrap:
     - install -D -m 0755 "${IGconf_abslot_overlay}/bin/rpi-slot-label" "$1/usr/bin/rpi-slot-label"
     - install -D -m 0755 "${IGconf_abslot_overlay}/bin/rpi-slot-static" "$1/usr/bin/rpi-slot-static"
     - install -D -m 0755 "${IGconf_abslot_overlay}/bin/rpi-slot-tryboot" "$1/usr/bin/rpi-slot-tryboot"
-    - install -D -m 0644 "${IGconf_abslot_overlay}/udev/rules.d/slot.rules" "$1/etc/udev/rules.d/99-rpi-slot.rules"
+    - install -D -m 0644 "${IGconf_abslot_overlay}/udev/rules.d/slot.rules" "$1/etc/udev/rules.d/99-rpi-01-abslot.rules"
     - |
       set -eu
       if [ -d "$1/etc/initramfs-tools" ]; then

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+case $1 in
+   prereqs) echo ""; exit 0;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+copy_exec /usr/bin/od
+copy_exec /usr/bin/rpi-bootdev-tag
+copy_file config /etc/udev/rules.d/99-rpi-00-bootdev.rules /etc/udev/rules.d/99-rpi-00-bootdev.rules

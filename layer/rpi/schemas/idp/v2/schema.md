@@ -99,6 +99,7 @@
 
 Must be one of:
 * "zero2w"
+* "pi3"
 * "pi4"
 * "cm4"
 * "pi5"
@@ -550,4 +551,4 @@ Must be one of:
 | **Tuple validation** | N/A                |
 
 ----------------------------------------------------------------------------------------------------------------------------
-Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-03-05 at 17:39:34 +0000
+Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-04-20 at 09:37:47 +0100
