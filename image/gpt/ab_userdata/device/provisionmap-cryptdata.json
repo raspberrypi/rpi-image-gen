@@ -83,7 +83,7 @@
             "key_size": ${LUKS_KEYSIZE},
             "cipher": "${LUKS_CIPHER}",
             "hash": "${LUKS_HASH}",
-            "label": "USERDATA",
+            "label": "USERDATA_CRYPT",
             "uuid": "${CRYPT_UUID}",
             "mname": "userdata_crypt",
             "etype": "partitioned"
