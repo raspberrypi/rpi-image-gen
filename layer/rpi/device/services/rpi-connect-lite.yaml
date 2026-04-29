@@ -31,6 +31,13 @@ mmdebstrap:
     - rpifwcrypto
   customize-hooks:
     - |-
+      cat > "$1/usr/lib/udev/rules.d/10-vc.rules" << 'UDEVRULES'
+      KERNEL=="vcio",     GROUP="video", MODE="0660"
+      KERNEL=="vchiq",    GROUP="video", MODE="0660"
+      SUBSYSTEM=="vc-sm", GROUP="video", MODE="0660"
+      KERNEL=="vcsm-cma", GROUP="video", MODE="0660"
+      UDEVRULES
+    - |-
       set -eu
       uchroot "$1" 'mkdir -m 0700 -p ${HOME}/.config/com.raspberrypi.connect'
 
