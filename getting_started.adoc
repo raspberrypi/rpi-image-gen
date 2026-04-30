@@ -6,7 +6,7 @@ This guide aims to get you started on building your own custom image using `rpi-
 
 * The build environment needs 2GB RAM or more for tmpfs
 - RPi4 or later if building on RPi
-- Cross-building on a workstation or build server
+- Building with foreign dpkg operation support on a workstation or build server
 * The build environment needs 4GB storage or more for build artefacts and images
 - 8GB SD card is the absolute minimum when building on RPi, but larger is needed for bigger images
 * The build target can be any Raspberry Pi, but all features are available only on RPi4 or later
@@ -18,18 +18,16 @@ While not officially supported, cross building works well on a recent Debian or 
 
 [,sh]
 ----
-sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring wget git
+sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring git
 git clone https://github.com/raspberrypi/rpi-image-gen.git
 cd rpi-image-gen
 sudo ./install_deps.sh
-wget -O keydir/raspberrypi.gpg.key https://archive.raspberrypi.com/debian/raspberrypi.gpg.key
 ----
 
 This will:
 
-* Install cross-build and further host dependencies
+* Install foreign dpkg operation support and further host dependencies
 * Install Debian keyring from package on Ubuntu
-* Add Raspberry Pi key to your `rpi-image-gen` keys
 
 == Define Your Image
 
@@ -56,6 +54,7 @@ Now create the base config file called `myimage.yaml` in `myproject` with the fo
 device:
   user1: myuser
   user1pass: Fo0bar!!
+  layer: rpi5
 
 image:
   layer: image-rpios
@@ -105,10 +104,10 @@ include:
   file: myimage-location1.yaml
 
 device:
-  layer: rpi5
+  layer: rpi3
 ----
 
-Building this will produce the specific image for the device you are deploying to location1 at the time.
+Building this will produce the specific image for the device you are deploying to location1 at the time. Here we override the rpi5 default.
 
 == Build Your Image
 
