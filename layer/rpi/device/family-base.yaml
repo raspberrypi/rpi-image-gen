@@ -1,0 +1,35 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-device-base
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Raspberry Pi device base layer and defaults
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: device-base,rpi-boot-firmware,rpi-idp
+# X-Env-Layer-Provides: device
+# X-Env-Layer-RequiresProvider: rpi-device
+#
+# X-Env-VarPrefix: device
+#
+# X-Env-Var-vendor: rpi
+# X-Env-Var-vendor-Desc: Device vendor
+# X-Env-Var-vendor-Required: n
+# X-Env-Var-vendor-Valid: string
+# X-Env-Var-vendor-Set: lazy
+#
+# X-Env-Var-class: pi5
+# X-Env-Var-class-Desc: Raspberry Pi device classification
+# X-Env-Var-class-Required: n
+# X-Env-Var-class-Valid: zero2w,pi3,pi4,cm4,pi5,cm5
+# X-Env-Var-class-Set: lazy
+#
+# X-Env-Var-variant: none
+# X-Env-Var-variant-Desc: Raspberry Pi device variant, eg 8G, lite, ..
+# X-Env-Var-variant-Required: n
+# X-Env-Var-variant-Valid: string
+# X-Env-Var-variant-Set: lazy
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - udev
+    - firmware-brcm80211
