@@ -1,23 +1,27 @@
 # METABEGIN
 # X-Env-Layer-Name: device-base
 # X-Env-Layer-Category: device
-# X-Env-Layer-Desc: Device defaults.
-# X-Env-Layer-Version: 2.1.0
-# X-Env-Layer-Requires: rpi-idp
+# X-Env-Layer-Desc: Device base layer and defaults
+# X-Env-Layer-Version: 3.0.0
+# X-Env-Layer-Requires:
 # X-Env-Layer-RequiresProvider: device
-#
-# X-Env-VarRequires-Valid: string
 #
 # X-Env-VarPrefix: device
 #
-# X-Env-Var-class: pi5
-# X-Env-Var-class-Desc: Raspberry Pi device
+# X-Env-Var-vendor: vendor
+# X-Env-Var-vendor-Desc: Device vendor
+# X-Env-Var-vendor-Required: n
+# X-Env-Var-vendor-Valid: string
+# X-Env-Var-vendor-Set: lazy
+#
+# X-Env-Var-class: generic
+# X-Env-Var-class-Desc: Device classification
 # X-Env-Var-class-Required: n
-# X-Env-Var-class-Valid: zero2w,pi3,pi4,cm4,pi5,cm5
+# X-Env-Var-class-Valid: string
 # X-Env-Var-class-Set: lazy
 #
 # X-Env-Var-variant: none
-# X-Env-Var-variant-Desc: Raspberry Pi device variant, eg 8G, lite, ..
+# X-Env-Var-variant-Desc: Device variant
 # X-Env-Var-variant-Required: n
 # X-Env-Var-variant-Valid: string
 # X-Env-Var-variant-Set: lazy

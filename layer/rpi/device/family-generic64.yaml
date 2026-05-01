@@ -3,10 +3,7 @@
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Generic Raspberry Pi device common with v8 kernel, boot
 #  firmware supporting all devices, and wlan/BT firmware.
-# X-Env-Layer-Version: 2.0.0
-# X-Env-Layer-Requires: device-base,rpi-boot-firmware,rpi-linux-v8
+# X-Env-Layer-Version: 3.0.0
+# X-Env-Layer-Requires: rpi-device-base,rpi-linux-v8
 # METAEND
 ---
-mmdebstrap:
-  packages:
-    - firmware-brcm80211

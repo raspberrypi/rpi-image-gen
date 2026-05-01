@@ -7,8 +7,8 @@
 #  See https://gitlab.com/cryptsetup/cryptsetup and cryptsetup(8).
 #  Downstream layer implementation-dependent.
 # X-Env-Layer-Requires:
-# X-Env-Layer-RequiresProvider: device
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: rpi-device
+# X-Env-Layer-Version: 2.0.0
 #
 # X-Env-VarPrefix: device
 #
