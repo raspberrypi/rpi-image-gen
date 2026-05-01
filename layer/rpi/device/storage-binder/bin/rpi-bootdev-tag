@@ -42,6 +42,10 @@ read_dt_u32() {
 }
 
 
+MODEL=$(cat /proc/device-tree/model) || die "no model data"
+read -r _ _ GEN REV <<EOF
+$MODEL
+EOF
 BOOT_MODE=$(read_dt_u32 /proc/device-tree/chosen/bootloader/boot-mode) || die "no boot-mode"
 BOOT_PARTN=$(read_dt_u32 /proc/device-tree/chosen/bootloader/partition) || die "no boot-part"
 
@@ -51,8 +55,13 @@ case $BOOT_MODE in
    *) exit 1;; # Not a storage device, or one we can associate to a linux blkdev
 esac
 
+case $GEN in
+   4|5);;
+   *) [ $BOOT_PARTN -eq 0 ] && BOOT_PARTN=1;; # legacy compat
+esac
+
 BOOT_BLKDEV="/dev/${BOOT_DEV}${PART_SEP}${BOOT_PARTN}"
-test -b "$BOOT_BLKDEV" || die "Unsupported blkdev $BOOT_DEV for boot mode $BOOT_MODE"
+test -b "$BOOT_BLKDEV" || die "$BOOT_BLKDEV is invalid for boot mode $BOOT_MODE ($BOOT_DEV)"
 
 
 # Slow-path (supports DM devices).
