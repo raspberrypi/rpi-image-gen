@@ -1,7 +1,7 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.1.1",
+         "PMAPversion": "1.2.0",
          "system_type": "slotted"
       }
    },
@@ -79,6 +79,7 @@
    },
    {
       "encrypted": {
+         "expand-to-fit": true,
          "luks2": {
             "key_size": ${LUKS_KEYSIZE},
             "cipher": "${LUKS_CIPHER}",
@@ -91,7 +92,8 @@
          "partitions": [
             {
                "comment": "Encrypted user data - shared between slots",
-               "image": "persistent"
+               "image": "persistent",
+               "expand-to-fit": true
             }
          ]
       }

@@ -1,7 +1,7 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.2.1",
+         "PMAPversion": "1.3.0",
          "system_type": "flat"
       }
    },
@@ -15,6 +15,7 @@
    },
    {
       "encrypted": {
+         "expand-to-fit": true,
          "luks2": {
             "key_size": ${LUKS_KEYSIZE},
             "cipher": "${LUKS_CIPHER}",
@@ -27,7 +28,8 @@
          "partitions": [
             {
                "comment": "Encrypted root filesystem",
-               "image": "root"
+               "image": "root",
+               "expand-to-fit": true
             }
          ]
       }
