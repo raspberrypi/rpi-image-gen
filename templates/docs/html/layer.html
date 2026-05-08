@@ -379,6 +379,9 @@
         {%- if layer.layer_info.type == 'dynamic' and layer.layer_info.generator %}
         <p><strong>Generator:</strong> <code>{{ layer.layer_info.generator }}</code></p>
         {%- endif %}
+        {%- if layer.overlays %}
+        <p><strong>Overlay:</strong> {{ layer.overlays|join(', ') }}</p>
+        {%- endif %}
         {%- if layer.layer_info.conflicts %}
         <p><strong>Conflicts:</strong> {{ layer.layer_info.conflicts|join(', ') }}</p>
         {%- endif %}

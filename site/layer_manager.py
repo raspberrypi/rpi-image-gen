@@ -658,6 +658,21 @@ class LayerManager:
 
         return None
 
+    def _get_overlays(self, layer_name: str) -> list:
+        layer_path = self.layer_files.get(layer_name)
+        if not layer_path:
+            return []
+        layer_dir = Path(layer_path).parent
+        stem = Path(layer_path).stem
+        parts = ['base'] if (layer_dir / f'{stem}.rootfs-overlay').is_dir() else []
+        parts += sorted(
+            (f'v{suffix}'
+             for d in layer_dir.glob(f'{stem}.rootfs-overlay-*')
+             if d.is_dir() and (suffix := d.name.split(".rootfs-overlay-")[1]).isdigit()),
+            key=lambda v: int(v[1:])
+        )
+        return parts
+
     def get_layer_documentation_data(self, layer_name: str):
         """Extract structured layer data for documentation generation"""
         if layer_name not in self.layers:
@@ -755,7 +770,8 @@ class LayerManager:
             'companion_doc': companion_doc,
             'dependencies': dependencies,
             'reverse_dependencies': reverse_dependencies,
-            'anchors': anchors
+            'anchors': anchors,
+            'overlays': self._get_overlays(layer_name)
         }
 
     def _get_companion_doc(self, layer_name: str, format: str = 'markdown') -> str:
@@ -1027,6 +1043,9 @@ def _layer_main(args):
             layer_path = manager.layer_files.get(layer_name, "<unknown>")
             rel_layer_path = manager.layer_relpaths.get(layer_name, layer_path)
             print(f"Path: {rel_layer_path}")
+            overlays = manager._get_overlays(layer_name)
+            if overlays:
+                print(f"Overlay: {', '.join(overlays)}")
 
             mmdebstrap = manager._get_mmdebstrap_config(layer_name)
             if mmdebstrap:
