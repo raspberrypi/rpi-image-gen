@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi device base layer and defaults
 # X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-Requires: device-base,rpi-boot-firmware,rpi-idp
+# X-Env-Layer-Requires: device-base,rpi-boot-firmware,rpi-idp,rpi-device-secpolicy
 # X-Env-Layer-Provides: device
 # X-Env-Layer-RequiresProvider: rpi-device
 #

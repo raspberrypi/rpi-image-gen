@@ -1,7 +1,7 @@
 # METABEGIN
 # X-Env-Layer-Name: rpi-essential-base
 # X-Env-Layer-Desc: Raspberry Pi essential basic system packages
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 # METAEND
 ---
 mmdebstrap:
@@ -9,7 +9,6 @@ mmdebstrap:
     - cryptsetup
     - e2fsprogs
     - wget
-    - ca-certificates
     - net-tools
     - iputils-ping
     - procps

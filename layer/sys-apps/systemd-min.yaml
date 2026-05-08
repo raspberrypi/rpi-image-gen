@@ -2,7 +2,8 @@
 # X-Env-Layer-Name: systemd-min
 # X-Env-Layer-Desc: Core systemd components for init, SysV compatibility
 #  and timesyncd, without networkd and resolved services.
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 1.1.1
+# X-Env-Layer-Provides: systemd-sysv
 # METAEND
 ---
 mmdebstrap:
