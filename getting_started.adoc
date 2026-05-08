@@ -18,7 +18,7 @@ While not officially supported, cross building works well on a recent Debian or 
 
 [,sh]
 ----
-sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static dirmngr slirp4netns quilt parted debootstrap zerofree libcap2-bin libarchive-tools xxd file kmod bc pigz arch-test debian-archive-keyring git
+sudo apt-get -q -y --no-install-recommends install binfmt-support qemu-user-static debian-archive-keyring git
 git clone https://github.com/raspberrypi/rpi-image-gen.git
 cd rpi-image-gen
 sudo ./install_deps.sh
@@ -92,11 +92,11 @@ env:
   PSK: localpsk
 ----
 
-This will define an image with a hostname specific to the location and override the timezone. Again, you can build this and it will work if your device is compatible with the default target of `rpi-image-gen` at the time.
+This will define an image with a hostname specific to the location and override the wifi configuration. Again, you can build this and it will work if your device happens to be the same as in the main yaml.
 
 === Adding Device Specifications
 
-Create a file called `myimage-location1-rpi5.yaml` in `myproject` with the following content:
+Create a file called `myimage-location1-rpi3.yaml` in `myproject` with the following content:
 
 [,yaml]
 ----
@@ -111,7 +111,7 @@ Building this will produce the specific image for the device you are deploying t
 
 == Build Your Image
 
-Once your image configuration is ready, you can build everything with specifying just one configuration file. `customize90-myscript` will be automatically included based on its name, executability and location in relation to the `-S` source directory flag.
+Once your image configuration is ready, you can build everything with specifying just one configuration file. `customize90-myscript` will be automatically included based on its name, executability and location in relation to the `-S` source directory flag. Change `myimage.yaml` to `myimage-location1.yaml` and `myimage-location1-rpi3.yaml` to build the more specific images.
 
 [,sh]
 ----
