@@ -3,19 +3,15 @@
 include:
   file: trixie-minbase-ab.yaml
 
-env:
-  APPLICATION_NAME: myapp
-  VERSION: 1.0.0
-
 device:
   # This will set the name of the device in Raspberry Pi Connect
   hostname: ota-device-1
 
 artefact:
-  version: ${VERSION}
+  version: 1.0.0
 
 image:
-  name: ${APPLICATION_NAME}-${VERSION}
+  name: myapp
 
 layer:
   app: example-ota
