@@ -1,0 +1,4 @@
+KERNEL=="vcio", GROUP="video", MODE="0660"
+KERNEL=="vchiq", GROUP="video", MODE="0660"
+SUBSYSTEM=="vc-sm", GROUP="video", MODE="0660"
+KERNEL=="vcsm-cma", GROUP="video", MODE="0660"

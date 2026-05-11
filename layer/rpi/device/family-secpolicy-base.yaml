@@ -1,0 +1,30 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-device-secpolicy
+# X-Env-Layer-Category: security
+# X-Env-Layer-Desc: Raspberry Pi device family security policy baseline
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: rpi-device,image,systemd-sysv
+#
+# X-Env-VarPrefix: rpisec
+#
+# X-Env-Var-eepromupd: y
+# X-Env-Var-eepromupd-Desc: Enable automatic device EEPROM update service
+#  See https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#automaticupdates
+# X-Env-Var-eepromupd-Required: n
+# X-Env-Var-eepromupd-Valid: bool
+# X-Env-Var-eepromupd-Set: y
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - ca-certificates
+    - rpi-eeprom
+  customize-hooks:
+    - |
+      set -eu
+      if [ "${IGconf_rpisec_eepromupd}" = "y" ]; then
+        $BDEBSTRAP_HOOKS/enable-units "$1" rpi-eeprom-update
+      else
+        $BDEBSTRAP_HOOKS/disable-units "$1" rpi-eeprom-update
+      fi

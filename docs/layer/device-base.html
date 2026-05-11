@@ -123,25 +123,17 @@
     <div class="header">
         <h1>device-base</h1>
         <span class="badge">device</span>
-        <span class="badge">v2.1.0</span>
-        <p>Device defaults.</p>
+        <span class="badge">v3.0.0</span>
+        <p>Device base layer and defaults</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
-        <p><strong>Depends on:</strong></p>
-        <div class="deps">
-            <a href="rpi-idp.html" class="dep-badge">rpi-idp</a>
-        </div>
         <p><strong>Required by:</strong></p>
         <div class="deps">
             
             <a href="image-rota.html" class="dep-badge">image-rota</a>
             
-            <a href="rpi-cm5.html" class="dep-badge">rpi-cm5</a>
-            
-            <a href="rpi-generic64.html" class="dep-badge">rpi-generic64</a>
-            
-            <a href="rpi5.html" class="dep-badge">rpi5</a>
+            <a href="rpi-device-base.html" class="dep-badge">rpi-device-base</a>
             
         </div>
         <p><strong>Requires Provider:</strong> device</p>
@@ -161,19 +153,30 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><code>IGconf_device_class</code></td>
-                    <td>Raspberry Pi device</td>
+                    <td><code>IGconf_device_vendor</code></td>
+                    <td>Device vendor</td>
                     <td>
-                           <code>pi5</code>
+                           <code>vendor</code>
                     </td>
-                    <td>Must be one of: zero2w, pi3, pi4, cm4, pi5, cm5</td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_device_class</code></td>
+                    <td>Device classification</td>
+                    <td>
+                           <code>generic</code>
+                    </td>
+                    <td>Non-empty string value</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
                 </tr>
                 <tr>
                     <td><code>IGconf_device_variant</code></td>
-                    <td>Raspberry Pi device variant, eg 8G, lite, ..</td>
+                    <td>Device variant</td>
                     <td>
                            <code>none</code>
                     </td>
