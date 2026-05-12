@@ -32,7 +32,7 @@ def Pipeline_register_parser(subparsers, root=None):
     parser.add_argument("--layers", nargs="+", help="Layers to apply (names)")
     parser.add_argument("--path", "-p", default=default_paths, help=help_text)
     parser.add_argument("--env-out", required=True, help="Write fully resolved env (anchors expanded)")
-    parser.add_argument("--plan-out", help="Write layer build plan (name:static:resolved) to this file (host mode only)")
+    parser.add_argument("--plan-out", help="Write layer build plan to this file")
     parser.set_defaults(func=_pipeline_main)
 
 
@@ -151,9 +151,11 @@ def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) 
     try:
         with open(path, "w", encoding="utf-8") as handle:
             for layer in build_order:
+                info = manager.get_layer_info(layer) or {}
+                version = info.get("version", "")
                 static = manager.layer_source_files.get(layer, "")
                 resolved = manager.layer_files.get(layer, "")
-                handle.write(f'{layer}:{static}:{resolved}\n')
+                handle.write(f'{layer}:{version}:{static}:{resolved}\n')
         print(f"Layer plan written to: {path}")
     except Exception as exc:
         print(f"Error writing layer plan to {path}: {exc}")
