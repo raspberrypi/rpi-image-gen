@@ -18,12 +18,8 @@
 # X-Env-Var-luks2_cipher-Valid: string
 # X-Env-Var-luks2_cipher-Set: lazy
 # X-Env-Var-luks2_cipher-Triggers:
-#  when=IGconf_device_class=pi5 set IGconf_device_luks2_cipher=aes-xts-plain64 policy=lazy
-#  when=IGconf_device_class=cm5 set IGconf_device_luks2_cipher=aes-xts-plain64 policy=lazy
-#  when=IGconf_device_class=pi4 set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
-#  when=IGconf_device_class=cm4 set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
-#  when=IGconf_device_class=pi3 set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
-#  when=IGconf_device_class=zero2w set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
+#  when=IGconf_device_class in ['pi5','cm5'] set IGconf_device_luks2_cipher=aes-xts-plain64 policy=lazy
+#  when=IGconf_device_class in ['pi4','cm4','pi3','zero2w'] set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
 #
 # X-Env-Var-luks2_hash: sha256
 # X-Env-Var-luks2_hash-Desc: The hash algorithm used for LUKS2 metadata integrity.
@@ -37,8 +33,8 @@
 # X-Env-Var-luks2_keysize-Valid: 128,256,512
 # X-Env-Var-luks2_keysize-Set: lazy
 # X-Env-Var-luks2_keysize-Triggers:
-#  when=IGconf_device_luks2_cipher=aes-xts-plain64 set IGconf_device_luks2_keysize=512 policy=lazy
-#  when=IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 set IGconf_device_luks2_keysize=256 policy=lazy
+#  when=IGconf_device_luks2_cipher == 'aes-xts-plain64' set IGconf_device_luks2_keysize=512 policy=lazy
+#  when=IGconf_device_luks2_cipher == 'xchacha12,aes-adiantum-plain64' set IGconf_device_luks2_keysize=256 policy=lazy
 #
 # METAEND
 ---

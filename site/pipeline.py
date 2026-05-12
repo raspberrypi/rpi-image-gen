@@ -269,40 +269,6 @@ def _validate_layers(manager: LayerManager, layer_names: List[str]) -> bool:
     return True
 
 
-def _parse_conflict_spec(spec: str):
-    """Parse a conflict spec into (name, op, value, when_value)."""
-    if not spec:
-        return None, None, None, None
-
-    when_value = None
-    spec = spec.strip()
-    if spec.startswith("when="):
-        parts = spec.split(None, 1)
-        if len(parts) < 2:
-            return None, None, None, None
-        when_value = parts[0][len("when="):].strip()
-        if not when_value:
-            return None, None, None, None
-        spec = parts[1].strip()
-        if not spec:
-            return None, None, None, None
-
-    if "!=" in spec:
-        name, value = spec.split("!=", 1)
-        op = "!="
-    elif "=" in spec:
-        name, value = spec.split("=", 1)
-        op = "="
-    else:
-        return spec, None, None, when_value
-
-    name = name.strip()
-    value = value.strip()
-    if not name or not value:
-        return None, None, None, None
-    return name, op, value, when_value
-
-
 def _is_var_effectively_set(env_var: EnvVariable, current: Optional[str]) -> bool:
     """Return True if variable should be considered set for conflict checks."""
     if getattr(env_var, "set_policy", None) == "skip":
@@ -387,59 +353,32 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
                 )
                 ok = False
 
-    # Validate conflicts against the selected winning definitions.
-    unconditional_pairs = set()
+    # Validate conflict expressions against resolved variable values.
+    import conditions as _cond
+
+    variables: Dict[str, str] = {}
+    for name, env_var in selected.items():
+        if getattr(env_var, "set_policy", None) == "skip":
+            variables[name] = str(os.environ.get(name, ""))
+        else:
+            variables[name] = _effective_var_value(env_var, os.environ.get(name))
+    for k, v in os.environ.items():
+        if k not in variables:
+            variables[k] = v
+
+    seen_exprs: set = set()
     for var_name, env_var in selected.items():
-        conflicts = getattr(env_var, "conflicts", None) or []
-        for other in conflicts:
-            conflict_var_name, op, _, when_value = _parse_conflict_spec(other)
-            if not conflict_var_name or op is not None or when_value is not None:
+        for expr in (getattr(env_var, "conflicts", None) or []):
+            if expr in seen_exprs:
                 continue
-            pair = tuple(sorted([var_name, conflict_var_name]))
-            unconditional_pairs.add(pair)
-
-    seen_pairs = set()
-    for var_name, env_var in selected.items():
-        conflicts = getattr(env_var, "conflicts", None) or []
-        if not conflicts:
-            continue
-
-        current = os.environ.get(var_name)
-        if not _is_var_effectively_set(env_var, current):
-            continue
-        this_value = _effective_var_value(env_var, current)
-
-        for conflict in conflicts:
-            conflict_var_name, op, conflict_value, when_value = _parse_conflict_spec(conflict)
-            if not conflict_var_name:
+            seen_exprs.add(expr)
+            try:
+                fired = _cond.evaluate(expr, variables)
+            except ValueError:
                 continue
-            conflict_var = selected.get(conflict_var_name)
-            if not conflict_var:
-                continue
-            if when_value is not None and this_value != when_value:
-                continue
-            if op is not None:
-                pair_base = tuple(sorted([var_name, conflict_var_name]))
-                if pair_base in unconditional_pairs:
-                    continue
-
-            pair = tuple(sorted([var_name, conflict]))
-            if pair in seen_pairs:
-                continue
-            seen_pairs.add(pair)
-
-            conflict_current = os.environ.get(conflict_var_name)
-            if not _is_var_effectively_set(conflict_var, conflict_current):
-                continue
-            conflict_target_value = _effective_var_value(conflict_var, conflict_current)
-
-            if op == "=" and conflict_target_value != conflict_value:
-                continue
-            if op == "!=" and conflict_target_value == conflict_value:
-                continue
-
-            log_error(f"[FAIL] Conflict: {var_name}={this_value} {conflict_var_name}={conflict_target_value}")
-            ok = False
+            if fired:
+                log_error(f"[FAIL] Conflict: {expr}")
+                ok = False
     return ok
 
 

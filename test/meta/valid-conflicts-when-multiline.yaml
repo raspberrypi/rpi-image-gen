@@ -4,8 +4,8 @@
 # X-Env-VarPrefix: cft
 #
 # X-Env-Var-compression: none
-# X-Env-Var-compression-Conflicts: when=zstd rootfs_type=ext4,
-#  when=lzma rootfs_type=ext4
+# X-Env-Var-compression-Conflicts: IGconf_cft_compression == 'zstd' and IGconf_cft_rootfs_type == 'ext4'
+#  IGconf_cft_compression == 'lzma' and IGconf_cft_rootfs_type == 'ext4'
 #
 # X-Env-Var-rootfs_type: btrfs
 # METAEND

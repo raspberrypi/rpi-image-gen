@@ -1,11 +1,11 @@
 # METABEGIN
 # X-Env-Layer-Name: test-conflict-when-multiline-missing-conflict
-# X-Env-Layer-Desc: when= on its own line should fail parsing
+# X-Env-Layer-Desc: Invalid operator in multiline conflict expression should fail to parse
 # X-Env-VarPrefix: cft
 #
 # X-Env-Var-compression: zstd
-# X-Env-Var-compression-Conflicts: when=zstd
-#  rootfs_type=ext4
+# X-Env-Var-compression-Conflicts: IGconf_cft_compression == 'zstd' and IGconf_cft_rootfs_type == 'ext4'
+#  IGconf_cft_compression > 'lzma'
 #
 # X-Env-Var-rootfs_type: ext4
 # METAEND

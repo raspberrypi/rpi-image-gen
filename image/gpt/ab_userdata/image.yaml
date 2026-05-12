@@ -38,7 +38,7 @@
 # X-Env-Var-rootfs_type-Set: y
 # X-Env-Var-rootfs_type-Triggers:
 #  set IGconf_fs_ext4_mkfs_args="-F -b ${IGconf_linux_page_size}" policy=lazy
-#  when=erofs set IGconf_fs_erofs_mkfs_args="-b ${IGconf_linux_page_size} -z zstd,3" policy=lazy
+#  when=IGconf_image_rootfs_type == 'erofs' set IGconf_fs_erofs_mkfs_args="-b ${IGconf_linux_page_size} -z zstd,3" policy=lazy
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Image specific asset directory
@@ -63,9 +63,9 @@
 # X-Env-Var-ptable_protect-Required: n
 # X-Env-Var-ptable_protect-Valid: bool
 # X-Env-Var-ptable_protect-Set: lazy
-# X-Env-Var-ptable_protect-Conflicts: when=y IGconf_device_storage_type!=emmc
+# X-Env-Var-ptable_protect-Conflicts: IGconf_image_ptable_protect == 'y' and IGconf_device_storage_type != 'emmc'
 # X-Env-Var-ptable_protect-Triggers:
-#  when=IGconf_device_storage_type=emmc set IGconf_image_ptable_protect=y policy=lazy
+#  when=IGconf_device_storage_type == 'emmc' set IGconf_image_ptable_protect=y policy=lazy
 #
 # X-Env-Var-compression: zstd
 # X-Env-Var-compression-Desc: Compression scheme used for update payloads.

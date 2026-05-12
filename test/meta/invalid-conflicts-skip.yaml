@@ -5,11 +5,11 @@
 #
 # X-Env-Var-a: 1
 # X-Env-Var-a-Set: n
-# X-Env-Var-a-Conflicts: b
+# X-Env-Var-a-Conflicts: IGconf_cft_a != '' and IGconf_cft_b != ''
 #
 # X-Env-Var-b: 2
 # X-Env-Var-b-Set: n
-# X-Env-Var-b-Conflicts: a
+# X-Env-Var-b-Conflicts: IGconf_cft_b != '' and IGconf_cft_a != ''
 # METAEND
 
 conflict_skip:
