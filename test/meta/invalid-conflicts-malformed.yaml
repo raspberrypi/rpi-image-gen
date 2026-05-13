@@ -1,11 +1,11 @@
 # METABEGIN
 # X-Env-Layer-Name: test-conflict-malformed
-# X-Env-Layer-Desc: Malformed conflict specs should fail to parse
+# X-Env-Layer-Desc: Malformed conflict expression should fail to parse
 # X-Env-VarPrefix: cft
 #
 # X-Env-Var-class: cm4
 # X-Env-Var-test: foo
-# X-Env-Var-test-Conflicts: class!=
+# X-Env-Var-test-Conflicts: IGconf_cft_class !=
 # METAEND
 
 conflict_conditional:

@@ -192,8 +192,8 @@ apply_layer_overlays() {
    local plan=${PLAN:-}
    [[ -n $plan && -f $plan ]] || return 0
 
-   local layer static resolved overlay
-   while IFS=: read -r layer static resolved; do
+   local layer version static resolved overlay
+   while IFS=: read -r layer version static resolved; do
       [[ -n $layer && -n $static ]] || continue
       [[ $layer == \#* ]] && continue
       overlay="${static%.yaml}.rootfs-overlay"

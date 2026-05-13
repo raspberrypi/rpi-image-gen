@@ -352,27 +352,27 @@ prepare_build_config()
    local specs="${TMPDIR}/layer.resolved"
 
    : > $specs
-   while IFS=: read -r layer static resolved; do
+   while IFS=: read -r layer version static resolved; do
       [[ -n $layer && -n $resolved ]] || continue
       [[ $layer == \#* ]] && continue
 
       ((total++))
       [[ -f $resolved ]] || die "Layer $layer ($resolved) not found"
-      printf '%s="%s"\n' "$layer" "$resolved" >> "$specs"
+      printf '%s:%s="%s"\n' "$layer" "$version" "$resolved" >> "$specs"
    done < "${ctx[LAYER_PLAN]}"
 
-   while IFS=: read -r layer yaml; do
+   while IFS=: read -r layer version yaml; do
       _bdebstrap+=( --config "$yaml" )
-      msg "Loaded $layer"
+      msg "Loaded $layer${version:+ v${version}}"
       ((added++))
    done < <(python3 - "$specs" <<'PY'
 import sys, yaml, pathlib
 for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
-    layer, path = raw.split('=', 1)
+    layer_ver, path = raw.split('=', 1)
     path = path.strip().strip('"')
     data = yaml.safe_load(pathlib.Path(path).read_bytes())
     if isinstance(data, dict) and data.get("mmdebstrap"):
-        print(f"{layer}:{path}")
+        print(f"{layer_ver}:{path}")
 PY
 )
    local skipped=$((total - added))

@@ -5,7 +5,7 @@
 #
 # X-Env-Var-class: cm4
 # X-Env-Var-test: foo
-# X-Env-Var-test-Conflicts: class!=cm4
+# X-Env-Var-test-Conflicts: IGconf_cft_test != '' and IGconf_cft_class != 'cm4'
 # METAEND
 
 conflict_conditional:

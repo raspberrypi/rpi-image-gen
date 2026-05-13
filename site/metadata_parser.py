@@ -497,111 +497,41 @@ class Metadata:
 
         return results
 
-    @staticmethod
-    def _parse_conflict_spec(spec: str):
-        """Parse a conflict spec into (name, op, value, when_value). op is None for unconditional."""
-        if not spec:
-            return None, None, None, None
-        when_value = None
-        spec = spec.strip()
-        if spec.startswith("when="):
-            parts = spec.split(None, 1)
-            if len(parts) < 2:
-                return None, None, None, None
-            when_value = parts[0][len("when="):].strip()
-            if not when_value:
-                return None, None, None, None
-            spec = parts[1].strip()
-            if not spec:
-                return None, None, None, None
-
-        if "!=" in spec:
-            name, value = spec.split("!=", 1)
-            op = "!="
-        elif "=" in spec:
-            name, value = spec.split("=", 1)
-            op = "="
-        else:
-            # Unconditional conflict (just the variable name).
-            return spec, None, None, when_value
-        name = name.strip()
-        value = value.strip()
-        if not name or not value:
-            return None, None, None, None
-        return name, op, value, when_value
-
     def _validate_conflicts(self):
-        """Validate that conflicting variables are not both set (final resolved values)."""
-        results = {}
+        """Evaluate conflict expressions against resolved variables; report any that fire."""
+        import conditions as _cond
 
-        # Ensure we have resolved variables available for validation.
+        results = {}
         if self._resolved_vars is None:
             resolver = VariableResolver()
             variable_definitions = {name: [env_var] for name, env_var in self._container.variables.items()}
             self._resolved_vars = resolver.resolve(variable_definitions)
 
-        # Track unconditional pairs to avoid duplicate conditional reporting.
-        unconditional_pairs = set()
+        # Build variable dict; skip-policy vars use the env value only.
+        variables = {}
+        for name, var in self._resolved_vars.items():
+            if getattr(var, "set_policy", None) == "skip":
+                variables[name] = str(os.environ.get(name, ""))
+            else:
+                variables[name] = str(var.value or "")
+        for k, v in os.environ.items():
+            if k not in variables:
+                variables[k] = v
+
+        seen = set()
         for var_name, env_var in self._resolved_vars.items():
-            conflicts = getattr(env_var, "conflicts", None) or []
-            for other in conflicts:
-                conflict_var_name, op, _, when_value = self._parse_conflict_spec(other)
-                if not conflict_var_name or op is not None or when_value is not None:
+            for expr in (getattr(env_var, "conflicts", None) or []):
+                if expr in seen:
                     continue
-                pair = tuple(sorted([var_name, conflict_var_name]))
-                unconditional_pairs.add(pair)
-
-        # Track reported pairs (including conditional spec string) to dedupe.
-        seen_pairs = set()
-        for var_name, env_var in self._resolved_vars.items():
-            conflicts = getattr(env_var, "conflicts", None) or []
-            if not conflicts:
-                continue
-            for conflict in conflicts:
-                conflict_var_name, op, conflict_value, when_value = self._parse_conflict_spec(conflict)
-                if not conflict_var_name:
+                seen.add(expr)
+                try:
+                    fired = _cond.evaluate(expr, variables)
+                except ValueError:
                     continue
-                if op is not None:
-                    # If an unconditional conflict exists for the same pair, it wins.
-                    pair_base = tuple(sorted([var_name, conflict_var_name]))
-                    if pair_base in unconditional_pairs:
-                        continue
-
-                pair = tuple(sorted([var_name, conflict]))
-                if pair in seen_pairs:
-                    continue
-                seen_pairs.add(pair)
-
-                # Retrieve the conflicting var from the final resolved variable set
-                conflict_var = self._resolved_vars.get(conflict_var_name)
-                if not conflict_var:
-                    continue
-
-                # A unconditional conflict only applies if this variable and the conflicting
-                # variable are both set. For skip policy, only env counts as "set".
-                if getattr(env_var, "set_policy", None) == "skip":
-                    this_value = str(os.environ.get(var_name, ""))
-                else:
-                    this_value = str(env_var.value)
-                if when_value is not None and this_value != when_value:
-                    continue
-                if getattr(conflict_var, "set_policy", None) == "skip":
-                    conflict_target_value = str(os.environ.get(conflict_var_name, ""))
-                else:
-                    conflict_target_value = str(conflict_var.value)
-                if not this_value or not conflict_target_value:
-                    continue
-
-                # For conditional conflicts, the conflicting variable must match / not match
-                # the specified conflicting value for the conflict to apply.
-                if op == "=" and conflict_target_value != conflict_value:
-                    continue
-                if op == "!=" and conflict_target_value == conflict_value:
-                    continue
-
-                results[f"CONFLICT_{var_name}_{conflict}"] = self._result_builder.conflict(
-                    var_name, conflict_var_name, this_value, conflict_target_value
-                )
+                if fired:
+                    results[f"CONFLICT_{var_name}_{expr}"] = self._result_builder.conflict(
+                        var_name, expr, variables.get(var_name, ""), ""
+                    )
         return results
 
     def _validate_defined_variables(self):
@@ -892,6 +822,12 @@ class Metadata:
         # 4) Validation rule sanity checks (schema-only)
         results.update(self._lint_validation_rules(raw_meta))
 
+        # 5) Trigger rule syntax (condition expressions and action keywords)
+        results.update(self._lint_trigger_rules(raw_meta))
+
+        # 6) Conflict expression syntax
+        results.update(self._lint_conflict_rules(raw_meta))
+
         return results
 
     def _lint_validation_rules(self, raw_meta: dict) -> dict:
@@ -938,6 +874,57 @@ class Metadata:
         _check_rule_list(XEnv.var_requires_valid())
         _check_rule_list(XEnv.var_optional_valid())
 
+        return issues
+
+    def _lint_conflict_rules(self, raw_meta: dict) -> dict:
+        """Check conflict expression syntax at lint time."""
+        import conditions as _cond
+        issues = {}
+        for field_name, raw in raw_meta.items():
+            if not (field_name.startswith(XEnv.VAR_PREFIX) and field_name.endswith("-Conflicts")):
+                continue
+            rule_str = (raw or "").strip()
+            if not rule_str:
+                continue
+            var_name = field_name[len(XEnv.VAR_PREFIX):-len("-Conflicts")]
+            for line in rule_str.splitlines():
+                expr = line.strip()
+                if not expr:
+                    continue
+                try:
+                    _cond.validate(expr)
+                except ValueError as exc:
+                    issues[f"INVALID_CONFLICT_{var_name}"] = self._result_builder.build_result(
+                        status="invalid_conflict_rule",
+                        value=None,
+                        valid=False,
+                        required=False,
+                        rule=expr,
+                        message=f"{self.filepath}: Invalid conflict expression for {var_name}: {exc}",
+                    )
+        return issues
+
+    def _lint_trigger_rules(self, raw_meta: dict) -> dict:
+        """Check trigger rule syntax at lint time, before any environment is available."""
+        issues = {}
+        for field_name, raw in raw_meta.items():
+            if not (field_name.startswith(XEnv.VAR_PREFIX) and field_name.endswith("-Triggers")):
+                continue
+            rule_str = (raw or "").strip()
+            if not rule_str:
+                continue
+            var_name = field_name[len(XEnv.VAR_PREFIX):-len("-Triggers")]
+            try:
+                EnvVariable._parse_trigger_rules(rule_str, var_name)
+            except ValueError as exc:
+                issues[f"INVALID_TRIGGER_{var_name}"] = self._result_builder.build_result(
+                    status="invalid_trigger_rule",
+                    value=None,
+                    valid=False,
+                    required=False,
+                    rule=rule_str,
+                    message=f"{self.filepath}: Invalid specifier for variable {var_name}: {exc}",
+                )
         return issues
 
     def _collect_schema_errors(self):

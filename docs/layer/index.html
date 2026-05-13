@@ -157,12 +157,13 @@
 <li><a href="#_environment_variables">Environment Variables</a></li>
 <li><a href="#_variable_naming_convention">Variable Naming Convention</a></li>
 <li><a href="#_placeholder_support">Placeholder Support</a></li>
+<li><a href="#conditional-expressions">Conditional Expressions</a></li>
 <li><a href="#_triggers">Triggers</a>
 <ul class="sectlevel3">
 <li><a href="#_supported_actions">Supported actions</a></li>
 <li><a href="#_examples">Examples</a></li>
 <li><a href="#_example_same_layer">Example (same layer)</a></li>
-<li><a href="#_example_cross_var_across_layers">Example (cross-var across layers)</a></li>
+<li><a href="#_example_cross_layer_condition">Example (cross-layer condition)</a></li>
 </ul>
 </li>
 <li><a href="#_variable_conflicts">Variable Conflicts</a></li>
@@ -605,6 +606,53 @@ mmdebstrap:
 </div>
 </div>
 <div class="sect2">
+<h3 id="conditional-expressions"><a class="anchor" href="#conditional-expressions"></a><a class="link" href="#conditional-expressions">Conditional Expressions</a></h3>
+<div class="paragraph">
+<p>Conditional expressions are supported in trigger <code>when=</code> clauses and conflict expressions. They use standard <a href="https://docs.python.org/3/reference/expressions.html#comparisons" target="<em>blank">Python comparison syntax</a>. Variable names must be fully qualified <code>IGconf</em>*</code> names. Comparison values must be quoted strings. An unquoted value such as <code>pi5</code> would be interpreted as a variable name and rejected at lint time.</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Operator</th>
+<th class="tableblock halign-left valign-top">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>==</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>IGconf_device_class == 'pi5'</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>!=</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>IGconf_device_user1pass != ''</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>in</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>IGconf_device_class in ['pi4', 'cm4', 'pi5', 'cm5']</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>not in</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>IGconf_device_class not in ['zero2w']</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>and</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>IGconf_a == 'x' and IGconf_b == 'y'</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>or</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>IGconf_a == 'x' or IGconf_b == 'y'</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>To check for a non-empty value, use <code>!= ''</code>. Syntax errors and unknown variable references are caught at lint time, not at build time.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_triggers"><a class="anchor" href="#_triggers"></a><a class="link" href="#_triggers">Triggers</a></h3>
 <div class="paragraph">
 <p>Triggers (<code>X-Env-Var-*-Triggers</code>) allow a variable’s resolved value to automatically perform actions, meaning that derived settings can be injected based on that value. Format as follows (one rule per line):</p>
@@ -612,19 +660,7 @@ mmdebstrap:
 <div class="ulist">
 <ul>
 <li>
-<p>Conditional (same variable): <code>when=VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
-</li>
-<li>
-<p>Conditional (same variable, wildcard): <code>when=* set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
-</li>
-<li>
-<p>Conditional (cross-variable): <code>when=VAR=VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
-</li>
-<li>
-<p>Conditional (cross-variable): <code>when=VAR!=VALUE set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
-</li>
-<li>
-<p>Conditional (cross-variable, wildcard): <code>when=VAR=* set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
+<p>Conditional: <code>when=&lt;expr&gt; set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
 </li>
 <li>
 <p>Unconditional: <code>set TARGET=VALUE [policy=force|immediate|lazy]</code></p>
@@ -632,16 +668,16 @@ mmdebstrap:
 </ul>
 </div>
 <div class="paragraph">
-<p>For same-variable conditions, matching is an exact string comparison against the source variable&#8217;s resolved value. For cross-variable conditions, matching is an exact string comparison against the referenced variable&#8217;s resolved value (ie, the referenced variable is used as-is). Unconditional rules always fire. The first token after the action must be <code>TARGET=VALUE</code>. <code>policy=</code> is optional and defaults to <code>immediate</code> if not specified. If a cross-variable condition references an unknown variable, resolution fails with an error.</p>
-</div>
-<div class="paragraph">
-<p>The wildcard <code>*</code> matches any non-empty value. It will not fire if the variable is unset or set to an empty string.</p>
+<p><code>&lt;expr&gt;</code> is a conditional expression as described in <a href="#conditional-expressions">Conditional Expressions</a>. Unconditional rules always fire. The first token after the action must be <code>TARGET=VALUE</code>. <code>policy=</code> is optional and defaults to <code>immediate</code> if not specified.</p>
 </div>
 <div class="paragraph">
 <p>Lint will fail on:</p>
 </div>
 <div class="ulist">
 <ul>
+<li>
+<p>Syntax errors or unsupported operators in condition expressions.</p>
+</li>
 <li>
 <p>Unknown actions.</p>
 </li>
@@ -659,7 +695,7 @@ mmdebstrap:
 <div class="ulist">
 <ul>
 <li>
-<p><code>when=erofs set IGconf_fs_erofs_mkfs_args="-b 4096 -z zstd,3" policy=lazy</code></p>
+<p><code>when=IGconf_image_rootfs_type == ‘erofs’ set IGconf_fs_erofs_mkfs_args="-b 4096 -z zstd,3" policy=lazy</code></p>
 </li>
 </ul>
 </div>
@@ -713,7 +749,7 @@ mmdebstrap:
 <li>
 <p>Conditional:</p>
 <div class="paragraph">
-<p><code># X-Env-Var-rootfs_type-Triggers: when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force</code></p>
+<p><code># X-Env-Var-rootfs_type-Triggers: when=IGconf_image_rootfs_type == ‘btrfs’ set IG_HAS_BTRFS_PROGS=1 policy=force</code></p>
 </div>
 </li>
 <li>
@@ -727,15 +763,21 @@ mmdebstrap:
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code># X-Env-Var-rootfs_type-Triggers:
-#  when=btrfs set IG_HAS_BTRFS_PROGS=1 policy=force
-#  when=ext4 set IG_HAS_E2FS_PROGS=1 policy=force</code></pre>
+#  when=IGconf_image_rootfs_type == ‘btrfs’ set IG_HAS_BTRFS_PROGS=1 policy=force
+#  when=IGconf_image_rootfs_type == ‘ext4’ set IG_HAS_E2FS_PROGS=1 policy=force</code></pre>
 </div>
+</div>
+</li>
+<li>
+<p>Non-empty check (fires whenever the variable is set to any non-empty value):</p>
+<div class="paragraph">
+<p><code># X-Env-Var-compression-Triggers: when=IGconf_image_compression != ‘’ set IG_ENABLE_HOST_COMPRESSION=y policy=force</code></p>
 </div>
 </li>
 <li>
 <p>Quoted value with deferred variable expansion:</p>
 <div class="paragraph">
-<p><code># X-Env-Var-rootfs_type-Triggers: when=erofs set IGconf_fs_erofs_mkfs_args="-b ${IGconf_linux_page_size} -z zstd,3" policy=lazy</code></p>
+<p><code># X-Env-Var-rootfs_type-Triggers: when=IGconf_image_rootfs_type == ‘erofs’ set IGconf_fs_erofs_mkfs_args="-b ${IGconf_linux_page_size} -z zstd,3" policy=lazy</code></p>
 </div>
 </li>
 </ul>
@@ -753,7 +795,7 @@ mmdebstrap:
 <div class="ulist">
 <ul>
 <li>
-<p>Variable declarations in the same layer share that layer&#8217;s position.</p>
+<p>Variable declarations in the same layer share that layer’s position.</p>
 </li>
 <li>
 <p>If a trigger sets a variable, it adds a new definition for the target variable at the same layer position.</p>
@@ -790,7 +832,7 @@ mmdebstrap:
 # X-Env-Var-deploy_type: develop
 # X-Env-Var-deploy_type-Valid: develop,production
 # X-Env-Var-deploy_type-Set: y
-# X-Env-Var-deploy_type-Triggers: when=production set IGconf_image_pmap=crypt policy=force
+# X-Env-Var-deploy_type-Triggers: when=IGconf_image_deploy_type == ‘production’ set IGconf_image_pmap=crypt policy=force
 #
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Valid: clear,crypt
@@ -803,7 +845,7 @@ mmdebstrap:
 </div>
 </div>
 <div class="sect3">
-<h4 id="_example_cross_var_across_layers"><a class="anchor" href="#_example_cross_var_across_layers"></a><a class="link" href="#_example_cross_var_across_layers">Example (cross-var across layers)</a></h4>
+<h4 id="_example_cross_layer_condition"><a class="anchor" href="#_example_cross_layer_condition"></a><a class="link" href="#_example_cross_layer_condition">Example (cross-layer condition)</a></h4>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code># X-Env-VarPrefix: device
@@ -816,7 +858,7 @@ mmdebstrap:
 <div class="content">
 <pre class="highlight"><code># X-Env-VarPrefix: image
 # X-Env-Var-ptable_protect: n
-# X-Env-Var-ptable_protect-Triggers: when=IGconf_device_storage_type=emmc set IGconf_image_ptable_protect=y</code></pre>
+# X-Env-Var-ptable_protect-Triggers: when=IGconf_device_storage_type == ‘emmc’ set IGconf_image_ptable_protect=y</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -827,33 +869,38 @@ mmdebstrap:
 <div class="sect2">
 <h3 id="_variable_conflicts"><a class="anchor" href="#_variable_conflicts"></a><a class="link" href="#_variable_conflicts">Variable Conflicts</a></h3>
 <div class="paragraph">
-<p>Variable conflicts (<code>X-Env-Var-*-Conflicts</code>) allow a variable to declare that it cannot be set when other variables are also set, or when other variables do/do not have a particular value. Conflict resolution takes place on the final set of resolved <code>IGconf</code> prefixed variables. When declaring conflicts, any variable name can be specified (fully prefixed) that exists in the final set - not just variables declared in the same layer, ie cross-layer conflict resolution is supported. If a variable is set in a base layer and overridden in a consumer layer, conflicts are defined by the winning definition, ie conflicts from the earlier definition are not inherited.</p>
+<p>Variable conflicts (<code>X-Env-Var-*-Conflicts</code>) allow a variable to declare conditions under which a conflict should be reported. The conflict expression is evaluated against the final resolved set of <code>IGconf_*</code> variables. If it evaluates to <code>true</code>, the build is rejected with a conflict error. Cross-layer conflict detection is supported - the expression can reference any <code>IGconf_*</code> variable in the final set, regardless of which layer declared it. If a variable is overridden in a consumer layer, conflicts belong to the winning definition - earlier definitions do not carry their conflict expressions forward.</p>
 </div>
 <div class="paragraph">
-<p>Conflict expressions adhere to <code>&lt;precursor&gt; &lt;condition&gt;</code> syntax. The precursor is optional (<code>when=&lt;value&gt;</code>) and a single expression may only include one precursor. The condition can be unconditional (<code>name</code>) or conditional (<code>name=value</code> / <code>name!=value</code>). Multiple expressions can be specified, separated by commas, and may be wrapped across multiple lines. Each expression may include only one precursor.</p>
+<p>Each <code>X-Env-Var-*-Conflicts</code> entry is a conditional expression as described in <a href="#conditional-expressions">Conditional Expressions</a>. Multiple expressions can be specified one per line using the DEB822 continuation syntax (indent continuation lines with a single space). Each expression is evaluated independently - any one firing reports a conflict.</p>
+</div>
+<div class="paragraph">
+<p>Lint will fail on syntax errors or unsupported operators in conflict expressions.</p>
+</div>
+<div class="paragraph">
+<p>Identical expressions declared by more than one variable (eg. symmetric mutual-exclusion pairs) are deduplicated and reported only once.</p>
 </div>
 <div class="paragraph">
 <p>Examples:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code># Unconditional:
+<pre class="highlight"><code># Mutual exclusion - conflict if both user1pass and user1passhash are set:
 # X-Env-Var-user1pass:
-# X-Env-Var-user1pass-Conflicts: user1hashpass
+# X-Env-Var-user1pass-Conflicts: IGconf_device_user1pass != '' and IGconf_device_user1passhash != ''
 #
-# X-Env-Var-user1hashpass:
-# X-Env-Var-user1hashpass-Conflicts: user1pass
+# X-Env-Var-user1passhash:
+# X-Env-Var-user1passhash-Conflicts: IGconf_device_user1passhash != '' and IGconf_device_user1pass != ''
 
-# Conditional (no precursor):
-# X-Env-Var-storage_type: sd
-# X-Env-Var-storage_type-Valid: sd,emmc,nvme
-#
-# X-Env-Var-lockemmc: y
-# X-Env-Var-lockemmc-Valid: bool
-# X-Env-Var-lockemmc-Conflicts: storage_type!=emmc
+# Conditional - lite variant cannot be used with emmc storage:
+# X-Env-Var-variant: none
+# X-Env-Var-variant-Valid: none,lite
+# X-Env-Var-variant-Conflicts: IGconf_device_variant == 'lite' and IGconf_device_storage_type == 'emmc'
 
-# Conditional (with precursor):
-# X-Env-Var-lockemmc-Conflicts: when=y storage_type!=emmc</code></pre>
+# Multi-line - two independent conflict expressions for one variable:
+# X-Env-Var-ptable_protect: n
+# X-Env-Var-ptable_protect-Conflicts: IGconf_image_ptable_protect == 'y' and IGconf_device_storage_type != 'emmc'
+#  IGconf_image_ptable_protect == 'y' and IGconf_image_type == 'raw'</code></pre>
 </div>
 </div>
 </div>

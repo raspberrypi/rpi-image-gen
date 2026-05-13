@@ -59,6 +59,10 @@ Provides dependency graph operations (get build order, provider checks, reverse 
 
 Main orchestrator for the application. Loads the base env file produced by config_loader, asks LayerManager for the dependency order, runs pre-resolution schema validation, runs the policy resolver (VariableResolver) to apply env vars, then validates env values against the resolved winning variable definitions before writing env/order outputs.
 
+== site/conditions.py
+
+Expression parser and evaluator for build-time conditions. Used by both trigger rules and conflict expressions to validate syntax at layer-load time and evaluate conditions against the resolved variable set at build time. Expressions use standard Python comparison syntax. See https://docs.python.org/3/reference/expressions.html#comparisons
+
 == site/validators.py
 
 Contains the validation rule parser/implementations referenced by Metadata.

@@ -180,27 +180,27 @@ run_test "valid-conflicts-conditional-not-eq" \
 run_test "valid-conflicts-when" \
     "ig metadata --validate ${META}/valid-conflicts-when.yaml" \
     0 \
-    "when= conflicts should pass when condition does not match"
+    "Conflicts should pass when condition does not match"
 
 run_test "valid-conflicts-when-multiple" \
     "ig metadata --validate ${META}/valid-conflicts-when-multiple.yaml" \
     0 \
-    "when= conflicts should coexist with other conflicts"
+    "Conflicts should support multiple expressions per variable"
 
 run_test "valid-conflicts-when-whitespace" \
     "ig metadata --validate ${META}/valid-conflicts-when-whitespace.yaml" \
     0 \
-    "when= conflicts should tolerate extra whitespace"
+    "Conflict expressions should tolerate extra whitespace"
 
 run_test "valid-conflicts-when-igconf" \
     "ig metadata --validate ${META}/valid-conflicts-when-igconf.yaml" \
     0 \
-    "when= conflicts should accept IGconf_ targets"
+    "Conflict expressions should accept IGconf_ variable names"
 
 run_test "valid-conflicts-when-multiline" \
     "ig metadata --validate ${META}/valid-conflicts-when-multiline.yaml" \
     0 \
-    "when= conflicts should support multi-line specs"
+    "Conflicts should support multi-line expressions"
 
 run_test "valid-all-types-set" \
     "ig metadata --parse ${META}/valid-all-types.yaml" \
@@ -242,7 +242,7 @@ run_test "triggers-set-skip-env-override" \
 run_test "triggers-set-cross-var-when" \
     'cleanup_env; TMP_OUT=$(mktemp); IGconf_trigx_mode=fast ig metadata --parse ${META}/valid-triggers-cross-var-when.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_X=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
     0 \
-    "Trigger rules should support when=VAR=VALUE cross-variable conditions"
+    "Trigger rules should support when=VAR == 'VALUE' cross-variable conditions"
 
 run_test "triggers-fixpoint-cascade" \
     'cleanup_env; TMP_OUT=$(mktemp); IGconf_cascade_variant=lite ig metadata --parse ${META}/valid-triggers-fixpoint-cascade.yaml --write-out "$TMP_OUT" && grep "^IGconf_cascade_storage_type=\"sd\"$" "$TMP_OUT" && grep "^IGconf_cascade_ptable_protect=\"n\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
@@ -272,12 +272,12 @@ run_test "triggers-quoted-ext4-not-set" \
 run_test "triggers-wildcard-fires-when-set" \
     'cleanup_env; TMP_OUT=$(mktemp); IGconf_trigw_source=hello ig metadata --parse ${META}/valid-triggers-wildcard.yaml --write-out "$TMP_OUT" && grep "^IG_TRIG_WILDCARD_SAME=\"1\"$" "$TMP_OUT" && grep "^IG_TRIG_WILDCARD_CROSS=\"1\"$" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
     0 \
-    "Wildcard trigger (when=*) should fire when variable is set to a non-empty value"
+    "Trigger should fire when variable is set to a non-empty value"
 
 run_test "triggers-wildcard-silent-when-unset" \
     'cleanup_env; TMP_OUT=$(mktemp); ig metadata --parse ${META}/valid-triggers-wildcard.yaml --write-out "$TMP_OUT" && ! grep "^IG_TRIG_WILDCARD_SAME=" "$TMP_OUT" && ! grep "^IG_TRIG_WILDCARD_CROSS=" "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
     0 \
-    "Wildcard trigger (when=*) should not fire when variable is unset"
+    "Trigger should not fire when variable is unset"
 
 # ---------------------------------------------------------------------------
 print_header "INVALID METADATA TESTS"
@@ -331,32 +331,32 @@ run_test "invalid-conflicts-conditional-not-eq" \
 run_test "invalid-conflicts-when" \
     "ig metadata --validate ${META}/invalid-conflicts-when.yaml" \
     1 \
-    "when= conflicts should fail when condition matches"
+    "Conflicts should fail when condition matches"
 
 run_test "invalid-conflicts-when-missing-value" \
     "ig metadata --parse ${META}/invalid-conflicts-when-missing-value.yaml" \
     1 \
-    "when= conflicts should fail when value is missing"
+    "Incomplete conflict expression should fail to parse"
 
 run_test "invalid-conflicts-when-missing-conflict" \
     "ig metadata --parse ${META}/invalid-conflicts-when-missing-conflict.yaml" \
     1 \
-    "when= conflicts should fail when conflict is missing"
+    "Non-string constant in conflict expression should fail to parse"
 
 run_test "invalid-conflicts-when-multiline-missing-conflict" \
     "ig metadata --parse ${META}/invalid-conflicts-when-multiline-missing-conflict.yaml" \
     1 \
-    "when= conflicts should fail when split across lines"
+    "Invalid operator in multiline conflict expression should fail to parse"
 
 run_test "invalid-conflicts-malformed" \
     "ig metadata --parse ${META}/invalid-conflicts-malformed.yaml" \
     1 \
-    "Malformed conflict specifiers should fail to parse"
+    "Malformed conflict expression should fail to parse"
 
 run_test "invalid-conflicts-operator" \
     "ig metadata --parse ${META}/invalid-conflicts-operator.yaml" \
     1 \
-    "Unsupported conflict operators should fail to parse"
+    "Unsupported comparison operator in conflict expression should fail to parse"
 
 run_test "invalid-conflicts-skip" \
     "ig metadata --validate ${META}/invalid-conflicts-skip.yaml" \
@@ -552,7 +552,7 @@ EOF
 # X-Env-Var-variant: 8G
 # X-Env-Var-variant-Valid: 8G,16G,32G,lite
 # X-Env-Var-variant-Set: lazy
-# X-Env-Var-variant-Conflicts: when=lite storage_type=emmc
+# X-Env-Var-variant-Conflicts: IGconf_cflt_variant == 'lite' and IGconf_cflt_storage_type == 'emmc'
 # METAEND
 EOF
      make_pipeline_env "$TMP_ENV" "IGconf_cflt_variant=lite" "IGconf_cflt_storage_type=emmc" && \

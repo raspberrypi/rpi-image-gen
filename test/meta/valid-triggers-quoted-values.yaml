@@ -10,13 +10,13 @@
 # X-Env-Var-fstype-Valid: ext4,erofs
 # X-Env-Var-fstype-Set: y
 # X-Env-Var-fstype-Triggers:
-#  when=erofs set IG_TRIG_EROFS_ARGS="-b 4096 -z zstd,3" policy=force
-#  when=ext4 set IG_TRIG_EXT4_ARGS="-O has_journal,extent" policy=force
+#  when=IGconf_trigq_fstype == 'erofs' set IG_TRIG_EROFS_ARGS="-b 4096 -z zstd,3" policy=force
+#  when=IGconf_trigq_fstype == 'ext4' set IG_TRIG_EXT4_ARGS="-O has_journal,extent" policy=force
 #
 # X-Env-Var-mode: active
 # X-Env-Var-mode-Desc: Single-quoted trigger value
 # X-Env-Var-mode-Set: y
-# X-Env-Var-mode-Triggers: when=active set IG_TRIG_SINGLE='-v --force' policy=force
+# X-Env-Var-mode-Triggers: when=IGconf_trigq_mode == 'active' set IG_TRIG_SINGLE='-v --force' policy=force
 # METAEND
 
 triggers_quoted:

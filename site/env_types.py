@@ -264,6 +264,31 @@ def _parse_set_action(args: List[str], var_name: str, line: str) -> Tuple[str, s
 ACTION_PARSERS["set"] = _parse_set_action
 
 
+def _split_condition_and_action(line: str, var_name: str) -> Tuple[str, str]:
+    """
+    Split a conditional trigger line 'when=<expr> ACTION ...' into
+    (condition_expr, 'ACTION ...').
+
+    Searches from the right so that an action keyword appearing inside a
+    list literal in the condition (e.g. IGconf_x in ['a set b']) is
+    skipped — the real action keyword is always the rightmost one.
+    """
+    after_when = line[len("when="):]
+    for kw in ACTION_PARSERS:
+        marker = f' {kw} '
+        if marker in after_when:
+            idx = after_when.rindex(marker)
+            condition = after_when[:idx].strip()
+            if not condition:
+                raise ValueError(
+                    f"Trigger rule '{line}' for '{var_name}' has empty condition after when="
+                )
+            return condition, after_when[idx + 1:].strip()
+    raise ValueError(
+        f"Trigger rule '{line}' for '{var_name}' is missing a recognised action keyword"
+    )
+
+
 @dataclass(frozen=True)
 class TriggerRule:
     """Represents a conditional trigger to perform an action."""
@@ -359,65 +384,16 @@ class EnvVariable:
         conflicts_raw = _get_metadata_value(conflicts_key, "")
         conflicts: List[str] = []
         if conflicts_raw and isinstance(conflicts_raw, str):
-            # Parse conflict expressions - only support "=" or "!=" as conditional operators
-            conflicts_raw_list: List[str] = []
+            import conditions as _cond
             for line in str(conflicts_raw).splitlines():
-                conflicts_raw_list.extend([c.strip() for c in line.split(",") if c.strip()])
-            for c in conflicts_raw_list:
-                precursor_value = None
-                if c.startswith("when="):
-                    parts = c.split(None, 1)
-                    if len(parts) < 2:
-                        raise ValueError(f"Invalid conflict expr '{c}' (missing condition after precursor)")
-                    precursor_value = parts[0][len("when="):].strip()
-                    if not precursor_value:
-                        raise ValueError(f"Invalid conflict expr '{c}' (missing precursor value)")
-                    c = parts[1].strip()
-                    if not c:
-                        raise ValueError(f"Invalid conflict expr '{c}' (invalid condition after precursor)")
-
-                operator = None
-                name_part = ""
-                value_part = ""
-                if "!=" in c:
-                    operator = "!="
-                    name_part, value_part = c.split("!=", 1)
-                elif "=" in c:
-                    operator = "="
-                    name_part, value_part = c.split("=", 1)
-                # Add other operators as needed
-
-                if operator:
-                    # Conditional conflict: "var=value" or "var!=value"
-                    name_part = name_part.strip()
-                    value_part = value_part.strip()
-                    if "=" in value_part or "!" in value_part:
-                        raise ValueError(f"Invalid conflict expr '{c}' (unsupported operator)")
-                    if not name_part or not value_part:
-                        raise ValueError(f"Invalid conflict expr '{c}' (missing name or value)")
-                    if name_part.startswith("IGconf_"):
-                        conflict_name = name_part
-                    else:
-                        conflict_name = f"IGconf_{prefix}_{name_part.lower()}" if prefix else name_part
-                    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", conflict_name):
-                        raise ValueError(f"Invalid conflict expr '{c}' (invalid variable name)")
-                    conflict_spec = f"{conflict_name}{operator}{value_part}"
-                else:
-                    # Unconditional conflict: just a variable name
-                    if "!" in c or "=" in c:
-                        raise ValueError(f"Invalid conflict expr '{c}' (unsupported operator)")
-                    if c.startswith("IGconf_"):
-                        conflict_spec = c
-                    else:
-                        conflict_name = f"IGconf_{prefix}_{c.lower()}" if prefix else c
-                        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", conflict_name):
-                            raise ValueError(f"Invalid conflict expr '{c}' (invalid variable name)")
-                        conflict_spec = conflict_name
-
-                if precursor_value is not None:
-                    conflicts.append(f"when={precursor_value} {conflict_spec}")
-                else:
-                    conflicts.append(conflict_spec)
+                expr = line.strip()
+                if not expr:
+                    continue
+                try:
+                    _cond.validate(expr)
+                except ValueError as e:
+                    raise ValueError(f"Invalid conflict expression for variable '{var_name}': {e}") from e
+                conflicts.append(expr)
 
         return cls(
             name=full_name,
@@ -455,29 +431,34 @@ class EnvVariable:
         """
         Parse trigger rules.
         Syntax (one rule per line):
-          - "when=VALUE set TARGET=VAL [policy=...]"  # conditional
-          - "set TARGET=VAL [policy=...]"             # unconditional
+          - "when=<python-expr> set TARGET=VAL [policy=...]"  # conditional
+          - "set TARGET=VAL [policy=...]"                     # unconditional
+
+        The when= expression is a standard Python comparison expression.
+        See: https://docs.python.org/3/reference/expressions.html#comparisons
+        Variable names must be fully qualified (e.g. IGconf_device_class).
+        Comparison values must be quoted strings.
         """
+        import conditions as _cond
+
         rules: List[TriggerRule] = []
         lines = [line.strip() for line in str(raw).splitlines() if line.strip()]
 
         for line in lines:
-            tokens = shlex.split(line)
+            condition: Optional[str] = None
+
+            if line.startswith("when="):
+                condition, action_line = _split_condition_and_action(line, var_name)
+                _cond.validate(condition)
+            else:
+                action_line = line
+
+            tokens = shlex.split(action_line)
             if not tokens:
                 continue
 
-            condition: Optional[str] = None
-            if tokens[0].startswith("when="):
-                condition = tokens[0][len("when="):].strip()
-                if not condition:
-                    raise ValueError(f"Trigger rule '{line}' for {var_name} is missing value in when=")
-                if len(tokens) < 2:
-                    raise ValueError(f"Trigger rule '{line}' for {var_name} is missing an action keyword")
-                action = tokens[1]
-                action_args = tokens[2:]
-            else:
-                action = tokens[0]
-                action_args = tokens[1:]
+            action = tokens[0]
+            action_args = tokens[1:]
 
             parser = ACTION_PARSERS.get(action)
             if not parser:
@@ -1016,17 +997,11 @@ class VariableResolver:
 
     def _collect_trigger_definitions(self, resolved: Dict[str, EnvVariable]) -> Dict[str, List[EnvVariable]]:
         """Build trigger-sourced definitions based on resolved values."""
-        import os
-
         trigger_defs: Dict[str, List[EnvVariable]] = {}
         for env_var in resolved.values():
-            # Trigger conditions evaluate against the effective runtime value.
-            effective_value = os.environ.get(env_var.name, env_var.value)
             for rule in getattr(env_var, "triggers", []) or []:
                 if rule.condition is not None and not self._trigger_condition_matches(
                     rule.condition,
-                    env_var.name,
-                    str(effective_value),
                     resolved,
                     env_var.source_layer,
                 ):
@@ -1062,61 +1037,35 @@ class VariableResolver:
     def _trigger_condition_matches(
         self,
         condition: str,
-        source_var_name: str,
-        source_effective_value: str,
         resolved: Dict[str, EnvVariable],
         source_layer: Optional[str] = None,
     ) -> bool:
         """
-        Evaluate trigger condition.
+        Evaluate a trigger condition expression against resolved variables.
 
-        Supported forms:
-        - same-variable value condition: "btrfs"
-        - same-variable wildcard: "*" (matches any non-empty value)
-        - cross-variable equality: "IGconf_device_storage_type=emmc"
-        - cross-variable inequality: "IGconf_device_storage_type!=emmc"
-        - cross-variable wildcard: "IGconf_device_storage_type=*" (matches any non-empty value)
+        Delegates to conditions.evaluate(). Builds the variable lookup dict
+        from resolved variables with os.environ overrides applied, so that
+        env-level overrides (e.g. IGconf_device_class=pi5 on the command line)
+        are honoured when evaluating trigger conditions.
+
+        See conditions.py for expression syntax.
         """
         import os
+        import conditions as _cond
 
-        def _is_set(v: str) -> bool:
-            """Return True if the value is meaningfully set (non-empty, non-None)."""
-            return v not in ("", "None")
+        variables = {
+            name: str(os.environ.get(name, var.value) or "")
+            for name, var in resolved.items()
+        }
+        for k, v in os.environ.items():
+            if k not in variables:
+                variables[k] = v
 
-        if "!=" in condition:
-            lhs, rhs = condition.split("!=", 1)
-            op = "!="
-        elif "=" in condition:
-            lhs, rhs = condition.split("=", 1)
-            op = "="
-        else:
-            if condition == "*":
-                return _is_set(source_effective_value)
-            return source_effective_value == condition
-
-        lhs = lhs.strip()
-        rhs = rhs.strip()
-        if not lhs:
-            return False
-
-        if lhs == source_var_name:
-            lhs_value = source_effective_value
-        elif lhs in os.environ:
-            lhs_value = str(os.environ.get(lhs, ""))
-        elif lhs in resolved:
-            raw = resolved[lhs].value
-            lhs_value = "" if raw is None else str(raw)
-        else:
-            layer_note = f" (layer: {source_layer})" if source_layer else ""
-            raise ValueError(
-                f"Unknown variable '{lhs}' referenced in trigger condition '{condition}'{layer_note}"
-            )
-
-        if op == "=":
-            if rhs == "*":
-                return _is_set(lhs_value)
-            return lhs_value == rhs
-        return lhs_value != rhs
+        layer_note = f" (layer: {source_layer})" if source_layer else ""
+        try:
+            return _cond.evaluate(condition, variables)
+        except ValueError as e:
+            raise ValueError(f"{e}{layer_note}") from e
 
     def _resolve_single_variable(self, var_name: str, definitions: List[EnvVariable]) -> Optional[EnvVariable]:
         """Resolve a single variable using policy rules."""

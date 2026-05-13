@@ -11,6 +11,6 @@
 # X-Env-Var-source-Required: n
 # X-Env-Var-source-Set: n
 # X-Env-Var-source-Triggers:
-#  when=* set IG_TRIG_WILDCARD_SAME=1 policy=force
-#  when=IGconf_trigw_source=* set IG_TRIG_WILDCARD_CROSS=1 policy=force
+#  when=IGconf_trigw_source != '' set IG_TRIG_WILDCARD_SAME=1 policy=force
+#  when=IGconf_trigw_source != '' set IG_TRIG_WILDCARD_CROSS=1 policy=force
 # METAEND
