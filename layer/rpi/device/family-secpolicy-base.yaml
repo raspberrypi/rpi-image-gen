@@ -2,8 +2,8 @@
 # X-Env-Layer-Name: rpi-device-secpolicy
 # X-Env-Layer-Category: security
 # X-Env-Layer-Desc: Raspberry Pi device family security policy baseline
-# X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-RequiresProvider: rpi-device,image,systemd-sysv
+# X-Env-Layer-Version: 1.0.1
+# X-Env-Layer-RequiresProvider: rpi-device,image,systemd
 #
 # X-Env-VarPrefix: rpisec
 #

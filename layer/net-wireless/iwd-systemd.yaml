@@ -2,9 +2,9 @@
 # X-Env-Layer-Name: iwd
 # X-Env-Layer-Category: connectivity
 # X-Env-Layer-Desc: iNet wireless daemon for wifi management
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.0.1
 # X-Env-Layer-Provides: wifi-supplicant
-# X-Env-Layer-RequiresProvider: wireless-regdb,systemd-sysv
+# X-Env-Layer-RequiresProvider: wireless-regdb,systemd,network-activator
 #
 # X-Env-VarPrefix: iwd
 #
