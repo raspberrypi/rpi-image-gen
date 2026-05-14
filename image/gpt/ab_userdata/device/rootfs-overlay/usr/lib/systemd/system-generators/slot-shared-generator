@@ -1,0 +1,57 @@
+#!/bin/sh
+# systemd generator to bind-mount shared persistent paths declared by layers
+
+set -eu
+
+OUT_DIR="/run/systemd/generator"
+mkdir -p "$OUT_DIR"
+
+CONF_DIR=/etc/rpi-image-gen/slot-shared.d
+[ -d "$CONF_DIR" ] || exit 0
+
+for conf in "${CONF_DIR}"/*.conf; do
+    [ -f "$conf" ] || continue
+
+    # Single-pass key=value parse; accumulate Path= values space-separated
+    version=""
+    paths=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in ''|\#*) continue ;; esac
+        key="${line%%=*}"
+        value="${line#*=}"
+        case "$key" in
+            Version) version="$value" ;;
+            Path)    paths="$paths /${value#/}" ;;
+        esac
+    done < "$conf"
+
+    if [ "$version" != "1" ]; then
+        printf 'slot-shared-generator: %s: unsupported version "%s", skipping\n' \
+            "$conf" "${version:-missing}" >&2
+        continue
+    fi
+
+    for path in $paths; do
+        unit_name="$(systemd-escape --path "$path").mount"
+        shared_path="/persistent/shared${path}"
+        cat >"${OUT_DIR}/${unit_name}" <<EOF
+[Unit]
+Description=Shared persistent data for ${path}
+Requires=persistent.mount
+After=persistent.mount var.mount
+Wants=persistent-shared-init.service
+After=persistent-shared-init.service
+ConditionPathIsDirectory=${shared_path}
+Before=local-fs.target
+
+[Mount]
+What=${shared_path}
+Where=${path}
+Type=none
+Options=bind
+
+[Install]
+WantedBy=local-fs.target
+EOF
+    done
+done

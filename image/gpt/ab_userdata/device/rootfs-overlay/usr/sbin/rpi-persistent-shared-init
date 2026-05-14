@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Create shared directories under /persistent/shared for paths declared
+# by layers in /etc/rpi-image-gen/slot-shared.d/*.conf.
+
+set -eu
+
+CONF_DIR=/etc/rpi-image-gen/slot-shared.d
+SHARED_BASE=/persistent/shared
+
+[ -d "$CONF_DIR" ] || exit 0
+
+for conf in "${CONF_DIR}"/*.conf; do
+   [ -f "$conf" ] || continue
+
+   version=""
+   paths=""
+   while IFS= read -r line || [ -n "$line" ]; do
+       case "$line" in ''|\#*) continue ;; esac
+       key="${line%%=*}"
+       value="${line#*=}"
+       case "$key" in
+           Version) version="$value" ;;
+           Path)    paths="$paths /${value#/}" ;;
+       esac
+   done < "$conf"
+
+   if [ "$version" != "1" ]; then
+       printf 'persistent-shared-init: %s: unsupported version "%s", skipping\n' \
+           "$conf" "${version:-missing}" >&2
+       continue
+   fi
+
+   for path in $paths; do
+      printf 'persistent-shared-init: %s\n' "$path"
+      mkdir -p "${SHARED_BASE}${path}"
+      # Write files that differ or are missing into shared
+      [ -d "${path}" ] && rsync -av --checksum "${path}/" "${SHARED_BASE}${path}/"
+   done
+done
