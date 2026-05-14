@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: wireless-debug
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-Desc: Wireless diagnostic tools
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: wireless-regdb
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - iw
+    - wavemon

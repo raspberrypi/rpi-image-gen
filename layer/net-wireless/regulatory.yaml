@@ -1,0 +1,11 @@
+# METABEGIN
+# X-Env-Layer-Name: wireless-regulatory
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-Desc: Wireless regulatory database
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Provides: wireless-regdb
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - wireless-regdb

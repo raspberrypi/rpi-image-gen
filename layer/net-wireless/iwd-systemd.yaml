@@ -1,0 +1,33 @@
+# METABEGIN
+# X-Env-Layer-Name: iwd
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-Desc: iNet wireless daemon for wifi management
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Provides: wifi-supplicant
+# X-Env-Layer-RequiresProvider: wireless-regdb,systemd-sysv
+#
+# X-Env-VarPrefix: iwd
+#
+# X-Env-Var-profile:
+# X-Env-Var-profile-Desc: Path to an iwd network profile file to bake
+#  into the build. The file is installed into /var/lib/iwd/ preserving its
+#  filename. See iwd.network(5)
+# X-Env-Var-profile-Required: n
+# X-Env-Var-profile-Valid: string-or-empty
+# X-Env-Var-profile-Set: y
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - iwd
+  customize-hooks:
+    - $BDEBSTRAP_HOOKS/enable-units "$1" iwd
+    - install -d -m 0700 "$1/var/lib/iwd"
+    - install -d -m 0755 "$1/etc/iwd"
+    - |-
+      set -eu
+      if [ -n "${IGconf_iwd_profile:-}" ]; then
+        install -m 0600 "${IGconf_iwd_profile}" \
+          "$1/var/lib/iwd/$(basename "${IGconf_iwd_profile}")"
+      fi
