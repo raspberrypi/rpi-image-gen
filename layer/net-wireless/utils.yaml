@@ -1,0 +1,10 @@
+# METABEGIN
+# X-Env-Layer-Name: wireless-utils
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-Desc: Production wireless utilities
+# X-Env-Layer-Version: 1.0.0
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - rfkill

@@ -1,0 +1,15 @@
+[Unit]
+Description=Initialise persistent shared directories
+# TODO: if/when a top level persistent-ready.target is introduced, replace the
+# direct persistent.mount dependency below (and in machine-id-sync.service) with
+# After=persistent-ready.target, and add health-check service before it.
+DefaultDependencies=no
+Requires=persistent.mount
+After=persistent.mount
+Before=local-fs.target
+Before=var.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/rpi-persistent-shared-init

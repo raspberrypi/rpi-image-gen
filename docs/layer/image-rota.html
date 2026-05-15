@@ -123,7 +123,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v5.4.0</span>
+        <span class="badge">v5.5.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -193,6 +193,12 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/log/journal</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Single log directory used by both slots</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;slot-shared paths&gt;</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/shared/&lt;path&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application data shared across slots (layer-declared, see <a href="#slot-shared">Slot-shared application data</a>)</p></td>
 </tr>
 </tbody>
 </table>
@@ -286,6 +292,78 @@
 </td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="slot-shared">Slot-shared application data</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works">How it works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>slot-shared-generator</code> runs at early boot, reads every <code>/etc/rpi-image-gen/slot-shared.d/*.conf</code> file and emits a <code>.mount</code> systemd unit for each declared path, mounting <code>/persistent/shared/&lt;path&gt;</code> over <code>&lt;path&gt;</code> as a bind mount.</p>
+</li>
+<li>
+<p><code>persistent-shared-init.service</code> runs before the bind mounts activate. It creates any missing <code>/persistent/shared/&lt;path&gt;</code> directories on the persistent partition, handling first boot and disaster-recovery scenarios where the partition has been re-initialised.</p>
+</li>
+<li>
+<p>Bind mounts are guarded by <code>ConditionPathIsDirectory</code> on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_declaring_a_shared_path">Declaring a shared path</h3>
+<div class="paragraph">
+<p>Drop a <code>.conf</code> file into <code>/etc/rpi-image-gen/slot-shared.d/</code>, eg via the layer&#8217;s rootfs overlay or script:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>Version=1
+Path=/var/lib/myapp
+Path=/etc/myapp/state</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>Version=1</code></dt>
+<dd>
+<p>Required. A generator that does not recognise the version skips the file with a warning rather than misprocessing it.</p>
+</dd>
+<dt class="hdlist1"><code>Path=</code></dt>
+<dd>
+<p>One or more absolute paths to share. Multiple <code>Path=</code> entries are supported in a single file. A missing leading <code>/</code> is corrected automatically. Only directory paths are supported.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Unknown keys are silently ignored, providing forward compatibility within version 1.
+A version increment signals a breaking change.
+The files are inert in non-AB configurations.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_persistent_partition_layout">Persistent partition layout</h3>
+<div class="paragraph">
+<p>Shared data is stored under <code>/persistent/shared/</code>, mirroring the full path hierarchy:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>/persistent/
+└── shared/
+    └── var/
+        └── lib/
+            └── myapp/    &lt;-- bind-mounted over /var/lib/myapp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by <code>rpi-persistent-shared-init</code>, before the bind mounts activate. Files are only pushed if missing from or different to the destination. This means an OTA update can deliver new or updated shared application data simply by including it in the rootfs - no separate data partition update is required.</p>
+</div>
 </div>
 </div>
 </div>
@@ -508,6 +586,7 @@
             <li><code>dosfstools</code></li>
             <li><code>e2fsprogs</code></li>
             <li><code>initramfs-tools</code></li>
+            <li><code>rsync</code></li>
         </ul>
     </div>
 

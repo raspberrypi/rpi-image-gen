@@ -11,6 +11,7 @@
 #  rpi-user-credentials,
 #  systemd-net-min,
 #  fake-hwclock,
-#  openssh-server
+#  openssh-server,
+#  systemd-timesyncd
 # METAEND
 ---
