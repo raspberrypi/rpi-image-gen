@@ -5,10 +5,12 @@
 #  dpkg to trim files so we boot a v8 kernel on pi5 / cm5 only. Declares the
 #  asset dir so that overlays and hooks will be found.
 # X-Env-Layer-Version: 2.0.0
-# X-Env-Layer-Requires: rpi-device-base
-# X-Env-Layer-Provides: rpi-device
+# X-Env-Layer-Requires: device-base
+# X-Env-Layer-Provides: device,rpi-device
 #
 # X-Env-VarPrefix: device
+#
+# X-Env-Var-class: pi5
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Directory for device assets
@@ -42,3 +44,5 @@ mmdebstrap:
     - ln -sf firmware/overlays $1/boot/overlays
     - install -m 644 ${IGconf_device_assetdir}/cmdline.txt $1/boot/firmware/
     - install -m 644 ${IGconf_device_assetdir}/config.txt $1/boot/firmware/
+    - mkdir -p $1/etc/systemd/network
+    - $LAYER_HOOKS/systemd/netgen '*' > $1/etc/systemd/network/99-default.network
