@@ -1,7 +1,7 @@
 # METABEGIN
 # X-Env-Layer-Name: systemd-net-min
 # X-Env-Layer-Desc: Systemd networking via networkd and resolved services
-# X-Env-Layer-Version: 2.1.0
+# X-Env-Layer-Version: 3.0.0
 # X-Env-Layer-Provides: network-activator
 # X-Env-Layer-Requires: systemd-min
 # METAEND
@@ -15,5 +15,4 @@ mmdebstrap:
     - mkdir -p $1/etc/systemd/network
     - ln -sf /dev/null $1/etc/systemd/network/99-default.link
     - ln -sf /dev/null $1/etc/systemd/network/73-usb-net-by-mac.link
-    - $LAYER_HOOKS/systemd/netgen eth0 > $1/etc/systemd/network/01-eth0.network
     - '[ -e "$1/run/systemd/resolve/stub-resolv.conf" ] || install -Dm644 /etc/resolv.conf "$1/run/systemd/resolve/stub-resolv.conf"'
