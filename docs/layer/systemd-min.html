@@ -123,9 +123,9 @@
     <div class="header">
         <h1>systemd-min</h1>
         <span class="badge">general</span>
-        <span class="badge">v1.1.1</span>
-        <p>Core systemd components for init, SysV compatibility
- and timesyncd, without networkd and resolved services.</p>
+        <span class="badge">v2.0.0</span>
+        <p>Core systemd components for init and SysV compatibility,
+ without additional services</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
@@ -140,8 +140,12 @@
             
             <a href="systemd-net-min.html" class="dep-badge">systemd-net-min</a>
             
+            <a href="systemd-resolved.html" class="dep-badge">systemd-resolved</a>
+            
+            <a href="systemd-timesyncd.html" class="dep-badge">systemd-timesyncd</a>
+            
         </div>
-        <p><strong>Provides:</strong> systemd-sysv</p>
+        <p><strong>Provides:</strong> systemd</p>
     </div>
     <div class="section">
         <h2>mmdebstrap</h2>
@@ -151,7 +155,6 @@
         <ul>
             <li><code>systemd</code></li>
             <li><code>systemd-sysv</code></li>
-            <li><code>systemd-timesyncd</code></li>
         </ul>
     </div>
 
