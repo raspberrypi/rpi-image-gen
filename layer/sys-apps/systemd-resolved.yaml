@@ -1,0 +1,13 @@
+# METABEGIN
+# X-Env-Layer-Name: systemd-resolved
+# X-Env-Layer-Desc: systemd's built-in DNS client
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: systemd-min
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - systemd-resolved
+  customize-hooks:
+    - $BDEBSTRAP_HOOKS/enable-units "$1" systemd-resolved
+    - '[ -e "$1/run/systemd/resolve/stub-resolv.conf" ] || install -Dm644 /etc/resolv.conf "$1/run/systemd/resolve/stub-resolv.conf"'
