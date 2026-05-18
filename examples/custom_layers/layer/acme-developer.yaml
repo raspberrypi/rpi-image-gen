@@ -11,6 +11,7 @@
 #  rpi-misc-skel,
 #  rpi-user-credentials,
 #  systemd-net-min,
+#  systemd-timesyncd,
 #  fake-hwclock,
 #  example-sdk-setup
 # METAEND

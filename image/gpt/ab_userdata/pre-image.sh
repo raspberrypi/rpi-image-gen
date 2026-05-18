@@ -68,7 +68,7 @@ install -d -m 1777 ${fs}/persistent/slots/system_a/var/tmp
 install -d -m 1777 ${fs}/persistent/slots/system_b/var/tmp
 
 
-# machine-id(5)
+# machine-id(5) needed by sysinit.target
 wants_dir="${fs}/etc/systemd/system/sysinit.target.wants"
 units=(
   "machine-id-sync.service"
@@ -85,6 +85,19 @@ rm -f "${fs}/etc/machine-id"
 rm -f "${fs}/var/lib/dbus/machine-id"
 install -m0644 -o root -g root /dev/null "${fs}/etc/machine-id"
 ln -s /etc/machine-id "${fs}/var/lib/dbus/machine-id"
+
+
+# persistent-shared-init needed by local-fs.target
+wants_dir="${fs}/etc/systemd/system/local-fs.target.wants"
+units=(
+  "persistent-shared-init.service"
+)
+install -d -m 0755 "${wants_dir}"
+for unit in "${units[@]}"; do
+  [ -f "${fs}/etc/systemd/system/${unit}" ] || die "missing ${unit}"
+  chmod 0644 "${fs}/etc/systemd/system/${unit}"
+  ln -sf "../${unit}" "${wants_dir}/${unit}"
+done
 
 
 # /var is per-slot, so synchronise
@@ -131,6 +144,7 @@ rsync -aHAXS --numeric-ids --delete "${fs}/home/" "${fs}/persistent/home/"
 # Reclaim /home
 find "${fs}/home" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 
+
 # Reclaim /var but ensure skeleton exists for services that need PrivateTmp
 # otherwise namespace setup will fail on the immutable root.
 find "${fs}/var" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
@@ -138,6 +152,41 @@ install -d -m 1777 ${fs}/var/tmp
 install -d -m 0755 ${fs}/var/log
 install -d -m 0755 ${fs}/var/cache
 install -d -m 0755 ${fs}/var/spool
+
+
+# For each slot-shared path: seed /persistent/shared and retain a copy in the
+# immutable root. Both use the slot-a copy (rsynced above) as the source.
+# Retaining in the immutable root lets persistent-shared-init push OTA-delivered
+# files into the shared location on each boot, before bind mounts activate.
+if ls "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf >/dev/null 2>&1; then
+   for conf in "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf; do
+      [ -f "$conf" ] || continue
+      version=""
+      paths=""
+      while IFS= read -r line || [ -n "$line" ]; do
+         case "$line" in ''|\#*) continue ;; esac
+           key="${line%%=*}"
+           value="${line#*=}"
+           case "$key" in
+               Version) version="$value" ;;
+               Path)    paths="$paths /${value#/}" ;;
+           esac
+      done < "$conf"
+
+      if [ "$version" != "1" ]; then
+         die "pre-image: $conf: unsupported slot-shared version '${version:-missing}'"
+      fi
+
+      for path in $paths; do
+         src="${fs}/persistent/slots/system_a${path}"
+         [ -d "$src" ] || continue
+         mkdir -p "${fs}/persistent/shared${path}"
+         rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}/persistent/shared${path}/"
+         mkdir -p "${fs}${path}"
+         rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${path}/"
+      done
+   done
+fi
 
 
 # Older systemd (eg 252/Bookworm) sets up per‑service mount namespaces by

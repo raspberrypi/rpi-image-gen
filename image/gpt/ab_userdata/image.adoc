@@ -15,6 +15,7 @@ This system uses an A/B, read‑only root with all writable state on a single pe
 | /home | /persistent/home | bind | User data shared across slots
 | /var | /persistent/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
 | /var/log/journal | /persistent/log/journal | bind | Single log directory used by both slots
+| _<slot-shared paths>_ | /persistent/shared/<path> | bind | Application data shared across slots (layer-declared, see <<slot-shared>>)
 |===
 
 * **Rationale (immutable root + A/B)**
@@ -47,6 +48,51 @@ If slot GPT labels are missing/duplicated, `/var` binding will fail.
 
 If slot GPT labels can’t be guaranteed, this layout is not suitable for your device.
 ====
+
+
+[[slot-shared]]
+== Slot-shared application data
+
+Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.
+
+=== How it works
+
+. `slot-shared-generator` runs at early boot, reads every `/etc/rpi-image-gen/slot-shared.d/*.conf` file and emits a `.mount` systemd unit for each declared path, mounting `/persistent/shared/<path>` over `<path>` as a bind mount.
+. `persistent-shared-init.service` runs before the bind mounts activate. It creates any missing `/persistent/shared/<path>` directories on the persistent partition, handling first boot and disaster-recovery scenarios where the partition has been re-initialised.
+. Bind mounts are guarded by `ConditionPathIsDirectory` on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.
+
+=== Declaring a shared path
+
+Drop a `.conf` file into `/etc/rpi-image-gen/slot-shared.d/`, eg via the layer's rootfs overlay or script:
+
+[source]
+----
+Version=1
+Path=/var/lib/myapp
+Path=/etc/myapp/state
+----
+
+`Version=1`:: Required. A generator that does not recognise the version skips the file with a warning rather than misprocessing it.
+`Path=`:: One or more absolute paths to share. Multiple `Path=` entries are supported in a single file. A missing leading `/` is corrected automatically. Only directory paths are supported.
+
+Unknown keys are silently ignored, providing forward compatibility within version 1.
+A version increment signals a breaking change.
+The files are inert in non-AB configurations.
+
+=== Persistent partition layout
+
+Shared data is stored under `/persistent/shared/`, mirroring the full path hierarchy:
+
+[source]
+----
+/persistent/
+└── shared/
+    └── var/
+        └── lib/
+            └── myapp/    <-- bind-mounted over /var/lib/myapp
+----
+
+Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from or different to the destination. This means an OTA update can deliver new or updated shared application data simply by including it in the rootfs - no separate data partition update is required.
 
 
 == Slot Selection (run-time)

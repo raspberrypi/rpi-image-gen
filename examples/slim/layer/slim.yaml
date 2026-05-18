@@ -6,5 +6,6 @@
 # X-Env-Layer-Requires: debian-trixie-arm64-slim,
 #  rpi-debian-trixie,
 #  rpi-misc-skel,
-#  systemd-net-min
+#  systemd-net-min,
+#  systemd-timesyncd
 # METAEND

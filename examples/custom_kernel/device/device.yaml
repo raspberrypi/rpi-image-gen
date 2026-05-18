@@ -3,8 +3,8 @@
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Custom Raspberry Pi 5 specific device layer
 # X-Env-Layer-Version: 2.0.0
-# X-Env-Layer-Requires: rpi-device-base
-# X-Env-Layer-Provides: rpi-device
+# X-Env-Layer-Requires: device-base
+# X-Env-Layer-Provides: device,rpi-device
 #
 # X-Env-VarPrefix: device
 #
@@ -27,3 +27,7 @@
 # X-Env-Var-assetdir-Set: y
 # METAEND
 ---
+mmdebstrap:
+  customize-hooks:
+    - mkdir -p $1/etc/systemd/network
+    - $LAYER_HOOKS/systemd/netgen '*' > $1/etc/systemd/network/99-default.network

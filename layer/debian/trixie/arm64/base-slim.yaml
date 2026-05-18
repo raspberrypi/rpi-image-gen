@@ -38,6 +38,7 @@ mmdebstrap:
     - e2fsprogs
     - linux-sysctl-defaults
     - debian-archive-keyring
+    - coreutils
   setup-hooks:
     - mkdir -p $1/usr/bin
     - ln -s bash $1/usr/bin/sh

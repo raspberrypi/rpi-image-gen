@@ -23,7 +23,7 @@
 # X-Env-Var-compression-Required: n
 # X-Env-Var-compression-Valid: string
 # X-Env-Var-compression-Set: n
-# X-Env-Var-compression-Triggers: when=zstd set IG_ENABLE_HOST_ZSTD=y policy=force
+# X-Env-Var-compression-Triggers: when=IGconf_image_compression == 'zstd' set IG_ENABLE_HOST_ZSTD=y policy=force
 #
 # X-Env-Var-version: ${IGconf_artefact_version}
 # X-Env-Var-version-Desc: Version string of generated images. This always maps
@@ -71,7 +71,7 @@
 # X-Env-Var-provider-Required: n
 # X-Env-Var-provider-Valid: keywords:genimage
 # X-Env-Var-provider-Set: lazy
-# X-Env-Var-provider-Triggers: when=genimage set IG_ENABLE_HOST_GENIMAGE=y policy=force
+# X-Env-Var-provider-Triggers: when=IGconf_image_provider == 'genimage' set IG_ENABLE_HOST_GENIMAGE=y policy=force
 #
 # X-Env-Var-assetdir: /dev/null
 # X-Env-Var-assetdir-Desc: Image specific asset location. Use this directory
@@ -88,7 +88,7 @@
 # X-Env-Var-rootfs_type-Valid: string
 # X-Env-Var-rootfs_type-Set: n
 # X-Env-Var-rootfs_type-Triggers:
-#  when=erofs set IG_ENABLE_HOST_EROFS_UTILS=y policy=force
+#  when=IGconf_image_rootfs_type == 'erofs' set IG_ENABLE_HOST_EROFS_UTILS=y policy=force
 #
 # METAEND
 ---

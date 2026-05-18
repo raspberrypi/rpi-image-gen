@@ -14,7 +14,7 @@
 # X-Env-Var-switch-Desc: Switch value
 # X-Env-Var-switch-Valid: on,off
 # X-Env-Var-switch-Set: y
-# X-Env-Var-switch-Triggers: when=IGconf_trigx_mode=fast set IG_TRIG_X=1 policy=force
+# X-Env-Var-switch-Triggers: when=IGconf_trigx_mode == 'fast' set IG_TRIG_X=1 policy=force
 # METAEND
 
 triggers:

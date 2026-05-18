@@ -1,0 +1,20 @@
+# METABEGIN
+# X-Env-Layer-Name: chrony
+# X-Env-Layer-Desc: Chrony NTP client and server
+#  https://chrony-project.org
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Provides: time-daemon
+# X-Env-Layer-RequiresProvider: systemd
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - chrony
+  customize-hooks:
+    - $BDEBSTRAP_HOOKS/enable-units "$1" chrony
+    - |-
+      set -eu
+      if [ -n "${SOURCE_DATE_EPOCH:-}" ] ; then
+        install -d -m0755 $1/var/lib/systemd/timesync
+        touch -m -d "@${SOURCE_DATE_EPOCH}" $1/var/lib/systemd/timesync/clock
+      fi

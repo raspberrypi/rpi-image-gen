@@ -51,8 +51,8 @@
 # X-Env-Var-user1pass-Required: n
 # X-Env-Var-user1pass-Valid: regex:^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
 # X-Env-Var-user1pass-Set: n
-# X-Env-Var-user1pass-Conflicts: user1passhash
-# X-Env-Var-user1pass-Triggers: when=* set IGconf_device_user1sudo=passwd policy=lazy
+# X-Env-Var-user1pass-Conflicts: IGconf_device_user1pass != '' and IGconf_device_user1passhash != ''
+# X-Env-Var-user1pass-Triggers: when=IGconf_device_user1pass != '' set IGconf_device_user1sudo=passwd policy=lazy
 #
 # X-Env-Var-user1passhash:
 # X-Env-Var-user1passhash-Desc: A pre-hashed password for the user1 account.
@@ -62,8 +62,8 @@
 # X-Env-Var-user1passhash-Required: n
 # X-Env-Var-user1passhash-Valid: string
 # X-Env-Var-user1passhash-Set: n
-# X-Env-Var-user1passhash-Conflicts: user1pass
-# X-Env-Var-user1passhash-Triggers: when=* set IGconf_device_user1sudo=passwd policy=lazy
+# X-Env-Var-user1passhash-Conflicts: IGconf_device_user1passhash != '' and IGconf_device_user1pass != ''
+# X-Env-Var-user1passhash-Triggers: when=IGconf_device_user1passhash != '' set IGconf_device_user1sudo=passwd policy=lazy
 #
 # X-Env-Var-user1sudo: none
 # X-Env-Var-user1sudo-Desc: Controls sudo access for the user1 account. 'none' disables
