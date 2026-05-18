@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import shutil
 import argparse
@@ -43,7 +44,8 @@ class LayerManager:
         self.search_paths = [root.path for root in self.search_roots]
         self.file_patterns = file_patterns
         self.layers: Dict[str, Metadata] = {}  # layer_name -> Metadata object
-        self.layer_files: Dict[str, str] = {}  # layer_name -> file_path
+        self.layer_files: Dict[str, str] = {}  # layer_name -> file_path (resolved; may be tmpfs for dynamic)
+        self.layer_source_files: Dict[str, str] = {}  # layer_name -> original source file path (never updated)
         self.layer_tags: Dict[str, str] = {}  # layer_name -> search path tag
         self.layer_relpaths: Dict[str, str] = {}  # layer_name -> relative path under tagged root
         self.tag_to_path: Dict[str, Path] = {root.tag: root.path for root in self.search_roots}
@@ -55,6 +57,7 @@ class LayerManager:
         self.provider_conflicts: Dict[str, Set[str]] = {}
         self.generated_root: Optional[Path] = None
         self.load_errors: Dict[str, str] = {}
+        self.pending_generators: Dict[str, tuple] = {}  # layer_name -> (cmd, input, output)
 
         for path in self.search_paths:
             if not path.exists():
@@ -237,8 +240,8 @@ class LayerManager:
                         generated_root = self._ensure_generated_root()
                         output_file = generated_root / rel_path
                         output_file.parent.mkdir(parents=True, exist_ok=True)
-                        self._run_layer_generator(layer_name, generator_cmd, abs_file, output_file)
-                        abs_file = output_file.resolve()
+                        # Generators are deferred so they only run for layers in the build stack
+                        self.pending_generators[layer_name] = (generator_cmd, abs_file, output_file)
                         tag = 'DYNlayer' # implicitly hard wired
                 else:
                     tag = root.tag
@@ -249,6 +252,7 @@ class LayerManager:
 
                 self.layers[layer_name] = meta
                 self.layer_files[layer_name] = str(abs_file)
+                self.layer_source_files[layer_name] = str(abs_file)
                 self.layer_tags[layer_name] = tag
                 self.layer_relpaths[layer_name] = str(rel_path)
                 loaded_layers.add(layer_name)
@@ -269,11 +273,26 @@ class LayerManager:
         self.generated_root = tmp_path
         return tmp_path
 
+    def run_generators_for_layers(self, layer_names: List[str]) -> None:
+        """Run deferred generators for layers in the given build order."""
+        for layer_name in layer_names:
+            if layer_name not in self.pending_generators:
+                continue
+            generator_cmd, input_path, output_path = self.pending_generators.pop(layer_name)
+            self._run_layer_generator(layer_name, generator_cmd, input_path, output_path)
+            self.layer_files[layer_name] = str(output_path.resolve())
+
     def _run_layer_generator(self, layer_name: str, generator_cmd: str, input_path: Path, output_path: Path) -> None:
         cmd = shlex.split(generator_cmd) # supports positional args
         if not cmd:
             raise ValueError(f"Generator command for layer '{layer_name}' is empty")
-        cmd = cmd + [str(input_path), str(output_path)]
+        expanded_args = []
+        for a in cmd[1:]:
+            expanded = os.path.expandvars(a)
+            if re.search(r'\$(\{\w+\}|\w+)', expanded):
+                raise ValueError(f"Generator arg '{a}' contains unresolved variable after expansion")
+            expanded_args.append(expanded)
+        cmd = [cmd[0]] + [str(input_path), str(output_path)] + expanded_args
         try:
             subprocess.run(cmd, check=True)
         except FileNotFoundError as exc:
@@ -639,6 +658,21 @@ class LayerManager:
 
         return None
 
+    def _get_overlays(self, layer_name: str) -> list:
+        layer_path = self.layer_files.get(layer_name)
+        if not layer_path:
+            return []
+        layer_dir = Path(layer_path).parent
+        stem = Path(layer_path).stem
+        parts = ['base'] if (layer_dir / f'{stem}.rootfs-overlay').is_dir() else []
+        parts += sorted(
+            (f'v{suffix}'
+             for d in layer_dir.glob(f'{stem}.rootfs-overlay-*')
+             if d.is_dir() and (suffix := d.name.split(".rootfs-overlay-")[1]).isdigit()),
+            key=lambda v: int(v[1:])
+        )
+        return parts
+
     def get_layer_documentation_data(self, layer_name: str):
         """Extract structured layer data for documentation generation"""
         if layer_name not in self.layers:
@@ -736,7 +770,8 @@ class LayerManager:
             'companion_doc': companion_doc,
             'dependencies': dependencies,
             'reverse_dependencies': reverse_dependencies,
-            'anchors': anchors
+            'anchors': anchors,
+            'overlays': self._get_overlays(layer_name)
         }
 
     def _get_companion_doc(self, layer_name: str, format: str = 'markdown') -> str:
@@ -1008,6 +1043,9 @@ def _layer_main(args):
             layer_path = manager.layer_files.get(layer_name, "<unknown>")
             rel_layer_path = manager.layer_relpaths.get(layer_name, layer_path)
             print(f"Path: {rel_layer_path}")
+            overlays = manager._get_overlays(layer_name)
+            if overlays:
+                print(f"Overlay: {', '.join(overlays)}")
 
             mmdebstrap = manager._get_mmdebstrap_config(layer_name)
             if mmdebstrap:

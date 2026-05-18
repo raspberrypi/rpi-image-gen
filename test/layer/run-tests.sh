@@ -700,21 +700,21 @@ run_test "pipeline-build-order" \
     'TMP_ENV=$(mktemp) && TMP_ENV_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && \
      make_pipeline_env "$TMP_ENV" && \
      ig pipeline --env-in "$TMP_ENV" --layers test-with-deps --path '"${PIPELINE_LAYER_DIR}"' \
-        --env-out "$TMP_ENV_OUT" --order-out "$TMP_ORDER" >/dev/null && \
-     grep -q "^test-basic=" "$TMP_ORDER" && \
-     grep -q "^test-with-deps=" "$TMP_ORDER" && \
+        --env-out "$TMP_ENV_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     grep -q "^test-basic:" "$TMP_ORDER" && \
+     grep -q "^test-with-deps:" "$TMP_ORDER" && \
      rm -f "$TMP_ENV" "$TMP_ENV_OUT" "$TMP_ORDER"' \
     0 \
-    "Pipeline should write build order for dependencies"
+    "Pipeline should write build plan for dependencies"
 
 run_test "pipeline-build-order-env-deps" \
     'TMP_ENV=$(mktemp) && TMP_ENV_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && \
      make_pipeline_env "$TMP_ENV" "ARCH=arm64" "DISTRO=debian" && \
      ig pipeline --env-in "$TMP_ENV" --layers test-env-var-deps --path '"${PIPELINE_LAYER_DIR}"' \
-        --env-out "$TMP_ENV_OUT" --order-out "$TMP_ORDER" >/dev/null && \
-     grep -q "^test-basic=" "$TMP_ORDER" && \
-     grep -q "^arm64-toolchain=" "$TMP_ORDER" && \
-     grep -q "^debian-packages=" "$TMP_ORDER" && \
+        --env-out "$TMP_ENV_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     grep -q "^test-basic:" "$TMP_ORDER" && \
+     grep -q "^arm64-toolchain:" "$TMP_ORDER" && \
+     grep -q "^debian-packages:" "$TMP_ORDER" && \
      rm -f "$TMP_ENV" "$TMP_ENV_OUT" "$TMP_ORDER"' \
     0 \
     "Pipeline should resolve env-based deps and write build order"

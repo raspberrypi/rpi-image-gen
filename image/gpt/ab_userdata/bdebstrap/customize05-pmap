@@ -1,0 +1,33 @@
+#!/bin/sh
+
+set -eu
+
+# Generate pre-defined UUIDs
+BOOT_LABEL=$(uuidgen | sed 's/-.*//' | tr 'a-f' 'A-F')
+BOOT_UUID=$(echo "$BOOT_LABEL" | sed 's/^\(....\)\(....\)$/\1-\2/')
+SYSTEM_UUID=$(uuidgen)
+CRYPT_UUID=$(uuidgen)
+VERITY_UUID=$(uuidgen)
+
+
+rm -f ${IGconf_image_outputdir}/img_uuids
+for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID VERITY_UUID; do
+    eval "val=\$$v"
+    echo "$v=$val" >> "${IGconf_image_outputdir}/img_uuids"
+done
+
+
+# Install provision map, populating placeholders
+pmap="${IGconf_image_assetdir:-}/device/provisionmap-${IGconf_image_pmap:-}.json"
+if [ -f "$pmap" ]; then
+   env \
+      BOOT_UUID="$BOOT_UUID" \
+      SYSTEM_UUID="$SYSTEM_UUID" \
+      CRYPT_UUID="$CRYPT_UUID" \
+      LUKS_CIPHER="$IGconf_device_luks2_cipher" \
+      LUKS_KEYSIZE="$IGconf_device_luks2_keysize" \
+      LUKS_HASH="$IGconf_device_luks2_hash" \
+   envsubst \
+      '${BOOT_UUID} ${SYSTEM_UUID} ${CRYPT_UUID} ${LUKS_CIPHER} ${LUKS_KEYSIZE} ${LUKS_HASH}' \
+      < "$pmap" > "${IGconf_image_outputdir}/provisionmap.json"
+fi

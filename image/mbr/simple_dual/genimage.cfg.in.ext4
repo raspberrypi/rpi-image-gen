@@ -44,7 +44,7 @@ image boot.vfat {
    }
    size = <FW_SIZE>
    mountpoint = "/boot/firmware"
-   exec-pre = "<SETUP> BOOT <BOOT_UUID> <ROOT_UUID>"
+   exec-pre = "<SETUP> BOOT"
 }
 
 image root.ext4 {
@@ -56,5 +56,5 @@ image root.ext4 {
    }
    size = <ROOT_SIZE>
    mountpoint = "/"
-   exec-pre = "<SETUP> ROOT <BOOT_UUID> <ROOT_UUID>"
+   exec-pre = "<SETUP> ROOT"
 }

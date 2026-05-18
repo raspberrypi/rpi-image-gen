@@ -1,0 +1,17 @@
+# METABEGIN
+# X-Env-Layer-Name: embedded-svelte-static
+# X-Env-Layer-Category: base
+# X-Env-Layer-Desc: Extends embedded-svelte by removing apt directories, for
+#  images that will never run apt in the field.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: embedded-svelte
+# METAEND
+---
+mmdebstrap:
+  cleanup-hooks:
+    - |-
+      set -eu
+      rm -rf \
+        ${1}/var/lib/apt/lists/* \
+        ${1}/var/cache/apt/archives \
+        ${1}/var/cache/apt/archives/partial

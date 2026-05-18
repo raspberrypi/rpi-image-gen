@@ -24,8 +24,8 @@ EOF
 
       # remainder is constant
       cat << EOF >> $IMAGEMOUNTPATH/etc/fstab
-/dev/disk/by-slot/active/boot   /boot/firmware vfat defaults,ro,noatime,nofail  0 2
-LABEL=BOOTFS                    /bootfs        vfat defaults,rw,noatime,errors=panic 0 2
+/dev/disk/by-slot/active/boot  /boot/firmware  vfat defaults,ro,noatime,nofail  0 2
+/dev/disk/by-slot/bootconfig   /bootfs         vfat defaults,rw,noatime,nofail 0 2
 
 # Bespoke systemd generators mount /persistent, /var and bind mount into it
 # for per-slot storage. See slot-perst-generator.
@@ -36,7 +36,7 @@ LABEL=BOOTFS                    /bootfs        vfat defaults,rw,noatime,errors=p
 EOF
       ;;
    BOOT)
-      sed -i "s|root=[^ ]*|root=/dev/ram0|" "$IMAGEMOUNTPATH/cmdline.txt"
+      sed -i "s|root=[^ ]*|root=/dev/disk/by-slot/active/system|" "$IMAGEMOUNTPATH/cmdline.txt"
       case $IGconf_image_rootfs_type in
          erofs) sed -i 's|fsck\.repair=yes||g' "$IMAGEMOUNTPATH/cmdline.txt" ;;
       esac

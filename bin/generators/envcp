@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 set -eu
 
-if [[ -n ${DEBIAN_SNAPSHOT_TS:-} ]]; then
-   snapshot=$(date -u -d @"$DEBIAN_SNAPSHOT_TS" +%Y%m%dT%H%M%SZ)
+if [[ -n ${SOURCE_DATE_EPOCH:-} ]]; then
+   snapshot=$(date -u -d @"$SOURCE_DATE_EPOCH" +%Y%m%dT%H%M%SZ)
 else
    snapshot=$(date -u +%Y%m%dT%H%M%SZ)
 fi
 
-cat "$1" | sed \
-   -e "s|<SNAPSHOT>|$snapshot|g" \
-   > "$2"
+env SNAPSHOT_ISO8601="$snapshot" envsubst < "$1" > "$2"

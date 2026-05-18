@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
 #  boot/system redundancy, and a shared persistent data partition.
-# X-Env-Layer-Version: 5.2.0
+# X-Env-Layer-Version: 5.4.0
 # X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
 # X-Env-Layer-Provides: image
 #
@@ -52,10 +52,9 @@
 #  crypt: All non-boot partitions will be provisioned encrypted.
 #  cryptslots: Only system OS partitions will be provisioned encrypted.
 #  cryptdata: Only the data partition will be provisioned encrypted.
-#  crypthybrid: B:system OS partition will be provisioned encrypted (dev only).
 # X-Env-Var-pmap-Required: n
-# X-Env-Var-pmap-Valid: clear,crypt,cryptslots,cryptdata,crypthybrid
-# X-Env-Var-pmap-Set: force
+# X-Env-Var-pmap-Valid: clear,crypt,cryptslots,cryptdata
+# X-Env-Var-pmap-Set: y
 #
 # X-Env-Var-ptable_protect: n
 # X-Env-Var-ptable_protect-Desc: Enable eMMC Power-On Write Protect of the partition
@@ -80,3 +79,4 @@ mmdebstrap:
   packages:
     - dosfstools
     - e2fsprogs
+    - initramfs-tools

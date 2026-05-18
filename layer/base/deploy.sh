@@ -77,3 +77,19 @@ echo "Creating manifest..."
   echo "  ]"
   echo "}"
 } > "$IGconf_deploy_dir/deployed.json"
+
+# Create a .tar.zst IDP archive suitable for upload to rpi-sb-provisioner.
+# Bundles uncompressed image.json + sparse images at the top level of the tar.
+# Requires zstd, so only run when the compression scheme guarantees it is available.
+if [[ "$IGconf_deploy_compression" == "zstd" ]] && [[ -f "${IGconf_image_outputdir}/image.json" ]]; then
+    echo "Creating IDP archive..."
+    idp_files=("image.json")
+    for f in "${IGconf_image_outputdir}"/*.sparse; do
+        [[ -f "$f" ]] && idp_files+=("$(basename "$f")")
+    done
+
+    archive_name="${IGconf_image_name:-image}-${IGconf_artefact_version:-unknown}.tar.zst"
+    tar -C "${IGconf_image_outputdir}" -cf - "${idp_files[@]}" \
+        | zstd -f -o "$IGconf_deploy_dir/$archive_name"
+    echo "Created IDP archive: $IGconf_deploy_dir/$archive_name"
+fi

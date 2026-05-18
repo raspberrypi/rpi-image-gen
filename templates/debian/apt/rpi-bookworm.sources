@@ -1,0 +1,5 @@
+X-IG-Signed-By: /usr/share/keyrings/raspberrypi-archive-keyring.gpg
+Types: deb
+URIs: http://archive.raspberrypi.com/debian
+Suites: bookworm
+Components: main

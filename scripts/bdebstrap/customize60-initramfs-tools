@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -eu
+
+if ! grep-dctrl -q -XFStatus "install ok installed" -a \
+   -XFPackage initramfs-tools $1/var/lib/dpkg/status ; then
+   exit 0
+fi
+
+# Install files
+
+mkdir -p "$1/etc/initramfs-tools/conf.d/"
+echo "RPI_BOOT_MEDIA=\"${IGconf_device_storage_type}\"" \
+   > "$1/etc/initramfs-tools/conf.d/rpi-common"
+
+dirs=(../device/initramfs-tools)
+for kind in image device ; do
+   dir=$(igconf getval ${kind}_assetdir) || continue
+   if [ -d "${dir}/device/initramfs-tools" ] ; then
+      dirs+=("${dir}/device/initramfs-tools")
+   fi
+done
+
+for dir in "${dirs[@]}" ; do
+   [[ -d "$dir" ]] || continue
+   rsync --archive --verbose "${dir}/" "$1/etc/initramfs-tools/"
+done
+
+# Hint if the image layout has declared a rootfs type. This helps ensure
+# the appropriate fsck binaries are installed.
+if igconf isset image_rootfs_type ; then
+   sed -i "s|FSTYPE=\([^ ]*\)|FSTYPE=${IGconf_image_rootfs_type}|" $1/etc/initramfs-tools/initramfs.conf
+fi
+
+# Create all images if kernel postinst was instructed to not generate, else
+# update
+if [ "${INITRD:-}" = "No" ]; then
+   chroot $1 update-initramfs -c -k all
+else
+   chroot $1 update-initramfs -u -k all
+fi

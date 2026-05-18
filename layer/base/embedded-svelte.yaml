@@ -1,0 +1,29 @@
+# METABEGIN
+# X-Env-Layer-Name: embedded-svelte
+# X-Env-Layer-Category: base
+# X-Env-Layer-Desc: Excludes manpages, locales, and docs to minimise image size.
+# X-Env-Layer-Version: 1.0.0
+# METAEND
+---
+mmdebstrap:
+  dpkgopts:
+    # Documentation & Metadata
+    - path-exclude=/usr/share/doc/*
+    - path-exclude=/usr/share/info/*
+    - path-exclude=/usr/share/man/*
+    - path-exclude=/usr/share/lintian/*
+    - path-exclude=/usr/share/help/*
+    - path-exclude=/usr/share/gnome/*
+
+    # Legal/Functional Essentials
+    - path-include=/usr/share/doc/*/copyright
+
+    # Misc
+    - path-include=/usr/share/omf/*/*-C.emf
+
+    # Locale Optimisation
+    - path-exclude=/usr/share/locale/*
+    - path-include=/usr/share/locale/locale.alias
+    - path-include=/usr/share/locale/en*
+    - path-include=/usr/share/locale/currency/*
+    - path-include=/usr/share/locale/l10n/*

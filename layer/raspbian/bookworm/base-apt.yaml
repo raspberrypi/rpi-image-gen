@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: raspbian-bookworm-armhf
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Raspbian Bookworm apt base for armhf.
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: locale-base
 #
 # X-Env-VarRequires: IGconf_locale_timezone,
@@ -17,7 +17,7 @@ mmdebstrap:
   mode: auto
   variant: apt
   mirrors:
-    - deb [arch=armhf] http://raspbian.raspberrypi.com/raspbian/ bookworm main contrib non-free rpi
+    - ${IGTOP}/templates/debian/apt/raspbian-bookworm.sources
   aptopts:
     - APT::Install-Suggests "false"
     - APT::Install-Recommends "false"
@@ -47,11 +47,3 @@ mmdebstrap:
     - echo keyboard-configuration keyboard-configuration/xkb-keymap select "$IGconf_locale_keyboard_keymap"
         | chroot $1 debconf-set-selections
     - printf "LANG=C.UTF-8\nLANGUAGE=C\n" > $1/etc/default/locale
-  customize-hooks:
-    - test -f $1/usr/share/keyrings/raspbian-archive-keyring.gpg || false
-    - mkdir -p $1/etc/apt/sources.list.d
-    - |-
-      cat <<- EOF > $1/etc/apt/sources.list.d/raspbian.list
-      deb [arch=armhf signed-by=/usr/share/keyrings/raspbian-archive-keyring.gpg] http://raspbian.raspberrypi.com/raspbian/ bookworm main contrib non-free rpi
-      EOF
-    - sed -i '/raspbian\.raspberrypi\.com/d' $1/etc/apt/sources.list

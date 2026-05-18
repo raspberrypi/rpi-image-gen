@@ -28,6 +28,7 @@
 mmdebstrap:
   packages:
     - rpi-connect-lite
+    - rpifwcrypto
   customize-hooks:
     - |-
       set -eu

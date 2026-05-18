@@ -1,16 +1,13 @@
 #!/bin/sh
-# systemd generator to bind per-slot /var based on GPT PARTLABEL
+# systemd generator to bind per-slot /var based on the persistent by-slot alias
 
 set -eu
 
 OUT_DIR="/run/systemd/generator"
 mkdir -p "$OUT_DIR"
 
-# Label of the shared persistent partition
-PERSIST_LABEL="${PERSIST_LABEL:-PERSISTENT}"
-
-# Corresponding fsck unit
-path=$(systemd-escape --path "/dev/disk/by-label/${PERSIST_LABEL}")
+# fsck unit
+path=$(systemd-escape --path "/dev/disk/by-slot/persistent")
 FSCK_UNIT="systemd-fsck@${path}.service"
 
 # 1) Determine current slot
@@ -44,7 +41,7 @@ Requires=${FSCK_UNIT}
 After=${FSCK_UNIT}
 
 [Mount]
-What=/dev/disk/by-label/${PERSIST_LABEL}
+What=/dev/disk/by-slot/persistent
 Where=/persistent
 Type=ext4
 Options=rw,noatime,lazytime,commit=60,errors=remount-ro

@@ -1,0 +1,59 @@
+#!/bin/bash
+#
+# Set up initramfs to unlock LUKS volumes described by the PMAP
+
+set -eu
+
+[ -f "${IGconf_image_outputdir}/provisionmap.json" ] || exit 0
+
+# Fetch encrypted container info from the PMAP
+pmap --schema "$IGconf_image_pmap_schema" \
+     --file "${IGconf_image_outputdir}/provisionmap.json" \
+     --cryptvars > "${IGconf_image_outputdir}/crypt.containers"
+
+CONTAINERS=
+. "${IGconf_image_outputdir}/crypt.containers"
+
+if [ -z "$CONTAINERS" ]; then
+   echo "cryptroot: No LUKS volumes to process" >&2
+   exit 0
+fi
+
+
+# Build probe list. Unlike lvm, partitioned LUKS needs manual probing
+partprobe_devs=""
+for container in "$CONTAINERS"; do
+   etype_var="${container}_ETYPE"
+   [ "${!etype_var-}" = "partitioned" ] || continue
+   name_var="${container}_MNAME"
+   partprobe_devs="${partprobe_devs:+$partprobe_devs }${!name_var}"
+done
+
+
+pkgs=()
+[ -n "$partprobe_devs" ] && pkgs+=(kpartx)
+installer=/dev/null
+
+
+# Backend selection
+if [ -d "$1/etc/initramfs-tools" ]; then
+   pkgs+=(cryptsetup-initramfs rpifwcrypto block-device-id)
+   installer=install-initramfs-tools-debian.sh
+
+elif [ -d "$1/usr/lib/dracut" ]; then
+   pkgs+=(systemd-cryptsetup cryptsetup-passphrase-agent)
+   installer=install-dracut.sh
+
+else
+   die "cryptroot: No supported initramfs framework found in $1"
+fi
+
+[ -x "../device/cryptroot/$installer" ] || \
+   die "cryptroot: installer not found or not executable ($installer)"
+
+chroot "$1" apt install -y "${pkgs[@]}"
+
+env -C ../device/cryptroot \
+    PARTPROBE_DEVICES="${partprobe_devs}" \
+    CRYPT_CONTAINERS_FILE="${IGconf_image_outputdir}/crypt.containers" \
+    "./$installer" "$1" || die "cryptroot: $installer failed"

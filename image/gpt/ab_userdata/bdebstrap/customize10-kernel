@@ -4,22 +4,9 @@
 
 set -eu
 
-mkdir -p $1/etc/initramfs-tools/hooks
-
 # Install modules into the initramfs
-cat <<- 'EOF' > $1/etc/initramfs-tools/hooks/rpi-ab-kmod-install
-#!/bin/sh
-case $1 in
-   prereqs) echo ""; exit 0;;
-esac
-. /usr/share/initramfs-tools/hook-functions
-
-for module in $(find /usr/lib/modules/$version \
-   \( \
-   -name 'erofs.*' \
-   \) \
-   -exec basename {} \; |sed 's/\.ko\.xz$//; s/\.ko$//' ); do
-   manual_add_modules $module
-done
-EOF
-chmod +x $1/etc/initramfs-tools/hooks/rpi-ab-kmod-install
+if [ -d "$1/etc/initramfs-tools" ]; then
+   echo "erofs" >> "$1/etc/initramfs-tools/modules"
+elif [ -d "$1/etc/dracut.conf.d" ]; then
+   echo 'force_drivers+=" erofs "' > "$1/etc/dracut.conf.d/erofs.conf"
+fi

@@ -123,7 +123,7 @@
     <div class="header">
         <h1>sys-build-base</h1>
         <span class="badge">build</span>
-        <span class="badge">v1.1.0</span>
+        <span class="badge">v1.1.1</span>
         <p>Build environment configuration including workspace, apt
  settings, and system foundation defaults.</p>
     </div>
@@ -198,7 +198,9 @@
  image. If using this option, please make sure to install your key(s) into the
  chroot explicitly if a key contained in this directory points to a location
  that is not otherwise populated during chroot creation (for example by
- installing a keyring package).</td>
+ installing a keyring package).
+ Note: apt requires world-executable permission on every component of the path
+ to this directory, including the directory itself.</td>
                     <td>
                            <code>${@WORKROOT}/keys</code>
                     </td>

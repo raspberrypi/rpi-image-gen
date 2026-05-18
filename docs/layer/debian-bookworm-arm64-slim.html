@@ -123,7 +123,7 @@
     <div class="header">
         <h1>debian-bookworm-arm64-slim</h1>
         <span class="badge">distribution</span>
-        <span class="badge">v1.1.0</span>
+        <span class="badge">v2.1.0</span>
         <p>Debian Bookworm custom layer for arm64 providing
  a usable and practical base.</p>
     </div>
@@ -180,13 +180,12 @@
             <li><code>gzip</code></li>
             <li><code>udev</code></li>
             <li><code>e2fsprogs</code></li>
+            <li><code>debian-archive-keyring</code></li>
         </ul>
         
         <h3>Mirrors</h3>
         <ul>
-            <li><code>deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware</code></li>
-            <li><code>deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware</code></li>
+            <li><code>${IGTOP}/templates/debian/apt/bookworm.sources</code></li>
         </ul>
         
         <h3>dpkgopts</h3>

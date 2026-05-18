@@ -1,5 +1,5 @@
 env:
-  DEBIAN_SNAPSHOT_TS: 1763641344
+  SOURCE_DATE_EPOCH: 1763641344
 
 artefact:
   target_name: trixie-reproducible.tgz

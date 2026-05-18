@@ -622,10 +622,10 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="sect2">
 <h3 id="_hook_classification_bundle"><a class="anchor" href="#_hook_classification_bundle"></a><a class="link" href="#_hook_classification_bundle">Hook Classification: bundle</a></h3>
 <div class="paragraph">
-<p>Runner scans for <code>setup*</code>, <code>extract*</code>, <code>essential*</code>, <code>customize*</code>, and <code>cleanup*</code> hooks inside <code>bdebstrap/</code> subdirectories of:</p>
+<p>Runner scans for <code>setup*</code>, <code>extract*</code>, <code>essential*</code>, <code>customize*</code>, and <code>cleanup*</code> hooks inside <code>bdebstrap/</code> subdirectories of the following in order:</p>
 </div>
-<div class="ulist">
-<ul>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
 <p>Device asset directory (<code>DEVICE_ASSET</code>)</p>
 </li>
@@ -638,7 +638,7 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <li>
 <p>Built-in (<code>IGROOT/scripts/bdebstrap</code>)</p>
 </li>
-</ul>
+</ol>
 </div>
 <div class="paragraph">
 <p>It executes matching hooks (alphanumeric basename) in that order for each phase. Subdirectories aren’t traversed; the file extension is ignored.</p>
@@ -647,45 +647,60 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="sect2">
 <h3 id="_hook_classification_single"><a class="anchor" href="#_hook_classification_single"></a><a class="link" href="#_hook_classification_single">Hook Classification: single</a></h3>
 <div class="paragraph">
-<p>With the exception of sbom and deploy, all <code>single</code> hooks are customisable and optional. Runner scans for <code>&lt;phase&gt;.sh</code> inside:</p>
+<p>Runner looks for <code>&lt;phase&gt;.sh</code> at each of the following locations in order:</p>
 </div>
-<div class="ulist">
-<ul>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>Device asset directory (if set)</p>
+<p>Built-in root (<code>IGROOT</code>)</p>
 </li>
 <li>
-<p>Image asset directory (if set)</p>
+<p>Built-in device subdir (<code>IGROOT/device</code>)</p>
 </li>
 <li>
-<p>Built-in (IGROOT)</p>
+<p>Built-in image subdir (<code>IGROOT/image</code>)</p>
 </li>
 <li>
-<p>Source tree (SRCROOT)</p>
+<p>Device asset directory - <code>DEVICE_ASSET</code></p>
 </li>
-</ul>
+<li>
+<p>Image asset directory - <code>IMAGE_ASSET</code></p>
+</li>
+<li>
+<p>Source tree - <code>SRCROOT</code></p>
+</li>
+</ol>
 </div>
 <div class="paragraph">
-<p>Execution takes place from the parent directory of the hook.</p>
+<p>Each location is independent: all present hooks run. Execution takes place from the parent directory of the hook.</p>
+</div>
+<div class="paragraph">
+<p><code>sbom</code> and <code>deploy</code> are resolved differently - via config variables, which may point to any path.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_overlays"><a class="anchor" href="#_overlays"></a><a class="link" href="#_overlays">Overlays</a></h3>
 <div class="paragraph">
-<p>Filesystem overlays are applied during <code>customize</code>. The following overlay directories are supported:</p>
+<p>Filesystem overlays are applied during <code>customize</code>, in the following order (later entries take precedence):</p>
 </div>
-<div class="ulist">
-<ul>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p><code>DEVICE_ASSET:device/rootfs-overlay</code></p>
+<p><strong>Per-layer overlays</strong> - For each layer in build-plan order, if a directory named <code>&lt;layer-stem&gt;.rootfs-overlay</code> exists alongside the layer YAML file on disk (e.g. <code>my-layer.yaml</code> has <code>my-layer.rootfs-overlay/</code>), it is applied. This allows a layer to ship files into the target filesystem without hooks.</p>
 </li>
 <li>
-<p><code>IMAGE_ASSET:device/rootfs-overlay</code></p>
+<p><strong>Device asset overlay</strong> - <code>DEVICE_ASSET/device/rootfs-overlay</code></p>
 </li>
 <li>
-<p><code>SRCROOT:rootfs-overlay</code></p>
+<p><strong>Image asset overlay</strong> - <code>IMAGE_ASSET/device/rootfs-overlay</code></p>
 </li>
-</ul>
+<li>
+<p><strong>Source tree overlay</strong> - <code>SRCROOT:rootfs-overlay</code></p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>With the exception of YAML <code>customize-hooks</code>, all overlays are applied before <code>customize</code> hook scripts execute.</p>
 </div>
 </div>
 <div class="sect2">

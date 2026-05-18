@@ -88,6 +88,15 @@ Generators must write a complete layer to the output path. A trivial generator c
 `X-Env-Layer-Generator` must resolve to an executable (on PATH or via a relative/absolute path).
 ====
 
+The generator field supports optional arguments after the executable name. These are passed to the generator after `<template-path>` and `<output-path>`, so the full invocation is `generator <template-path> <output-path> [args...]`. Environment variables in arguments are expanded before the generator is called. Both positional arguments and flags are supported.
+
+```
+# X-Env-Layer-Generator: myscript ${IGTOP}/path/to/some/file
+# X-Env-Layer-Generator: myscript -f ${IGTOP}/path/to/some/file -x
+```
+
+Generators that use `argparse` or `getopt` should parse from `argv[3:]`, as `argv[1]` and `argv[2]` are always the fixed input and output paths respectively.
+
 [NOTE]
 ====
 `rpi-image-gen` ships its own generators in `bin/generators`. If a source directory was specified at build time, `<SRCROOT>/bin/generators` is automatically included in `PATH` if present.

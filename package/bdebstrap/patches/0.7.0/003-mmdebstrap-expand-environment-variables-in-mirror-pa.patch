@@ -1,0 +1,32 @@
+From c406351164df4725c092fa52f39f3665b9dfb48b Mon Sep 17 00:00:00 2001
+From: Matthew Lear <matthew.lear@raspberrypi.com>
+Date: Tue, 10 Mar 2026 12:11:59 +0000
+Subject: [PATCH] mmdebstrap: expand environment variables in mirror paths
+
+Apply env variable expansion to each mirror entry before passing it to
+mmdebstrap. This allows mirror paths to contain environment variable
+references such as ${ROOT}/path/to/file.sources, which is useful when
+specifying DEB822 sources files via an absolute path derived from a
+build system variable.
+
+Signed-off-by: Matthew Lear <matthew.lear@raspberrypi.com>
+---
+ bdebstrap | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bdebstrap b/bdebstrap
+index 04a6fd0..5caebf1 100755
+--- a/bdebstrap
++++ b/bdebstrap
+@@ -339,7 +339,7 @@ class Mmdebstrap:
+         # Positional arguments
+         cmd.append(mmdebstrap.get("suite", "-"))
+         cmd.append(mmdebstrap.get("target", "-"))
+-        cmd += mmdebstrap.get("mirrors", [])
++        cmd += [os.path.expandvars(m) for m in mmdebstrap.get("mirrors", [])]
+ 
+         return cmd
+ 
+-- 
+2.39.5
+

@@ -1,0 +1,14 @@
+# METABEGIN
+# X-Env-Layer-Name: debian-trixie-arm64-minbase-rolling
+# X-Env-Layer-Category: distribution
+# X-Env-Layer-Desc: Switches the Debian Trixie minbase snapshot to rolling repositories.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: debian-trixie-arm64-minbase-snapshot
+# METAEND
+---
+mmdebstrap:
+  cleanup-hooks:
+    - |-
+      set -e
+      rm -f $1/etc/apt/sources.list.d/*trixie-snapshot.sources
+      cp ${IGTOP}/templates/debian/apt/trixie.sources $1/etc/apt/sources.list.d/trixie.sources

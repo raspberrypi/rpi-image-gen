@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eu
+
+
+# Fetch all crypt information from the pmap
+pmap --schema "$IGconf_image_pmap_schema" \
+   --file "${IGconf_image_outputdir}/provisionmap.json" \
+   --cryptvars > "${IGconf_image_outputdir}/crypt.containers"
+
+source "${IGconf_image_outputdir}/crypt.containers"
+
+
+# Emit a matching udev rule and crypttab entry per LUKS volume
+if [ -n "$CONTAINERS" ]; then
+   rules="${1}/etc/udev/rules.d/99-rpi-06-image-crypt.rules"
+   : > "$rules"
+   : > "${1}/etc/crypttab"
+
+   for container in $CONTAINERS; do
+      label_var="${container}_LABEL"
+      echo "SUBSYSTEM==\"block\", ENV{RPI_ONBOOTDEV}==\"1\", ENV{ID_FS_LABEL}==\"${!label_var}\", SYMLINK+=\"disk/by-slot/${container}\"" >> "$rules"
+
+      if [ -d "$1/etc/initramfs-tools" ]; then
+         echo "$container /dev/disk/by-slot/${container} none luks,initramfs,keyscript=/lib/cryptsetup/keyscripts/hwkey" >> "${1}/etc/crypttab"
+      elif [ -d "$1/usr/lib/dracut" ]; then
+         echo "$container /dev/disk/by-slot/${container} none luks" >> "${1}/etc/crypttab"
+      fi
+   done
+fi

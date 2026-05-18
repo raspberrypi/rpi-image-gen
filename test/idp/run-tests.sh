@@ -5,7 +5,7 @@
 
 IGTOP=$(readlink -f "$(dirname "$0")/../../")
 
-SCHEMA="${IGTOP}/layer/base/schemas/provisionmap/v1/schema.json"
+SCHEMA="${IGTOP}/layer/rpi/schemas/provisionmap/v1/schema.json"
 PATH="${IGTOP}/bin:$PATH"
 
 # Dummy values for template substitution.
@@ -13,6 +13,9 @@ PATH="${IGTOP}/bin:$PATH"
 export BOOT_UUID="ABCD-1234"
 export SYSTEM_UUID="00000000-0000-0000-0000-000000000002"
 export CRYPT_UUID="00000000-0000-0000-0000-000000000003"
+export LUKS_CIPHER="aes-xts-plain64"
+export LUKS_KEYSIZE="512"
+export LUKS_HASH="sha256"
 
 PMAP_TMP=$(mktemp)
 trap 'rm -f "$PMAP_TMP"' EXIT
@@ -83,7 +86,7 @@ while IFS= read -r -d '' pmap; do
     ((TOTAL_TESTS++))
     print_test "$name"
 
-    output=$(envsubst '${BOOT_UUID} ${SYSTEM_UUID} ${CRYPT_UUID}' < "$pmap" > "$PMAP_TMP" &&
+    output=$(envsubst '${BOOT_UUID} ${SYSTEM_UUID} ${CRYPT_UUID} ${LUKS_CIPHER} ${LUKS_KEYSIZE} ${LUKS_HASH} ' < "$pmap" > "$PMAP_TMP" &&
         pmap --schema "$SCHEMA" --file "$PMAP_TMP" 2>&1)
     exit_code=$?
 

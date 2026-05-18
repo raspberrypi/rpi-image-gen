@@ -1,13 +1,12 @@
 # METABEGIN
 # X-Env-Layer-Name: rpi-misc-utils
 # X-Env-Layer-Desc: Raspberry Pi system utilities
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 # METAEND
 ---
 mmdebstrap:
   packages:
     - raspi-config
-    - rpi-eeprom
     - raspi-utils
     - raspi-utils-core
     - raspi-utils-dt

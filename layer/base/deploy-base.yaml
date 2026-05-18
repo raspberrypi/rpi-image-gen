@@ -10,7 +10,7 @@
 # X-Env-VarRequires: IGconf_sys_workroot,IGconf_artefact_version
 # X-Env-VarRequires-Valid: string,string
 #
-# X-Env-Var-compression: none
+# X-Env-Var-compression: zstd
 # X-Env-Var-compression-Desc: Compression scheme used when deploying assets.
 #  Identifier for the compression scheme applied to final deployment artefacts.
 #  This setting affects how final assets (disk images, filesystem tarballs,

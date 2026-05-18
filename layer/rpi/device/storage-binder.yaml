@@ -1,0 +1,32 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-storage-binder
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Boot-device membership tagging for partitions and
+#  DM devices backed by the boot storage device, with initramfs support.
+# X-Env-Layer-Version: 1.0.0
+#
+# X-Env-VarPrefix: storagebinder
+#
+# X-Env-Var-overlay: ${DIRECTORY}/storage-binder
+# X-Env-Var-overlay-Desc: Directory holding filesystem assets installed to
+#  support boot-device membership tagging.
+# X-Env-Var-overlay-Required: n
+# X-Env-Var-overlay-Valid: string
+# X-Env-Var-overlay-Set: force
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - udev
+    - coreutils
+  customize-hooks:
+    - install -D -m 0755 "${IGconf_storagebinder_overlay}/bin/rpi-bootdev-tag" "$1/usr/bin/rpi-bootdev-tag"
+    - install -D -m 0644 "${IGconf_storagebinder_overlay}/udev/rules.d/storage-binder.rules" "$1/etc/udev/rules.d/99-rpi-00-bootdev.rules"
+    - |
+      set -eu
+      if [ -d "$1/etc/initramfs-tools" ]; then
+        rsync -a --chmod=F755,D755 "${IGconf_storagebinder_overlay}/initramfs-tools/" "$1/etc/initramfs-tools/";
+      fi
+      if [ -d "$1/usr/lib/dracut" ]; then
+        rsync -a --chmod=F755,D755 "${IGconf_storagebinder_overlay}/dracut/" "$1/usr/lib/dracut/";
+      fi

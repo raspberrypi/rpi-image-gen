@@ -65,11 +65,11 @@ mmdebstrap:
       
       # Build command arguments based on boolean config values
       if [ "$IGconf_splash_skip_image_checks" = "y" ] && [ "$IGconf_splash_update_cmdline" != "y" ]; then
-        chroot $1 /usr/bin/configure-splash --skip-image-checks --no-cmdline $TEMP_IMAGE
+        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE --skip-image-checks --no-cmdline
       elif [ "$IGconf_splash_skip_image_checks" = "y" ]; then
-        chroot $1 /usr/bin/configure-splash --skip-image-checks $TEMP_IMAGE
+        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE --skip-image-checks
       elif [ "$IGconf_splash_update_cmdline" != "y" ]; then
-        chroot $1 /usr/bin/configure-splash --no-cmdline $TEMP_IMAGE
+        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE --no-cmdline
       else
         chroot $1 /usr/bin/configure-splash $TEMP_IMAGE
       fi

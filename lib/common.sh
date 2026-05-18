@@ -245,3 +245,46 @@ with open(sys.argv[1], encoding='utf-8') as src:
       print(f'{key}="{value}"')
 PY
 }
+
+
+checkpath_world_exec() {
+   [[ -n "${1:-}" ]] || die "missing path"
+   local path mode
+   path=$(realpath -e "$1") || die "path does not exist: $1"
+
+   # Walk up path checking parents
+   while [[ -n "$path" ]]; do
+      # %a yields octal, eg 755
+      # 8# prefix indicates an octal number
+      # Logical test checks if world execute is set
+      # ACL bits not supported (getfacl)
+      mode=$(stat -c "%a" "$path" 2>/dev/null) || return 1
+
+      if [[ $((8#$mode & 1)) -eq 0 ]]; then
+         warn "$path $mode"
+         return 1
+      fi
+
+      # Move up one level
+      [[ "$path" == "/" ]] && break
+      path=$(dirname "$path")
+   done
+   return 0
+}
+
+
+# apt (_apt user) requires world execute permissions on all leading paths. This
+# wraps a recursive dir check with strict mkdir and policy decisions.
+xmkdir() {
+   local dir="$1"
+   [[ -n "$dir" ]] || die "xmkdir: missing directory"
+
+   if [[ -e "$dir" && ! -d "$dir" ]]; then
+      die "xmkdir: not a directory: $dir"
+   elif [[ ! -d "$dir" ]]; then
+      install -d -m 0755 "$dir" || die "xmkdir: failed to create directory: $dir"
+   else
+      :
+   fi
+   checkpath_world_exec "$dir" || warn "xmkdir: $dir or ancestor not o+x (apt may fail)"
+}

@@ -1,0 +1,2 @@
+SUBSYSTEM=="block", ENV{RPI_ONBOOTDEV}=="1", ENV{ID_PART_ENTRY_NAME}=="bootconfig", SYMLINK+="disk/by-slot/bootconfig"
+SUBSYSTEM=="block", ENV{RPI_ONBOOTDEV}=="1", ENV{ID_PART_ENTRY_NAME}=="persistent", SYMLINK+="disk/by-slot/persistent"

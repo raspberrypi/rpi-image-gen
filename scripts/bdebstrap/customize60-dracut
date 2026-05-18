@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -eu
+
+if ! grep-dctrl -q -XFStatus "install ok installed" -a \
+   -XFPackage dracut $1/var/lib/dpkg/status ; then
+   exit 0
+fi
+
+# Install files
+
+mkdir -p "$1/etc/dracut.conf.d/"
+echo "RPI_BOOT_MEDIA=\"${IGconf_device_storage_type}\"" \
+   > "$1/etc/dracut.conf.d/60-rpi-common.conf"
+
+dirs=(../device/dracut.conf.d)
+for kind in image device ; do
+   dir=$(igconf getval ${kind}_assetdir) || continue
+   if [ -d "${dir}/device/dracut.conf.d" ] ; then
+      dirs+=("${dir}/device/dracut.conf.d")
+   fi
+done
+
+for dir in "${dirs[@]}" ; do
+   [[ -d "$dir" ]] || continue
+   rsync --archive "${dir}/" "$1/etc/dracut.conf.d/"
+done
+
+dirs=(../device/dracut.modules.d)
+for kind in image device ; do
+   dir=$(igconf getval ${kind}_assetdir) || continue
+   if [ -d "${dir}/device/dracut.modules.d" ] ; then
+      dirs+=("${dir}/device/dracut.modules.d")
+   fi
+done
+
+for dir in "${dirs[@]}" ; do
+   [[ -d "$dir" ]] || continue
+   rsync --archive "${dir}/" "$1/usr/lib/dracut/modules.d/"
+done
+
+chroot "$1" dracut --force --regenerate-all --no-hostonly

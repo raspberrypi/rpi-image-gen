@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -eu
+
+# Set devices requiring cryptroot unlock
+if [[ $IGconf_image_pmap == crypt ]]; then
+   if [ -d "$1/etc/initramfs-tools" ]; then
+      echo "cryptroot /dev/disk/by-slot/cryptroot none luks,initramfs,keyscript=/lib/cryptsetup/keyscripts/hwkey" > "${1}/etc/crypttab"
+   elif [ -d "$1/usr/lib/dracut" ]; then
+      echo "cryptroot /dev/disk/by-slot/cryptroot none luks" > "${1}/etc/crypttab"
+   fi
+fi

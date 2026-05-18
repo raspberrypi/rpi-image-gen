@@ -1,7 +1,7 @@
 [
    {
       "attributes": {
-         "PMAPversion": "1.4.2",
+         "PMAPversion": "1.5.0",
          "system_type": "slotted"
       }
    },
@@ -9,7 +9,7 @@
       "partitions": [
          {
             "comment": "boot configuration",
-            "image": "config"
+            "image": "bootconfig"
          }
       ]
    },
@@ -47,11 +47,12 @@
    },
    {
       "encrypted": {
+         "expand-to-fit": true,
          "luks2": {
-            "key_size": 512,
-            "cipher": "aes-xts-plain64",
-            "hash": "sha256",
-            "label": "OSDATA",
+            "key_size": ${LUKS_KEYSIZE},
+            "cipher": "${LUKS_CIPHER}",
+            "hash": "${LUKS_HASH}",
+            "label": "OSDATA_CRYPT",
             "uuid": "${CRYPT_UUID}",
             "mname": "osdata_crypt",
             "etype": "partitioned"
@@ -85,7 +86,8 @@
          "partitions": [
             {
                "comment": "Encrypted user data - shared between slots",
-               "image": "persistent"
+               "image": "persistent",
+               "expand-to-fit": true
             }
          ]
       }

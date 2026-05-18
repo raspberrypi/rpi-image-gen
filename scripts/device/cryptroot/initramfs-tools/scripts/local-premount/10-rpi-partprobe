@@ -1,0 +1,26 @@
+#!/bin/sh
+
+PREREQ=""
+
+prereqs() {
+   echo "$PREREQ"
+}
+
+case $1 in
+   prereqs)
+      prereqs
+      exit 0
+      ;;
+esac
+
+. /scripts/functions
+
+. /conf/conf.d/rpi-cryptroot
+
+for dev in ${PARTPROBE_DEVICES-}; do
+   if [ -e /dev/mapper/$dev ] ; then
+      kpartx -av -p p /dev/mapper/$dev && udevadm settle
+   else
+      log_failure_msg "Not found: /dev/mapper/$dev"
+   fi
+done

@@ -1,0 +1,58 @@
+#!/bin/sh
+
+PREREQ=""
+prereqs()
+{
+   echo "$PREREQ"
+}
+
+case $1 in
+   prereqs)
+      prereqs
+      exit 0
+      ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+copy_exec /usr/sbin/kpartx || true
+copy_exec /usr/sbin/cryptsetup
+copy_exec /usr/bin/rpi-fw-crypto
+copy_exec /usr/bin/block-device-id
+
+# https://bugs.launchpad.net/ubuntu/+source/initramfs-tools/+bug/1958594
+for so in $(ldconfig -p | sed -nr 's/^\s*libgcc_s\.so.*=>\s*//p'); do
+   copy_exec "$so"
+done
+
+for module in $(find /usr/lib/modules/$version \
+   \( \
+   -name 'dm-mod.*' \
+   -o \
+   -name 'dm-crypt.*' \
+   -o \
+   -name 'af_alg.*' \
+   -o \
+   -name 'algif_skcipher.*' \
+   -o \
+   -name 'libaes.*' \
+   -o \
+   -name 'aes_generic.*' \
+   -o \
+   -name 'aes-arm64.*' \
+   -o \
+   -name 'libpoly1305.*' \
+   -o \
+   -name 'nhpoly1305.*' \
+   -o \
+   -name 'adiantum.*' \
+   -o \
+   -name 'libchacha.*' \
+   -o \
+   -name 'chacha-neon.*' \
+   -o \
+   -name 'chacha_generic.*' \
+   \) \
+   -exec basename {} \; |sed 's/\.ko\.xz$//; s/\.ko$//' ); do
+   manual_add_modules $module
+done

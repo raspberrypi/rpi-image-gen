@@ -1,0 +1,6 @@
+X-IG-Signed-By: /usr/share/keyrings/raspbian-archive-keyring.gpg
+Types: deb
+URIs: http://raspbian.raspberrypi.com/raspbian/
+Suites: bookworm
+Components: main contrib non-free rpi
+Architectures: armhf

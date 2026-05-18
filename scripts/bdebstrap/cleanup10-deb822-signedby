@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+
+import pathlib
+import sys
+from debian import deb822
+
+if len(sys.argv) < 2:
+    sys.exit(1)
+
+root = pathlib.Path(sys.argv[1])
+sources_dir = root / "etc/apt/sources.list.d"
+
+if not sources_dir.is_dir():
+    sys.exit(0)
+
+for f in sorted(sources_dir.glob("*.sources")):
+    stanzas = list(deb822.Deb822.iter_paragraphs(f.read_text()))
+
+    keyring = next((s["X-IG-Signed-By"] for s in stanzas if "X-IG-Signed-By" in s), None)
+    if not keyring:
+        continue
+
+    # Keyring must exist for this mirror to be signed-by qualified
+    if not (root / keyring.strip().lstrip("/")).exists():
+        print(f"signedby: {f.name}: {keyring} not found in chroot", file=sys.stderr)
+        sys.exit(1)
+
+    for stanza in stanzas:
+        stanza.pop("X-IG-Signed-By", None)
+        if "Signed-By" not in stanza:
+            stanza["Signed-By"] = keyring
+
+    f.write_text("\n\n".join(str(s).rstrip("\n") for s in stanzas) + "\n")

@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: docker-debian-bookworm
 # X-Env-Layer-Category: container
 # X-Env-Layer-Desc: Docker engine and framework for Debian Bookworm
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Provides: docker
 # X-Env-Layer-Requires: rpi-user-credentials,sys-build-base
 #
@@ -26,7 +26,7 @@ mmdebstrap:
   architectures:
     - arm64
   mirrors:
-    - deb https://download.docker.com/linux/debian bookworm stable
+    - ${IGTOP}/templates/debian/apt/docker-bookworm.sources
   setup-hooks:
     - mkdir -p $1/usr/share/keyrings/
     - curl -fsSL https://download.docker.com/linux/debian/gpg -o $1/usr/share/keyrings/docker.asc
@@ -39,12 +39,6 @@ mmdebstrap:
     - docker-buildx-plugin
     - docker-compose-plugin
   customize-hooks:
-    - mkdir -p $1/etc/apt/sources.list.d
-    - |-
-      cat <<- EOF > $1/etc/apt/sources.list.d/docker.list
-      deb [arch=arm64 signed-by=/usr/share/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable
-      EOF
-    - sed -i '/download\.docker\.com/d' $1/etc/apt/sources.list
     - chroot $1 sh -c "groupadd -f -r docker"
     - |-
       if igconf isy docker_trust_user1 ; then

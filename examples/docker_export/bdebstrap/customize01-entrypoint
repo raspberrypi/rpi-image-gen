@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -eu
+
+test -x "${1}/bin/bash"
+install -d -m 0755 "${1}/usr/local/bin"
+
+cat > "${1}/usr/local/bin/docker-entrypoint.sh" << 'EOF'
+#!/bin/bash
+set -e
+export LANG=C.UTF-8
+exec "$@"
+EOF
+chmod +x "${1}/usr/local/bin/docker-entrypoint.sh"

@@ -1,0 +1,5 @@
+#!/bin/sh
+# https://cryptsetup-team.pages.debian.net/cryptsetup/README.initramfs.html
+# crypttab(5)
+HW_ID=$(block-device-id "$CRYPTTAB_SOURCE")
+echo "$HW_ID" | rpi-fw-crypto hmac --in /dev/stdin --key-id 1 --outform hex

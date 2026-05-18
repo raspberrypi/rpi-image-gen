@@ -29,6 +29,7 @@
 mmdebstrap:
   packages:
     - rpi-connect
+    - rpifwcrypto
     - wayvnc
   customize-hooks:
     - |-

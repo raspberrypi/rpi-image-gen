@@ -1,0 +1,5 @@
+# Let NetworkManager manage all devices on this system.
+# For more information, see netplan(5).
+network:
+  version: 2
+  renderer: NetworkManager
