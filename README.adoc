@@ -4,7 +4,7 @@ rpi-image-gen is a tool for creating custom software images for Raspberry Pi dev
 
 **For the tool used to create the Raspberry Pi OS distribution, please go to https://github.com/RPi-Distro/pi-gen**
 
-**NOTE** rpi-image-gen is under active development. Please report issues at https://github.com/raspberrypi/rpi-image-gen. Feature suggestions are welcome.
+NOTE: rpi-image-gen is under active development. Please report issues at https://github.com/raspberrypi/rpi-image-gen. Feature suggestions are welcome.
 
 == Quick Start
 
@@ -13,22 +13,20 @@ rpi-image-gen is a tool for creating custom software images for Raspberry Pi dev
 git clone https://github.com/raspberrypi/rpi-image-gen.git
 cd rpi-image-gen
 sudo ./install_deps.sh
-./rpi-image-gen build -c ./config/bookworm-minbase.yaml
+./rpi-image-gen build -c ./config/trixie-minbase.yaml
 ----
 
-The device image will be in `./work/image-deb12-arm64-min/deb12-arm64-min.img`
+The device image will be in `./work/image-deb13-arm64-min/deb13-arm64-min.img`
 
 Install it onto an SD card using Raspberry Pi Imager (https://www.raspberrypi.com/software/). Select "Use Custom" if using the GUI, or use the command line:
 
 ----
-sudo rpi-imager --cli ./work/image-deb12-arm64-min/deb12-arm64-min.img /dev/mmcblk0
+sudo rpi-imager --cli ./work/image-deb13-arm64-min/deb13-arm64-min.img /dev/mmcblk0
 ----
 
 **Note:** This image intentionally has login passwords disabled.
 
 To install via other means, for example using https://github.com/raspberrypi/usbboot[rpiboot,window=_blank] with https://github.com/raspberrypi/pi-gen-micro[pi-gen-micro,window=_blank]'s usb mass-storage or fastboot gadget, or provisioning with https://github.com/raspberrypi/rpi-sb-provisioner[rpi-sb-provisioner,window=_blank], take a look at the documentation in those repositories.
-
-The rpi-image-gen link:./docs/index.adoc[technical documentation] and link:./examples[examples directory] provide customisation and usage guidance.
 
 == Why use this?
 
@@ -82,13 +80,13 @@ rpi-image-gen is developed on Raspberry Pi OS, with Debian Bookworm and Trix
 
 * **link:docs/index.adoc[Index]** - Comprehensive reference for the configuration system, layer management, metadata, variable validation, provisioning, execution flow, etc.
 
-Documentation can be served locally using `rpi-image-gen docs`, which starts a web server on port 3142. Point your browser to the URL printed on startup.
+The latest documentation is also available at https://raspberrypi.github.io/rpi-image-gen. Run `rpi-image-gen docs` to browse docs matching your local version. This starts a web server on port 3142. Point your browser to the URL printed on startup.
 
 === Examples
 
-See the `examples/` directory for tips and help
+See the link:./examples[examples directory] for tips and help.
 
-=== Directory Structure:
+=== Directory Structure
 
 * `bin/` - Common executable files and utilities
 * `config/` - Configuration files
