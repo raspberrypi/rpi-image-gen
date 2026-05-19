@@ -122,12 +122,16 @@
 
     <div class="header">
         <h1>locale-base</h1>
-        <span class="badge">foundation</span>
-        <span class="badge">v1.0.0</span>
-        <p>Default locale settings</p>
+        <span class="badge">i18n</span>
+        <span class="badge">v2.0.0</span>
+        <p>Pre-seeded locale and internationalisation settings</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="locale-config.html" class="dep-badge">locale-config</a>
+        </div>
         <p><strong>Required by:</strong></p>
         <div class="deps">
             
@@ -137,90 +141,41 @@
             
             <a href="debian-bookworm-arm64-slim.html" class="dep-badge">debian-bookworm-arm64-slim</a>
             
-            <a href="debian-bookworm-buildd.html" class="dep-badge">debian-bookworm-buildd</a>
-            
             <a href="debian-trixie-arm64.html" class="dep-badge">debian-trixie-arm64</a>
             
             <a href="debian-trixie-arm64-multi.html" class="dep-badge">debian-trixie-arm64-multi</a>
             
             <a href="debian-trixie-arm64-slim.html" class="dep-badge">debian-trixie-arm64-slim</a>
             
-            <a href="debian-trixie-buildd.html" class="dep-badge">debian-trixie-buildd</a>
-            
-            <a href="essential.html" class="dep-badge">essential</a>
-            
             <a href="raspbian-bookworm-armhf.html" class="dep-badge">raspbian-bookworm-armhf</a>
             
             <a href="raspbian-trixie-armhf.html" class="dep-badge">raspbian-trixie-armhf</a>
             
         </div>
+        <p><strong>Provides:</strong> locale-configured</p>
     </div>
     <div class="section">
         <h2>Configuration Variables</h2>
-        <p><strong>Declares</strong> (prefix: <code>locale</code>):</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Variable</th>
-                    <th>Description</th>
-                    <th>Default</th>
-                    <th>Validation</th>
-                    <th>Policy</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code>IGconf_locale_default</code></td>
-                    <td>The default system locale.</td>
-                    <td>
-                           <code>en_GB.UTF-8</code>
-                    </td>
-                    <td>Non-empty string value</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>IGconf_locale_keyboard_keymap</code></td>
-                    <td>The default system keyboard map.</td>
-                    <td>
-                           <code>gb</code>
-                    </td>
-                    <td>Non-empty string value</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>IGconf_locale_keyboard_layout</code></td>
-                    <td>The default system keyboard layout. See
- debconf-show keyboard-configuration keyboard-configuration/xkb-keymap</td>
-                    <td>
-                           <code>English (UK)</code>
-                    </td>
-                    <td>Non-empty string value</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>IGconf_locale_timezone</code></td>
-                    <td>The default system timezone defined by IANA.</td>
-                    <td>
-                           <code>Europe/London</code>
-                    </td>
-                    <td>Non-empty string value</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <p><strong>References:</strong>
+        <code>IGconf_locale_timezone</code>, 
+        <code>IGconf_locale_default</code>, 
+        <code>IGconf_locale_keyboard_layout</code>, 
+        <code>IGconf_locale_keyboard_keymap</code>
+        </p>
+    </div>
+    <div class="section">
+        <h2>mmdebstrap</h2>
+        
+        <h3>Packages</h3>
+        <p>Installs:</p>
+        <ul>
+            <li><code>console-setup</code></li>
+        </ul>
     </div>
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>base/locale-base.yaml</code></p>
+        <p><strong>File:</strong> <code>app-i18n/locale-base.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
     </div>
 </body>
