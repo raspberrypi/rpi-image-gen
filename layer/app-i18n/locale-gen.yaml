@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: locale-gen
+# X-Env-Layer-Category: i18n
+# X-Env-Layer-Desc: Installs and generates locales at build time
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: locale-configured
+# X-Env-Layer-Provides: locale-generated
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - locales

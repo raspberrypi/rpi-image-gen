@@ -1,0 +1,38 @@
+# METABEGIN
+# X-Env-Layer-Name: locale-base
+# X-Env-Layer-Category: i18n
+# X-Env-Layer-Desc: Pre-seeded locale and internationalisation settings
+# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Requires: locale-config
+# X-Env-Layer-Provides: locale-configured
+#
+# X-Env-VarRequires:
+#  IGconf_locale_timezone,
+#  IGconf_locale_default,
+#  IGconf_locale_keyboard_layout,
+#  IGconf_locale_keyboard_keymap
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - console-setup
+  essential-hooks:
+    - echo tzdata tzdata/Areas select "${IGconf_locale_timezone%%/*}"
+        | chroot $1 debconf-set-selections
+    - echo tzdata tzdata/Zones/"${IGconf_locale_timezone%%/*}" select "${IGconf_locale_timezone#*/}"
+        | chroot $1 debconf-set-selections
+    - echo locales locales/locales_to_be_generated multiselect "$IGconf_locale_default" UTF-8
+        | chroot $1 debconf-set-selections
+    - echo locales locales/default_environment_locale select "$IGconf_locale_default"
+        | chroot $1 debconf-set-selections
+    - echo keyboard-configuration keyboard-configuration/variant select "$IGconf_locale_keyboard_layout"
+        | chroot $1 debconf-set-selections
+    - echo keyboard-configuration keyboard-configuration/xkb-keymap select "$IGconf_locale_keyboard_keymap"
+        | chroot $1 debconf-set-selections
+    - |-
+      if grep -q 'VERSION_CODENAME=bookworm' "$1/etc/os-release" 2>/dev/null; then
+        printf "LANG=C.UTF-8\nLANGUAGE=C\n" > "$1/etc/default/locale"
+      else
+        printf "LANG=C.UTF-8\nLANGUAGE=C\n" > "$1/etc/locale.conf"
+      fi
