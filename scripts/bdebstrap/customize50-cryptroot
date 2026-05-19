@@ -4,6 +4,7 @@
 
 set -eu
 
+[ -n "${IGconf_image_outputdir:-}" ] || exit 0
 [ -f "${IGconf_image_outputdir}/provisionmap.json" ] || exit 0
 
 # Fetch encrypted container info from the PMAP
