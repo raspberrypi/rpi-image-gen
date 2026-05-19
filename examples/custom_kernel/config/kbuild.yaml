@@ -3,9 +3,10 @@ env:
 
 artefact:
   context: build-vehicles
-  target_name: deb12-kbuild.tgz
+  target_name: deb13-kbuild.tgz
 
 layer:
-  base: debian-bookworm-buildd
+  base: debian-trixie-buildd
+  lang: locale-base
   tools: kbuild-base
 
