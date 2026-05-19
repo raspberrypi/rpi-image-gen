@@ -35,7 +35,7 @@ Using podman, import the tarball to use as the container image.
 
 [source,bash]
 ----
-$ podman import ./work/build-vehicles/deb12-kbuild.tgz chroot:deb12-kbuild
+$ podman import ./work/build-vehicles/deb13-kbuild.tgz chroot:deb13-kbuild
 ----
 
 NOTE: It's possible to use other container managers instead of podman, e.g. docker.
@@ -46,7 +46,7 @@ Start the container, making the kernel source available to it.
 
 [source,bash]
 ----
-$ podman run -it --userns=keep-id -e HOME=/home/build -w /home/build --user build -v ./work/:/home/build/work chroot:deb12-kbuild /bin/bash -l
+$ podman run -it --userns=keep-id -e HOME=/home/build -w /home/build --user build -v ./work/:/home/build/work chroot:deb13-kbuild /bin/bash -l
 ----
 
 `--userns=keep-id`
@@ -107,7 +107,7 @@ logout
 ----
 $ podman ps -a
 CONTAINER ID  IMAGE                          COMMAND       CREATED         STATUS                         PORTS       NAMES
-b2de4ac17059  localhost/chroot:deb12-kbuild  /bin/bash -l  22 minutes ago  Exited (0) About a minute ago              infallible_leavitt
+b2de4ac17059  localhost/chroot:deb13-kbuild  /bin/bash -l  22 minutes ago  Exited (0) About a minute ago              infallible_leavitt
 
 $ podman start b2de4ac17059
 b2de4ac17059

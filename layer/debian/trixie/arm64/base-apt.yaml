@@ -2,13 +2,9 @@
 # X-Env-Layer-Name: debian-trixie-arm64
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Debian Trixie apt base for arm64.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 3.0.0
 # X-Env-Layer-Requires: locale-base
-#
-# X-Env-VarRequires: IGconf_locale_timezone,
-#  IGconf_locale_default,
-#  IGconf_locale_keyboard_layout,
-#  IGconf_locale_keyboard_keymap
+# X-Env-Layer-Provides: debian-base
 # METAEND
 ---
 mmdebstrap:
@@ -21,20 +17,6 @@ mmdebstrap:
     - ${IGTOP}/templates/debian/apt/trixie.sources
   packages:
     - linux-sysctl-defaults
-  essential-hooks:
-    - echo tzdata tzdata/Areas select "${IGconf_locale_timezone%%/*}"
-        | chroot $1 debconf-set-selections
-    - echo tzdata tzdata/Zones/"${IGconf_locale_timezone%%/*}" select "${IGconf_locale_timezone#*/}"
-        | chroot $1 debconf-set-selections
-    - echo locales locales/locales_to_be_generated multiselect "$IGconf_locale_default" UTF-8
-        | chroot $1 debconf-set-selections
-    - echo locales locales/default_environment_locale select "$IGconf_locale_default"
-        | chroot $1 debconf-set-selections
-    - echo keyboard-configuration keyboard-configuration/variant select "$IGconf_locale_keyboard_layout"
-        | chroot $1 debconf-set-selections
-    - echo keyboard-configuration keyboard-configuration/xkb-keymap select "$IGconf_locale_keyboard_keymap"
-        | chroot $1 debconf-set-selections
-    - printf "LANG=C.UTF-8\nLANGUAGE=C\n" > $1/etc/locale.conf
   aptopts:
     - APT::Install-Suggests "false"
     - APT::Install-Recommends "false"
