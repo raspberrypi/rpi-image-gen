@@ -5,7 +5,7 @@
 #  This provides a base layer specifically designed for automated package
 #  building and software compilation.
 # X-Env-Layer-Version: 3.0.0
-# X-Env-Layer-Requires: locale-base
+# X-Env-Layer-Requires: locale-gen
 # X-Env-Layer-Provides: debian-base
 # METAEND
 ---
