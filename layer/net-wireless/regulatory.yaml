@@ -2,10 +2,24 @@
 # X-Env-Layer-Name: wireless-regulatory
 # X-Env-Layer-Category: connectivity
 # X-Env-Layer-Desc: Wireless regulatory database
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
 # X-Env-Layer-Provides: wireless-regdb
+#
+# X-Env-VarPrefix: ieee80211
+#
+# X-Env-Var-regdom: GB
+# X-Env-Var-regdom-Desc: ISO 3166-1 alpha-2 wireless country code definition
+#  to set the Regulatory Domain global default. This will be written to
+#  /etc/modprobe.d/cfg80211_regdomain.conf. Additional phy settings may be
+#  required.
+# X-Env-Var-regdom-Required: n
+# X-Env-Var-regdom-Valid: string
+# X-Env-Var-regdom-Set: y
+#
 # METAEND
 ---
 mmdebstrap:
   packages:
     - wireless-regdb
+  customize-hooks:
+    - echo "options cfg80211 ieee80211_regdom=${IGconf_ieee80211_regdom}" > $1/etc/modprobe.d/cfg80211_regdomain.conf
