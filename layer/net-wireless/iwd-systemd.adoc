@@ -1,0 +1,45 @@
+= iwd (iNet wireless daemon)
+
+== Build-time Wireless Profile
+
+`IGconf_iwd_profile` accepts a path to an iwd network profile file. The file is installed into `/var/lib/iwd/` preserving its filename and contents exactly. The filename must be identical to the network SSID. See https://manpages.debian.org/testing/iwd/iwd.network.5.en.html[iwd.network(5),window=_blank].
+
+For example, a profile for a WPA2 network named `Pi Towers Guest`:
+
+.Pi Towers Guest.psk
+[source,ini]
+----
+[Security]
+Passphrase=<passphrase>
+----
+
+The profile file can be supplied via different mechanisms.
+
+=== Config YAML (absolute path)
+
+[source,yaml]
+----
+iwd:
+  profile: /path/to/Pi Towers Guest.psk
+----
+
+=== Config YAML (source-relative path)
+
+Use the `${@SRCROOT}` https://raspberrypi.github.io/rpi-image-gen/config/index.html#_anchors[anchor,window=_blank] to express the path relative to the source root (the directory passed via `rpi-image-gen -S`):
+
+[source,yaml]
+----
+iwd:
+  profile: ${@SRCROOT}/Pi Towers Guest.psk
+----
+
+=== Command line
+
+Pass the profile path as a build variable. Quote the value if the filename contains spaces:
+
+[source,bash]
+----
+$ rpi-image-gen build -S ./examples/ota/ -c ota.yaml -- IGconf_iwd_profile='Pi Towers Guest.psk'
+----
+
+NOTE: A bare filename is resolved relative to the source directory determined by `rpi-image-gen`. Use an absolute path or the `${@SRCROOT}` anchor to be explicit.
