@@ -11,12 +11,12 @@ igconf isy sbom_enable || exit 0
 
 SYFTCFG=$(realpath -e $(igconf getval sbom_syft_config)) || die "Invalid syft config"
 
-SYFT_VER=v1.38.0
+SYFT_VER=v1.44.0  # leave empty to install latest
 
 # If host has syft, use it
 if ! hash syft 2>/dev/null; then
-   curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-      | sh -s -- -b "${IGconf_sys_workroot}/${DEB_BUILD_GNU_TYPE}/usr/bin" "${SYFT_VER}"
+   curl -sSfL https://get.anchore.io/syft \
+      | sh -s -- -b "${IGconf_sys_workroot}/${DEB_BUILD_GNU_TYPE}/usr/bin" ${SYFT_VER:+"$SYFT_VER"}
 fi
 
 SYFT=$(syft --version 2>/dev/null) || die "syft is unusable"
