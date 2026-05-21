@@ -123,7 +123,7 @@
     <div class="header">
         <h1>wireless-regulatory</h1>
         <span class="badge">connectivity</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v1.1.0</span>
         <p>Wireless regulatory database</p>
     </div>
     <div class="section">
@@ -135,6 +135,37 @@
             
         </div>
         <p><strong>Provides:</strong> wireless-regdb</p>
+    </div>
+    <div class="section">
+        <h2>Configuration Variables</h2>
+        <p><strong>Declares</strong> (prefix: <code>ieee80211</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>IGconf_ieee80211_regdom</code></td>
+                    <td>ISO 3166-1 alpha-2 wireless country code definition
+ to set the Regulatory Domain global default. This will be written to
+ /etc/modprobe.d/cfg80211_regdomain.conf. Additional phy settings may be
+ required.</td>
+                    <td>
+                           <code>GB</code>
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <div class="section">
         <h2>mmdebstrap</h2>
