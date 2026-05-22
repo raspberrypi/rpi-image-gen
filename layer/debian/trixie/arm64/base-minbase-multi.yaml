@@ -1,0 +1,19 @@
+# METABEGIN
+# X-Env-Layer-Name: debian-trixie-arm64-multi-minbase
+# X-Env-Layer-Category: distribution
+# X-Env-Layer-Desc: Debian Trixie multi-arch base for interactive systems.
+#  No apt or dpkg restrictions - recommended packages are preserved, locale
+#  generated.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: locale-base,locale-gen
+# X-Env-Layer-Provides: debian-base
+# METAEND
+---
+mmdebstrap:
+  architectures:
+    - arm64 armhf
+  mode: auto
+  variant: minbase
+  suite: trixie
+  mirrors:
+    - ${IGTOP}/templates/debian/apt/trixie.sources
