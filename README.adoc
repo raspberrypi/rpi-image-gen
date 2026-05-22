@@ -28,6 +28,8 @@ sudo rpi-imager --cli ./work/image-deb13-arm64-min/deb13-arm64-min.img /dev/mmcb
 
 To install via other means, for example using https://github.com/raspberrypi/usbboot[rpiboot,window=_blank] with https://github.com/raspberrypi/pi-gen-micro[pi-gen-micro,window=_blank]'s usb mass-storage or fastboot gadget, or provisioning with https://github.com/raspberrypi/rpi-sb-provisioner[rpi-sb-provisioner,window=_blank], take a look at the documentation in those repositories.
 
+The rpi-image-gen link:./getting_started.adoc[getting started guide], link:./docs/index.adoc[technical documentation] and link:./examples[examples directory] provide customisation and usage guidance.
+
 == Why use this?
 
 * **Fast builds** - Uses pre-built packages instead of building from source
