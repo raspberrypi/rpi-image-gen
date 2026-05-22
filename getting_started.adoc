@@ -31,17 +31,17 @@ This will:
 
 == Define Your Image
 
-We will build three images starting with a single image for a single device. Then we use includes to show how you can define multiple images to manage your whole landscape. In this example, we will assume you have various RPi generations deployed across different locations serving as simple SSH servers on wifi.
+We will build three images starting with a single image for a single device. Then we use includes to show how you can define multiple images to manage your whole landscape. In this example, we will assume you have various RPi generations deployed across different locations serving as simple SSH servers on wifi managed by networkmanager.
 
 === Project Setup
 
-Let's set up a simple project that includes a configuration file and a script to run installation.
+Let's set up a simple project that includes a configuration file, an sshd configuration to install, and a script to customize your setup.
 
 [,sh]
 ----
 mkdir -p myproject/bdebstrap
 echo -e 'ClientAliveInterval 60' > myproject/sshdkeepalive.conf
-echo -e '#!/bin/bash\n\nset -eu\n\nchroot $1 sh -c "apt-get -y install network-manager"\ncp ../sshdkeepalive.conf $1/etc/sshd_config.d/\nchroot $1 sh -c "nmcli --offline connection add type wifi ssid $SSID wifi-sec.psk $PSK wifi-sec.key-mgmt wpa-psk autoconnect yes > /etc/NetworkManager/system-connections/$SSID.nmconnection"\nchroot $1 sh -c "chmod 600 /etc/NetworkManager/system-connections/$SSID.nmconnection"' > myproject/bdebstrap/customize90-myscript
+echo -e '#!/bin/bash\n\nset -eu\n\nchroot $1 sh -c "apt-get -y install network-manager"\ncp ../sshdkeepalive.conf $1/etc/sshd_config.d/\nchroot $1 sh -c "nmcli --offline connection add type wifi ssid $SSID wifi-sec.psk $PSK wifi-sec.key-mgmt wpa-psk autoconnect yes > /etc/NetworkManager/system-connections/$SSID.nmconnection"\nchroot $1 sh -c "chmod 600 /etc/NetworkManager/system-connections/wlan.nmconnection"' > myproject/bdebstrap/customize90-myscript
 chmod 755 myproject/bdebstrap/customize90-myscript
 ----
 
@@ -62,7 +62,7 @@ image:
   root_part_size: 1536M
 
 ssh:
-  pubkey_user1: $(cat ${HOME}/.ssh/id_rsa.pub)
+  pubkey_user1: $(cat ${HOME}/.ssh/id_ed25519.pub)
   pubkey_only: y
 
 packages:
