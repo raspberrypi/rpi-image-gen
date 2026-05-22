@@ -127,7 +127,84 @@
         <p>iNet wireless daemon for wifi management</p>
     </div>
     <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div class="sect1">
+<h2 id="_build_time_wireless_profile">Build-time Wireless Profile</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>IGconf_iwd_profile</code> accepts a path to an iwd network profile file. The file is installed into <code>/var/lib/iwd/</code> preserving its filename and contents exactly. The filename must be identical to the network SSID. See <a href="https://manpages.debian.org/testing/iwd/iwd.network.5.en.html" target="_blank" rel="noopener">iwd.network(5)</a>.</p>
+</div>
+<div class="paragraph">
+<p>For example, a profile for a WPA2 network named <code>Pi Towers Guest</code>:</p>
+</div>
+<div class="listingblock">
+<div class="title">Pi Towers Guest.psk</div>
+<div class="content">
+<pre class="highlight"><code class="language-ini" data-lang="ini">[Security]
+Passphrase=&lt;passphrase&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The profile file can be supplied via different mechanisms.</p>
+</div>
+<div class="sect2">
+<h3 id="_config_yaml_absolute_path">Config YAML (absolute path)</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">iwd:
+  profile: /path/to/Pi Towers Guest.psk</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_config_yaml_source_relative_path">Config YAML (source-relative path)</h3>
+<div class="paragraph">
+<p>Use the <code>${@SRCROOT}</code> <a href="https://raspberrypi.github.io/rpi-image-gen/config/index.html#_anchors" target="_blank" rel="noopener">anchor</a> to express the path relative to the source root (the directory passed via <code>rpi-image-gen -S</code>):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">iwd:
+  profile: ${@SRCROOT}/Pi Towers Guest.psk</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_command_line">Command line</h3>
+<div class="paragraph">
+<p>Pass the profile path as a build variable. Quote the value if the filename contains spaces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen build -S ./examples/ota/ -c ota.yaml -- IGconf_iwd_profile='Pi Towers Guest.psk'</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+A bare filename is resolved relative to the source directory determined by <code>rpi-image-gen</code>. Use an absolute path or the <code>${@SRCROOT}</code> anchor to be explicit.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+        </div>
+    </div>
+    <div class="section">
         <h2>Relationships</h2>
+        <p><strong>Required by:</strong></p>
+        <div class="deps">
+            
+            <a href="trixie-minbase.html" class="dep-badge">trixie-minbase</a>
+            
+        </div>
         <p><strong>Provides:</strong> wifi-supplicant</p>
         <p><strong>Requires Provider:</strong> wireless-regdb, systemd, network-activator</p>
     </div>

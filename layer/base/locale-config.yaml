@@ -1,7 +1,7 @@
 # METABEGIN
-# X-Env-Layer-Name: locale-base
+# X-Env-Layer-Name: locale-config
 # X-Env-Layer-Category: foundation
-# X-Env-Layer-Desc: Default locale settings
+# X-Env-Layer-Desc: Localisation and Internationalisation config settings
 # X-Env-Layer-Version: 1.0.0
 #
 # X-Env-VarPrefix: locale

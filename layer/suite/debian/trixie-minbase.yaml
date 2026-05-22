@@ -1,8 +1,8 @@
 # METABEGIN
 # X-Env-Layer-Name: trixie-minbase
-# X-Env-Layer-Desc: Debian Trixie with apt, utils, wired networking, ssh.
+# X-Env-Layer-Desc: Debian Trixie with apt, utils, wired and wifi networking, ssh.
 # X-Env-Layer-Category: suite
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: debian-trixie-arm64-multi,
 #  rpi-debian-trixie,
 #  rpi-misc-utils,
@@ -11,6 +11,8 @@
 #  rpi-user-credentials,
 #  systemd-net-min,
 #  openssh-server,
-#  systemd-timesyncd
+#  systemd-timesyncd,
+#  wireless-regulatory,
+#  iwd
 # METAEND
 ---

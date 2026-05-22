@@ -19,6 +19,7 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get update
+          sudo chmod o+x /home/runner
           sudo ./install_deps.sh
 
       - name: test harness
@@ -30,6 +31,14 @@ jobs:
         run: |
           ./rpi-image-gen build -c ./config/trixie-minbase.yaml
           ./rpi-image-gen build -c ./config/trixie-minbase-ab.yaml
+          SOURCE_DATE_EPOCH=$(date -d 'today 00:00:00' +%s) \
+            ./rpi-image-gen build -c ./config/ci/arm64-rpi-trixie-slim.yaml
+
+      - name: examples
+        run: |
+          ./rpi-image-gen build -S ./examples/slim/ -c pi5-slim.yaml
+          ./rpi-image-gen build -S ./examples/webkiosk/ -c kiosk.yaml
+          ./rpi-image-gen build -S ./examples/ota/ -c ota.yaml
 
   build-arm64-qemu:
     name: build (arm64, qemu on ubuntu-24.04)
@@ -42,6 +51,7 @@ jobs:
       - name: enable qemu-user-static
         run: |
           sudo apt-get update
+          sudo chmod o+x /home/runner
           sudo apt-get install -y qemu-user-static binfmt-support
           sudo update-binfmts --enable qemu-aarch64
 
@@ -56,3 +66,6 @@ jobs:
       - name: build
         run: ./rpi-image-gen build -c ./config/trixie-minbase.yaml -f
 
+      - name: examples
+        run: |
+          ./rpi-image-gen build -c ./examples/custom_kernel/config/kbuild.yaml

@@ -141,7 +141,7 @@
     <h2>Available Layers</h2>
     {% set categories = layers|groupby('category') %}
     {% for category, category_layers in categories %}
-    <h3>{{ category|title }}</h3>
+    <h3>{{ category }}</h3>
     <div class="layer-list">
         {% for layer in category_layers %}
         <div class="layer-item">
