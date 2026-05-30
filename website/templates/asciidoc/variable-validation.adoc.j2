@@ -1,0 +1,80 @@
+= Variable Validation and Policy Help
+:page-description: Reference for rpi-image-gen layer variable validation rules and set policies.
+
+Reference for rpi-image-gen layer variable validation rules and set policies.
+
+[#set-policies]
+== Set Policies
+
+Set policies determine when and how environment variables are applied during the build process.
+
+{% for policy in validation.set_policies %}
+=== {{ policy.name.title() }}{% if policy.name == 'immediate' %} (Default){% endif %}
+
+{{ policy.description }}
+
+{% endfor %}
+[NOTE]
+====
+Policy aliases:
+
+* `true`, `yes`, `1`, `y` → `immediate`
+* `false`, `no`, `0`, `n` → `skip`
+====
+
+== Validation Types
+
+{% if validation.basic_types %}
+=== Basic Types
+
+{% for type in validation.basic_types %}
+* {{ type.description | cell }}
+{% endfor %}
+{% endif %}
+{% for type in validation.advanced_types %}
+=== {{ type.title.split(' - ')[0] if ' - ' in type.title else type.name.title() + ' Types' }}
+
+*{{ type.title | cell }}*
+{% if type.details %}
+{% for detail in type.details %}
+{% if detail.strip() %}
+* {{ detail | cell }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+== Placeholders
+
+Auto-substituted in variable values:
+
+{% for placeholder in validation.placeholders %}
+* {{ placeholder.name | literal }} — {{ placeholder.description | cell }}
+{% endfor %}
+
+Escape with `\${NAME}` to keep the literal text.
+
+== Example Variable Definitions
+
+[source]
+----
+# Port number validation
+X-Env-Var-port-Valid: int:1024-65535
+
+# Environment selection
+X-Env-Var-env-Valid: development,staging,production
+
+# Hostname validation
+X-Env-Var-hostname-Valid: regex:^[a-zA-Z0-9.-]+$
+
+# Boolean flag
+X-Env-Var-debug-Valid: bool
+
+# Component selection with keywords
+X-Env-Var-component-Valid: keywords:frontend,backend,database
+----
+
+[TIP]
+====
+Use `rpi-image-gen metadata --lint <file>` to quickly check syntax and field names without validating environment variables.
+====

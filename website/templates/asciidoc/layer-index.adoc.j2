@@ -1,0 +1,12 @@
+{{ content }}
+
+== Available Layers
+
+{% set categories = layers | groupby('category') %}
+{% for category, category_layers in categories %}
+=== {{ category | title }}
+
+{% for layer in category_layers %}
+* link:{{ layer.name }}/[{{ layer.name }}] — {{ layer.description | cell }}
+{% endfor %}
+{% endfor %}

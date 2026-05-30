@@ -1,2 +1,11 @@
 work/*
 site/__pycache__
+
+# Docusaurus site artifacts
+website/.docusaurus/
+website/build/
+website/node_modules/
+
+# Generated Docusaurus input docs; produced by website/generate.py
+website/generated-docs/
+website/__pycache__/

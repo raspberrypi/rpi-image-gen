@@ -1,0 +1,175 @@
+= {{ layer.layer_info.name }}
+:page-description: {{ layer.layer_info.description or 'Generated layer reference' }}
+
+{{ layer.layer_info.description or 'No description available' }}
+
+[cols="1,3",options="header"]
+|===
+|Attribute |Value
+{% if layer.layer_info.category %}
+|Category |{{ layer.layer_info.category | cell }}
+{% endif %}
+{% if layer.layer_info.version %}
+|Version |{{ layer.layer_info.version | literal }}
+{% endif %}
+|File |{{ layer.file_path | literal }}
+|Type |{{ layer.layer_info.type | literal }}
+{% if layer.layer_info.type == 'dynamic' and layer.layer_info.generator %}
+|Generator |{{ layer.layer_info.generator | literal }}
+{% endif %}
+{% if layer.overlays %}
+|Overlay |{{ layer.overlays | join(', ') | cell }}
+{% endif %}
+{% if layer.layer_info.conflicts %}
+|Conflicts |{{ layer.layer_info.conflicts | join(', ') | cell }}
+{% endif %}
+|===
+
+{% if layer.companion_doc %}
+== Additional Documentation
+
+{{ layer.companion_doc | strip_document_title }}
+{% endif %}
+{% if layer.dependencies.static_dep or layer.dependencies.dyn_dep or layer.reverse_dependencies or layer.layer_info.provides or layer.layer_info.provider_requires %}
+== Relationships
+
+{% if layer.dependencies.static_dep or layer.dependencies.dyn_dep %}
+*Depends on:*
+
+{% for dep in layer.dependencies.static_dep %}
+* link:../{{ dep }}/[{{ dep }}]
+{% endfor %}
+{% for dep in layer.dependencies.dyn_dep %}
+* {{ dep | literal }} _(dynamic dependency)_
+{% endfor %}
+{% endif %}
+{% if layer.reverse_dependencies %}
+*Required by:*
+
+{% for dep in layer.reverse_dependencies %}
+* link:../{{ dep }}/[{{ dep }}]
+{% endfor %}
+{% endif %}
+{% if layer.layer_info.provides %}
+*Provides:* {{ layer.layer_info.provides | join(', ') | cell }}
+{% endif %}
+{% if layer.layer_info.provider_requires %}
+*Requires provider:* {{ layer.layer_info.provider_requires | join(', ') | cell }}
+{% endif %}
+{% endif %}
+{% if layer.variables or layer.required_variables %}
+== Configuration Variables
+
+{% if layer.required_variables %}
+*References:* {% for var_ref in layer.required_variables %}{{ var_ref | literal }}{% if not loop.last %}, {% endif %}{% endfor %}
+
+{% endif %}
+{% if layer.variables %}
+*Declares*{% if layer.variable_prefix %} with prefix {{ layer.variable_prefix | literal }}{% endif %}:
+
+[cols="1,3,2,2,1",options="header"]
+|===
+|Variable |Description |Default |Validation |Policy
+{% for var_name, var in layer.variables.items() %}
+|{{ var.name | literal }}
+|{{ (var.description or 'No description') | cell }}
+|{{ (var | default_value) | literal }}
+|{{ (var.validation_description or 'None') | cell }}
+|link:../variable-validation/#set-policies[{{ var.set_policy }}]
+{% endfor %}
+|===
+{% endif %}
+{% endif %}
+{% if layer.anchors %}
+== Anchors
+
+[cols="1,1,3",options="header"]
+|===
+|Anchor |Variable |Description
+{% for anchor in layer.anchors %}
+|{{ anchor.name | literal }}
+|{{ anchor.variable | literal }}
+|{{ (anchor.description or 'No description') | cell }}
+{% endfor %}
+|===
+{% endif %}
+{% if layer.mmdebstrap.get('packages') or layer.mmdebstrap.get('mirrors') or layer.mmdebstrap.get('suite') or layer.mmdebstrap.get('variant') or layer.mmdebstrap.get('architectures') or layer.mmdebstrap.get('dpkgopts') or layer.mmdebstrap.get('aptopts') %}
+
+== mmdebstrap
+
+{% if layer.mmdebstrap.get('suite') %}
+=== Suite
+{% set suite = layer.mmdebstrap.suite %}
+{% if suite is string %}
+* {{ suite | literal }}
+{% else %}
+{% for item in suite %}
+* {{ item | literal }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if layer.mmdebstrap.get('variant') %}
+=== Variant
+{% set variant = layer.mmdebstrap.variant %}
+{% if variant is string %}
+* {{ variant | literal }}
+{% else %}
+{% for item in variant %}
+* {{ item | literal }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if layer.mmdebstrap.get('architectures') %}
+=== Architectures
+{% set architectures = layer.mmdebstrap.architectures %}
+{% if architectures is string %}
+* {{ architectures | literal }}
+{% else %}
+{% for item in architectures %}
+* {{ item | literal }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if layer.mmdebstrap.get('packages') %}
+=== Packages
+
+Installs:
+
+{% for package in layer.mmdebstrap.packages %}
+* {{ package | literal }}
+{% endfor %}
+{% endif %}
+{% if layer.mmdebstrap.get('mirrors') %}
+=== Mirrors
+{% for mirror in layer.mmdebstrap.mirrors %}
+* {{ mirror | literal }}
+{% endfor %}
+{% endif %}
+{% if layer.mmdebstrap.get('dpkgopts') %}
+=== dpkgopts
+{% for opt in layer.mmdebstrap.dpkgopts %}
+* {{ opt | literal }}
+{% endfor %}
+{% endif %}
+{% if layer.mmdebstrap.get('aptopts') %}
+=== aptopts
+{% for opt in layer.mmdebstrap.aptopts %}
+* {{ opt | literal }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if layer.env %}
+
+== Environment
+
+Sets the following variables:
+
+[cols="1,3",options="header"]
+|===
+|Variable |Value
+{% for env_var, env_value in layer.env.items() %}
+|{{ env_var | literal }}
+|{{ env_value | literal }}
+{% endfor %}
+|===
+{% endif %}
