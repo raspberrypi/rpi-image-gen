@@ -55,3 +55,7 @@ WantedBy=local-fs.target
 EOF
     done
 done
+
+   # Create .wants symlinks for local-fs.target
+   mkdir -p "${OUT_DIR}/local-fs.target.wants"
+   ln -sf "${OUT_DIR}/${unit_name}" "${OUT_DIR}/local-fs.target.wants/${unit_name}"
