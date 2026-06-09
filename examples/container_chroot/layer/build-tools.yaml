@@ -1,5 +1,6 @@
 # METABEGIN
 # X-Env-Layer-Name: build-tools
+# X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Native development tools to support pkg download and build
 #  using autotools in a bash shell.

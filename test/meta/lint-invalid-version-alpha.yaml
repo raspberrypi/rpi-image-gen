@@ -1,0 +1,6 @@
+# METABEGIN
+# X-Env-Layer-Name: lint-invalid-version-alpha
+# X-Env-Layer-Desc: Layer with non-numeric version components
+# X-Env-Layer-Version: a.b.c
+# X-Env-Layer-Category: test
+# METAEND

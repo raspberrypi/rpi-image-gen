@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import argparse
 import yaml
@@ -782,7 +783,7 @@ class Metadata:
         """Lint metadata using schema-only checks (no environment dependence)."""
         results = {}
 
-        # 0) Require at least some X-Env-* fields; otherwise treat as lint error
+        # Require at least some X-Env-* fields; otherwise treat as lint error
         raw_meta = getattr(self._container, "raw_metadata", {}) if hasattr(self, "_container") else {}
         if not raw_meta:
             results["NO_METADATA_FIELDS"] = self._result_builder.build_result(
@@ -803,10 +804,10 @@ class Metadata:
             )
             return results
 
-        # 1) Schema errors (unsupported fields, etc.)
+        # Schema errors (unsupported fields, etc.)
         results.update(self._collect_schema_errors())
 
-        # 2) Missing layer name if any X-Env-Layer-* is present
+        # Missing layer name / version if any X-Env-Layer-* is present
         has_layer_fields = any(k.startswith("X-Env-Layer-") for k in raw_meta.keys())
         if has_layer_fields and not raw_meta.get(XEnv.layer_name()):
             results["MISSING_LAYER_NAME"] = {
@@ -815,17 +816,35 @@ class Metadata:
                 "required": True,
                 "message": f"{self.filepath}: X-Env-Layer-* fields present but {XEnv.layer_name()} is missing",
             }
+        if has_layer_fields and not raw_meta.get(XEnv.layer_version()):
+            results["MISSING_LAYER_VERSION"] = self._result_builder.build_result(
+                status="missing_layer_version",
+                valid=False,
+                required=True,
+                message=f"{self.filepath}: X-Env-Layer-* fields present but {XEnv.layer_version()} is missing",
+            )
 
-        # 3) Var prefix + orphaned attribute checks (schema-only)
+        # Layer version must be major.minor.patch if present
+        version_val = raw_meta.get(XEnv.layer_version())
+        if version_val is not None and not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", version_val.strip()):
+            results["INVALID_LAYER_VERSION"] = self._result_builder.build_result(
+                status="invalid_layer_version",
+                value=version_val,
+                valid=False,
+                required=False,
+                message=f"{self.filepath}: {XEnv.layer_version()} '{version_val}' is not major.minor.patch",
+            )
+
+        # Var prefix + orphaned attribute checks (schema-only)
         results.update(self._validate_prefix_and_orphans())
 
-        # 4) Validation rule sanity checks (schema-only)
+        # Validation rule sanity checks (schema-only)
         results.update(self._lint_validation_rules(raw_meta))
 
-        # 5) Trigger rule syntax (condition expressions and action keywords)
+        # Trigger rule syntax (condition expressions and action keywords)
         results.update(self._lint_trigger_rules(raw_meta))
 
-        # 6) Conflict expression syntax
+        # Conflict expression syntax
         results.update(self._lint_conflict_rules(raw_meta))
 
         return results
@@ -1383,6 +1402,8 @@ def _main(args):
                 "orphaned_attributes",
                 "invalid_validation_rule",
                 "missing_layer_name",
+                "missing_layer_version",
+                "invalid_layer_version",
                 "no_metadata_fields",
             ]:
                 print(f"[ERROR] {result['message']}")

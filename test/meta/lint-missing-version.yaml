@@ -1,0 +1,5 @@
+# METABEGIN
+# X-Env-Layer-Name: lint-missing-version
+# X-Env-Layer-Desc: Layer with no version field
+# X-Env-Layer-Category: test
+# METAEND

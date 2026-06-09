@@ -1,5 +1,6 @@
 # METABEGIN
 # X-Env-Layer-Name: example-slim-customisation
+# X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Example layer with dependency plus some customisation
 #  hooks.

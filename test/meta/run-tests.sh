@@ -712,5 +712,30 @@ run_test "lint-unknown-xenv-field" \
     1 \
     "Lint should fail on unknown top-level X-Env-* field names"
 
+run_test "lint-missing-version" \
+    "ig metadata --lint ${META}/lint-missing-version.yaml" \
+    1 \
+    "Lint should fail when layer fields exist but Version is missing"
+
+run_test "lint-invalid-version-short" \
+    "ig metadata --lint ${META}/lint-invalid-version-short.yaml" \
+    1 \
+    "Lint should fail when version is major.minor only"
+
+run_test "lint-invalid-version-long" \
+    "ig metadata --lint ${META}/lint-invalid-version-long.yaml" \
+    1 \
+    "Lint should fail when version has more than three components"
+
+run_test "lint-invalid-version-alpha" \
+    "ig metadata --lint ${META}/lint-invalid-version-alpha.yaml" \
+    1 \
+    "Lint should fail when version contains non-numeric components"
+
+run_test "lint-invalid-version-leading-zero" \
+    "ig metadata --lint ${META}/lint-invalid-version-leading-zero.yaml" \
+    1 \
+    "Lint should fail when version contains a leading zero"
+
 cleanup_env
 print_summary

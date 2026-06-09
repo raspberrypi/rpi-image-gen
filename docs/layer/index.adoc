@@ -109,7 +109,7 @@ Generators that use `argparse` or `getopt` should parse from `argv[3:]`, as `arg
 
 `X-Env-Layer-Category`: Categorisation (device, image, etc.)
 
-`X-Env-Layer-Version`: Version identifier for the layer
+`X-Env-Layer-Version`: Layer version in `major.minor.patch` format (all components must be non-negative integers with no leading zeros)
 
 `X-Env-Layer-Requires`: Comma-separated list of required layers
 

@@ -1,5 +1,6 @@
 # METABEGIN
 # X-Env-Layer-Name: v8-svelte
+# X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Example layer that provides a thin base using
 #  other layers.
