@@ -461,7 +461,12 @@ run_test "layer-build-order-circular" \
 run_test "layer-duplicate-name-handling" \
     "ig layer --path ${META} --list" \
     1 \
-    "Duplicate layer name should raise an error"
+    "Duplicate layer name and version should raise an error"
+
+run_test "layer-same-name-different-version" \
+    "ig layer --path ${PIPELINE_DIR} --list" \
+    0 \
+    "Same layer name at different versions should both load without error"
 
 # ---------------------------------------------------------------------------
 print_header "OTHER TESTS"
