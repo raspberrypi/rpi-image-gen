@@ -104,8 +104,8 @@ def main():
             msgs = "\n".join(f"{k}: {v}" for k, v in manager.load_errors.items())
             raise SystemExit(f"Aborting docs generation due to layer load errors:\n{msgs}")
 
-        # All layer names
-        layer_names = sorted(manager.layers.keys())
+        # All layer names - resolves to latest version per name
+        layer_names = sorted(manager._name_to_versions.keys())
 
         # Do it
         layer_template = env.get_template('layer.html')
