@@ -1,0 +1,6 @@
+# METABEGIN
+# X-Env-Layer-Name: lint-invalid-version-short
+# X-Env-Layer-Desc: Layer with a two-part version (major.minor only)
+# X-Env-Layer-Version: 1.0
+# X-Env-Layer-Category: test
+# METAEND

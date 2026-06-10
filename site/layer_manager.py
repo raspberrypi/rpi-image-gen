@@ -43,11 +43,12 @@ class LayerManager:
         self.search_roots = self._build_search_roots(search_paths)
         self.search_paths = [root.path for root in self.search_roots]
         self.file_patterns = file_patterns
-        self.layers: Dict[str, Metadata] = {}  # layer_name -> Metadata object
-        self.layer_files: Dict[str, str] = {}  # layer_name -> file_path (resolved; may be tmpfs for dynamic)
-        self.layer_source_files: Dict[str, str] = {}  # layer_name -> original source file path (never updated)
-        self.layer_tags: Dict[str, str] = {}  # layer_name -> search path tag
-        self.layer_relpaths: Dict[str, str] = {}  # layer_name -> relative path under tagged root
+        self.layers: Dict[Tuple[str, str], Metadata] = {}  # (layer_name, version) -> Metadata object
+        self.layer_files: Dict[Tuple[str, str], str] = {}  # (layer_name, version) -> file_path (resolved; may be tmpfs for dynamic)
+        self.layer_source_files: Dict[Tuple[str, str], str] = {}  # (layer_name, version) -> original source file path (never updated)
+        self.layer_tags: Dict[Tuple[str, str], str] = {}  # (layer_name, version) -> search path tag
+        self.layer_relpaths: Dict[Tuple[str, str], str] = {}  # (layer_name, version) -> relative path under tagged root
+        self._name_to_versions: Dict[str, List[str]] = {}  # layer_name -> list of loaded version strings
         self.tag_to_path: Dict[str, Path] = {root.tag: root.path for root in self.search_roots}
         self.show_loaded = show_loaded
         self.doc_mode = doc_mode  # Relaxed loader, eg does not run generators for dynamic layers
@@ -57,7 +58,7 @@ class LayerManager:
         self.provider_conflicts: Dict[str, Set[str]] = {}
         self.generated_root: Optional[Path] = None
         self.load_errors: Dict[str, str] = {}
-        self.pending_generators: Dict[str, tuple] = {}  # layer_name -> (cmd, input, output)
+        self.pending_generators: Dict[Tuple[str, str], tuple] = {}  # (layer_name, version) -> (cmd, input, output)
 
         for path in self.search_paths:
             if not path.exists():
@@ -124,9 +125,21 @@ class LayerManager:
         return roots
 
 
+    def _latest_version(self, name: str) -> Optional[str]:
+        """Return the latest loaded version string for a layer name, or None if not loaded."""
+        versions = self._name_to_versions.get(name)
+        if not versions:
+            return None
+        return max(versions, key=lambda v: tuple(int(x) for x in v.split('.')))
+
+    def _resolve_key(self, name: str) -> Optional[Tuple[str, str]]:
+        """Resolve a layer name to its (name, version) registry key using the latest version."""
+        v = self._latest_version(name)
+        return (name, v) if v is not None else None
+
     def _build_provider_index(self):
         """Index providers to unique layer names"""
-        for lname, layer in self.layers.items():
+        for (lname, _version), layer in self.layers.items():
             info = layer.get_layer_info()
             if not info:
                 continue
@@ -201,6 +214,8 @@ class LayerManager:
                 generator_cmd = (layer_info.get('generator') or '').strip()
 
                 layer_name = layer_info['name']
+                version = layer_info.get('version', '1.0.0')
+                key = (layer_name, version)
 
                 # lint on load
                 lint_results = meta.lint_metadata_syntax()
@@ -218,11 +233,11 @@ class LayerManager:
                     )
                     continue
 
-                # Duplicate detection
-                if layer_name in self.layers:
-                    prev_path = self.layer_files[layer_name]
+                # Duplicate detection: same name AND same version is a clash
+                if key in self.layers:
+                    prev_path = self.layer_files[key]
                     raise ValueError(
-                        f"Duplicate layer name '{layer_name}' found in:\n  {prev_path}\n  {abs_file}"
+                        f"Duplicate layer '{layer_name}' version {version} found in:\n  {prev_path}\n  {abs_file}"
                     )
 
                 if layer_type == 'dynamic':
@@ -241,7 +256,7 @@ class LayerManager:
                         output_file = generated_root / rel_path
                         output_file.parent.mkdir(parents=True, exist_ok=True)
                         # Generators are deferred so they only run for layers in the build stack
-                        self.pending_generators[layer_name] = (generator_cmd, abs_file, output_file)
+                        self.pending_generators[key] = (generator_cmd, abs_file, output_file)
                         tag = 'DYNlayer' # implicitly hard wired
                 else:
                     tag = root.tag
@@ -250,16 +265,17 @@ class LayerManager:
                     except ValueError:
                         rel_path = abs_file
 
-                self.layers[layer_name] = meta
-                self.layer_files[layer_name] = str(abs_file)
-                self.layer_source_files[layer_name] = str(abs_file)
-                self.layer_tags[layer_name] = tag
-                self.layer_relpaths[layer_name] = str(rel_path)
+                self.layers[key] = meta
+                self.layer_files[key] = str(abs_file)
+                self.layer_source_files[key] = str(abs_file)
+                self.layer_tags[key] = tag
+                self.layer_relpaths[key] = str(rel_path)
+                self._name_to_versions.setdefault(layer_name, []).append(version)
                 loaded_layers.add(layer_name)
 
                 if self.show_loaded:
                     relative_path = rel_path
-                    log_info(f"Loaded layer: {layer_name} from {relative_path}")
+                    log_info(f"Loaded layer: {layer_name} ({version}) from {relative_path}")
 
     def _ensure_generated_root(self) -> Path:
         if self.generated_root is not None:
@@ -275,12 +291,18 @@ class LayerManager:
 
     def run_generators_for_layers(self, layer_names: List[str]) -> None:
         """Run deferred generators for layers in the given build order."""
+        # NOTE: _resolve_key returns the *latest* loaded version of a layer.
+        # pending_generators is keyed by the exact (name, version) from load time.
+        # Once the build order carries explicit version information (planned), this
+        # should use that version directly rather than resolving to latest, otherwise
+        # a non-latest dynamic layer in the build order would silently skip its generator.
         for layer_name in layer_names:
-            if layer_name not in self.pending_generators:
+            key = self._resolve_key(layer_name)
+            if key is None or key not in self.pending_generators:
                 continue
-            generator_cmd, input_path, output_path = self.pending_generators.pop(layer_name)
+            generator_cmd, input_path, output_path = self.pending_generators.pop(key)
             self._run_layer_generator(layer_name, generator_cmd, input_path, output_path)
-            self.layer_files[layer_name] = str(output_path.resolve())
+            self.layer_files[key] = str(output_path.resolve())
 
     def _run_layer_generator(self, layer_name: str, generator_cmd: str, input_path: Path, output_path: Path) -> None:
         cmd = shlex.split(generator_cmd) # supports positional args
@@ -301,13 +323,17 @@ class LayerManager:
             raise ValueError(f"Generator '{generator_cmd}' for layer '{layer_name}' failed with exit code {exc.returncode}") from exc
 
     def get_layer_info(self, layer_name: str) -> Optional[dict]:
-        if layer_name not in self.layers:
+        key = self._resolve_key(layer_name)
+        if key is None:
             return None
-        return self.layers[layer_name].get_layer_info()
+        return self.layers[key].get_layer_info()
 
     def get_layer_relative_spec(self, layer_name: str) -> Optional[str]:
-        tag = self.layer_tags.get(layer_name)
-        rel_path = self.layer_relpaths.get(layer_name)
+        key = self._resolve_key(layer_name)
+        if key is None:
+            return None
+        tag = self.layer_tags.get(key)
+        rel_path = self.layer_relpaths.get(key)
         if tag and rel_path is not None:
             return f"{tag}:{rel_path}"
         return None
@@ -329,14 +355,14 @@ class LayerManager:
             return []
 
         # Search through all loaded layers
-        for layer_name, layer_obj in self.layers.items():
+        for (lname, _version), layer_obj in self.layers.items():
             layer_info = layer_obj.get_layer_info()
             if layer_info and layer_info.get('depends'):
                 # Check if target layer is in this layer's dependencies
                 if resolved_target in layer_info['depends']:
-                    reverse_deps.append(layer_name)
+                    reverse_deps.append(lname)
 
-        return sorted(reverse_deps)
+        return sorted(set(reverse_deps))
 
     def get_optional_dependencies(self, layer_name: str) -> List[str]:
         """Get optional deps"""
@@ -348,7 +374,7 @@ class LayerManager:
         if visited is None:
             visited = set()
 
-        if layer_name in visited or layer_name not in self.layers:
+        if layer_name in visited or layer_name not in self._name_to_versions:
             return []
 
         visited.add(layer_name)
@@ -366,7 +392,7 @@ class LayerManager:
         # Add optional dependencies if requested and they exist
         if include_optional:
             for opt_dep in self.get_optional_dependencies(layer_name):
-                if opt_dep in self.layers and opt_dep not in all_deps:
+                if opt_dep in self._name_to_versions and opt_dep not in all_deps:
                     all_deps.append(opt_dep)
                     # Add transitive dependencies of optional dependencies
                     for trans_dep in self.get_all_dependencies(opt_dep, visited.copy(), include_optional):
@@ -377,7 +403,7 @@ class LayerManager:
 
     def check_dependencies(self, layer_name: str) -> Tuple[bool, List[str]]:
         """Check if all dependencies for a layer are available"""
-        if layer_name not in self.layers:
+        if layer_name not in self._name_to_versions:
             return False, [f"Layer '{layer_name}' not found in search paths"]
 
         missing_deps = []
@@ -386,13 +412,13 @@ class LayerManager:
         # Check required dependencies
         required_deps = self.get_all_dependencies(layer_name, include_optional=False)
         for dep in required_deps:
-            if dep not in self.layers:
+            if dep not in self._name_to_versions:
                 missing_deps.append(f"Layer '{layer_name}' missing required dependency: {dep}")
 
         # Check optional dependencies separately - these generate warnings only
         optional_deps = self.get_optional_dependencies(layer_name)
         for opt_dep in optional_deps:
-            if opt_dep not in self.layers:
+            if opt_dep not in self._name_to_versions:
                 warnings.append(f"Optional dependency not available: {opt_dep}")
 
         # Check for circular dependencies
@@ -423,7 +449,7 @@ class LayerManager:
         if layer_name in path:
             return path + [layer_name]  # Found cycle
 
-        if layer_name not in self.layers:
+        if layer_name not in self._name_to_versions:
             return []
 
         path = path + [layer_name]
@@ -449,7 +475,7 @@ class LayerManager:
                 return
             checked.add(layer_name)
 
-            if layer_name not in self.layers:
+            if layer_name not in self._name_to_versions:
                 if layer_name in self.load_errors:
                     raise ValueError(f"Layer '{layer_name}' unavailable: {self.load_errors[layer_name]}")
                 raise ValueError(f"Missing required dependency: {layer_name}")
@@ -468,7 +494,7 @@ class LayerManager:
 
             # Add optional dependencies if they exist and are available
             for opt_dep in self.get_optional_dependencies(layer_name):
-                if opt_dep in self.layers:
+                if opt_dep in self._name_to_versions:
                     add_layer_and_deps(opt_dep)
 
             if layer_name not in processed:
@@ -529,9 +555,9 @@ class LayerManager:
         except (FileNotFoundError, yaml.YAMLError, UnicodeDecodeError):
             return None
 
-    def _get_mmdebstrap_config(self, layer_name: str) -> Optional[dict]:
+    def _get_mmdebstrap_config(self, layer_name: str, key=None) -> Optional[dict]:
         """Get mmdebstrap configuration if present """
-        layer_path = self.layer_files.get(layer_name)
+        layer_path = self.layer_files.get(key if key is not None else self._resolve_key(layer_name))
         if not layer_path:
             return None
 
@@ -547,7 +573,7 @@ class LayerManager:
 
     def _get_env_config(self, layer_name: str) -> Optional[dict]:
         """Get env configuration if present """
-        layer_path = self.layer_files.get(layer_name)
+        layer_path = self.layer_files.get(self._resolve_key(layer_name))
         if not layer_path:
             return None
 
@@ -563,12 +589,13 @@ class LayerManager:
 
     def validate_layer(self, layer_name: str, silent: bool = False) -> bool:
         """Validate one layer schema (independent of env/value resolution)."""
-        if layer_name not in self.layers:
+        key = self._resolve_key(layer_name)
+        if key is None:
             if not silent:
                 log_error(f"Layer '{layer_name}' not found")
             return False
 
-        layer = self.layers[layer_name]
+        layer = self.layers[key]
         layer_valid = True
 
         # Validate layer schema first (independent of env/value resolution).
@@ -586,49 +613,55 @@ class LayerManager:
 
         BOLD = "\033[1m"
         RESET = "\033[0m"
-        MAX_DESC = 60
+        LABEL_W = 20  # max width of widest attr desc + 2
 
-        # Build category -> [layer_names]
+        # Build category -> [layer_name]
         categories: Dict[str, List[str]] = {}
-        for lname in self.layers.keys():
+        for (lname, _version) in self.layers.keys():
             info = self.get_layer_info(lname)
             if not info:
                 continue
             cat = info.get('category', 'general')
-            categories.setdefault(cat, []).append(lname)
-
-        # Compute widest layer name for column alignment
-        all_layer_names = [n for lst in categories.values() for n in lst]
-        name_width = max(len(n) for n in all_layer_names) if all_layer_names else 0
+            if lname not in categories.get(cat, []):
+                categories.setdefault(cat, []).append(lname)
 
         print("Available layers:")
 
         for cat in sorted(categories.keys()):
-            print(f"{BOLD}Category: {cat}{RESET}")
+            print(f"\n{BOLD}Category: {cat}{RESET}")
 
             for layer_name in sorted(categories[cat]):
                 layer_info = self.get_layer_info(layer_name)
                 if not layer_info:
                     continue
 
-                # Description trimming
-                raw_desc = (layer_info.get('description') or '')
-                desc = ' '.join(raw_desc.split())
-                if len(desc) > MAX_DESC:
-                    desc = desc[: MAX_DESC - 3] + '...'
+                print(f"\n  {BOLD}{layer_name}{RESET}")
 
-                # Bold layer name column
-                print(f"  {BOLD}{layer_name:<{name_width}}{RESET}  {desc}")
+                ver_str = self._fmt_versions(layer_name)
+                print(f"    {'Available versions:':<{LABEL_W}}{ver_str}")
 
-                # Dependencies line
+                raw_desc = ' '.join((layer_info.get('description') or '').split())
+                print(f"    {'Description:':<{LABEL_W}}{raw_desc}")
+
                 deps = ', '.join(layer_info['depends']) if layer_info['depends'] else 'none'
-                print(f"    deps: {deps}")
+                print(f"    {'Deps:':<{LABEL_W}}{deps}")
 
-                # Capability info
                 provides = ', '.join(layer_info.get('provides', [])) or 'none'
+                print(f"    {'Provides:':<{LABEL_W}}{provides}")
+
                 reqprov = ', '.join(layer_info.get('provider_requires', [])) or 'none'
-                print(f"    provides: {provides}")
-                print(f"    requires-provider: {reqprov}")
+                print(f"    {'Requires-provider:':<{LABEL_W}}{reqprov}")
+
+    def _fmt_versions(self, name: str) -> str:
+        """Format the version list for a layer name: single version plain, multiple as '1.0.0  2.0.0*'."""
+        versions = self._name_to_versions.get(name, [])
+        if not versions:
+            return ""
+        latest = self._latest_version(name)
+        sorted_versions = sorted(versions, key=lambda v: tuple(int(x) for x in v.split('.')))
+        if len(sorted_versions) == 1:
+            return sorted_versions[0]
+        return "  ".join(v + ("*" if v == latest else "") for v in sorted_versions)
 
     def show_search_paths(self):
         print("Layer search paths:")
@@ -639,7 +672,7 @@ class LayerManager:
 
     def resolve_layer_name(self, layer_identifier: str) -> Optional[str]:
         # Direct layer name lookup
-        if layer_identifier in self.layers:
+        if layer_identifier in self._name_to_versions:
             return layer_identifier
 
         # Known load error for this identifier
@@ -647,9 +680,9 @@ class LayerManager:
             raise ValueError(self.load_errors[layer_identifier])
 
         # File path lookup for already loaded layers
-        for layer_name, file_path in self.layer_files.items():
+        for (lname, _version), file_path in self.layer_files.items():
             if Path(file_path).resolve() == Path(layer_identifier).resolve():
-                return layer_name
+                return lname
 
         # Load error recorded by path
         rel_id = Path(layer_identifier).name
@@ -658,8 +691,8 @@ class LayerManager:
 
         return None
 
-    def _get_overlays(self, layer_name: str) -> list:
-        layer_path = self.layer_files.get(layer_name)
+    def _get_overlays(self, layer_name: str, key=None) -> list:
+        layer_path = self.layer_files.get(key if key is not None else self._resolve_key(layer_name))
         if not layer_path:
             return []
         layer_dir = Path(layer_path).parent
@@ -675,10 +708,11 @@ class LayerManager:
 
     def get_layer_documentation_data(self, layer_name: str):
         """Extract structured layer data for documentation generation"""
-        if layer_name not in self.layers:
+        key = self._resolve_key(layer_name)
+        if key is None:
             return None
 
-        layer = self.layers[layer_name]
+        layer = self.layers[key]
 
         # Get detailed variable information from validators
         variables = {}
@@ -726,7 +760,7 @@ class LayerManager:
         env_config = self._get_env_config(layer_name) or {}
 
         # Make file path relative to search paths
-        file_path = self.layer_files.get(layer_name)
+        file_path = self.layer_files.get(key)
         relative_path = file_path
         if file_path:
             for search_path in self.search_paths:
@@ -775,10 +809,11 @@ class LayerManager:
         }
 
     def _get_companion_doc(self, layer_name: str, format: str = 'markdown') -> str:
-        if layer_name not in self.layer_files:
+        key = self._resolve_key(layer_name)
+        if key is None or key not in self.layer_files:
             return ""
 
-        yaml_file_path = self.layer_files[layer_name]
+        yaml_file_path = self.layer_files[key]
 
         # Convert .yaml/.yml extension to appropriate format extension
         from pathlib import Path
@@ -806,10 +841,11 @@ class LayerManager:
 
     def _get_raw_metadata_fields(self, layer_name: str) -> dict:
         """Get all raw (unexpanded) metadata field values from the layer file."""
-        if layer_name not in self.layer_files:
+        key = self._resolve_key(layer_name)
+        if key is None or key not in self.layer_files:
             return {}
 
-        file_path = self.layer_files[layer_name]
+        file_path = self.layer_files[key]
         raw_fields = {}
 
         try:
@@ -950,8 +986,8 @@ def LayerManager_register_parser(subparsers, root=None):
                        help='File patterns to search (default: *.yaml *.yml)')
     parser.add_argument('--list', '-l', action='store_true',
                        help='List all available layers')
-    parser.add_argument('--describe', metavar='LAYER',
-                       help='Show detailed information for a layer (use layer name)')
+    parser.add_argument('--describe', metavar='LAYER[=VERSION]',
+                       help='Show detailed information for a layer, append =VERSION to pin a specific version')
     parser.add_argument('--rdep', '--reverse-deps', metavar='LAYER',
                        help='Show layers that depend on the specified layer')
     parser.add_argument('--show-paths', action='store_true',
@@ -1017,12 +1053,29 @@ def _layer_main(args):
             print(f"{len(reverse_deps)} layer(s) depend on '{layer_name}'")
 
     if args.describe:
-        layer_name = manager.resolve_layer_name(args.describe)
+        describe_arg = args.describe
+        pinned_version = None
+        if '=' in describe_arg:
+            describe_arg, pinned_version = describe_arg.split('=', 1)
+
+        layer_name = manager.resolve_layer_name(describe_arg)
         if not layer_name:
-            print(f"✗ Layer '{args.describe}' not found")
+            print(f"✗ Layer '{describe_arg}' not found")
             exit(1)
 
-        layer_info = manager.get_layer_info(layer_name)
+        if pinned_version is not None:
+            lkey = (layer_name, pinned_version)
+            if lkey not in manager.layers:
+                available = ', '.join(
+                    sorted(manager._name_to_versions.get(layer_name, []),
+                           key=lambda v: tuple(int(x) for x in v.split('.')))
+                )
+                print(f"✗ Layer '{layer_name}' version '{pinned_version}' not found (available: {available})")
+                exit(1)
+        else:
+            lkey = manager._resolve_key(layer_name)
+
+        layer_info = manager.layers[lkey].get_layer_info() if lkey else None
         if layer_info:
             print(f"Layer: {layer_info['name']}")
             print(f"Version: {layer_info['version']}")
@@ -1040,14 +1093,14 @@ def _layer_main(args):
                 requires_list = ', '.join(layer_info['provider_requires'])
                 print(f"Requires Provider: {requires_list}")
 
-            layer_path = manager.layer_files.get(layer_name, "<unknown>")
-            rel_layer_path = manager.layer_relpaths.get(layer_name, layer_path)
+            layer_path = manager.layer_files.get(lkey, "<unknown>")
+            rel_layer_path = manager.layer_relpaths.get(lkey, layer_path)
             print(f"Path: {rel_layer_path}")
-            overlays = manager._get_overlays(layer_name)
+            overlays = manager._get_overlays(layer_name, key=lkey)
             if overlays:
                 print(f"Overlay: {', '.join(overlays)}")
 
-            mmdebstrap = manager._get_mmdebstrap_config(layer_name)
+            mmdebstrap = manager._get_mmdebstrap_config(layer_name, key=lkey)
             if mmdebstrap:
                 for field in ('suite', 'variant', 'mode'):
                     if field in mmdebstrap:
@@ -1056,31 +1109,28 @@ def _layer_main(args):
             if layer_info['depends']:
                 print("Depends:")
 
-                def _show_deps(dep_layer: str, seen: set[str], indent: int = 1):
+                def _show_deps(deps: List[str], seen: set, indent: int = 1):
                     pad = "  " * indent
-                    for dep in manager.get_dependencies(dep_layer):
-                        # guard against cycles / duplicates
+                    for dep in deps:
                         if dep in seen:
                             print(f"{pad}- {dep} (already shown)")
                             continue
                         seen.add(dep)
-
-                        dep_path = manager.layer_files.get(dep, "<unknown>")
-                        rel_path = manager.layer_relpaths.get(dep, dep_path)
+                        _dkey = manager._resolve_key(dep)
+                        dep_path = manager.layer_files.get(_dkey, "<unknown>")
+                        rel_path = manager.layer_relpaths.get(_dkey, dep_path)
                         print(f"{pad}- {dep}: {rel_path}")
+                        _show_deps(manager.get_dependencies(dep), seen, indent + 1)
 
-                        # recurse into dependencies of this dependency
-                        _show_deps(dep, seen, indent + 1)
+                _show_deps(layer_info['depends'], set())
 
-                _show_deps(layer_name, set())
             if layer_info['optional_depends']:
                 print(f"Optional-Depends: {', '.join(layer_info['optional_depends'])}")
+
             if layer_info['conflicts']:
                 print(f"Conflicts: {', '.join(layer_info['conflicts'])}")
 
-            # Show mmdebstrap configuration if any
-            # TODO can extend for other maps
-            mmdebstrap_config = manager._get_mmdebstrap_config(layer_name)
+            mmdebstrap_config = manager._get_mmdebstrap_config(layer_name, key=lkey)
             if mmdebstrap_config:
                 print()
 
@@ -1095,10 +1145,7 @@ def _layer_main(args):
                     for package in packages:
                         print(f"  - {package}")
 
-            # Print environment variables for this layer
-            meta_obj = manager.layers.get(layer_name)
+            meta_obj = manager.layers.get(lkey)
             if meta_obj and meta_obj.get_all_env_vars():
                 print()
                 print_env_var_descriptions(meta_obj, indent=2)
-
-    # build-order CLI removed; layer commands are read-only.

@@ -1,5 +1,6 @@
 # METABEGIN
 # X-Env-Layer-Name: example-kiosk
+# X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Example webkiosk layer showing how to define configuration
 #  variables, declare packages and create a start up script. We depend on the

@@ -1,5 +1,6 @@
 # METABEGIN
 # X-Env-Layer-Name: example-debstore
+# X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Example layer showing how to install local Debian
 #  packages into the chroot.

@@ -461,7 +461,12 @@ run_test "layer-build-order-circular" \
 run_test "layer-duplicate-name-handling" \
     "ig layer --path ${META} --list" \
     1 \
-    "Duplicate layer name should raise an error"
+    "Duplicate layer name and version should raise an error"
+
+run_test "layer-same-name-different-version" \
+    "ig layer --path ${PIPELINE_DIR} --list" \
+    0 \
+    "Same layer name at different versions should both load without error"
 
 # ---------------------------------------------------------------------------
 print_header "OTHER TESTS"
@@ -711,6 +716,31 @@ run_test "lint-unknown-xenv-field" \
     "ig metadata --lint ${META}/lint-unknown-xenv-field.yaml" \
     1 \
     "Lint should fail on unknown top-level X-Env-* field names"
+
+run_test "lint-missing-version" \
+    "ig metadata --lint ${META}/lint-missing-version.yaml" \
+    1 \
+    "Lint should fail when layer fields exist but Version is missing"
+
+run_test "lint-invalid-version-short" \
+    "ig metadata --lint ${META}/lint-invalid-version-short.yaml" \
+    1 \
+    "Lint should fail when version is major.minor only"
+
+run_test "lint-invalid-version-long" \
+    "ig metadata --lint ${META}/lint-invalid-version-long.yaml" \
+    1 \
+    "Lint should fail when version has more than three components"
+
+run_test "lint-invalid-version-alpha" \
+    "ig metadata --lint ${META}/lint-invalid-version-alpha.yaml" \
+    1 \
+    "Lint should fail when version contains non-numeric components"
+
+run_test "lint-invalid-version-leading-zero" \
+    "ig metadata --lint ${META}/lint-invalid-version-leading-zero.yaml" \
+    1 \
+    "Lint should fail when version contains a leading zero"
 
 cleanup_env
 print_summary

@@ -22,7 +22,7 @@ def main() -> None:
         if "dynamic-test" not in order:
             raise SystemExit("dynamic-test not in build order")
         manager.run_generators_for_layers(order)
-        generated = Path(manager.layer_files["dynamic-test"])
+        generated = Path(manager.layer_files[manager._resolve_key("dynamic-test")])
         if tmpdir not in str(generated):
             raise SystemExit("generated file not in dynamic layer directory")
         data = generated.read_text().strip()

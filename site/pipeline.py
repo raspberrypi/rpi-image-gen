@@ -153,8 +153,8 @@ def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) 
             for layer in build_order:
                 info = manager.get_layer_info(layer) or {}
                 version = info.get("version", "")
-                static = manager.layer_source_files.get(layer, "")
-                resolved = manager.layer_files.get(layer, "")
+                static = manager.layer_source_files.get(manager._resolve_key(layer), "")
+                resolved = manager.layer_files.get(manager._resolve_key(layer), "")
                 handle.write(f'{layer}:{version}:{static}:{resolved}\n')
         print(f"Layer plan written to: {path}")
     except Exception as exc:
@@ -165,7 +165,7 @@ def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) 
 def _build_anchor_map_from_layers(manager: LayerManager, layers: List[str]) -> Dict[str, Dict[str, Optional[str]]]:
     anchor_bindings: Dict[str, str] = {}
     for layer in layers:
-        meta = manager.layers.get(layer)
+        meta = manager.layers.get(manager._resolve_key(layer))
         if not meta:
             continue
         for env_var in meta._container.variables.values():
@@ -179,7 +179,7 @@ def _collect_layer_sets(manager: LayerManager, build_order: List[str]) -> Ordere
     Later layers override earlier ones for the same key. """
     collected: OrderedDict[str, Tuple[str, str]] = OrderedDict()
     for layer_name in build_order:
-        meta = manager.layers.get(layer_name)
+        meta = manager.layers.get(manager._resolve_key(layer_name))
         if not meta:
             continue
         layer = meta._container.layer
@@ -192,7 +192,7 @@ def _collect_layer_sets(manager: LayerManager, build_order: List[str]) -> Ordere
 def _collect_variable_definitions(manager: LayerManager, build_order: List[str]) -> Dict[str, List[EnvVariable]]:
     variable_definitions: Dict[str, List[EnvVariable]] = {}
     for position, layer_name in enumerate(build_order):
-        meta = manager.layers.get(layer_name)
+        meta = manager.layers.get(manager._resolve_key(layer_name))
         if not meta:
             continue
         for var_name, env_var in meta._container.variables.items():
@@ -261,7 +261,7 @@ def _apply_layers(
 
 def _validate_layers(manager: LayerManager, layer_names: List[str]) -> bool:
     for layer_name in layer_names:
-        if layer_name not in manager.layers:
+        if layer_name not in manager._name_to_versions:
             print(f"Layer '{layer_name}' not found")
             return False
         if not hasattr(manager, "validate_layer"):
@@ -294,7 +294,7 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
 
     # Validate layer-required external vars (X-Env-VarRequires) in pipeline mode.
     for layer_name in build_order:
-        meta = manager.layers.get(layer_name)
+        meta = manager.layers.get(manager._resolve_key(layer_name))
         if not meta:
             continue
         required_vars = list(getattr(meta._container, "required_vars", []) or [])

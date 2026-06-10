@@ -192,10 +192,11 @@ apply_layer_overlays() {
    local plan=${PLAN:-}
    [[ -n $plan && -f $plan ]] || return 0
 
-   local layer version static resolved overlay
+   local layer version static resolved overlay major minor patch
    while IFS=: read -r layer version static resolved; do
       [[ -n $layer && -n $static ]] || continue
       [[ $layer == \#* ]] && continue
+      IFS='.' read -r major minor patch <<< "$version"
       overlay="${static%.yaml}.rootfs-overlay"
       if [[ -d $overlay ]]; then
          msg "runner: layer overlay ($layer) [$overlay -> $dest]"
