@@ -1,0 +1,47 @@
+# METABEGIN
+# X-Env-Layer-Name: network-manager
+# X-Env-Layer-Desc: NetworkManager for wired and wireless network management
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-Provides: network-activator,network-renderer
+# X-Env-Layer-RequiresProvider: systemd
+#
+# X-Env-VarPrefix: nm
+#
+# X-Env-Var-cmds:
+# X-Env-Var-cmds-Desc: Path to a file containing nmcli commands to run inside
+#  the chroot at build time, one per line without the leading 'nmcli'. Each
+#  line is evaluated by the shell, so pipes and redirections are supported.
+#  This may be useful for installing specific network configurations. Use
+#  standard shell quoting for values containing spaces. Lines beginning with
+#  # are ignored.
+#  Example:
+#  --offline connection add type wifi ifname wlan0 con-name '$SSID' ssid '$SSID' \
+#   wifi-sec.auth-alg open wifi-sec.key-mgmt wpa-psk wifi-sec.psk '$PSK' \
+#   connection.autoconnect-retries 0 | grep -v '^Warning' \
+#   > /etc/NetworkManager/system-connections/'$SSID'.nmconnection
+#  See nmcli(1).
+# X-Env-Var-cmds-Required: n
+# X-Env-Var-cmds-Valid: string-or-empty
+# X-Env-Var-cmds-Set: y
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - network-manager
+  customize-hooks:
+    - $BDEBSTRAP_HOOKS/enable-units "$1" NetworkManager
+    - |-
+      set -eu
+      if [ -f "${IGconf_nm_cmds:-}" ]; then
+        install -m 0600 "${IGconf_nm_cmds}" "$1/tmp/.nm_cmds"
+        chroot "$1" sh -c '
+          set -eu
+          while IFS= read -r line; do
+            case "$line" in ""|\#*) continue ;; esac
+            eval nmcli $line
+          done < /tmp/.nm_cmds'
+        rm -f "$1/tmp/.nm_cmds"
+      fi
+    - find "$1/etc/NetworkManager/system-connections" -mindepth 1 -type f -exec chmod 0600 {} +

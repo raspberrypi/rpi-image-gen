@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: network-manager-iwd
+# X-Env-Layer-Desc: NetworkManager with iwd as the wifi backend, NM managing
+#  connections and auto-connect
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-Requires: network-manager,iwd
+# METAEND
+---
+mmdebstrap:
+  customize-hooks:
+    - printf '[device]\nwifi.backend=iwd\nwifi.iwd.autoconnect=false\n' > "$1/etc/NetworkManager/conf.d/iwd.conf"
