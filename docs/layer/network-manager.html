@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iwd - Layer Documentation</title>
+    <title>network-manager - Layer Documentation</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
@@ -121,39 +121,53 @@
     </div>
 
     <div class="header">
-        <h1>iwd</h1>
+        <h1>network-manager</h1>
         <span class="badge">connectivity</span>
-        <span class="badge">v1.0.1</span>
-        <p>iNet wireless daemon for wifi management</p>
+        <span class="badge">v1.0.0</span>
+        <p>NetworkManager for wired and wireless network management</p>
     </div>
     <div class="section">
         <h2>Additional Documentation</h2>
         <div class="companion-content">
             <div class="sect1">
-<h2 id="_build_time_wireless_profile">Build-time Wireless Profile</h2>
+<h2 id="_build_time_network_profiles">Build-time Network Profiles</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><code>IGconf_iwd_profile</code> accepts a path to an iwd network profile file. The file is installed into <code>/var/lib/iwd/</code> preserving its filename and contents exactly. The filename must be identical to the network SSID. See <a href="https://manpages.debian.org/testing/iwd/iwd.network.5.en.html" target="_blank" rel="noopener">iwd.network(5)</a>.</p>
+<p><code>IGconf_nm_cmds</code> accepts a path to a file containing <code>nmcli</code> commands to run inside the chroot at build time, with each line passed to the shell via <code>eval</code> with <code>nmcli</code> prepended. Refer to <a href="https://networkmanager.dev/docs/api/latest/nmcli.html" target="_blank" rel="noopener">nmcli</a> for the upstream documentation reference.</p>
 </div>
 <div class="paragraph">
-<p>For example, a profile for a WPA2 network named <code>Pi Towers Guest</code>:</p>
+<p>For example, a WPA2 profile for a network named <code>Guest Only</code>:</p>
 </div>
 <div class="listingblock">
-<div class="title">Pi Towers Guest.psk</div>
+<div class="title">nm.cmds</div>
 <div class="content">
-<pre class="highlight"><code class="language-ini" data-lang="ini">[Security]
-Passphrase=&lt;passphrase&gt;</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">--offline connection add type wifi ifname wlan0 con-name "Guest Only" ssid "Guest Only" wifi-sec.auth-alg open wifi-sec.key-mgmt wpa-psk wifi-sec.psk &lt;passphrase&gt; connection.autoconnect-retries 0 &gt; /etc/NetworkManager/system-connections/Guest_Only.nmconnection</code></pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+It&#8217;s possible to incorporate a <code>| grep -v '^Warning'</code> filter before the redirection to work around a known <a href="https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/work_items/1692" target="_blank" rel="noopener">NetworkManager bug</a> where <code>nmcli --offline</code> emits spurious warnings on stdout that would corrupt the keyfile.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>The profile file can be supplied via different mechanisms.</p>
+<p>Connection keyfiles are installed under <code>/etc/NetworkManager/system-connections/</code>. NetworkManager requires these files to be owned by root and mode <code>0600</code>. The layer enforces this automatically after all commands have run.</p>
+</div>
+<div class="paragraph">
+<p>The commands file can be supplied via different mechanisms.</p>
 </div>
 <div class="sect2">
 <h3 id="_config_yaml_absolute_path">Config YAML (absolute path)</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">iwd:
-  profile: /path/to/Pi Towers Guest.psk</code></pre>
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">nm:
+  cmds: /path/to/nm.cmds</code></pre>
 </div>
 </div>
 </div>
@@ -164,32 +178,17 @@ Passphrase=&lt;passphrase&gt;</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">iwd:
-  profile: ${@SRCROOT}/Pi Towers Guest.psk</code></pre>
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">nm:
+  cmds: ${@SRCROOT}/nm.cmds</code></pre>
 </div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_command_line">Command line</h3>
-<div class="paragraph">
-<p>Pass the profile path as a build variable. Quote the value if the filename contains spaces:</p>
-</div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen build -S ./examples/ota/ -c ota.yaml -- IGconf_iwd_profile='Pi Towers Guest.psk'</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen build -S ./examples/myimage/ -c myimage.yaml -- IGconf_nm_cmds=/path/to/nm.cmds</code></pre>
 </div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-A bare filename is resolved relative to the source directory determined by <code>rpi-image-gen</code>. Use an absolute path or the <code>${@SRCROOT}</code> anchor to be explicit.
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>
@@ -204,15 +203,13 @@ A bare filename is resolved relative to the source directory determined by <code
             
             <a href="network-manager-iwd.html" class="dep-badge">network-manager-iwd</a>
             
-            <a href="trixie-minbase.html" class="dep-badge">trixie-minbase</a>
-            
         </div>
-        <p><strong>Provides:</strong> wifi-supplicant</p>
-        <p><strong>Requires Provider:</strong> wireless-regdb, systemd, network-activator</p>
+        <p><strong>Provides:</strong> network-activator, network-renderer</p>
+        <p><strong>Requires Provider:</strong> systemd</p>
     </div>
     <div class="section">
         <h2>Configuration Variables</h2>
-        <p><strong>Declares</strong> (prefix: <code>iwd</code>):</p>
+        <p><strong>Declares</strong> (prefix: <code>nm</code>):</p>
         <table>
             <thead>
                 <tr>
@@ -225,10 +222,19 @@ A bare filename is resolved relative to the source directory determined by <code
             </thead>
             <tbody>
                 <tr>
-                    <td><code>IGconf_iwd_profile</code></td>
-                    <td>Path to an iwd network profile file to bake
- into the build. The file is installed into /var/lib/iwd/ preserving its
- filename. See iwd.network(5)</td>
+                    <td><code>IGconf_nm_cmds</code></td>
+                    <td>Path to a file containing nmcli commands to run inside
+ the chroot at build time, one per line without the leading 'nmcli'. Each
+ line is evaluated by the shell, so pipes and redirections are supported.
+ This may be useful for installing specific network configurations. Use
+ standard shell quoting for values containing spaces. Lines beginning with
+ # are ignored.
+ Example:
+ --offline connection add type wifi ifname wlan0 con-name '$SSID' ssid '$SSID' \
+  wifi-sec.auth-alg open wifi-sec.key-mgmt wpa-psk wifi-sec.psk '$PSK' \
+  connection.autoconnect-retries 0 | grep -v '^Warning' \
+  > /etc/NetworkManager/system-connections/'$SSID'.nmconnection
+ See nmcli(1).</td>
                     <td>
                            <code>&lt;empty&gt;</code>
                     </td>
@@ -246,13 +252,13 @@ A bare filename is resolved relative to the source directory determined by <code
         <h3>Packages</h3>
         <p>Installs:</p>
         <ul>
-            <li><code>iwd</code></li>
+            <li><code>network-manager</code></li>
         </ul>
     </div>
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>net-wireless/iwd-systemd.yaml</code></p>
+        <p><strong>File:</strong> <code>net-misc/network-manager.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
         <p><strong>Overlay:</strong> base</p>
     </div>
