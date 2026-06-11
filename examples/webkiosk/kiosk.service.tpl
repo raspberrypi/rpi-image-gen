@@ -1,5 +1,6 @@
 [Unit]
 Description=Kiosk Wayland Session
+After=network-online.target
 After=systemd-time-wait-sync.service
 Requires=systemd-time-wait-sync.service
 After=multi-user.target
