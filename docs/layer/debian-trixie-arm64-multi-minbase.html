@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iwd - Layer Documentation</title>
+    <title>debian-trixie-arm64-multi-minbase - Layer Documentation</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
@@ -121,140 +121,51 @@
     </div>
 
     <div class="header">
-        <h1>iwd</h1>
-        <span class="badge">connectivity</span>
-        <span class="badge">v1.0.1</span>
-        <p>iNet wireless daemon for wifi management</p>
-    </div>
-    <div class="section">
-        <h2>Additional Documentation</h2>
-        <div class="companion-content">
-            <div class="sect1">
-<h2 id="_build_time_wireless_profile">Build-time Wireless Profile</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><code>IGconf_iwd_profile</code> accepts a path to an iwd network profile file. The file is installed into <code>/var/lib/iwd/</code> preserving its filename and contents exactly. The filename must be identical to the network SSID. See <a href="https://manpages.debian.org/testing/iwd/iwd.network.5.en.html" target="_blank" rel="noopener">iwd.network(5)</a>.</p>
-</div>
-<div class="paragraph">
-<p>For example, a profile for a WPA2 network named <code>Pi Towers Guest</code>:</p>
-</div>
-<div class="listingblock">
-<div class="title">Pi Towers Guest.psk</div>
-<div class="content">
-<pre class="highlight"><code class="language-ini" data-lang="ini">[Security]
-Passphrase=&lt;passphrase&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The profile file can be supplied via different mechanisms.</p>
-</div>
-<div class="sect2">
-<h3 id="_config_yaml_absolute_path">Config YAML (absolute path)</h3>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">iwd:
-  profile: /path/to/Pi Towers Guest.psk</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_config_yaml_source_relative_path">Config YAML (source-relative path)</h3>
-<div class="paragraph">
-<p>Use the <code>${@SRCROOT}</code> <a href="https://raspberrypi.github.io/rpi-image-gen/config/index.html#_anchors" target="_blank" rel="noopener">anchor</a> to express the path relative to the source root (the directory passed via <code>rpi-image-gen -S</code>):</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">iwd:
-  profile: ${@SRCROOT}/Pi Towers Guest.psk</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_command_line">Command line</h3>
-<div class="paragraph">
-<p>Pass the profile path as a build variable. Quote the value if the filename contains spaces:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen build -S ./examples/ota/ -c ota.yaml -- IGconf_iwd_profile='Pi Towers Guest.psk'</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-A bare filename is resolved relative to the source directory determined by <code>rpi-image-gen</code>. Use an absolute path or the <code>${@SRCROOT}</code> anchor to be explicit.
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-</div>
-
-        </div>
+        <h1>debian-trixie-arm64-multi-minbase</h1>
+        <span class="badge">distribution</span>
+        <span class="badge">v1.0.0</span>
+        <p>Debian Trixie multi-arch base for interactive systems.
+ No apt or dpkg restrictions - recommended packages are preserved, locale
+ generated.</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
-        <p><strong>Required by:</strong></p>
+        <p><strong>Depends on:</strong></p>
         <div class="deps">
-            
-            <a href="network-manager-iwd.html" class="dep-badge">network-manager-iwd</a>
-            
-            <a href="trixie-minbase.html" class="dep-badge">trixie-minbase</a>
-            
+            <a href="locale-base.html" class="dep-badge">locale-base</a>
+            <a href="locale-gen.html" class="dep-badge">locale-gen</a>
         </div>
-        <p><strong>Provides:</strong> wifi-supplicant</p>
-        <p><strong>Requires Provider:</strong> wireless-regdb, systemd, network-activator</p>
-    </div>
-    <div class="section">
-        <h2>Configuration Variables</h2>
-        <p><strong>Declares</strong> (prefix: <code>iwd</code>):</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Variable</th>
-                    <th>Description</th>
-                    <th>Default</th>
-                    <th>Validation</th>
-                    <th>Policy</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code>IGconf_iwd_profile</code></td>
-                    <td>Path to an iwd network profile file to bake
- into the build. The file is installed into /var/lib/iwd/ preserving its
- filename. See iwd.network(5)</td>
-                    <td>
-                           <code>&lt;empty&gt;</code>
-                    </td>
-                    <td>String value (may be empty)</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <p><strong>Provides:</strong> debian-base</p>
     </div>
     <div class="section">
         <h2>mmdebstrap</h2>
         
-        <h3>Packages</h3>
-        <p>Installs:</p>
+        <h3>Suite</h3>
         <ul>
-            <li><code>iwd</code></li>
+            <li><code>trixie</code></li>
+        </ul>
+        
+        <h3>Variant</h3>
+        <p>Installs package set:</p>
+        <ul>
+            <li><code>minbase</code></li>
+        </ul>
+        
+        <h3>Architectures</h3>
+        <ul>
+            <li><code>arm64 armhf</code></li>
+        </ul>
+        
+        <h3>Mirrors</h3>
+        <ul>
+            <li><code>${IGTOP}/templates/debian/apt/trixie.sources</code></li>
         </ul>
     </div>
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>net-wireless/iwd-systemd.yaml</code></p>
+        <p><strong>File:</strong> <code>debian/trixie/arm64/base-minbase-multi.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
-        <p><strong>Overlay:</strong> base</p>
     </div>
 </body>
 </html>
