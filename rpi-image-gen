@@ -26,6 +26,15 @@ source "$IGTOP/lib/dependencies.sh"
 source "$IGTOP/lib/tools.sh"
 
 
+# Namespace setup (see bin/ns)
+_ns_setup() {
+   # unmount cache (defensive - cleanup hook should handle)
+   [[ -n "${_NS_APT_ARCHIVES:-}" ]] && \
+      trap "umount -q \"$_NS_APT_ARCHIVES\" 2>/dev/null || true" EXIT
+}
+export NS_SETUP="$(declare -f _ns_setup)"
+
+
 # cli
 cmd=${1:-}
 shift
@@ -308,7 +317,7 @@ prepare_build_config()
    # or other dynamically driven settings.
    process_conf_opt() {
       local key=${1:-} value=${2:-}
-      msg "-> $key : $value"
+      msg "$key : $value"
       case $key in
          IGconf_sys_apt_keydir)
             xmkdir "$value"
@@ -321,11 +330,20 @@ prepare_build_config()
 
          IGconf_sys_apt_cachedir)
             if [[ -n "$value" ]]; then
-              local cache=$(realpath -e "$value") 2>/dev/null || die "$key specifies invalid dir ($value)"
-              # @TODO passing --skip=cleanup/apt/cache needs bdebstrap 0.6.0+
-              #_bdebstrap+=( --aptopt 'APT::Keep-Downloaded-Packages "true"' )
-              #_bdebstrap+=( --aptopt 'Debug::pkgAcquire "true"' )
-              #_bdebstrap+=( --aptopt 'Debug::Acquire::file "true"' )
+              local cache
+              cache=$(realpath -e "$value" 2>/dev/null) || die "$value does not exist"
+              local archives=/var/cache/apt/archives
+              export _NS_APT_ARCHIVES="${IGconf_target_path}${archives}"
+
+              local num=$(find "$cache" -maxdepth 1 -name '*.deb' 2>/dev/null | wc -l)
+              msg "Apt cache: $num pkgs @ $cache"
+
+              _bdebstrap+=( --skip=cleanup/apt/cache )
+              _bdebstrap+=( --skip=cleanup/apt/lists )
+              _bdebstrap+=( --skip=essential/unlink )
+              _bdebstrap+=( --aptopt 'APT::Keep-Downloaded-Packages "true"' )
+              _bdebstrap+=( --setup-hook   "mkdir -p \"\$1${archives}/partial\" && mount --bind '$cache' \"\$1${archives}\"" )
+              _bdebstrap+=( --cleanup-hook "umount \"\$1${archives}\"" )
               value="$cache"
             fi
             ;;

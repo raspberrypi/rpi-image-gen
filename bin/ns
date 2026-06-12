@@ -3,11 +3,18 @@
 # Used to run a command inside a linux user namespace, remapping uid/gid
 # so that permissions may be elevated (eg like inside a container).
 # May be needed for execution of certain commands / tools.
+#
+# NS_SETUP carries the definition of _ns_setup() across the podman unshare
+# boundary. _ns_setup is called inside the namespace before running the cmd.
 
 set -eu
 uid=$(id -u)
+: "${NS_SETUP:=_ns_setup() { :; }}"
+
 if [ "$uid" -eq 0 ]; then
-   exec "$@"
+   eval "$NS_SETUP"
+   _ns_setup
+   "$@"
 else
-   exec podman unshare "$@"
+   exec podman unshare bash -c 'eval "$NS_SETUP"; _ns_setup; "$@"' -- "$@"
 fi

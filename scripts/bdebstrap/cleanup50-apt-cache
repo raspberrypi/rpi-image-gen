@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# Clean up if a host apt cache was used
+
+set -eu
+
+if ! igconf isval sys_apt_cachedir ; then
+   exit 0
+fi
+
+rm -rf $1/var/cache/apt/srcpkgcache.bin \
+       $1/var/cache/apt/pkgcache.bin
+
+rm -rf $1/var/lib/apt/lists/* \
+       $1/var/lib/apt/lists/partial/*
+
+if mountpoint -q "$1/var/cache/apt/archives" 2>/dev/null; then
+   exit 0
+fi
+
+rm -rf $1/var/cache/apt/archives/* \
+       $1/var/cache/apt/archives/partial/* \
