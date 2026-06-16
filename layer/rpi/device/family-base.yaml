@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: rpi-device-base
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi device base layer and defaults
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Requires: device-base,rpi-boot-firmware,rpi-idp,rpi-device-secpolicy
 # X-Env-Layer-Provides: device
 # X-Env-Layer-RequiresProvider: rpi-device,systemd,network-activator
@@ -33,6 +33,7 @@ mmdebstrap:
   packages:
     - udev
     - firmware-brcm80211
+    - bluez-firmware
   customize-hooks:
     - mkdir -p $1/etc/systemd/network
     - $LAYER_HOOKS/systemd/netgen eth0 > $1/etc/systemd/network/01-eth0.network
