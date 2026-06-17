@@ -306,6 +306,16 @@ run_test "meta-parse-rejects-invalid-dependency-declaration" \
     1 \
     "Meta parse should perform validation of dependency declaration"
 
+run_test "meta-validate-accepts-capability-provides-tokens" \
+    "ig metadata --validate ${LAYERS}/valid-provides-capability.yaml" \
+    0 \
+    "Capability provides tokens (cap:hw:*) should be accepted"
+
+run_test "meta-validate-rejects-invalid-capability-provides-fmt" \
+    "ig metadata --validate ${LAYERS}/invalid-provides-capability-fmt.yaml" \
+    1 \
+    "Provides tokens with invalid characters should be rejected"
+
 run_test "layer-with-deps-info" \
     "ig layer --path ${LAYERS} --describe test-with-deps" \
     0 \
