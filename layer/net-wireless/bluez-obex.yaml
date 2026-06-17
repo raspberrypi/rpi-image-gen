@@ -1,0 +1,11 @@
+# METABEGIN
+# X-Env-Layer-Name: bluez-obex
+# X-Env-Layer-Desc: BlueZ OBEX daemon for Bluetooth file transfer
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-Requires: bluez
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - bluez-obexd

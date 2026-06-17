@@ -1,0 +1,28 @@
+# METABEGIN
+# X-Env-Layer-Name: bluez
+# X-Env-Layer-Desc: BlueZ Bluetooth stack
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: connectivity
+# X-Env-Layer-RequiresProvider: systemd
+#
+# X-Env-VarPrefix: bluez
+#
+# X-Env-Var-name:
+# X-Env-Var-name-Desc: Bluetooth adapter name advertised to remote devices.
+#  Defaults to the system hostname if not set.
+# X-Env-Var-name-Valid: string-or-empty
+# X-Env-Var-name-Set: y
+#
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - bluez
+  customize-hooks:
+    - $BDEBSTRAP_HOOKS/enable-units "$1" bluetooth
+    - |-
+      set -eu
+      printf '\n[Policy]\nAutoEnable=true\n' >> "$1/etc/bluetooth/main.conf"
+      if [ -n "${IGconf_bluez_name:-}" ]; then
+        printf '\n[General]\nName=%s\n' "${IGconf_bluez_name}" >> "$1/etc/bluetooth/main.conf"
+      fi
