@@ -325,7 +325,8 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
 
             errors = validator.validate(current)
             if errors:
-                log_error(f"[FAIL] {req_var}={current} (invalid, layer: {layer_name})")
+                reason = "; ".join(errors)
+                log_error(f"[FAIL] {req_var}={current} (invalid value, reason: {reason}, layer: {layer_name})")
                 ok = False
 
     for var_name in sorted(variable_definitions.keys()):
@@ -352,8 +353,9 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
         elif current is not None and env_var.validator:
             errors = env_var.validate_value(current)
             if errors:
+                reason = "; ".join(errors)
                 log_error(
-                    f"[FAIL] {env_var.name}={current} (invalid value, layer: {env_var.source_layer})"
+                    f"[FAIL] {env_var.name}={current} (invalid value, reason: {reason}, layer: {env_var.source_layer})"
                 )
                 ok = False
 
