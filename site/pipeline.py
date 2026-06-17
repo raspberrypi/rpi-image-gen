@@ -104,10 +104,6 @@ def _pipeline_main(args):
     for var_name, value in applied_values.items():
         assignments[var_name] = value
 
-    if not _validate_resolved(manager, build_order):
-        log_error("Error: Validation failed for target layers")
-        raise SystemExit(1)
-
     if args.plan_out:
         _write_layer_plan(args.plan_out, build_order, manager)
 
@@ -135,6 +131,12 @@ def _pipeline_main(args):
         raise SystemExit(f"Undefined variable: {e}")
     except CircularReferenceError as e:
         raise SystemExit(f"Circular reference: {e}")
+
+    # Validate after anchor expansion so path validators see fully resolved values
+    os.environ.update(final_values)
+    if not _validate_resolved(manager, build_order):
+        log_error("Error: Validation failed for target layers")
+        raise SystemExit(1)
 
     # Write out
     write_env_file(args.env_out, assignments, final_values)
