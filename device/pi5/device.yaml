@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: rpi5
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi 5 specific device layer
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.0.1
 # X-Env-Layer-Requires: rpi-device-base,rpi-linux-2712
 # X-Env-Layer-Provides: rpi-device
 #
@@ -24,7 +24,7 @@
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Device specific asset directory
 # X-Env-Var-assetdir-Required: n
-# X-Env-Var-assetdir-Valid: string
+# X-Env-Var-assetdir-Valid: dir
 # X-Env-Var-assetdir-Set: y
 # METAEND
 ---

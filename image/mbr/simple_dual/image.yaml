@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Raspberry Pi OS style image layout with MBR, vfat
 #  boot partition, and a root partition that can be ext4 or btrfs.
-# X-Env-Layer-Version: 2.2.0
+# X-Env-Layer-Version: 2.2.1
 # X-Env-Layer-Requires: image-base,rpi-storage-binder
 # X-Env-Layer-Provides: image
 #
@@ -33,7 +33,7 @@
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Image specific asset directory
 # X-Env-Var-assetdir-Required: n
-# X-Env-Var-assetdir-Valid: string
+# X-Env-Var-assetdir-Valid: dir
 # X-Env-Var-assetdir-Set: y
 #
 # X-Env-Var-pmap: clear

@@ -9,7 +9,7 @@ igconf isy sbom_enable || exit 0
 
 [[ $(igconf getval sbom_provider) == syft ]] || exit 0
 
-SYFTCFG=$(realpath -e $(igconf getval sbom_syft_config)) || die "Invalid syft config"
+SYFTCFG=$(igconf getval sbom_syft_config)
 
 SYFT_VER=v1.44.0  # leave empty to install latest
 
