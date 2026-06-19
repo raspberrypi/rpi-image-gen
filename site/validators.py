@@ -190,6 +190,41 @@ SIZES:
     50%          (percentage; any positive integer)"""
 
 
+class PathValidator(BaseValidator):
+    def __init__(self, kind: str, nonzero: bool = False):
+        # kind: file or dir
+        self.kind = kind
+        self.nonzero = nonzero
+
+    def validate(self, value: Optional[str]) -> list[str]:
+        import os
+        if value is None:
+            return []
+        path = os.path.expandvars(os.path.expanduser(value))
+        if self.kind == 'file':
+            if not os.path.isfile(path):
+                return [f"Path '{path}' is not a regular file or does not exist"]
+            if self.nonzero and os.path.getsize(path) == 0:
+                return [f"File '{path}' exists but is empty"]
+        elif self.kind == 'dir':
+            if not os.path.isdir(path):
+                return [f"Path '{path}' is not a directory or does not exist"]
+        return []
+
+    def describe(self) -> str:
+        if self.kind == 'dir':
+            return "Path to an existing directory"
+        if self.nonzero:
+            return "Path to an existing non-empty regular file"
+        return "Path to an existing regular file (may be empty)"
+
+    @classmethod
+    def get_help_text(cls) -> str:
+        return ("file                  - Must be a path to an existing regular file (may be empty)\n"
+                "file-nzero            - Must be a path to an existing non-empty regular file\n"
+                "dir                   - Must be a path to an existing directory")
+
+
 class CapacityValidator(BaseValidator):
     def __init__(self):
         # Accept: K, M, G, T, (1024-based) and KiB, MiB, GiB, TiB
@@ -298,6 +333,12 @@ def parse_validator(rule_str: str) -> BaseValidator:
     elif rule_str.startswith("keywords:"):
         options = [x.strip() for x in rule_str.split(":", 1)[1].split(",")]
         return EnumValidator(options)
+    elif rule_str == "file":
+        return PathValidator('file')
+    elif rule_str == "file-nzero":
+        return PathValidator('file', nonzero=True)
+    elif rule_str == "dir":
+        return PathValidator('dir')
     elif rule_str == "size":
         return SizeValidator()
     elif rule_str == "capacity":
@@ -308,7 +349,7 @@ def parse_validator(rule_str: str) -> BaseValidator:
         return EnumValidator(options)
     else:
         # Single value without comma - reject unless it's a known type
-        if rule_str in ["string", "string-or-empty", "string-or-unset", "bool", "int", "size", "capacity"]:
+        if rule_str in ["string", "string-or-empty", "string-or-unset", "bool", "int", "size", "capacity", "file", "file-nzero", "dir"]:
             raise ValueError(f"Unknown validation rule: {rule_str}")
         else:
             raise ValueError(f"Single value '{rule_str}' must use trailing comma ('{rule_str},') or keywords: prefix ('keywords:{rule_str}')")

@@ -1,0 +1,6 @@
+# METABEGIN
+# X-Env-Layer-Name: test-provides-capability
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Provides: base-os,cap:hw:bluetooth,cap:hw:wlan,cap:hw:crypto:aes-accel
+# METAEND

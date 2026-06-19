@@ -1,0 +1,6 @@
+# METABEGIN
+# X-Env-Layer-Name: test-invalid-cap-fmt
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-Layer-Provides: cap:hw:bluetooth!!
+# METAEND

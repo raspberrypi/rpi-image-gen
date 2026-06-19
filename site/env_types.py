@@ -596,10 +596,10 @@ class EnvLayer:
                     raise ValueError(
                         f"Invalid dependency token '{dep_name}' - dependencies must be comma-separated without spaces/newlines inside a token")
                 # In doc_mode, allow environment variable placeholders like ${VAR}-suffix
-                if doc_mode and not re.match(r'^[A-Za-z0-9_${}-]+$', dep_name):
-                    raise ValueError(f"Invalid dependency name '{dep_name}' - only alphanum, dash, underscore, and environment variable placeholders allowed")
-                elif not doc_mode and not re.match(r'^[A-Za-z0-9_-]+$', dep_name):
-                    raise ValueError(f"Invalid dependency name '{dep_name}' - only alphanum, dash, underscore allowed")
+                if doc_mode and not re.match(r'^[A-Za-z0-9_:${}\-]+$', dep_name):
+                    raise ValueError(f"Invalid dependency name '{dep_name}' - only alphanum, dash, underscore, colon, and environment variable placeholders allowed")
+                elif not doc_mode and not re.match(r'^[A-Za-z0-9_:\-]+$', dep_name):
+                    raise ValueError(f"Invalid dependency name '{dep_name}' - only alphanum, dash, underscore, colon allowed")
                 deps.append(dep_name)
         return deps
 

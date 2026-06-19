@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: sbom-base
 # X-Env-Layer-Category: audit
 # X-Env-Layer-Desc: SBOM provider and settings.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.0.1
 # X-Env-Layer-Requires: artefact-base
 #
 # X-Env-VarRequires: IGconf_artefact_target_name,IGconf_artefact_version
@@ -57,7 +57,7 @@
 #  For further information, refer to
 #  https://github.com/anchore/syft/wiki/Configuration
 # X-Env-Var-syft_config-Required: n
-# X-Env-Var-syft_config-Valid: string
+# X-Env-Var-syft_config-Valid: file-nzero
 # X-Env-Var-syft_config-Set: lazy
 #
 # X-Env-Var-syft_source:
