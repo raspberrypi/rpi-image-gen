@@ -88,6 +88,16 @@
 # X-Env-Var-user1gid-Valid: int:1000-65533
 # X-Env-Var-user1gid-Set: n
 #
+# X-Env-Var-user1groups: adm,dialout,cdrom,audio,users,video,games,plugdev,input,spi,i2c,gpio,render
+# X-Env-Var-user1groups-Desc: Comma-separated list of supplementary groups that the user1 account
+#  will be added to. Groups that do not exist on the system are created as system groups. Group
+#  names must follow Linux naming conventions: start with a letter or underscore, followed by
+#  letters, digits, underscores, or hyphens.
+# X-Env-Var-user1groups-Required: n
+# X-Env-Var-user1groups-Valid: regex:^[a-zA-Z_][a-zA-Z0-9_-]*(,[a-zA-Z_][a-zA-Z0-9_-]*)*$
+# X-Env-Var-user1groups-Conflicts: 'sudo' in IGconf_device_user1groups
+# X-Env-Var-user1groups-Set: lazy
+#
 # X-Env-Var-storage_type: sd
 # X-Env-Var-storage_type-Desc: Declares the storage media the image is intended
 #  for, as seen by the OS. For example, an NVMe backed disk connected via USB
