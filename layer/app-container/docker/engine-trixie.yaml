@@ -2,12 +2,12 @@
 # X-Env-Layer-Name: docker-debian-trixie
 # X-Env-Layer-Category: container
 # X-Env-Layer-Desc: Docker engine and framework for Debian Trixie
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Provides: docker
-# X-Env-Layer-Requires: rpi-user-credentials,sys-build-base
+# X-Env-Layer-Requires: device-user-admin,sys-build-base
 #
-# X-Env-VarRequires: IGconf_device_user1,IGconf_sys_apt_keydir
-# X-Env-VarRequires-Valid: string,string
+# X-Env-VarRequires: IGconf_sys_apt_keydir
+# X-Env-VarRequires-Valid: string
 #
 # X-Env-VarPrefix: docker
 #

@@ -3,12 +3,9 @@
 # X-Env-Layer-Category: service
 # X-Env-Layer-Desc: Raspberry Pi Connect client with screen-sharing support and
 #  remote shell access
-# X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-Requires: systemd-min,rpi-user-credentials
+# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Requires: systemd-min,device-user-admin
 # X-Env-Layer-Provides: rpi-connect-client
-#
-# X-Env-VarRequires: IGconf_device_user1
-# X-Env-VarRequires-Valid: string
 #
 # X-Env-VarPrefix: connect
 #
