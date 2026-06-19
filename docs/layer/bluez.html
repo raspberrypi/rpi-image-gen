@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>image-rpios - Layer Documentation</title>
+    <title>bluez - Layer Documentation</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
@@ -121,24 +121,24 @@
     </div>
 
     <div class="header">
-        <h1>image-rpios</h1>
-        <span class="badge">image</span>
-        <span class="badge">v2.2.1</span>
-        <p>Raspberry Pi OS style image layout with MBR, vfat
- boot partition, and a root partition that can be ext4 or btrfs.</p>
+        <h1>bluez</h1>
+        <span class="badge">connectivity</span>
+        <span class="badge">v1.0.0</span>
+        <p>BlueZ Bluetooth stack</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
-        <p><strong>Depends on:</strong></p>
+        <p><strong>Required by:</strong></p>
         <div class="deps">
-            <a href="image-base.html" class="dep-badge">image-base</a>
-            <a href="rpi-storage-binder.html" class="dep-badge">rpi-storage-binder</a>
+            
+            <a href="bluez-obex.html" class="dep-badge">bluez-obex</a>
+            
         </div>
-        <p><strong>Provides:</strong> image</p>
+        <p><strong>Requires Provider:</strong> systemd</p>
     </div>
     <div class="section">
         <h2>Configuration Variables</h2>
-        <p><strong>Declares</strong> (prefix: <code>image</code>):</p>
+        <p><strong>Declares</strong> (prefix: <code>bluez</code>):</p>
         <table>
             <thead>
                 <tr>
@@ -151,58 +151,13 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><code>IGconf_image_rootfs_type</code></td>
-                    <td>Root filesystem type.</td>
+                    <td><code>IGconf_bluez_name</code></td>
+                    <td>Bluetooth adapter name advertised to remote devices.
+ Defaults to the system hostname if not set.</td>
                     <td>
-                           <code>ext4</code>
+                           <code>&lt;empty&gt;</code>
                     </td>
-                    <td>Must be one of: ext4, btrfs</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>IGconf_image_boot_part_size</code></td>
-                    <td>Boot partition size</td>
-                    <td>
-                           <code>100%</code>
-                    </td>
-                    <td>Size value with optional unit (bytes, k/m/g/s) or percentage</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>IGconf_image_root_part_size</code></td>
-                    <td>Root partition size</td>
-                    <td>
-                           <code>100%</code>
-                    </td>
-                    <td>Size value with optional unit (bytes, k/m/g/s) or percentage</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>IGconf_image_assetdir</code></td>
-                    <td>Image specific asset directory</td>
-                    <td>
-                           <code>${DIRECTORY}</code>
-                    </td>
-                    <td>Path to an existing directory</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>IGconf_image_pmap</code></td>
-                    <td>Provisioning Map identifier for this image layout.
- All partitions will be provisioned unencrypted (clear).
- Root partition will be provisioned encrypted (crypt).</td>
-                    <td>
-                           <code>clear</code>
-                    </td>
-                    <td>Must be one of: clear, crypt</td>
+                    <td>String value (may be empty)</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
@@ -216,14 +171,15 @@
         <h3>Packages</h3>
         <p>Installs:</p>
         <ul>
-            <li><code>initramfs-tools</code></li>
+            <li><code>bluez</code></li>
         </ul>
     </div>
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>mbr/simple_dual/image.yaml</code></p>
+        <p><strong>File:</strong> <code>net-wireless/bluez.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
+        <p><strong>Overlay:</strong> base</p>
     </div>
 </body>
 </html>
