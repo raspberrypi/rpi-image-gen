@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>rpi-user-credentials - Layer Documentation</title>
+    <title>device-user-admin - Layer Documentation</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
         .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
@@ -121,19 +121,22 @@
     </div>
 
     <div class="header">
-        <h1>rpi-user-credentials</h1>
-        <span class="badge">general</span>
-        <span class="badge">v3.0.1</span>
-        <p>Raspberry Pi base layer for local user admin.
- Creates a local account for user IGconf_device_user1, a home directory and
- adds the user to the standard Raspberry Pi groups. Sudo access is configurable.</p>
+        <h1>device-user-admin</h1>
+        <span class="badge">device</span>
+        <span class="badge">v1.0.0</span>
+        <p>Base layer for local user account provisioning.
+ Creates user accounts, sets credentials, group membership and sudo access.</p>
     </div>
     <div class="section">
         <h2>Relationships</h2>
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="device-user-credentials.html" class="dep-badge">device-user-credentials</a>
+        </div>
         <p><strong>Required by:</strong></p>
         <div class="deps">
             
-            <a href="bookworm-minbase.html" class="dep-badge">bookworm-minbase</a>
+            <a href="device-base.html" class="dep-badge">device-base</a>
             
             <a href="docker-debian-bookworm.html" class="dep-badge">docker-debian-bookworm</a>
             
@@ -145,16 +148,7 @@
             
             <a href="rpi-connect-lite.html" class="dep-badge">rpi-connect-lite</a>
             
-            <a href="trixie-minbase.html" class="dep-badge">trixie-minbase</a>
-            
         </div>
-    </div>
-    <div class="section">
-        <h2>Configuration Variables</h2>
-        <p><strong>References:</strong>
-        <code>IGconf_device_user1</code>, 
-        <code>RPI_TEMPLATES</code>
-        </p>
     </div>
     <div class="section">
         <h2>mmdebstrap</h2>
@@ -170,7 +164,7 @@
 
     <div class="section">
         <h2>Attributes</h2>
-        <p><strong>File:</strong> <code>rpi/user-credentials.yaml</code></p>
+        <p><strong>File:</strong> <code>base/device-user-admin.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
     </div>
 </body>

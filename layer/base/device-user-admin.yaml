@@ -1,14 +1,10 @@
 # METABEGIN
-# X-Env-Layer-Name: rpi-user-credentials
-# X-Env-Layer-Desc: Raspberry Pi base layer for local user admin.
-#  Creates a local account for user IGconf_device_user1, a home directory and
-#  adds the user to the standard Raspberry Pi groups. Sudo access is configurable.
-# X-Env-Layer-Version: 3.0.1
-#
-# X-Env-VarRequires: IGconf_device_user1,RPI_TEMPLATES
-# X-Env-VarRequires-Valid: string,string
-#
-# X-Env-VarOptional: IGconf_device_user1pass,IGconf_device_user1passhash,IGconf_device_user1uid,IGconf_device_user1gid,IGconf_device_user1sudo
+# X-Env-Layer-Name: device-user-admin
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Base layer for local user account provisioning.
+#  Creates user accounts, sets credentials, group membership and sudo access.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: device-user-credentials
 # METAEND
 ---
 mmdebstrap:
@@ -18,6 +14,7 @@ mmdebstrap:
     - adduser
   customize-hooks:
     - |-
+      #
       # Account creation
       set -eu
       uid_arg=""
@@ -33,7 +30,8 @@ mmdebstrap:
           chroot $1 adduser --disabled-password --gecos "" $uid_arg $gid_arg "$IGconf_device_user1"
       fi
     - |-
-      # Password and group
+      #
+      # Password
       set -eu
       if [ -n "${IGconf_device_user1passhash:-}" ] ; then
          printf '%s:%s\n' "$IGconf_device_user1" "$IGconf_device_user1passhash" | chroot $1 chpasswd -e
@@ -41,14 +39,18 @@ mmdebstrap:
          printf '%s:%s\n' "$IGconf_device_user1" "$IGconf_device_user1pass" | chroot $1 chpasswd
       fi
     - chroot $1 usermod --pass='*' root
-    - chroot $1 sh -c "for GRP in input spi i2c gpio; do
-         groupadd -f -r \$GRP;
-      done"
-    - chroot $1 sh -c "for GRP in adm dialout cdrom audio users sudo video games plugdev input spi i2c gpio render ; do
-         getent group \$GRP > /dev/null && adduser $IGconf_device_user1 \$GRP || true;
+    - |-
+      #
+      # Group membership
+      set -eu
+      GRP_LIST=$(printf '%s' "${IGconf_device_user1groups:-}" | tr ',' ' ')
+      chroot $1 sh -c "for GRP in $GRP_LIST ; do
+        groupadd -f -r \$GRP;
+        adduser $IGconf_device_user1 \$GRP;
       done"
     - |-
-      # Sudo
+      #
+      # sudo
       set -eu
       if [ "$IGconf_device_user1sudo" = "nopasswd" ] &&
          [ -z "${IGconf_device_user1pass:-}" ] &&
@@ -57,20 +59,28 @@ mmdebstrap:
       fi
       case "$IGconf_device_user1sudo" in
         nopasswd)
-          sed "s/^pi /$IGconf_device_user1 /" $RPI_TEMPLATES/sudo/010_pi-nopasswd > $1/etc/sudoers.d/010_pi-nopasswd
+          echo "$IGconf_device_user1 ALL=(ALL) NOPASSWD: ALL" > $1/etc/sudoers.d/010_rpi-nopasswd
+          chroot $1 adduser "$IGconf_device_user1" sudo
           ;;
         passwd)
-          echo "$IGconf_device_user1 ALL=(ALL:ALL) ALL" > $1/etc/sudoers.d/010_pi-nopasswd
+          echo "$IGconf_device_user1 ALL=(ALL:ALL) ALL" > $1/etc/sudoers.d/010_rpi-passwd
+          chroot $1 adduser "$IGconf_device_user1" sudo
           ;;
         none)
           ;;
       esac
-    - mkdir -p $1/etc/profile.d
     - |-
+      #
       # Profile
+      set -eu
+      mkdir -p $1/etc/profile.d
       cat <<- 'EOCHROOT' > $1/etc/profile.d/01local.sh
       #!/bin/sh
       if [ "$(id -u)" -ne 0 ]; then
         PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
       fi
       EOCHROOT
+  cleanup-hooks:
+    - |-
+      set -eu
+      [ "$IGconf_device_user1sudo" = "none" ] && chroot $1 dpkg --purge sudo || true

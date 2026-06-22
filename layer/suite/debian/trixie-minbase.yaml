@@ -8,7 +8,6 @@
 #  rpi-misc-utils,
 #  rpi-essential-base,
 #  rpi-misc-skel,
-#  rpi-user-credentials,
 #  systemd-net-min,
 #  openssh-server,
 #  systemd-timesyncd,

@@ -1,11 +1,8 @@
 # METABEGIN
 # X-Env-Layer-Name: openssh-server
 # X-Env-Layer-Desc: OpenSSH server daemon and local user SSH key setup.
-# X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-Requires: rpi-user-credentials
-#
-# X-Env-VarRequires: IGconf_device_user1
-# X-Env-VarRequires-Valid: string
+# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Requires: device-user-admin
 #
 # X-Env-VarPrefix: ssh
 #

@@ -2,8 +2,8 @@
 # X-Env-Layer-Name: device-base
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Device base layer and defaults
-# X-Env-Layer-Version: 3.0.0
-# X-Env-Layer-Requires:
+# X-Env-Layer-Version: 3.1.0
+# X-Env-Layer-Requires: device-user-admin
 # X-Env-Layer-RequiresProvider: device
 #
 # X-Env-VarPrefix: device
@@ -31,62 +31,6 @@
 # X-Env-Var-hostname-Required: false
 # X-Env-Var-hostname-Valid: string
 # X-Env-Var-hostname-Set: y
-#
-# X-Env-Var-user1: pi
-# X-Env-Var-user1-Desc: A user account with this name will be created on the
-#  device.
-# X-Env-Var-user1-Required: n
-# X-Env-Var-user1-Valid: string
-# X-Env-Var-user1-Set: y
-#
-# X-Env-Var-user1pass:
-# X-Env-Var-user1pass-Desc: Password required to log into the user1 account.
-#  If neither user1pass nor user1passhash is set, the account will be locked.
-#  Password requirements are as follows.
-#  At least 8 characters.
-#  At least one lowercase letter.
-#  At least one uppercase letter.
-#  At least one digit.
-#  At least one special character from @$!%*?&
-# X-Env-Var-user1pass-Required: n
-# X-Env-Var-user1pass-Valid: regex:^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
-# X-Env-Var-user1pass-Set: n
-# X-Env-Var-user1pass-Conflicts: IGconf_device_user1pass != '' and IGconf_device_user1passhash != ''
-# X-Env-Var-user1pass-Triggers: when=IGconf_device_user1pass != '' set IGconf_device_user1sudo=passwd policy=lazy
-#
-# X-Env-Var-user1passhash:
-# X-Env-Var-user1passhash-Desc: A pre-hashed password for the user1 account.
-#  Generate using the provided genpasswd utility, or supply a hash created with
-#  the same algorithm used by the chroot.
-#  If neither user1pass nor user1passhash is set, the account will be locked.
-# X-Env-Var-user1passhash-Required: n
-# X-Env-Var-user1passhash-Valid: string
-# X-Env-Var-user1passhash-Set: n
-# X-Env-Var-user1passhash-Conflicts: IGconf_device_user1passhash != '' and IGconf_device_user1pass != ''
-# X-Env-Var-user1passhash-Triggers: when=IGconf_device_user1passhash != '' set IGconf_device_user1sudo=passwd policy=lazy
-#
-# X-Env-Var-user1sudo: none
-# X-Env-Var-user1sudo-Desc: Controls sudo access for the user1 account. 'none' disables
-#  sudo access entirely. 'passwd' requires a password for sudo. 'nopasswd' grants
-#  passwordless sudo. If user1pass or user1passhash is set, defaults to 'passwd'.
-#  Note: setting 'nopasswd' without a password is permitted but inadvisable.
-# X-Env-Var-user1sudo-Required: n
-# X-Env-Var-user1sudo-Valid: none,passwd,nopasswd
-# X-Env-Var-user1sudo-Set: lazy
-#
-# X-Env-Var-user1uid:
-# X-Env-Var-user1uid-Desc: The UID assigned to the user1 account. If unset,
-#  one will be assigned automatically.
-# X-Env-Var-user1uid-Required: n
-# X-Env-Var-user1uid-Valid: int:1000-65533
-# X-Env-Var-user1uid-Set: n
-#
-# X-Env-Var-user1gid:
-# X-Env-Var-user1gid-Desc: The GID assigned to the user1 account. If unset,
-#  one will be assigned automatically.
-# X-Env-Var-user1gid-Required: n
-# X-Env-Var-user1gid-Valid: int:1000-65533
-# X-Env-Var-user1gid-Set: n
 #
 # X-Env-Var-storage_type: sd
 # X-Env-Var-storage_type-Desc: Declares the storage media the image is intended

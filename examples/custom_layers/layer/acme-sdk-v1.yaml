@@ -4,12 +4,10 @@
 # X-Env-Layer-Desc: Example layer with dependencies, variables and
 #  demonstrating usage of the uchroot helper to install assets for the local
 #  user.
-# X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-Requires: example-essential-base,rpi-user-credentials
+# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Requires: example-essential-base,device-user-admin
 #
 # X-Env-VarPrefix: acme
-#
-# X-Env-VarRequires: IGconf_device_user
 #
 # X-Env-Var-subdomain: development
 # X-Env-Var-subdomain-Desc: Deployment subdomain
