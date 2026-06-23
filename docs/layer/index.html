@@ -150,7 +150,7 @@
 <li><a href="#_dependencies_and_providers">Dependencies and Providers</a>
 <ul class="sectlevel3">
 <li><a href="#_x_env_layer_requires">X-Env-Layer-Requires</a></li>
-<li><a href="#_x_env_layer_provides_x_env_layer_requiresprovider">X-Env-Layer-Provides / X-Env-Layer-RequiresProvider</a></li>
+<li><a href="#_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider">X-Env-Layer-Provides / X-Env-Layer-RequiresProvider / X-Env-Layer-AfterProvider</a></li>
 <li><a href="#_x_env_layer_sets">X-Env-Layer-Sets</a></li>
 </ul>
 </li>
@@ -407,7 +407,10 @@ mmdebstrap:
 <p><code>X-Env-Layer-Provides</code>: Services or capabilities this layer provides</p>
 </div>
 <div class="paragraph">
-<p><code>X-Env-Layer-RequiresProvider</code>: Services or capabilities this layer requires</p>
+<p><code>X-Env-Layer-RequiresProvider</code>: Capabilities that must exist in the build (validation only, no ordering)</p>
+</div>
+<div class="paragraph">
+<p><code>X-Env-Layer-AfterProvider</code>: Capabilities that must exist and must precede this layer in the build</p>
 </div>
 <div class="paragraph">
 <p><code>X-Env-Layer-Conflicts</code>: Layers that cannot be used together with this one</p>
@@ -488,7 +491,13 @@ mmdebstrap:
 </div>
 </div>
 <div class="sect3">
-<h4 id="_x_env_layer_provides_x_env_layer_requiresprovider"><a class="anchor" href="#_x_env_layer_provides_x_env_layer_requiresprovider"></a><a class="link" href="#_x_env_layer_provides_x_env_layer_requiresprovider">X-Env-Layer-Provides / X-Env-Layer-RequiresProvider</a></h4>
+<h4 id="_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider"><a class="anchor" href="#_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider"></a><a class="link" href="#_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider">X-Env-Layer-Provides / X-Env-Layer-RequiresProvider / X-Env-Layer-AfterProvider</a></h4>
+<div class="paragraph">
+<p><code>X-Env-Layer-Provides</code> declares one or more capability tokens that this layer makes available to the rest of the build. Other layers reference these tokens rather than a specific layer name, which keeps the dependency abstract and substitutable.</p>
+</div>
+<div class="paragraph">
+<p>All fields share the same capability contract model:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
@@ -498,7 +507,7 @@ mmdebstrap:
 <p><strong>Service/capability contracts</strong>: Multiple layers could satisfy the requirement</p>
 </li>
 <li>
-<p><strong>Flexible implementation</strong>: Any layer providing the capability can fulfill it</p>
+<p><strong>Flexible implementation</strong>: Any layer providing the capability can fulfil it</p>
 </li>
 <li>
 <p><strong>Relationships</strong>: If a provider is required, only one can exist in the overall configuration</p>
@@ -507,6 +516,18 @@ mmdebstrap:
 <p><strong>Example</strong>: A layer requires a device provider, which could be satisfied by different device layers</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p><code>X-Env-Layer-RequiresProvider</code> declares capabilities that must be present somewhere in the build. The engine validates their existence but imposes no ordering constraint - use this when a layer is semantically tied to a capability but its position in the build plan is already determined by its <code>Requires</code> relationships, when variable resolution handles the dependency lazily, or when position in the build plan is not important.</p>
+</div>
+<div class="paragraph">
+<p><code>X-Env-Layer-AfterProvider</code> declares capabilities that must be present AND must precede this layer in the build plan. Use this when the provider&#8217;s position has a structural effect on the build - for example, APT mirror ordering where a Debian distribution foundation layer must appear first in the build order so that mmdebstrap derives the correct native architecture when bdebstrap merges the YAML, or when hooks provided by one layer must execute before hooks from another.</p>
+</div>
+<div class="paragraph">
+<p>Both fields enforce uniqueness: only one layer in the build may provide a given capability token.</p>
+</div>
+<div class="paragraph">
+<p>The engine raises an error on impossible relationships, e.g. B <code>Requires</code> A but A uses <code>AfterProvider</code> to require a capability that B provides.</p>
 </div>
 <div class="admonitionblock important">
 <table>
