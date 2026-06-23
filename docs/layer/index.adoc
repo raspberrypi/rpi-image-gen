@@ -115,7 +115,9 @@ Generators that use `argparse` or `getopt` should parse from `argv[3:]`, as `arg
 
 `X-Env-Layer-Provides`: Services or capabilities this layer provides
 
-`X-Env-Layer-RequiresProvider`: Services or capabilities this layer requires
+`X-Env-Layer-RequiresProvider`: Capabilities that must exist in the build (validation only, no ordering)
+
+`X-Env-Layer-AfterProvider`: Capabilities that must exist and must precede this layer in the build
 
 `X-Env-Layer-Conflicts`: Layers that cannot be used together with this one
 
@@ -156,13 +158,25 @@ This enables dynamic layer dependency resolution based on build-time variables s
 Only variables present in the environment can be used in dependencies.
 ====
 
-==== X-Env-Layer-Provides / X-Env-Layer-RequiresProvider
+==== X-Env-Layer-Provides / X-Env-Layer-RequiresProvider / X-Env-Layer-AfterProvider
+
+`X-Env-Layer-Provides` declares one or more capability tokens that this layer makes available to the rest of the build. Other layers reference these tokens rather than a specific layer name, which keeps the dependency abstract and substitutable.
+
+All fields share the same capability contract model:
 
 - **Abstract capability requirements**: "I need something that provides X"
 - **Service/capability contracts**: Multiple layers could satisfy the requirement
-- **Flexible implementation**: Any layer providing the capability can fulfill it
+- **Flexible implementation**: Any layer providing the capability can fulfil it
 - **Relationships**: If a provider is required, only one can exist in the overall configuration
 - **Example**: A layer requires a device provider, which could be satisfied by different device layers
+
+`X-Env-Layer-RequiresProvider` declares capabilities that must be present somewhere in the build. The engine validates their existence but imposes no ordering constraint - use this when a layer is semantically tied to a capability but its position in the build plan is already determined by its `Requires` relationships, when variable resolution handles the dependency lazily, or when position in the build plan is not important.
+
+`X-Env-Layer-AfterProvider` declares capabilities that must be present AND must precede this layer in the build plan. Use this when the provider's position has a structural effect on the build - for example, APT mirror ordering where a Debian distribution foundation layer must appear first in the build order so that mmdebstrap derives the correct native architecture when bdebstrap merges the YAML, or when hooks provided by one layer must execute before hooks from another.
+
+Both fields enforce uniqueness: only one layer in the build may provide a given capability token.
+
+The engine raises an error on impossible relationships, e.g. B `Requires` A but A uses `AfterProvider` to require a capability that B provides.
 
 [IMPORTANT]
 ====

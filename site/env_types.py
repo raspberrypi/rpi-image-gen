@@ -214,6 +214,11 @@ class XEnv:
         return f"{cls.LAYER_PREFIX}RequiresProvider"
 
     @classmethod
+    def layer_after_provider(cls) -> str:
+        """Build layer after-provider field: X-Env-Layer-AfterProvider"""
+        return f"{cls.LAYER_PREFIX}AfterProvider"
+
+    @classmethod
     def layer_conflicts(cls) -> str:
         """Build layer conflicts field: X-Env-Layer-Conflicts"""
         return f"{cls.LAYER_PREFIX}Conflicts"
@@ -503,6 +508,7 @@ class EnvLayer:
     def __init__(self, name: str, description: str = "", version: str = "1.0.0",
                  category: str = "general", deps: List[str] = None,
                  provides: List[str] = None, requires_provider: List[str] = None,
+                 after_provider: List[str] = None,
                  conflicts: List[str] = None, layer_type: str = "static",
                  generator: str = "", config_file: str = "",
                  sets: Dict[str, str] = None):
@@ -513,6 +519,7 @@ class EnvLayer:
         self.deps = deps or []
         self.provides = provides or []
         self.requires_provider = requires_provider or []
+        self.after_provider = after_provider or []
         self.conflicts = conflicts or []
         self.layer_type = layer_type
         self.generator = generator
@@ -551,6 +558,9 @@ class EnvLayer:
         requires_provider_str = metadata_dict.get(XEnv.layer_requires_provider(), "")
         requires_provider = cls._parse_dependency_list(requires_provider_str, doc_mode)
 
+        after_provider_str = metadata_dict.get(XEnv.layer_after_provider(), "")
+        after_provider = cls._parse_dependency_list(after_provider_str, doc_mode)
+
         conflicts_str = metadata_dict.get(XEnv.layer_conflicts(), "")
         conflicts = cls._parse_dependency_list(conflicts_str, doc_mode)
 
@@ -569,6 +579,7 @@ class EnvLayer:
             deps=requires,
             provides=provides,
             requires_provider=requires_provider,
+            after_provider=after_provider,
             conflicts=conflicts,
             layer_type=layer_type,
             generator=generator,
@@ -697,6 +708,7 @@ class EnvLayer:
             "config_file": self.config_file,
             "provides": self.provides,
             "provider_requires": self.requires_provider,
+            "after_provider": self.after_provider,
             "sets": self.sets,
         }
 

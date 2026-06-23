@@ -705,6 +705,34 @@ EOF
     "Check should fail when multiple layers provide the same capability"
 
 cleanup_env
+run_test "provider-ordering" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-base.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/provider-ordering-consumer.yaml "$TMP_DIR"/ && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" \
+        --layers test-provider-ordering-consumer test-provider-base \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     awk '"'"'/^test-provider-base:/{base=NR} /^test-provider-ordering-consumer:/{con=NR} END{exit !(base < con)}'"'"' "$TMP_ORDER" && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"' \
+    0 \
+    "RequiresProvider should enforce provider before consumer in build order"
+
+cleanup_env
+run_test "provider-ordering-cycle" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-ordering-cycle-a.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/provider-ordering-cycle-b.yaml "$TMP_DIR"/ && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" \
+        --layers test-provider-ordering-cycle-a \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" >/dev/null; RESULT=$?; \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"; \
+     exit $RESULT' \
+    1 \
+    "Cycle between Requires and RequiresProvider should be detected"
+
+cleanup_env
 
 run_test "pipeline-build-order" \
     'TMP_ENV=$(mktemp) && TMP_ENV_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && \
