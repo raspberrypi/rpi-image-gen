@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import heapq
 import shutil
 import argparse
 import shlex
@@ -509,6 +510,12 @@ class LayerManager:
         for layer in target_layers:
             add_layer_and_deps(layer)
 
+        # Fail if any capability is claimed by more than one layer
+        self._check_provider_conflicts_in_scope(build_order)
+
+        # Apply AfterProvider ordering constraints
+        build_order = self._apply_provider_ordering(build_order)
+
         # Validate that all required providers are satisfied by the build order
         self._validate_provider_requirements(build_order)
 
@@ -516,9 +523,6 @@ class LayerManager:
 
     def _validate_provider_requirements(self, build_order: List[str]) -> None:
         """Validate that all required providers are satisfied by layers in the build order"""
-        # Check for provider conflicts within the build order scope
-        self._check_provider_conflicts_in_scope(build_order)
-
         # Collect all providers available in the build order
         available_providers = set()
         for layer_name in build_order:
@@ -526,13 +530,95 @@ class LayerManager:
             if layer_info:
                 available_providers.update(layer_info.get('provides', []))
 
-        # Check each layer's provider requirements
+        # Check both RequiresProvider (validation-only) and AfterProvider (validation + ordering)
         for layer_name in build_order:
             layer_info = self.get_layer_info(layer_name)
             if layer_info:
-                for required_provider in layer_info.get('provider_requires', []):
+                for required_provider in (layer_info.get('provider_requires', []) +
+                                          layer_info.get('after_provider', [])):
                     if required_provider not in available_providers:
                         raise ValueError(f"Layer '{layer_name}' requires provider '{required_provider}' but no layer in the dependency chain provides it")
+
+    def _apply_provider_ordering(self, build_order: List[str]) -> List[str]:
+        """Stable-sort build_order so each AfterProvider consumer follows its provider."""
+        # Raw provides only - ordering is relative to the declaring layer only
+        # @TODO include capability token checking
+        cap_to_layer = {}
+        for layer_name in build_order:
+            layer_info = self.get_layer_info(layer_name)
+            if layer_info:
+                for cap in layer_info.get('provides', []):
+                    cap_to_layer[cap] = layer_name
+
+        # Collect AfterProvider ordering, store the capability token for diagnostics.
+        # Missing providers are skipped - _validate_provider_requirements already checked
+        rp_edges: Dict[Tuple[str, str], str] = {}  # (provider, consumer) -> cap
+        for layer_name in build_order:
+            layer_info = self.get_layer_info(layer_name)
+            if layer_info:
+                for cap in layer_info.get('after_provider', []):
+                    if cap in cap_to_layer:
+                        provider = cap_to_layer[cap]
+                        if provider != layer_name:
+                            rp_edges[(provider, layer_name)] = cap
+
+        if not rp_edges:
+            return build_order
+
+        # Build the combined constraint graph (Requires + AfterProvider edges) so that
+        # the algo detects impossible relationships, eg B Requires A while A
+        # uses AfterProvider on a capability that B provides.
+        must_precede: Dict[str, Set[str]] = {layer: set() for layer in build_order}
+        for layer_name in build_order:
+            layer_info = self.get_layer_info(layer_name)
+            if layer_info:
+                for dep in layer_info.get('depends', []):
+                    if dep in must_precede:
+                        must_precede[dep].add(layer_name)
+        for provider, consumer in rp_edges:
+            must_precede[provider].add(consumer)
+
+        # Perform a topological sort with original_pos as tiebreaker - preserves order
+        # for layers with no ordering constraint between them.
+        predecessor_count = {layer: 0 for layer in build_order}
+        for layer in build_order:
+            for consumer in must_precede[layer]:
+                if consumer in predecessor_count:
+                    predecessor_count[consumer] += 1
+
+        original_pos = {layer: i for i, layer in enumerate(build_order)}
+        ready = [(original_pos[l], l) for l in build_order if predecessor_count[l] == 0]
+        heapq.heapify(ready)
+
+        result = []
+        while ready:
+            _, layer = heapq.heappop(ready)
+            result.append(layer)
+            for consumer in must_precede[layer]:
+                predecessor_count[consumer] -= 1
+                if predecessor_count[consumer] == 0:
+                    heapq.heappush(ready, (original_pos[consumer], consumer))
+
+        if len(result) != len(build_order):
+            stuck = [l for l in build_order if predecessor_count[l] > 0]
+
+            def _describe_cycle(stuck_layers):
+                stuck_set = set(stuck_layers)
+                lines = []
+                for layer in stuck_layers:
+                    for follower in sorted(must_precede[layer]):
+                        if follower in stuck_set:
+                            cap = rp_edges.get((layer, follower))
+                            label = f'X-Env-Layer-AfterProvider: {cap}' if cap else 'X-Env-Layer-Requires'
+                            lines.append(f'  {layer} must precede {follower}  [{label}]')
+                return lines
+
+            detail = '\n'.join(_describe_cycle(stuck))
+            raise ValueError(
+                f"Loop detected in AfterProvider ordering constraints involving: {', '.join(stuck)}\n{detail}"
+            )
+
+        return result
 
     def _check_provider_conflicts_in_scope(self, layer_names: List[str]) -> None:
         """Validate that no provider conflicts exist within the given scope of layers."""
@@ -651,6 +737,8 @@ class LayerManager:
 
                 reqprov = ', '.join(layer_info.get('provider_requires', [])) or 'none'
                 print(f"    {'Requires-provider:':<{LABEL_W}}{reqprov}")
+                afterprov = ', '.join(layer_info.get('after_provider', [])) or 'none'
+                print(f"    {'After-provider:':<{LABEL_W}}{afterprov}")
 
     def _fmt_versions(self, name: str) -> str:
         """Format the version list for a layer name: single version plain, multiple as '1.0.0  2.0.0*'."""
@@ -908,6 +996,7 @@ def _generate_layer_boilerplate():
 # X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-Provides: debian-base
 # X-Env-Layer-RequiresProvider:
+# X-Env-Layer-AfterProvider:
 # X-Env-Layer-Requires: base-layer,common-tools
 
 # X-Env-VarRequires: SITE
@@ -1092,6 +1181,10 @@ def _layer_main(args):
             if layer_info.get('provider_requires'):
                 requires_list = ', '.join(layer_info['provider_requires'])
                 print(f"Requires Provider: {requires_list}")
+
+            if layer_info.get('after_provider'):
+                after_list = ', '.join(layer_info['after_provider'])
+                print(f"After Provider: {after_list}")
 
             layer_path = manager.layer_files.get(lkey, "<unknown>")
             rel_layer_path = manager.layer_relpaths.get(lkey, layer_path)

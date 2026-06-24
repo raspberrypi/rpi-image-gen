@@ -1,0 +1,8 @@
+# METABEGIN
+# X-Env-Layer-Name: test-provider-ordering-cycle-b
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-AfterProvider: cap-cycle-a
+# X-Env-Layer-Provides: cap-cycle-b
+# X-Env-Layer-Category: test
+# METAEND
+---

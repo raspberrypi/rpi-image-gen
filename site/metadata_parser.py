@@ -126,7 +126,8 @@ SUPPORTED_FIELD_PATTERNS = {
     XEnv.layer_type(): {"type": "single", "description": "Layer type (static or dynamic)"},
     XEnv.layer_generator(): {"type": "single", "description": "Generator executable for dynamic layers"},
     XEnv.layer_provides(): {"type": "single", "description": "Capabilities provided by this layer"},
-    XEnv.layer_requires_provider(): {"type": "single", "description": "Capabilities required (virtual)"},
+    XEnv.layer_requires_provider(): {"type": "single", "description": "Capabilities that must exist in the build (validation only)"},
+    XEnv.layer_after_provider(): {"type": "single", "description": "Capabilities that must exist and precede this layer in the build"},
     XEnv.layer_sets(): {"type": "single", "description": "Internal variables set when this layer is present (KEY=VALUE)"},
 
     # Variable definition patterns (these match multiple fields)

@@ -136,7 +136,7 @@
     </div>
     {%- endif %}
 
-    {%- if layer.dependencies.static_dep or layer.dependencies.dyn_dep or layer.reverse_dependencies or layer.layer_info.provides or layer.layer_info.provider_requires %}
+    {%- if layer.dependencies.static_dep or layer.dependencies.dyn_dep or layer.reverse_dependencies or layer.layer_info.provides or layer.layer_info.provider_requires or layer.layer_info.after_provider %}
     <div class="section">
         <h2>Relationships</h2>
         {%- if layer.dependencies.static_dep or layer.dependencies.dyn_dep %}
@@ -163,6 +163,9 @@
         {%- endif %}
         {%- if layer.layer_info.provider_requires %}
         <p><strong>Requires Provider:</strong> {{ layer.layer_info.provider_requires|join(', ') }}</p>
+        {%- endif %}
+        {%- if layer.layer_info.after_provider %}
+        <p><strong>After Provider:</strong> {{ layer.layer_info.after_provider|join(', ') }}</p>
         {%- endif %}
     </div>
     {%- endif %}
