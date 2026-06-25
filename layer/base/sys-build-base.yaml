@@ -57,16 +57,17 @@
 # X-Env-Var-cachedir-Set: y
 #
 # X-Env-Var-apt_cachedir:
-# X-Env-Var-apt_cachedir-Desc: Cache directory for APT operations.
-#  Use this to specify the root directory APT uses when downloading packages.
-#  APT will re-use packages from this directory where possible, meaning that
-#  usage of this directory can decrease build time.
-#  By default, the cache dir resides in the chroot and is cleaned up
-#  automatically upon build completion.
-#  This is currently an experimental feature requiring some manual involvement.
+# X-Env-Var-apt_cachedir-Desc: Optional host-side directory for caching APT package
+#  downloads across builds. When set, the directory is bind-mounted into the chroot
+#  as /var/cache/apt/archives so packages are written directly to the host and
+#  reused on subsequent builds, reducing network usage and build time.
+#  The directory must exist before the build commences.
+#  By default (unset), the package cache resides only in the chroot and is
+#  discarded at build completion.
+#  This is currently an opt-in experimental feature.
 # X-Env-Var-apt_cachedir-Required: n
 # X-Env-Var-apt_cachedir-Valid: string-or-empty
-# X-Env-Var-apt_cachedir-Set: force
+# X-Env-Var-apt_cachedir-Set: lazy
 #
 # X-Env-Var-buildroot: ${@WORKROOT}/build
 # X-Env-Var-buildroot-Desc: Global build root directory for source builds.

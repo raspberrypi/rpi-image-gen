@@ -235,19 +235,20 @@
                 </tr>
                 <tr>
                     <td><code>IGconf_sys_apt_cachedir</code></td>
-                    <td>Cache directory for APT operations.
- Use this to specify the root directory APT uses when downloading packages.
- APT will re-use packages from this directory where possible, meaning that
- usage of this directory can decrease build time.
- By default, the cache dir resides in the chroot and is cleaned up
- automatically upon build completion.
- This is currently an experimental feature requiring some manual involvement.</td>
+                    <td>Optional host-side directory for caching APT package
+ downloads across builds. When set, the directory is bind-mounted into the chroot
+ as /var/cache/apt/archives so packages are written directly to the host and
+ reused on subsequent builds, reducing network usage and build time.
+ The directory must exist before the build commences.
+ By default (unset), the package cache resides only in the chroot and is
+ discarded at build completion.
+ This is currently an opt-in experimental feature.</td>
                     <td>
                            <code>&lt;empty&gt;</code>
                     </td>
                     <td>String value (may be empty)</td>
                     <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-force" title="Click for policy and validation help">force</a>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
                 </tr>
                 <tr>
