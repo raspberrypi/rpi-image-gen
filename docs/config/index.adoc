@@ -9,7 +9,7 @@ link:../index.adoc[← Back to Main Documentation]
 
 == Overview
 
-rpi-image-gen provides a flexible, hierarchical approach to managing build variables through multiple configuration sources with clear precedence rules. The system is built around the `IGconf_` prefix namespace and supports both INI and YAML file formats.
+rpi-image-gen provides a flexible, hierarchical approach to managing build variables through multiple configuration sources with clear precedence rules. The system is built around the `IGconf_` prefix namespace and uses YAML configuration files.
 
 == Core Architecture
 
@@ -131,13 +131,9 @@ FINAL ENV
 
 == Configuration File Support
 
-The configuration system supports both INI and YAML file formats with automatic format detection based on file extension.
+The configuration system uses YAML configuration files with native support for hierarchical data and includes.
 
-=== YAML Configuration Format
-
-YAML provides the most flexible configuration format with native support for hierarchical data and includes.
-
-==== Mapping Sections
+=== Mapping Sections
 
 [source,yaml]
 ----
@@ -158,7 +154,7 @@ image:
   root_part_size: 300%
 ----
 
-==== List Sections
+=== List Sections
 
 In addition to mapping (key-value) sections, YAML configuration files support sequence (list) sections. List items are assigned 0-based numeric keys, producing the same `IGconf_<section>_<key>` variable format as mapping sections.
 
@@ -198,31 +194,9 @@ List sections do not merge with includes in the same way as mapping sections. Be
 ====
 
 
-=== INI Configuration Format
-
-INI format provides traditional section-based configuration:
-
-[source,ini]
-----
-!include base.cfg
-
-[env]
-MYVAR = UNCHANGED
-
-[device]
-class = pi5
-storage_type = sd
-hostname = ${IGconf_device_class}-$(tr -dc 'a-z' < /dev/urandom | head -c 6)
-
-[image]
-compression = zstd
-boot_part_size = 200%
-root_part_size = 300%
-----
-
 === Configuration Includes
 
-Both formats support including other configuration files to promote reusability and modularity. The include precedence order is shown in the table below.
+Configuration files support includes to promote reusability and modularity. The include precedence order is shown in the table below.
 
 [cols="1,6,5"]
 |===
@@ -241,22 +215,7 @@ Both formats support including other configuration files to promote reusability 
 |Default in-tree location, eg ```/usr/share/rpi-image-gen/config/```
 |===
 
-==== YAML Includes
-
-[source,yaml]
-----
-include:
-  file: shared/base.yaml
-----
-
-==== INI Includes
-
-[source,ini]
-----
-!include shared/base.cfg
-----
-
-Therefore, included files are resolved using:
+Included files are resolved using:
 
 1. **Parent directory**
 2. **Search path**
@@ -337,7 +296,7 @@ The configuration system supports multiple variable sources with a clear precede
 
 |2
 |Configuration Files
-|INI or YAML configuration files
+|YAML configuration files
 
 |3 (Lowest)
 |Layer Defaults
@@ -469,7 +428,7 @@ All dependencies are always included, i.e. variable names result in actual layer
 
 The configuration system processes files using the following steps:
 
-1. **Parse main configuration file** - Automatically detects INI or YAML format
+1. **Parse YAML configuration file**
 2. **Process includes recursively** - Follows include directives with circular dependency detection
 3. **Apply command line overrides** - Processes variables specified after `--`
 4. **Generate output** - Either loads into environment or writes to file
@@ -506,15 +465,11 @@ rpi-image-gen config myconfig.yaml --section device --write-to build.env -- IGco
 
 === Config Generation
 
-Generate example configuration files:
+Generate an example YAML configuration:
 
 [source,bash]
 ----
-# Generate boilerplate INI and YAML examples
 rpi-image-gen config --gen
-
-# Migrate INI to YAML format
-rpi-image-gen config legacy.cfg --migrate > modern.yaml
 ----
 
 == Integration with Layer System
@@ -590,7 +545,7 @@ config/
 
 * **Circular includes**: Detected automatically with clear error messages
 * **Missing include files**: Searches all configured paths before failing
-* **Invalid YAML/INI syntax**: Provides line numbers and context
+* **Invalid YAML syntax**: Provides line numbers and context
 * **Undefined variable expansion**: Fails fast with variable name
 * **Section/key conflicts**: Resolved by precedence rules
 
@@ -621,33 +576,6 @@ Layer collection output shows variable policy and evaluated value:
  [LAZY]  IGconf_device_variant=none (layer: device-base)
 ----
 
-== Migration and Compatibility
-
-=== INI to YAML Migration
-
-Use the built-in migration tool:
-
-[source,bash]
-----
-rpi-image-gen config legacy.cfg --migrate > modern.yaml
-----
-
-The migration tool:
-
-* **Preserves include directives** with updated syntax
-* **Maintains section structure** and variable relationships
-* **Updates file extensions** in include references
-* **Adds migration comments** for traceability
-
-=== Backward Compatibility
-
-The configuration system maintains compatibility with:
-
-* **Existing INI files** through automatic format detection
-* **Legacy include syntax** (`!include` vs `include:`)
-* **Environment variable patterns** used by previous versions
-* **Command-line interfaces** with extended functionality
-
 == Performance Considerations
 
 === Configuration Loading Performance
@@ -663,7 +591,7 @@ The rpi-image-gen configuration system provides a robust foundation for managing
 
 * **Hierarchical variable organisation** with the `IGconf_` namespace
 * **Multiple configuration sources** with clear precedence rules
-* **Flexible file formats** (INI and YAML) with include support
+* **YAML configuration files** with include support
 * **Variable expansion** supporting cross-references and environment integration
 * **Layer system integration** for variable discovery and validation
 * **Command-line tools** for configuration management and debugging
