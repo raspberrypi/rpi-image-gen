@@ -55,10 +55,13 @@ case $BOOT_MODE in
    *) exit 1;; # Not a storage device, or one we can associate to a linux blkdev
 esac
 
-case $GEN in
-   4|5);;
-   *) [ $BOOT_PARTN -eq 0 ] && BOOT_PARTN=1;; # legacy compat
-esac
+# Firmware may report partition 0 when it didn't record a specific boot
+# partition (observed on Pi 4 SD boot: boot-mode=1, partition=0). Partition
+# numbering is 1-based, so 0 means "unset" -> treat as the first partition.
+# This fallback was previously gated to exclude GEN 4|5 on the assumption
+# they always report a valid partition; a partition-0 Pi 4/5 then derived a
+# non-existent /dev/<dev>p0 and died, so the by-slot links were never made.
+[ "$BOOT_PARTN" -eq 0 ] && BOOT_PARTN=1
 
 BOOT_BLKDEV="/dev/${BOOT_DEV}${PART_SEP}${BOOT_PARTN}"
 test -b "$BOOT_BLKDEV" || die "$BOOT_BLKDEV is invalid for boot mode $BOOT_MODE ($BOOT_DEV)"
