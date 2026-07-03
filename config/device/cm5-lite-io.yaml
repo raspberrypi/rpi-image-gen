@@ -1,0 +1,3 @@
+include:
+  - device/cm5-lite.yaml
+  - device/cm5io.yaml

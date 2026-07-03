@@ -1,0 +1,9 @@
+# External interfaces may depend on carrier board. Include a carrier
+# config that declares traits for those available (eg. hw:ethernet).
+device:
+  layer: rpi-cm5
+  variant: lite
+
+trait:
+  hw:storage:emmc: false
+  hw:storage:sd: true

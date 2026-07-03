@@ -4,7 +4,7 @@
 # X-Env-Layer-Desc: Raspberry Pi CM4 specific device layer
 # X-Env-Layer-Version: 2.0.1
 # X-Env-Layer-Requires: rpi-generic64
-# X-Env-Layer-Provides: rpi-device
+# X-Env-Layer-Provides: rpi-device,hw:device:rpi:cm4
 #
 # X-Env-VarPrefix: device
 #
@@ -17,17 +17,27 @@
 # X-Env-Var-variant: 8G
 # X-Env-Var-variant-Desc: Device variant
 # X-Env-Var-variant-Required: n
-# X-Env-Var-variant-Valid: 8G,16G,32G,lite
+# X-Env-Var-variant-Valid: 8G,16G,32G,lite,S,Slite
 # X-Env-Var-variant-Set: lazy
-# X-Env-Var-variant-Conflicts: IGconf_device_variant == 'lite' and IGconf_device_storage_type == 'emmc'
-# X-Env-Var-variant-Triggers: when=IGconf_device_variant == 'lite' set IGconf_device_storage_type=sd policy=lazy
+# X-Env-Var-variant-Conflicts:
+#  IGconf_device_variant == 'lite' and has('hw:storage:emmc')
+#  IGconf_device_variant == 'Slite' and has('hw:storage:emmc')
+#  has('hw:storage:emmc') and has('hw:storage:sd')
+# X-Env-Var-variant-Triggers:
+#  when=has('hw:storage:sd') set IGconf_device_storage_type=sd policy=lazy
+#  when=has('hw:storage:sd') set IGconf_device_variant=lite policy=lazy
+#  when=has('hw:storage:emmc') set IGconf_device_storage_type=emmc policy=lazy
 #
 # X-Env-Var-storage_type: emmc
 # X-Env-Var-storage_type-Desc: Storage media the image is intended for, as seen
 #  by the OS.
 # X-Env-Var-storage_type-Required: n
-# X-Env-Var-storage_type-Valid: emmc,sd,nvme,usb
+# X-Env-Var-storage_type-Valid: emmc,sd,nvme
 # X-Env-Var-storage_type-Set: lazy
+# X-Env-Var-storage_type-Conflicts:
+#  IGconf_device_storage_type == 'sd' and not has('hw:storage:sd')
+#  IGconf_device_storage_type == 'emmc' and not has('hw:storage:emmc')
+#  IGconf_device_storage_type == 'nvme' and not has('hw:storage:nvme')
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Device specific asset directory

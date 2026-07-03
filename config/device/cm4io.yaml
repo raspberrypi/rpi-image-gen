@@ -1,0 +1,8 @@
+# Specifically describes the official Raspberry Pi CM4 IO carrier board.
+# A custom/OEM carrier almost certainly differs - ethernet, PCIe routing
+# etc are properties of the carrier, not the module itself (see trait.adoc).
+# Use this file as a template, not a drop-in: declare your carrier's traits
+# in your own config.
+trait:
+  hw:ethernet: true
+  hw:pcie:socket: true

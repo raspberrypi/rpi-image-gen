@@ -2,8 +2,9 @@
 # X-Env-Layer-Name: rpi-linux-2712
 # X-Env-Layer-Category: kernel
 # X-Env-Layer-Desc: Raspberry Pi 2712 kernel
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Requires: linux-base
+# X-Env-Layer-RequiresProvider: hw:device:rpi,hw:soc:bcm2712
 #
 # X-Env-VarPrefix: linux
 #
