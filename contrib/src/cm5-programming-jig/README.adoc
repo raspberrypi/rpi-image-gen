@@ -1,0 +1,241 @@
+= CM5 Programming Jig Image
+
+A buildable `rpi-image-gen` configuration for the host controller of a
+Raspberry Pi CM5 programming jig.
+
+The image:
+
+* Targets a Compute Module 5 (Lite variant, booting from NVMe) running Debian
+  Trixie.
+* Boots straight into the full Raspberry Pi Desktop (labwc/Wayland) and
+  automatically logs in the `jig` operator account.
+* Auto-launches Chromium (maximized) at `http://localhost:3142`, the
+  https://github.com/raspberrypi/rpi-sb-provisioner[rpi-sb-provisioner] web
+  dashboard. The browser runs on top of the normal desktop, so the operator can
+  minimize it to reach the panel and desktop.
+* Installs the provisioning and jig-control stack: `rpi-sb-provisioner`,
+  `cm5-programming-jig-gpio-config` (jig relay/RPIBOOT/status-LED control), and
+  `rpi-systemd-gpio`.
+* Installs `rpi-connect` (screen sharing + remote shell) and `magic-wormhole`
+  (ad-hoc secure file transfer).
+
+== Layout
+
+[source,text]
+----
+contrib/src/cm5-programming-jig/
+|-- config
+|   `-- cm5-programming-jig.yaml   # main build config
+|-- layer
+|   `-- cm5-jig-desktop.yaml       # desktop + autologin + browser autostart layer
+`-- README.adoc
+----
+
+== Building
+
+From the `rpi-image-gen` root:
+
+[source,sh]
+----
+rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ -c cm5-programming-jig.yaml
+----
+
+`-S` puts this directory at the front of the config and layer search paths, so
+both `cm5-programming-jig.yaml` and the `cm5-jig-desktop` layer are found
+automatically.
+
+== Operator account credentials
+
+There is *no default OS password*. Nothing is committed in the config, and the
+`jig` account is created with a locked password unless one is supplied. Desktop
+autologin works regardless (it does not need a password), so a locked account
+still boots straight to the provisioner UI. If you supply no credential at all,
+the unit is a sealed appliance with no admin path - see "If you configure
+nothing" below before rolling out units.
+
+The recommended way to set a per-unit password is at *flash time* with Raspberry
+Pi Imager (option 0). The account can also be given a credential at *build time*
+(options 1-3); overrides there are given after `--` using the full
+`IGconf_<section>_<key>` variable name (not a dotted `section.key` form).
+
+=== Option 0 (recommended): set the password per unit with Raspberry Pi Imager
+
+The image includes `cloud-init`, configured (like Raspberry Pi OS) to read
+Imager's OS-customisation from the boot partition on first boot. When flashing:
+
+. In Raspberry Pi Imager, follow the flashing wizard. When it offers OS
+  customisation in-line, choose to apply it (recent Imager versions present
+  these settings as a wizard step rather than a separate "Edit Settings" dialog).
+. Set the username to *`jig`* (it must match the built-in account) and choose a
+  password. Optionally set the hostname.
+. Write and boot. The password is applied to the `jig` account on first boot;
+  nothing is shared between units and no password is baked into the image.
+
+If you flash *without* customisation, there is no seed: cloud-init does nothing
+and `jig` stays locked (the desktop still autologins).
+
+.How the password actually gets applied (and why there is a fallback)
+[NOTE]
+====
+cloud-init *ignores* the per-user `passwd:` field for a user that already exists,
+and `jig` is pre-created at build time - so Imager's password (written into that
+`passwd:` field) would not stick on its own. The image therefore ships a small
+first-boot service, `cm5-jig-seed-password`, that runs after cloud-init, reads
+whatever password the seed specified for `jig`, and force-applies it with
+`chpasswd`. It fires *only while `jig` is still locked*, so it never overrides a
+build-time password (options 2-3 below) or one cloud-init managed to set itself.
+====
+
+To make hand-editing easier, the boot (FAT) partition ships inert, fully
+commented templates - `user-data.example`, `meta-data.example`,
+`network-config.example` and `README-cloud-init.txt`. Mount the boot partition
+on any machine, copy `user-data.example` -> `user-data` and
+`meta-data.example` -> `meta-data`, uncomment/edit, and boot. The `.example`
+suffix means cloud-init ignores them until you rename, so they never activate on
+their own.
+
+This works whether the seed is written by Raspberry Pi Imager *or by hand*. If
+you are writing the boot-partition files manually, note:
+
+* Provide both a `user-data` *and* a `meta-data` file on the boot partition - the
+  NoCloud datasource will not activate without `meta-data` (an `instance-id:`
+  line is enough). Imager writes both for you.
+* The username must be `jig`.
+* Any password form cloud-init understands is accepted - `chpasswd:` (a `users:`
+  list or the legacy `list:`), or a `hashed_passwd`/`plain_text_passwd`/`passwd`
+  key under the `jig` entry in `users:`. Hashes are applied via `chpasswd -e`.
+
+.Minimal hand-written `user-data`
+[source,yaml]
+----
+#cloud-config
+hostname: cm5-jig
+chpasswd:
+  expire: false
+  users:
+    - {name: jig, password: "$6$...hash...", type: hash}
+ssh_pwauth: true
+----
+
+[NOTE]
+====
+Only use username `jig` - a different username would create a second account that
+the autologin/kiosk (wired to `jig`) would not use.
+
+Imager's Wi-Fi customisation may not apply: this image uses systemd-networkd +
+iwd, whereas cloud-init renders Wi-Fi via NetworkManager/netplan. Configure
+wireless through the image's own network layers instead. Password, hostname and
+SSH-key customisation work as expected.
+====
+
+=== Option 1: no local password, administer by SSH key / Connect
+
+Leave the password unset and log in with an SSH key (and/or Raspberry Pi
+Connect). There is then no password to leak or share:
+
+[source,sh]
+----
+rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
+  -c cm5-programming-jig.yaml -- "IGconf_ssh_pubkey_user1=$(< ~/.ssh/id_ed25519.pub)"
+----
+
+=== Option 2: hashed password (keeps cleartext out of shell history/logs)
+
+Generate a crypt hash and pass that instead of the plaintext. `device-user-admin`
+applies it via `chpasswd -e`, so any valid hash works:
+
+[source,sh]
+----
+read -rs OPPW                                   # prompt, not echoed, not in history
+HASH=$(printf '%s' "$OPPW" | openssl passwd -6 -stdin); unset OPPW
+rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
+  -c cm5-programming-jig.yaml -- IGconf_device_user1passhash="$HASH"
+----
+
+The bundled `bin/genpasswd <rootfs>` helper does the same, selecting the target's
+`ENCRYPT_METHOD` (yescrypt on Trixie) automatically.
+
+=== Option 3: plaintext password at build time
+
+Simplest, but the cleartext appears in your shell history and process list. Must
+satisfy the complexity policy (>=8 chars with an uppercase letter, a lowercase
+letter, a digit and one of `@$!%*?&`):
+
+[source,sh]
+----
+rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
+  -c cm5-programming-jig.yaml -- IGconf_device_user1pass='Ch4nge-me!'
+----
+
+Setting a password (options 2 or 3) automatically grants password-based `sudo`
+to the `jig` account.
+
+NOTE: A password set at build time (options 2-3) is baked into the image, so
+every unit written from it shares that password. For per-unit credentials use
+option 0 (Raspberry Pi Imager) or option 1 (per-unit SSH keys).
+
+=== If you configure nothing: the jig is a sealed appliance
+
+If a unit is flashed with *no* credential configured by any of the routes above -
+no cloud-init/Imager customisation, no build-time password or hash, no baked SSH
+key, and Connect not enrolled - it still works as an appliance but has *no login
+or administration path at all*. Concretely, with the defaults:
+
+* The `jig` account is created locked (`adduser --disabled-password`), so there
+  is no console or SSH *password* login.
+* `root` is disabled (`usermod --pass='*' root`).
+* `sudo` is *not installed*: `device.user1sudo` defaults to `none` (it only
+  becomes `passwd` when a password is set), and the `none` case purges the `sudo`
+  package - so even the auto-logged-in desktop session cannot escalate.
+
+This is by design: an un-provisioned unit is sealed rather than shipping a shared
+default credential. The kiosk still functions - it autologins `jig` and opens the
+provisioner dashboard - but you cannot get a privileged shell locally or remotely.
+
+[IMPORTANT]
+====
+To have *any* administrative access you must supply a credential when the unit is
+prepared: a per-flash password via Raspberry Pi Imager (option 0), a build-time
+password/hash (options 2-3), a baked SSH key (option 1), or an enrolled Raspberry
+Pi Connect session. Decide this before rolling out units.
+
+Recovering a unit that was sealed by accident means re-flashing it, or mounting
+its storage on another machine to add a credential (e.g. drop a `user-data` +
+`meta-data` seed onto the boot partition and reboot - see "Operator account
+credentials" option 0 and the templates on the boot partition).
+====
+
+== Raspberry Pi Connect
+
+Connect is enabled to start at boot (`connect.on: y`). To enrol the device
+unattended, provide an auth key generated in your Raspberry Pi Connect account
+settings:
+
+[source,sh]
+----
+rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
+  -c cm5-programming-jig.yaml -- IGconf_connect_authkey='<auth-key-or-path>'
+----
+
+Otherwise, sign in interactively on first use via `rpi-connect signin`.
+
+== Changing the dashboard URL
+
+The browser target defaults to the local provisioner UI. Override it with:
+
+[source,sh]
+----
+rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
+  -c cm5-programming-jig.yaml -- IGconf_jigdesktop_url='http://localhost:3142/'
+----
+
+== Notes
+
+* `rpi-sb-provisioner`'s `rpi-provisioner-ui` service listens on
+  `127.0.0.1:3142` (HTTP) by default. The browser launcher waits for this
+  service to accept connections before opening, so it does not flash a
+  connection error at boot.
+* The desktop uses the modular `rpd-*` metapackages
+  (`rpd-wayland-core` + `rpd-theme` + `rpd-preferences`), which replace the
+  obsolete `raspberrypi-ui-mods` package on Trixie. The heavier `rpd-wayland-all`
+  set is intentionally not used to keep the manufacturing image lean.

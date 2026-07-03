@@ -1,0 +1,62 @@
+# Raspberry Pi CM5 Programming Jig image.
+#
+# Boots a CM5 (Lite variant, NVMe) into the full Raspberry Pi Desktop with
+# automatic login, then auto-launches Chromium (maximized) pointed at the
+# rpi-sb-provisioner web dashboard on http://localhost:3142. Also installs the
+# provisioner stack and the jig GPIO/LED configuration.
+#
+# Build with:
+#   rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ -c cm5-programming-jig.yaml
+#
+# Before building you should supply a login/administration credential for the
+# jig operator account (see README.adoc). Autologin to the desktop works even
+# without a password, but a password (or SSH key) is recommended for admin and
+# remote access.
+
+include:
+  file: trixie-minbase.yaml
+
+device:
+  layer: rpi-cm5
+  variant: lite
+  storage_type: nvme
+  hostname: cm5-jig
+  user1: jig
+  # A password for the 'jig' account is intentionally NOT committed here.
+  # Supply one at build time as an override after '--' (using the full
+  # IGconf_<section>_<key> variable name), e.g.:
+  #   rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
+  #     -c cm5-programming-jig.yaml -- IGconf_device_user1pass='Ch4nge-me!'
+  # It must satisfy the complexity policy (>=8 chars, upper, lower, digit and
+  # one of @$!%*?&). Setting a password automatically grants password sudo.
+  # Alternatively set an SSH public key via the ssh: section.
+
+image:
+  name: cm5-jig
+  # Percentage sizes auto-scale with the (large) desktop + provisioner rootfs.
+  # Give the root partition generous headroom for provisioning working files,
+  # image caches and manufacturing data.
+  root_part_size: 400%
+
+layer:
+  app: cm5-jig-desktop
+  service: rpi-connect
+
+# Raspberry Pi Connect starts at boot via the rpi-connect layer's own default
+# (connect.on defaults to 'y'). It is intentionally not set here: the section
+# key 'on' is coerced to a YAML boolean by the config loader. To enrol
+# unattended, pass an auth key at build time as an override after '--':
+#   -- IGconf_connect_authkey='<key-or-path>'.
+
+jigdesktop:
+  url: "http://localhost:3142"
+
+packages:
+  # Provisioner stack and jig hardware configuration. These resolve from the
+  # Raspberry Pi apt archive configured by the base suite/device layers.
+  - rpi-sb-provisioner
+  - cm5-programming-jig-gpio-config
+  - rpi-systemd-gpio
+  # Ad-hoc secure file transfer to/from the jig (e.g. pulling logs or
+  # manufacturing data off the device without pre-shared SSH keys).
+  - magic-wormhole

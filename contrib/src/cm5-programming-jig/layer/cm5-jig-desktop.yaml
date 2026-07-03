@@ -1,0 +1,351 @@
+# METABEGIN
+# X-Env-Layer-Name: cm5-jig-desktop
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: app
+# X-Env-Layer-Desc: Full Raspberry Pi (labwc/Wayland) desktop for the CM5
+#  programming jig. Installs the modular rpd-* desktop metapackages, configures
+#  desktop autologin for the operator account and auto-launches Chromium
+#  (maximized, not locked kiosk) at a configurable URL - by default the
+#  rpi-sb-provisioner dashboard on http://localhost:3142. The browser runs on
+#  top of the normal desktop (panel + desktop icons) so the operator can
+#  minimize it to reach the full desktop.
+# X-Env-Layer-Requires: device-user-admin
+#
+# X-Env-VarPrefix: jigdesktop
+#
+# X-Env-Var-url: http://localhost:3142
+# X-Env-Var-url-Desc: URL the desktop browser opens automatically at login.
+#  Defaults to the local rpi-sb-provisioner web dashboard.
+# X-Env-Var-url-Required: n
+# X-Env-Var-url-Valid: regex:^https?://[a-zA-Z0-9.-]+(:[0-9]+)?(/.*)?$
+# X-Env-Var-url-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    # Lean Raspberry Pi Desktop on Wayland. rpd-wayland-core pulls in labwc,
+    # wf-panel-pi, lightdm and pi-greeter (via rpd-common) as hard dependencies.
+    # We deliberately avoid rpd-wayland-all (rpd-utilities/applications/developer/
+    # graphics) to keep the manufacturing image lean.
+    - rpd-wayland-core
+    # PIXEL look-and-feel. rpd-wayland-core ships /etc/xsettingsd/xsettingsd.conf
+    # which selects the "PiXtrix" GTK/icon theme, but the actual theme assets are
+    # only Recommends of the rpd-theme metapackage. The base image builds with
+    # APT::Install-Recommends=false, so we must install them explicitly -
+    # otherwise the desktop renders with no icons and no theme.
+    - pixtrix-theme
+    - pixtrix-icons
+    - gtk2-engines-pixflat
+    - fonts-nunito-sans
+    - fonts-liberation2
+    - rpd-wallpaper
+    - rpd-wallpaper-trixie
+    - chromium
+    # cloud-init lets Raspberry Pi Imager set the jig account password (and
+    # hostname / SSH keys) per-flash from the boot partition, so no password is
+    # baked into the image. See the datasource hook below.
+    - cloud-init
+  customize-hooks:
+    - |-
+      #
+      # Boot to the graphical desktop and auto-login the operator account.
+      set -eu
+      chroot "$1" systemctl set-default graphical.target
+
+      install -d -m 0755 "$1/etc/lightdm/lightdm.conf.d"
+      cat > "$1/etc/lightdm/lightdm.conf.d/70-cm5-jig-autologin.conf" <<EOF
+      [Seat:*]
+      autologin-user=$IGconf_device_user1
+      autologin-user-timeout=0
+      user-session=rpd-labwc
+      autologin-session=rpd-labwc
+      EOF
+    - |-
+      #
+      # Browser launcher: wait for the provisioner UI to come up, then run
+      # Chromium against it. Installed as a script so the wait/relaunch logic is
+      # kept out of the labwc autostart line.
+      set -eu
+      cat > "$1/usr/local/bin/cm5-jig-browser" <<'EOF'
+      #!/bin/sh
+      set -eu
+      URL="${1:-http://localhost:3142}"
+      # Wait up to ~90s for the target (e.g. rpi-provisioner-ui) to accept
+      # connections so Chromium does not open on a connection-refused error.
+      i=0
+      while [ "$i" -lt 90 ]; do
+          if curl -s -o /dev/null "$URL"; then
+              break
+          fi
+          i=$((i + 1))
+          sleep 1
+      done
+      # --password-store=basic keeps Chromium off the Secret Service, so it does
+      # not trigger a gnome-keyring unlock/create prompt on the passwordless
+      # autologin session (which otherwise blocks the browser until dismissed).
+      exec /usr/bin/chromium \
+          --start-maximized \
+          --noerrdialogs \
+          --disable-infobars \
+          --no-first-run \
+          --disable-features=CrashRecoveryBubble \
+          --password-store=basic \
+          "$URL"
+      EOF
+      chmod 0755 "$1/usr/local/bin/cm5-jig-browser"
+    - |-
+      #
+      # Auto-start the browser in the operator's labwc session. labwc-pi is
+      # launched with -m (merge), so this runs IN ADDITION to the system
+      # autostart (/etc/xdg/labwc/autostart) - the panel and desktop still
+      # start, with the browser layered on top.
+      set -eu
+      home="/home/$IGconf_device_user1"
+      install -d -m 0755 "$1$home/.config/labwc"
+      cat > "$1$home/.config/labwc/autostart" <<EOF
+      /usr/bin/lwrespawn /usr/local/bin/cm5-jig-browser "$IGconf_jigdesktop_url" &
+      EOF
+      chroot "$1" chown -R "$IGconf_device_user1:" "$home/.config"
+    - |-
+      #
+      # We provision the operator account at build time, so suppress the
+      # first-run wizard if present (ships with rpd-utilities, which we do not
+      # install - removal is defensive).
+      set -eu
+      rm -f "$1/etc/xdg/autostart/piwiz.desktop"
+    - |-
+      #
+      # cloud-init: read Raspberry Pi Imager customisation (user-data) from the
+      # boot partition on first boot. The rpt cloud-init package ships
+      # /etc/cloud/cloud.cfg (distro: raspberry-pi-os) but NOT this datasource
+      # override (pi-gen writes it on stock images), so we create it here.
+      # When an operator sets username 'jig' + a password in Imager, the
+      # companion cm5-jig-seed-password service (next hook) applies it to the
+      # pre-created jig account. With no customisation there is no seed,
+      # cloud-init is a no-op, and jig stays locked (autologin to the desktop
+      # still works). Host SSH keys are left to cloud-init defaults, so each
+      # flashed unit regenerates unique keys.
+      set -eu
+      install -d -m 0755 "$1/etc/cloud/cloud.cfg.d"
+      cat > "$1/etc/cloud/cloud.cfg.d/99_raspberry-pi.cfg" <<'EOF'
+      # Configure cloud-init to read Raspberry Pi Imager customisation from the
+      # boot partition (NoCloud seed) on first boot.
+      datasource_list: [ NoCloud, None ]
+      datasource:
+        NoCloud:
+          seedfrom: file:///boot/firmware
+      EOF
+      $BDEBSTRAP_HOOKS/enable-units "$1" \
+        cloud-init-local cloud-init-network cloud-init-main cloud-config cloud-final
+    - |-
+      #
+      # Fallback: force-apply the seeded password to the jig account. cloud-init
+      # IGNORES the per-user 'passwd:' field for a PRE-EXISTING user (exactly
+      # what Raspberry Pi Imager writes), so without this a password set in
+      # Imager would not stick on our baked jig account. This first-boot oneshot
+      # reads whatever password the seed specified for 'jig' - from any form
+      # cloud-init understands (chpasswd users/list, hashed_passwd,
+      # plain_text_passwd or passwd) - and applies it, but ONLY while jig is
+      # still locked, so it never overrides a build-time password (options 2/3)
+      # or one cloud-init already applied itself.
+      set -eu
+      install -d -m 0755 "$1/usr/local/sbin" "$1/usr/local/lib/cm5-jig"
+      cat > "$1/usr/local/lib/cm5-jig/seed-password.py" <<'PYEOF'
+      import sys, yaml
+      user = sys.argv[1]
+      cfg = None
+      for path in ("/var/lib/cloud/instance/cloud-config.txt", "/boot/firmware/user-data"):
+          try:
+              data = yaml.safe_load(open(path))
+          except Exception:
+              data = None
+          if isinstance(data, dict):
+              cfg = data
+              break
+      if not isinstance(cfg, dict):
+          sys.exit(1)
+
+      def find(cfg, user):
+          ch = cfg.get("chpasswd")
+          if isinstance(ch, dict):
+              for e in ch.get("users") or []:
+                  if isinstance(e, dict) and user in (e.get("name"), e.get("user")):
+                      return e.get("password"), e.get("type", "hash") != "text"
+              lst = ch.get("list")
+              lines = lst.splitlines() if isinstance(lst, str) else (lst or [])
+              for ln in lines:
+                  if isinstance(ln, str) and ":" in ln and ln.split(":", 1)[0] == user:
+                      value = ln.split(":", 1)[1]
+                      return value, value.startswith("$")
+          for e in cfg.get("users") or []:
+              if isinstance(e, dict) and e.get("name") == user:
+                  if e.get("hashed_passwd"):
+                      return e["hashed_passwd"], True
+                  if e.get("passwd"):
+                      return e["passwd"], True
+                  if e.get("plain_text_passwd"):
+                      return e["plain_text_passwd"], False
+          return None, True
+
+      pw, hashed = find(cfg, user)
+      if not pw:
+          sys.exit(1)
+      print("hash" if hashed else "text")
+      print(pw)
+      PYEOF
+      cat > "$1/usr/local/sbin/cm5-jig-seed-password" <<'SCRIPT'
+      #!/bin/sh
+      set -eu
+      user=jig
+      # Only act while the account is locked/blank; respect any real password.
+      field=$(getent shadow "$user" | cut -d: -f2 || true)
+      case "$field" in
+        ''|'*'|'!'*) : ;;
+        *) exit 0 ;;
+      esac
+      out=$(python3 /usr/local/lib/cm5-jig/seed-password.py "$user" 2>/dev/null) || exit 0
+      mode=$(printf '%s\n' "$out" | sed -n 1p)
+      pw=$(printf '%s\n' "$out" | sed -n 2p)
+      [ -n "$pw" ] || exit 0
+      if [ "$mode" = hash ]; then
+        printf '%s:%s\n' "$user" "$pw" | chpasswd -e
+      else
+        printf '%s:%s\n' "$user" "$pw" | chpasswd
+      fi
+      passwd -u "$user" >/dev/null 2>&1 || true
+      logger -t cm5-jig-seed-password "applied seeded password to $user" || true
+      SCRIPT
+      chmod 0755 "$1/usr/local/sbin/cm5-jig-seed-password"
+      cat > "$1/etc/systemd/system/cm5-jig-seed-password.service" <<'UNIT'
+      [Unit]
+      Description=Apply Imager/cloud-init seeded password to the jig account
+      After=cloud-final.service
+      ConditionPathExists=/usr/local/sbin/cm5-jig-seed-password
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/sbin/cm5-jig-seed-password
+
+      [Install]
+      WantedBy=multi-user.target
+      UNIT
+      $BDEBSTRAP_HOOKS/enable-units "$1" cm5-jig-seed-password.service
+    - |-
+      #
+      # Ship inert cloud-init TEMPLATES on the boot (VFAT) partition to prime
+      # people who write the seed by hand. They use a '.example' suffix (plus a
+      # plaintext README), so cloud-init's NoCloud datasource - which looks for
+      # exactly 'user-data' and 'meta-data' - ignores them and does NOT activate.
+      # Anyone who mounts the boot partition sees documented examples to copy and
+      # edit. genimage builds the VFAT image from this /boot/firmware subtree.
+      set -eu
+      install -d -m 0755 "$1/boot/firmware"
+      cat > "$1/boot/firmware/user-data.example" <<'UD'
+      #cloud-config
+      # =====================================================================
+      # Raspberry Pi CM5 jig - cloud-init user-data TEMPLATE (inactive).
+      #
+      # This ".example" file is IGNORED by cloud-init. To use it:
+      #   1. Copy it to 'user-data' (drop the .example suffix) on this
+      #      partition, and copy 'meta-data.example' to 'meta-data'.
+      #   2. Uncomment/edit the lines below (pick ONE password block).
+      #   3. Reboot the jig.
+      #
+      # Raspberry Pi Imager writes these files for you when you apply its
+      # in-line OS customisation during the flashing wizard; this template is
+      # only needed when setting them up by hand.
+      #
+      # NOTES
+      #  * The operator account is 'jig' and already exists in the image, so
+      #    set its password with 'chpasswd' below - cloud-init ignores the
+      #    per-user 'passwd:' field for an existing account. A bundled service
+      #    (cm5-jig-seed-password) force-applies the chpasswd value on boot.
+      #  * Use username 'jig' only - another name creates an unused account.
+      #  * Generate a password hash with:   openssl passwd -6
+      # =====================================================================
+
+      ## Set the jig account password (HASHED - recommended):
+      #chpasswd:
+      #  expire: false
+      #  users:
+      #    - {name: jig, password: "$6$REPLACE_WITH_HASH", type: hash}
+
+      ## ...OR set a PLAIN-TEXT password (simpler, less secure):
+      #chpasswd:
+      #  expire: false
+      #  users:
+      #    - {name: jig, password: "ChangeMe123!", type: text}
+
+      ## Optionally set the hostname:
+      #hostname: cm5-jig
+
+      ## Optionally allow SSH password logins:
+      #ssh_pwauth: true
+
+      ## Optionally add an SSH public key for the jig account:
+      #users:
+      #  - name: jig
+      #    ssh_authorized_keys:
+      #      - ssh-ed25519 AAAA...replace-with-your-key... you@host
+      UD
+      cat > "$1/boot/firmware/meta-data.example" <<'MD'
+      # ---------------------------------------------------------------------
+      # Raspberry Pi CM5 jig - cloud-init meta-data TEMPLATE (inactive).
+      #
+      # Copy this file to 'meta-data' (drop the .example suffix) to activate
+      # cloud-init alongside 'user-data'. The NoCloud datasource will NOT run
+      # unless a 'meta-data' file is present, even if 'user-data' exists.
+      #
+      # A minimal meta-data only needs an instance-id. Change the id whenever
+      # you want cloud-init to re-run its configuration on the next boot.
+      # ---------------------------------------------------------------------
+      #instance-id: cm5-jig-001
+      MD
+      cat > "$1/boot/firmware/network-config.example" <<'NC'
+      # ---------------------------------------------------------------------
+      # cloud-init network-config TEMPLATE (inactive).
+      #
+      # CAUTION: this image uses systemd-networkd + iwd, whereas cloud-init
+      # renders network config via netplan / NetworkManager, which are NOT
+      # installed here. Wi-Fi / network settings written via cloud-init (or the
+      # Wi-Fi fields in Raspberry Pi Imager) are therefore unlikely to apply.
+      # Configure networking through the image's own network layers instead.
+      #
+      # Copy to 'network-config' only if you have added a compatible renderer.
+      # ---------------------------------------------------------------------
+      #version: 2
+      #wifis:
+      #  wlan0:
+      #    dhcp4: true
+      #    access-points:
+      #      "MY-SSID":
+      #        password: "my-psk"
+      NC
+      cat > "$1/boot/firmware/README-cloud-init.txt" <<'RM'
+      Raspberry Pi CM5 jig - first-boot customisation
+      ===============================================
+
+      This BOOT partition can carry cloud-init files that configure the jig on
+      first boot: the operator ('jig') password, hostname and SSH keys.
+
+      Quick start (by hand):
+        1. Copy  user-data.example  ->  user-data
+           Copy  meta-data.example  ->  meta-data
+        2. Edit user-data: set the 'jig' account password (see the chpasswd
+           example inside). Optionally set the hostname / an SSH key.
+        3. Save the files and boot the jig.
+
+      Or apply Raspberry Pi Imager's in-line OS customisation during the
+      flashing wizard, which writes these files automatically - just set the
+      username to 'jig'.
+
+      Rules & caveats:
+        * Username must be 'jig' (the built-in operator account).
+        * cloud-init will not run unless BOTH user-data and meta-data exist.
+        * The password applies even though 'jig' already exists: a bundled
+          service (cm5-jig-seed-password) force-applies it on first boot.
+        * Wi-Fi via cloud-init / Imager is unlikely to apply (this image uses
+          systemd-networkd + iwd, not netplan / NetworkManager).
+        * With no user-data/meta-data present, the jig boots normally and the
+          'jig' account stays locked (desktop autologin still works).
+      RM
