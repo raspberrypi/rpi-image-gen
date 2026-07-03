@@ -196,7 +196,26 @@ List sections do not merge with includes in the same way as mapping sections. Be
 
 === Configuration Includes
 
-Configuration files support includes to promote reusability and modularity. The include precedence order is shown in the table below.
+Configuration files support includes to promote reusability and modularity.
+
+A single file is included using a mapping with a `file` key:
+
+[source,yaml]
+----
+include:
+  file: base.yaml
+----
+
+Multiple files are included using a list of filenames. Files are processed in order - later entries override earlier ones. The including file overrides all included content.
+
+[source,yaml]
+----
+include:
+  - device/cm5.yaml
+  - device/cm5io.yaml
+----
+
+Include files are resolved using the following search order:
 
 [cols="1,6,5"]
 |===
@@ -215,10 +234,10 @@ Configuration files support includes to promote reusability and modularity. The 
 |Default in-tree location, eg ```/usr/share/rpi-image-gen/config/```
 |===
 
-Included files are resolved using:
-
-1. **Parent directory**
-2. **Search path**
+[WARNING]
+====
+The list-section merge warning above applies equally to multiple includes. If two included files both define a list section (e.g. `packages`), they merge positionally - later entries override earlier ones by index rather than appending. For predictable results, define list sections in only one file in an include chain.
+====
 
 == Section Names
 
@@ -429,7 +448,7 @@ All dependencies are always included, i.e. variable names result in actual layer
 The configuration system processes files using the following steps:
 
 1. **Parse YAML configuration file**
-2. **Process includes recursively** - Follows include directives with circular dependency detection
+2. **Process includes recursively** - Follows include directives (single or list) in order, with circular dependency detection
 3. **Apply command line overrides** - Processes variables specified after `--`
 4. **Generate output** - Either loads into environment or writes to file
 
