@@ -29,8 +29,9 @@ source "$IGTOP/lib/tools.sh"
 # Namespace setup (see bin/ns)
 _ns_setup() {
    # unmount cache (defensive - cleanup hook should handle)
-   [[ -n "${_NS_APT_ARCHIVES:-}" ]] && \
+   if [ -n "${_NS_APT_ARCHIVES:-}" ]; then
       trap "umount -q \"$_NS_APT_ARCHIVES\" 2>/dev/null || true" EXIT
+   fi
 }
 export NS_SETUP="$(declare -f _ns_setup)"
 
