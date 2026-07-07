@@ -23,13 +23,16 @@ device:
   hostname: cm5-jig
   user1: jig
   # A password for the 'jig' account is intentionally NOT committed here.
-  # Supply one at build time as an override after '--' (using the full
-  # IGconf_<section>_<key> variable name), e.g.:
+  # Preferred: set it per-unit at flash time with a rpi-preseed.toml on the boot
+  # partition (Raspberry Pi Imager, or by hand - see README.adoc and the
+  # rpi-preseed.toml.example shipped on the boot partition). The [user] section
+  # must use name = "jig" to match the built-in operator account/autologin.
+  # Alternatively bake one at build time as an override after '--' (full
+  # IGconf_<section>_<key> name), e.g.:
   #   rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
   #     -c cm5-programming-jig.yaml -- IGconf_device_user1pass='Ch4nge-me!'
-  # It must satisfy the complexity policy (>=8 chars, upper, lower, digit and
-  # one of @$!%*?&). Setting a password automatically grants password sudo.
-  # Alternatively set an SSH public key via the ssh: section.
+  # A build-time password must satisfy the complexity policy (>=8 chars, upper,
+  # lower, digit and one of @$!%*?&) and automatically grants password sudo.
 
 image:
   name: cm5-jig
@@ -60,3 +63,23 @@ packages:
   # Ad-hoc secure file transfer to/from the jig (e.g. pulling logs or
   # manufacturing data off the device without pre-shared SSH keys).
   - magic-wormhole
+  # First-boot customisation. rpi-preseed applies a
+  # single TOML file (/boot/firmware/rpi-preseed.toml) on first boot, reusing
+  # the official Raspberry Pi helpers. Vendored locally (not in the apt
+  # archive); path is relative to the -S source directory. apt pulls its
+  # dependencies from the archive.
+  - pkgs/rpi-preseed_0.1.0_all.deb
+  # rpi-preseed Recommends (the base image builds with Install-Recommends=off,
+  # so list the ones we want it to drive explicitly, otherwise it silently uses
+  # weaker file-editing fallbacks):
+  #   userconf-pi          - rename/setup the operator account + password
+  #   raspberrypi-sys-mods - imager_custom helper (hostname / ssh / wlan)
+  #   raspi-config         - nonint interface toggles (i2c/spi/serial)
+  #   whois                - mkpasswd, for yescrypt password hashing
+  #   ssh-import-id        - imager_custom import_ssh_id (rpi-preseed
+  #                          [ssh].ssh_import_id: fetch keys from gh:/lp: IDs)
+  - userconf-pi
+  - raspberrypi-sys-mods
+  - raspi-config
+  - whois
+  - ssh-import-id

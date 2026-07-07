@@ -8,7 +8,8 @@ The image:
 * Targets a Compute Module 5 (Lite variant, booting from NVMe) running Debian
   Trixie.
 * Boots straight into the full Raspberry Pi Desktop (labwc/Wayland) and
-  automatically logs in the `jig` operator account.
+  automatically logs in the operator account (named `jig` by default; can be
+  renamed at first boot - see below).
 * Auto-launches Chromium (maximized) at `http://localhost:3142`, the
   https://github.com/raspberrypi/rpi-sb-provisioner[rpi-sb-provisioner] web
   dashboard. The browser runs on top of the normal desktop, so the operator can
@@ -28,8 +29,15 @@ contrib/src/cm5-programming-jig/
 |   `-- cm5-programming-jig.yaml   # main build config
 |-- layer
 |   `-- cm5-jig-desktop.yaml       # desktop + autologin + browser autostart layer
+|-- pkgs
+|   `-- rpi-preseed_0.1.0_all.deb  # vendored first-boot customisation tool
 `-- README.adoc
 ----
+
+First-boot customisation (operator password, hostname, SSH, Wi-Fi, Connect,
+hardware interfaces) is handled by *rpi-preseed*, a small Raspberry Pi tool that
+applies a single TOML file from the boot partition on first boot. The `.deb` is vendored under `pkgs/` and installed by name from the config's
+`packages:` list.
 
 == Building
 
@@ -53,79 +61,74 @@ still boots straight to the provisioner UI. If you supply no credential at all,
 the unit is a sealed appliance with no admin path - see "If you configure
 nothing" below before rolling out units.
 
-The recommended way to set a per-unit password is at *flash time* with Raspberry
-Pi Imager (option 0). The account can also be given a credential at *build time*
-(options 1-3); overrides there are given after `--` using the full
-`IGconf_<section>_<key>` variable name (not a dotted `section.key` form).
+The recommended way to set a per-unit password is at *flash time* with an
+`rpi-preseed.toml` on the boot partition (option 0). The account can also be
+given a credential at *build time* (options 1-3); overrides there are given after
+`--` using the full `IGconf_<section>_<key>` variable name (not a dotted
+`section.key` form).
 
-=== Option 0 (recommended): set the password per unit with Raspberry Pi Imager
+=== Option 0 (recommended): set the password per unit with rpi-preseed
 
-The image includes `cloud-init`, configured (like Raspberry Pi OS) to read
-Imager's OS-customisation from the boot partition on first boot. When flashing:
+The image installs *rpi-preseed*, which applies `/boot/firmware/rpi-preseed.toml`
+on first boot, reusing the official Raspberry Pi helpers (`userconf`,
+`imager_custom`, `raspi-config nonint`). Two ways to provide the file:
 
-. In Raspberry Pi Imager, follow the flashing wizard. When it offers OS
-  customisation in-line, choose to apply it (recent Imager versions present
-  these settings as a wizard step rather than a separate "Edit Settings" dialog).
-. Set the username to *`jig`* (it must match the built-in account) and choose a
-  password. Optionally set the hostname.
-. Write and boot. The password is applied to the `jig` account on first boot;
-  nothing is shared between units and no password is baked into the image.
+. *Raspberry Pi Imager* - use its OS customisation step in the flashing wizard
+  (recent Imager versions present it in-line rather than as a separate "Edit
+  Settings" dialog). Set a username (any name - defaults to `jig`) and a
+  password. Imager writes `rpi-preseed.toml` for you.
+. *By hand* - the boot (FAT) partition ships an inert, fully commented template
+  `rpi-preseed.toml.example` plus `README-rpi-preseed.txt`. Mount the boot
+  partition, copy `rpi-preseed.toml.example` -> `rpi-preseed.toml`, edit, and
+  boot. The `.example` suffix keeps it inactive until renamed (rpi-preseed's
+  units look for exactly `rpi-preseed.toml`).
 
-If you flash *without* customisation, there is no seed: cloud-init does nothing
-and `jig` stays locked (the desktop still autologins).
+On first boot the password is applied to the operator account, nothing is shared
+between units, and no password is baked into the image. If you flash *without*
+an `rpi-preseed.toml`, there is no seed: rpi-preseed does nothing and `jig` stays
+locked (the desktop still autologins).
 
-.How the password actually gets applied (and why there is a fallback)
+.How the account is configured (the operator name is free)
 [NOTE]
 ====
-cloud-init *ignores* the per-user `passwd:` field for a user that already exists,
-and `jig` is pre-created at build time - so Imager's password (written into that
-`passwd:` field) would not stick on its own. The image therefore ships a small
-first-boot service, `cm5-jig-seed-password`, that runs after cloud-init, reads
-whatever password the seed specified for `jig`, and force-applies it with
-`chpasswd`. It fires *only while `jig` is still locked*, so it never overrides a
-build-time password (options 2-3 below) or one cloud-init managed to set itself.
+rpi-preseed's `[user]` applier renames the UID 1000 account to `[user].name`,
+moves its home directory, and sets its password via the RPi `userconf` helper
+(including yescrypt hashing of a plaintext password on-device). The built-in
+operator account is `jig`, but `[user].name` can be *any* name: a first-boot
+unit (`cm5-jig-autologin-sync.service`) points desktop autologin at whoever owns
+UID 1000, ordered after the rename and before the display manager starts, so
+autologin follows the renamed account. Keep `name = "jig"` to retain the default
+(the rename is then a no-op); to set only a password, set `password` alongside
+whatever `name` you choose. rpi-preseed redacts secrets in the TOML in place
+after a successful apply, and applies once (run-once via a stamp in
+`/var/lib/rpi-preseed`; re-apply with `sudo rpi-preseed apply`).
 ====
 
-To make hand-editing easier, the boot (FAT) partition ships inert, fully
-commented templates - `user-data.example`, `meta-data.example`,
-`network-config.example` and `README-cloud-init.txt`. Mount the boot partition
-on any machine, copy `user-data.example` -> `user-data` and
-`meta-data.example` -> `meta-data`, uncomment/edit, and boot. The `.example`
-suffix means cloud-init ignores them until you rename, so they never activate on
-their own.
-
-This works whether the seed is written by Raspberry Pi Imager *or by hand*. If
-you are writing the boot-partition files manually, note:
-
-* Provide both a `user-data` *and* a `meta-data` file on the boot partition - the
-  NoCloud datasource will not activate without `meta-data` (an `instance-id:`
-  line is enough). Imager writes both for you.
-* The username must be `jig`.
-* Any password form cloud-init understands is accepted - `chpasswd:` (a `users:`
-  list or the legacy `list:`), or a `hashed_passwd`/`plain_text_passwd`/`passwd`
-  key under the `jig` entry in `users:`. Hashes are applied via `chpasswd -e`.
-
-.Minimal hand-written `user-data`
-[source,yaml]
+.Minimal hand-written `rpi-preseed.toml`
+[source,toml]
 ----
-#cloud-config
-hostname: cm5-jig
-chpasswd:
-  expire: false
-  users:
-    - {name: jig, password: "$6$...hash...", type: hash}
-ssh_pwauth: true
+config_version = "1.0"
+
+[system]
+hostname = "cm5-jig"
+
+[user]
+name = "jig"                 # any name; "jig" keeps the default
+password = "Ch4nge-me!"      # plaintext, hashed on-device (yescrypt)
+password_encrypted = false
+
+[ssh]
+enabled = true
+password_authentication = false
+authorized_keys = ["ssh-ed25519 AAAA...replace... you@host"]
 ----
 
 [NOTE]
 ====
-Only use username `jig` - a different username would create a second account that
-the autologin/kiosk (wired to `jig`) would not use.
-
-Imager's Wi-Fi customisation may not apply: this image uses systemd-networkd +
-iwd, whereas cloud-init renders Wi-Fi via NetworkManager/netplan. Configure
-wireless through the image's own network layers instead. Password, hostname and
-SSH-key customisation work as expected.
+Wi-Fi is supported too: rpi-preseed's `[wlan]` section is written as a
+NetworkManager connection (this image uses NetworkManager as its sole network
+manager - see _Networking_). Set it in Imager or in the `[wlan]` block of the
+TOML.
 ====
 
 === Option 1: no local password, administer by SSH key / Connect
@@ -177,16 +180,18 @@ option 0 (Raspberry Pi Imager) or option 1 (per-unit SSH keys).
 === If you configure nothing: the jig is a sealed appliance
 
 If a unit is flashed with *no* credential configured by any of the routes above -
-no cloud-init/Imager customisation, no build-time password or hash, no baked SSH
-key, and Connect not enrolled - it still works as an appliance but has *no login
-or administration path at all*. Concretely, with the defaults:
+no `rpi-preseed.toml`/Imager customisation, no build-time password or hash, no
+baked SSH key, and Connect not enrolled - it still works as an appliance but has
+*no login or administration path at all*. Concretely, with the defaults:
 
 * The `jig` account is created locked (`adduser --disabled-password`), so there
   is no console or SSH *password* login.
 * `root` is disabled (`usermod --pass='*' root`).
-* `sudo` is *not installed*: `device.user1sudo` defaults to `none` (it only
-  becomes `passwd` when a password is set), and the `none` case purges the `sudo`
-  package - so even the auto-logged-in desktop session cannot escalate.
+* `jig` is *not granted sudo*: `device.user1sudo` defaults to `none` (it only
+  becomes `passwd` when a password is set), so no sudoers entry is written and
+  `jig` is not added to the `sudo` group. The `sudo` binary itself stays present
+  (a base package, `raspinfo`, depends on it), but `jig` cannot use it - so even
+  the auto-logged-in desktop session cannot escalate.
 
 This is by design: an un-provisioned unit is sealed rather than shipping a shared
 default credential. The kiosk still functions - it autologins `jig` and opens the
@@ -200,9 +205,65 @@ password/hash (options 2-3), a baked SSH key (option 1), or an enrolled Raspberr
 Pi Connect session. Decide this before rolling out units.
 
 Recovering a unit that was sealed by accident means re-flashing it, or mounting
-its storage on another machine to add a credential (e.g. drop a `user-data` +
-`meta-data` seed onto the boot partition and reboot - see "Operator account
-credentials" option 0 and the templates on the boot partition).
+its storage on another machine to add a credential (e.g. drop an
+`rpi-preseed.toml` onto the boot partition and reboot - see "Operator account
+credentials" option 0 and the template on the boot partition).
+====
+
+== Networking
+
+The image standardises on *NetworkManager* as the single network manager, so the
+desktop panel's network applet works and rpi-preseed's `[wlan]` Wi-Fi
+customisation is applied on first boot.
+
+This needs a deliberate choice because two stacks are otherwise present:
+
+* The `trixie-minbase` suite sets up *systemd-networkd + iwd* (enabled, with
+  per-interface DHCP `.network` files) - the lean server stack.
+* The `rpd-*` desktop metapackages pull in *NetworkManager + netplan +
+  wpa_supplicant*, and `NetworkManager.service` is also enabled.
+
+Running both races over `eth0`/`wlan0` and splits Wi-Fi across two backends
+(iwd vs wpa_supplicant). The `cm5-jig-desktop` layer therefore masks
+`systemd-networkd(.socket, -wait-online)` and `iwd`, removes the suite's
+`01-eth0.network`/`02-wlan0.network`, and leaves NetworkManager as the sole
+manager. (The null `*.link` files are kept - they are processed by udev, not
+networkd - so interfaces stay named `eth0`/`wlan0`.)
+
+.How Wi-Fi is applied
+[NOTE]
+====
+rpi-preseed's `[wlan]` applier writes an NM keyfile directly at
+`/etc/NetworkManager/system-connections/preconfigured.nmconnection` (WPA2/WPA3/
+open, hidden SSID, country). That only takes effect with NetworkManager as the
+manager, which is why the layer disables systemd-networkd/iwd. The layer also
+sets netplan's default renderer to NetworkManager
+(`/etc/netplan/00-cm5-jig-renderer.yaml`) so that any netplan config that does
+appear renders to NM rather than the disabled networkd backend.
+====
+
+Set Wi-Fi in Raspberry Pi Imager, or in the `[wlan]` block of
+`rpi-preseed.toml`. Both end up as an NM connection.
+
+== Filling a larger disk (root filesystem expansion)
+
+The image ships with a small fixed root partition. Expansion to fill a larger
+NVMe/SD is handled by a small, self-contained first-boot unit,
+`cm5-jig-growfs.service` (installed by the `cm5-jig-desktop` layer):
+
+* `growpart` (from `cloud-guest-utils`) extends the root partition to the end of
+  the disk, then `resize2fs` grows the ext4 filesystem into it. ext4 supports
+  *online* resize, so this runs against the mounted root without a reboot.
+* The unit resolves the root disk/partition dynamically (`findmnt` +
+  `/sys/class/block/.../partition`), so it works on NVMe, SD or USB.
+* It is idempotent and run-once: a stamp at `/var/lib/cm5-jig/growfs-done` (and a
+  `ConditionPathExists=!` on it) means it runs once and then no-ops.
+
+[NOTE]
+====
+This runs *unconditionally* on first boot - it does *not* depend on any rpi-preseed/Imager seed, so even a sealed unit
+expands to fill its disk. (`systemd-repart` is not used: it is GPT-only and this
+image uses an MBR table.)
 ====
 
 == Raspberry Pi Connect
