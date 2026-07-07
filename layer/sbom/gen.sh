@@ -11,7 +11,7 @@ igconf isy sbom_enable || exit 0
 
 SYFTCFG=$(igconf getval sbom_syft_config)
 
-SYFT_VER=v1.44.0  # leave empty to install latest
+SYFT_VER=v1.46.0  # leave empty to install latest
 
 # If host has syft, use it
 if ! hash syft 2>/dev/null; then
