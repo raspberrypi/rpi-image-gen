@@ -1,0 +1,5 @@
+X-Env-Trait-vc-firmware-Desc: Device boot requires the Raspberry Pi VideoCore firmware loading chain
+X-Env-Trait-vc-firmware-Valid: bool
+
+X-Env-Trait-dtbootpartn-Desc: Bootloader propagates a valid (non-zero) boot partition number via Device Tree
+X-Env-Trait-dtbootpartn-Valid: bool

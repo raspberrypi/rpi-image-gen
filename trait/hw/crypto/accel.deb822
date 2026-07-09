@@ -1,0 +1,5 @@
+X-Env-Trait-aes-accel-Desc: Accelerated AES operations
+X-Env-Trait-aes-accel-Valid: bool
+
+X-Env-Trait-sha-accel-Desc: Accelerated SHA operations
+X-Env-Trait-sha-accel-Valid: bool

@@ -1,0 +1,6 @@
+X-Env-Trait-y-Desc: relative name resolves to hw:y - references a token not yet defined
+X-Env-Trait-y-Valid: bool
+X-Env-Trait-y-Requires: hw:late
+
+X-Env-Trait-late-Desc: defined after y in this same file, so y cannot see it yet
+X-Env-Trait-late-Valid: bool

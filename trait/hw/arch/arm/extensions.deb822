@@ -1,0 +1,7 @@
+X-Env-Trait-aes-accel-Desc: Arm AES hardware acceleration
+X-Env-Trait-aes-accel-Valid: bool
+X-Env-Trait-aes-accel-Triggers: when=y set (hw:crypto:aes-accel)=y
+
+X-Env-Trait-sha-accel-Desc: Arm SHA hardware acceleration
+X-Env-Trait-sha-accel-Valid: bool
+X-Env-Trait-sha-accel-Triggers: when=y set (hw:crypto:sha-accel)=y

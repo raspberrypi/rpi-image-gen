@@ -1,0 +1,5 @@
+X-Env-Trait-aarch32-Desc: Can execute 32-bit (AArch32) user code
+X-Env-Trait-aarch32-Valid: bool
+
+X-Env-Trait-aarch64-Desc: Can execute 64-bit (AArch64) user code
+X-Env-Trait-aarch64-Valid: bool

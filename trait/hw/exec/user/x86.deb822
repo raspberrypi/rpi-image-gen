@@ -1,0 +1,2 @@
+X-Env-Trait-x86_64-Desc: Can execute 64-bit (x86_64) user code
+X-Env-Trait-x86_64-Valid: bool

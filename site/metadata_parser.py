@@ -6,7 +6,7 @@ import yaml
 from debian import deb822
 from typing import Dict
 from validators import parse_validator
-from env_types import EnvVariable, EnvLayer, MetadataContainer, XEnv, VariableResolver
+from env_types import EnvVariable, EnvLayer, EnvTrait, MetadataContainer, XEnv, VariableResolver
 from logger import log_error
 
 
@@ -145,6 +145,13 @@ SUPPORTED_FIELD_PATTERNS = {
     XEnv.var_requires_valid(): {"type": "single", "description": "Validation rules for required environment variables"},
     XEnv.var_optional(): {"type": "single", "description": "Optional environment variables used by this layer"},
     XEnv.var_optional_valid(): {"type": "single", "description": "Validation rules for optional environment variables"},
+
+    # Trait definition patterns (these match multiple fields, keyed by local name)
+    XEnv.trait_desc_pattern(): {"type": "pattern", "description": "Trait token description"},
+    XEnv.trait_valid_pattern(): {"type": "pattern", "description": "Trait validation type (always bool)"},
+    XEnv.trait_requires_pattern(): {"type": "pattern", "description": "Trait necessity-only validation constraint"},
+    XEnv.trait_triggers_pattern(): {"type": "pattern", "description": "Trait derivation/push rules"},
+    XEnv.trait_include_pattern(): {"type": "pattern", "description": "Further trait files to load as children of this node"},
 }
 
 def is_field_supported(field_name: str) -> bool:
@@ -161,15 +168,21 @@ def is_field_supported(field_name: str) -> bool:
                 if field_name.startswith(pattern) and '-' not in field_name[len(pattern):]:
                     return True
             elif "*" in pattern:
-                # Variable attribute pattern (X-Env-Var-*-Desc)
+                # Attribute pattern (X-Env-Var-*-Desc, X-Env-Trait-*-Desc, ...)
                 pattern_parts = pattern.split("*")
                 if len(pattern_parts) == 2:
                     prefix, suffix = pattern_parts
                     if field_name.startswith(prefix) and field_name.endswith(suffix):
-                        # Extract the variable name part
                         var_part = field_name[len(prefix):-len(suffix) if suffix else len(field_name)]
-                        if var_part and '-' not in var_part:  # Valid variable name
-                            return True
+                        if not var_part:
+                            continue
+                        # IGconf var names never contain a dash, so rejecting
+                        # one here is a real typo check for X-Env-Var-*.
+                        # Trait local names legitimately do (vc-firmware,
+                        # aes-accel), so the same check doesn't apply there.
+                        if prefix.startswith(XEnv.VAR_PREFIX) and '-' in var_part:
+                            continue
+                        return True
 
     return False
 
@@ -1069,6 +1082,10 @@ class Metadata:
         """Check if this metadata contains X-Env-Layer information"""
         return self._container.layer is not None
 
+    def get_traits(self) -> Dict[str, EnvTrait]:
+        """Get trait definitions from X-Env-Trait metadata fields, keyed by local name."""
+        return self._container.traits
+
     # Note: Placeholder handling moved to MetadataContainer class
 
 
@@ -1108,6 +1125,32 @@ def print_env_var_descriptions(meta: 'Metadata', indent: int = 0):
                 print(f"{pad}      {cond}{t.action} {t.target}={t.value} policy={t.policy}")
         if env_var.conflicts:
             print(f"{pad}    Conflicts: {', '.join(env_var.conflicts)}")
+        print()
+
+
+def print_trait_descriptions(meta: 'Metadata', indent: int = 0):
+    """Pretty-print trait descriptions for a Metadata object."""
+    traits = meta.get_traits()
+    if not traits:
+        return
+
+    pad = " " * indent
+
+    print(f"{pad}Traits:")
+
+    for local_name, trait in traits.items():
+        print(f"{pad}  Trait: {local_name}")
+        if trait.desc:
+            print(f"{pad}    Desc: {trait.desc}")
+        print(f"{pad}    Type: {trait.valid}")
+        if trait.requires:
+            print(f"{pad}    Requires: {', '.join(trait.requires)}")
+        if trait.triggers:
+            print(f"{pad}    Triggers:")
+            for rule in trait.triggers:
+                print(f"{pad}      when={rule.condition} set ({rule.target})=y")
+        if trait.include:
+            print(f"{pad}    Include: {', '.join(trait.include)}")
         print()
 
 
@@ -1471,6 +1514,11 @@ def _main(args):
                 # Display per-variable detail via existing helper
                 if meta.get_all_env_vars():
                     print_env_var_descriptions(meta)
+                    has_content = True
+
+                # Display per-trait detail via existing helper
+                if meta.get_traits():
+                    print_trait_descriptions(meta)
                     has_content = True
 
                 if not has_content:

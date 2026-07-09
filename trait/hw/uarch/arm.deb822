@@ -1,0 +1,15 @@
+X-Env-Trait-cortex-a76-Desc: ARM Cortex-A76 microarchitecture
+X-Env-Trait-cortex-a76-Valid: bool
+X-Env-Trait-cortex-a76-Triggers: when=y set (hw:isa:armv8)=y
+
+X-Env-Trait-cortex-a72-Desc: ARM Cortex-A72 microarchitecture
+X-Env-Trait-cortex-a72-Valid: bool
+X-Env-Trait-cortex-a72-Triggers:
+ when=y set (hw:isa:armv7)=y
+ when=y set (hw:isa:armv8)=y
+
+X-Env-Trait-cortex-a53-Desc: ARM Cortex-A53 microarchitecture
+X-Env-Trait-cortex-a53-Valid: bool
+X-Env-Trait-cortex-a53-Triggers:
+ when=y set (hw:isa:armv7)=y
+ when=y set (hw:isa:armv8)=y

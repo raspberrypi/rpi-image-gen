@@ -1,0 +1,3 @@
+X-Env-Trait-rp3a0-Desc: Raspberry Pi RP3A0 - SiP containing BCM2710A1 die and 512 MB DRAM
+X-Env-Trait-rp3a0-Valid: bool
+X-Env-Trait-rp3a0-Triggers: when=y set (hw:soc:bcm2710)=y

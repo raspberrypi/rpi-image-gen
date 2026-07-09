@@ -1,0 +1,21 @@
+X-Env-Trait-can-Desc: CAN bus controller module on the ACME carrier board
+X-Env-Trait-can-Valid: bool
+X-Env-Trait-can-Triggers: when=y set (hw:can)=y
+
+X-Env-Trait-gps-Desc: GPS modem module on the ACME carrier board
+X-Env-Trait-gps-Valid: bool
+X-Env-Trait-gps-Triggers: when=y set (hw:gps)=y
+
+X-Env-Trait-carrierv1-Desc: ACME carrier board v1 - pairs with CM5 Lite, adds CAN, GPS and Ethernet
+X-Env-Trait-carrierv1-Valid: bool
+X-Env-Trait-carrierv1-Requires: hw:device:rpi:cm5-lite
+X-Env-Trait-carrierv1-Triggers:
+ when=y set (hw:acme:can)=y
+ when=y set (hw:acme:gps)=y
+ when=y set (hw:ethernet)=y
+
+X-Env-Trait-productv1-Desc: ACME product v1 - entire assembly with acmev1 carrier plus CM5 Lite
+X-Env-Trait-productv1-Valid: bool
+X-Env-Trait-productv1-Triggers:
+ when=y set (hw:acme:carrierv1)=y
+ when=y set (hw:device:rpi:cm5-lite)=y

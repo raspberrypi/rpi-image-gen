@@ -434,7 +434,9 @@ def ConfigLoader_register_parser(subparsers):
     parser.add_argument("--no-expand", action="store_true", help="Disable $VAR expansion")
     parser.add_argument("--write-to", metavar="FILE", help="Write variables to file instead of env load")
     parser.add_argument("--overrides", metavar="FILE", help="Override file with key=value pairs")
+    parser.add_argument("-S", "--srcroot", dest="srcroot", metavar="DIR", help="Custom source tree (adds its trait/ to --trait search)")
     parser.add_argument("--gen", action="store_true", help="Generate example .yaml with include syntax")
+    parser.add_argument("--trait", metavar="TOKEN", nargs="?", const="", help="Expand a trait token and show its full token set; omit TOKEN to list all")
     parser.set_defaults(func=_main)
 
 
@@ -443,8 +445,13 @@ def _main(args):
         _generate_boilerplate()
         return
 
+    if args.trait is not None:
+        token = args.trait or args.cfg_path or ""
+        _show_trait(token, args)
+        return
+
     if not args.cfg_path:
-        print("Error: cfg_path is required unless --gen is used", file=sys.stderr)
+        print("Error: cfg_path is required unless --gen or --trait is used", file=sys.stderr)
         return
 
     try:
@@ -464,6 +471,70 @@ def _main(args):
     except (ValueError, FileNotFoundError) as e:
         print(f"Error: {e}", file=sys.stderr)
         raise SystemExit(1)
+
+
+def _show_trait(token: str, args):
+    from trait_registry import TraitRegistry
+
+    igroot = os.environ.get('IGTOP', str(Path(__file__).parent.parent))
+    seen = set()
+    trait_dirs = []
+    for root in filter(None, [
+        igroot,
+        getattr(args, 'srcroot', None) or '',
+        *(s.strip() for s in (args.path.split(':') if getattr(args, 'path', None) else [])),
+    ]):
+        d = os.path.join(root, 'trait')
+        r = os.path.realpath(d)
+        if r not in seen:
+            seen.add(r)
+            trait_dirs.append(d)
+
+    try:
+        registry = TraitRegistry(trait_dirs)
+        tokens = registry.all_tokens if not token else registry.by_prefix(token)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1)
+
+    if not tokens:
+        if token:
+            print(f"No trait tokens match '{token}'", file=sys.stderr)
+        return
+
+    import textwrap
+
+    bold = "\033[1m" if sys.stdout.isatty() else ""
+    reset = "\033[0m" if sys.stdout.isatty() else ""
+    cwd = Path.cwd()
+
+    entries = sorted(tokens.items())
+    for i, (t, source) in enumerate(entries):
+        try:
+            src = str(Path(source).relative_to(cwd))
+        except ValueError:
+            src = source
+        desc = registry.get_desc(t) or ""
+        valid = registry.get_valid(t) or ""
+        print(f"{bold}{t}{reset}")
+        if desc:
+            for line in textwrap.wrap(desc, width=76, initial_indent="  Desc: ", subsequent_indent="        "):
+                print(line)
+        if valid:
+            print(f"  Type: {valid}")
+        print(f"  File: {src}")
+        requires = registry.get_requires(t)
+        if requires:
+            print("  Requires:")
+            for r in requires:
+                print(f"    {r}")
+        implied = sorted(k for k in registry.expand(t) if k != t)
+        if implied:
+            print("  Activates:")
+            for k in implied:
+                print(f"    {k}")
+        if i < len(entries) - 1:
+            print()
 
 
 def _generate_boilerplate():

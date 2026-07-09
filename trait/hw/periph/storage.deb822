@@ -1,0 +1,9 @@
+X-Env-Trait-sd-Desc: SD card slot
+X-Env-Trait-sd-Valid: bool
+
+X-Env-Trait-emmc-Desc: Onboard eMMC storage soldered to the board
+X-Env-Trait-emmc-Valid: bool
+
+X-Env-Trait-nvme-Desc: NVMe storage slot
+X-Env-Trait-nvme-Valid: bool
+X-Env-Trait-nvme-Requires: hw:pcie

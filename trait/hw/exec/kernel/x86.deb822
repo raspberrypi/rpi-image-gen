@@ -1,0 +1,2 @@
+X-Env-Trait-x86_64-Desc: Can boot a 64-bit (x86_64) kernel
+X-Env-Trait-x86_64-Valid: bool

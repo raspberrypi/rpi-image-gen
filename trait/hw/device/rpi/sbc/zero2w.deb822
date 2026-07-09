@@ -1,0 +1,8 @@
+X-Env-Trait-zero2w-Desc: Raspberry Pi Zero 2 W - RP3A0 SiP (SD card, Wifi, Bluetooth)
+X-Env-Trait-zero2w-Valid: bool
+X-Env-Trait-zero2w-Triggers:
+ when=y set (hw:soc:rp3a0)=y
+ when=y set (hw:storage:sd)=y
+ when=y set (hw:wlan:broadcom)=y
+ when=y set (hw:bluetooth:broadcom)=y
+ when=y set (boot:rpi:vc-firmware)=y

@@ -1,0 +1,27 @@
+X-Env-Trait-bluetooth-Desc: Bluetooth hardware
+X-Env-Trait-bluetooth-Valid: bool
+X-Env-Trait-bluetooth-Include: periph/bluetooth.deb822
+
+X-Env-Trait-wlan-Desc: Wireless LAN hardware
+X-Env-Trait-wlan-Valid: bool
+X-Env-Trait-wlan-Include: periph/wlan.deb822
+
+X-Env-Trait-pcie-Desc: PCIe interface - accessible via expansion connector
+X-Env-Trait-pcie-Valid: bool
+
+X-Env-Trait-storage-Desc: Onboard or directly attached storage
+X-Env-Trait-storage-Valid: bool
+X-Env-Trait-storage-Include: periph/storage.deb822
+
+X-Env-Trait-eeprom-Desc: EEPROM for bootloader or configuration storage
+X-Env-Trait-eeprom-Valid: bool
+X-Env-Trait-eeprom-Include: periph/eeprom.deb822
+
+X-Env-Trait-ethernet-Desc: Wired Ethernet interface - present on-board for some SBCs, carrier-dependent for Compute Modules
+X-Env-Trait-ethernet-Valid: bool
+
+X-Env-Trait-can-Desc: CAN bus controller
+X-Env-Trait-can-Valid: bool
+
+X-Env-Trait-gps-Desc: GPS receiver
+X-Env-Trait-gps-Valid: bool

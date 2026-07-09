@@ -1,0 +1,5 @@
+X-Env-Trait-armv7-Desc: Armv7-A ISA
+X-Env-Trait-armv7-Valid: bool
+
+X-Env-Trait-armv8-Desc: Armv8-A ISA
+X-Env-Trait-armv8-Valid: bool

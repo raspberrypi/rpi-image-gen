@@ -16,6 +16,7 @@ defined by the Python language specification:
 
 Supported comparison operators:  ==  !=  in  not in
 Supported boolean operators:     and  or
+Supported trait functions:       has()  not has()
 
 Variable names in expressions are resolved from a plain dict[str, str]
 passed in by the caller. The caller is responsible for building that dict
@@ -23,7 +24,7 @@ passed in by the caller. The caller is responsible for building that dict
 """
 
 import ast
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Optional
 
 
 class SyntaxExample(NamedTuple):
@@ -37,8 +38,10 @@ SYNTAX_EXAMPLES: List[SyntaxExample] = [
     SyntaxExample("!=",     "IGconf_device_user1pass != ''"),
     SyntaxExample("in",     "IGconf_device_class in ['pi4', 'cm4', 'pi5', 'cm5']"),
     SyntaxExample("not in", "IGconf_device_class not in ['zero2w']"),
-    SyntaxExample("and",    "IGconf_a == 'x' and IGconf_b == 'y'"),
-    SyntaxExample("or",     "IGconf_a == 'x' or IGconf_b == 'y'"),
+    SyntaxExample("and",     "IGconf_a == 'x' and IGconf_b == 'y'"),
+    SyntaxExample("or",      "IGconf_a == 'x' or IGconf_b == 'y'"),
+    SyntaxExample("has",     "has('hw:bluetooth')"),
+    SyntaxExample("not has", "not has('hw:bluetooth')"),
 ]
 
 
@@ -57,22 +60,25 @@ def validate(condition: str) -> None:
         tree = ast.parse(condition, mode='eval')
     except SyntaxError as e:
         raise ValueError(f"Invalid condition '{condition}': {e}") from e
-    if not isinstance(tree.body, (ast.Compare, ast.BoolOp)):
+    if not isinstance(tree.body, (ast.Compare, ast.BoolOp, ast.Call, ast.UnaryOp)):
         raise ValueError(
-            f"Invalid condition '{condition}': must be a comparison or boolean expression"
-            f" — e.g. IGconf_x == 'value' or IGconf_x in ['a', 'b']"
+            f"Invalid condition '{condition}': must be a comparison, boolean, or trait expression"
+            f" — e.g. IGconf_x == 'value', IGconf_x in ['a', 'b'], has('hw:bluetooth')"
         )
     _check_node(tree.body, condition)
 
 
-def evaluate(condition: str, variables: Dict[str, str]) -> bool:
+def evaluate(condition: str, variables: Dict[str, str],
+             provider_index: Optional[Dict[str, str]] = None) -> bool:
     """
     Evaluate a condition expression against a variable dict.
     Parses the expression and walks the AST, resolving variable names against
     the provided dict. Assumes validate() has already been called.
+
+    provider_index must be supplied when the condition contains has() calls.
     """
     tree = ast.parse(condition, mode='eval')
-    return bool(_eval_node(tree.body, variables, condition))
+    return bool(_eval_node(tree.body, variables, condition, provider_index))
 
 
 # -----------------------------------------------------------------------------
@@ -133,22 +139,54 @@ def _check_node(node, condition: str) -> None:
         for elt in node.elts:
             _check_node(elt, condition)
 
+    elif isinstance(node, ast.UnaryOp):
+        # Only 'not has(...)' is supported. 'not' applied to a variable name
+        # (e.g. 'not IGconf_x') would silently invert the string's truthiness,
+        # which is never what a layer author intends.
+        if not isinstance(node.op, ast.Not):
+            raise ValueError(
+                f"Unsupported unary operator in '{condition}' — only 'not' is supported"
+            )
+        if not isinstance(node.operand, ast.Call):
+            raise ValueError(
+                f"'not' can only negate has() in '{condition}'"
+                f" — use != '' to test for a non-empty variable"
+            )
+        _check_node(node.operand, condition)
+
+    elif isinstance(node, ast.Call):
+        # Only has('token') is permitted — no other function calls.
+        if not (isinstance(node.func, ast.Name) and node.func.id == 'has'):
+            raise ValueError(
+                f"Unsupported function call in '{condition}' — only has() is permitted"
+            )
+        if len(node.args) != 1 or node.keywords:
+            raise ValueError(
+                f"has() requires exactly one string argument in '{condition}'"
+            )
+        if not isinstance(node.args[0], ast.Constant) or not isinstance(node.args[0].value, str):
+            raise ValueError(
+                f"has() argument must be a quoted string in '{condition}'"
+            )
+
     else:
         raise ValueError(
             f"Unsupported expression '{type(node).__name__}' in '{condition}'"
         )
 
 
-def _eval_node(node, variables: Dict[str, str], condition: str):
+def _eval_node(node, variables: Dict[str, str], condition: str,
+               provider_index: Optional[Dict[str, str]] = None):
     """
     Recursively evaluate an AST node and return a Python value.
 
     Compare nodes return bool. Name and Constant nodes return str.
     List and Tuple nodes return list[str] for use with 'in' / 'not in'.
+    Call nodes (has()) return bool. UnaryOp(Not) inverts its operand.
     """
     if isinstance(node, ast.Compare):
-        left = _eval_node(node.left, variables, condition)
-        right = _eval_node(node.comparators[0], variables, condition)
+        left = _eval_node(node.left, variables, condition, provider_index)
+        right = _eval_node(node.comparators[0], variables, condition, provider_index)
         op = node.ops[0]
         if isinstance(op, ast.Eq):    return left == right
         if isinstance(op, ast.NotEq): return left != right
@@ -158,8 +196,19 @@ def _eval_node(node, variables: Dict[str, str], condition: str):
     if isinstance(node, ast.BoolOp):
         # Use all() / any() so that short-circuit eval is preserved
         if isinstance(node.op, ast.And):
-            return all(_eval_node(v, variables, condition) for v in node.values)
-        return any(_eval_node(v, variables, condition) for v in node.values)
+            return all(_eval_node(v, variables, condition, provider_index) for v in node.values)
+        return any(_eval_node(v, variables, condition, provider_index) for v in node.values)
+
+    if isinstance(node, ast.UnaryOp):
+        return not _eval_node(node.operand, variables, condition, provider_index)
+
+    if isinstance(node, ast.Call):
+        token = node.args[0].value
+        if provider_index is None:
+            raise ValueError(
+                f"has() used in '{condition}' but no provider index is available"
+            )
+        return token in provider_index
 
     if isinstance(node, ast.Name):
         if node.id not in variables:
@@ -172,7 +221,7 @@ def _eval_node(node, variables: Dict[str, str], condition: str):
         return node.value
 
     if isinstance(node, (ast.List, ast.Tuple)):
-        return [_eval_node(e, variables, condition) for e in node.elts]
+        return [_eval_node(e, variables, condition, provider_index) for e in node.elts]
 
     raise ValueError(
         f"Unsupported node '{type(node).__name__}' in condition '{condition}'"

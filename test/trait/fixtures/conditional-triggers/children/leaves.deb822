@@ -1,0 +1,9 @@
+X-Env-Trait-a-Desc: token a
+X-Env-Trait-a-Valid: bool
+
+X-Env-Trait-b-Desc: token b
+X-Env-Trait-b-Valid: bool
+
+X-Env-Trait-derived-Desc: only true when both a and b are present
+X-Env-Trait-derived-Valid: bool
+X-Env-Trait-derived-Triggers: when=has('hw:a') and has('hw:b') set (hw:derived)=y
