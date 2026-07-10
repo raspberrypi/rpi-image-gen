@@ -243,6 +243,12 @@ class XEnv:
     TRAIT_ATTR_SUFFIXES = ('Desc', 'Valid', 'Requires', 'Triggers', 'Include')
 
     @classmethod
+    def trait_base(cls, name: str) -> str:
+        """Build trait default-value field: X-Env-Trait-{name} (no suffix,
+        like X-Env-Var-{name})"""
+        return f"{cls.TRAIT_PREFIX}{name}"
+
+    @classmethod
     def trait_desc(cls, name: str) -> str:
         """Build trait description field: X-Env-Trait-{name}-Desc"""
         return f"{cls.TRAIT_PREFIX}{name}-Desc"
@@ -328,6 +334,15 @@ class XEnv:
         parsed = cls.parse_trait_field(field_name)
         return parsed[0] if parsed else None
 
+    @classmethod
+    def is_base_trait_field(cls, field_name: str, known_locals) -> bool:
+        """True if field_name is <local>'s default-value field. Can't tell
+        this apart from a typo'd suffix (X-Env-Trait-x-Bogus) by name alone,
+        so the caller passes the local names already discovered via -Desc."""
+        if not cls.is_trait_field(field_name) or cls.parse_trait_field(field_name) is not None:
+            return False
+        return field_name[len(cls.TRAIT_PREFIX):] in known_locals
+
 
 TRIGGER_DEFAULT_POLICY = "immediate"
 ACTION_PARSERS: Dict[str, Any] = {}
@@ -400,39 +415,34 @@ class TriggerRule:
 
 
 TRAIT_TOKEN_PATTERN = r'[a-z][a-z0-9]*(?::[a-z][a-z0-9_-]*)+'
-# Captures the target token and the raw value separately — the value's
-# syntax is validated in _parse_trait_triggers via the declaring trait's own
-# resolved Valid: validator (always BooleanValidator today), not a hardcoded
-# literal, so 'y'/'yes'/'true'/'1' are all accepted the same way they would
-# be anywhere else in this metadata scheme.
+# Captures the target token and the raw value separately. The value's syntax
+# is NOT validated here - the declaring trait's own type tells us nothing
+# about the TARGET's type (Triggers are routinely cross-targeting, eg an SoC
+# trait setting a sibling's clock-speed trait), and the target may not even
+# be loaded yet at this single-file parse point. That validation happens in
+# TraitRegistry, once the whole tree (and therefore every target's own
+# validator) is loaded - see _check_trigger_value there.
 _TRAIT_TRIGGER_ACTION_RE = re.compile(rf'^set \(({TRAIT_TOKEN_PATTERN})\)=(.+)$')
 
 
 @dataclass(frozen=True)
 class TraitTriggerRule:
-    """A single 'when=<condition> set (<token>)=y' rule from X-Env-Trait-Triggers.
-
-    Unlike TriggerRule (X-Env-Var-*-Triggers), the action always activates
-    its target - traits are presence-only, there is no value to carry
-    beyond on/off, and Triggers only ever turn one on (suppression is a
-    build-config override's job, not a Trigger's). 'when=y' is a literal,
-    always-true condition (unconditional push, the trait equivalent of
-    implies:), reusing the same when= grammar rather than a separate
-    unconditional-rule syntax.
-    """
+    """A single 'when=<condition> set (<token>)=<value>' rule from
+    X-Env-Trait-Triggers. Value is checked against the target's own Valid:
+    rule (TraitRegistry._check_trigger_value), no further restriction.
+    'when=y' means unconditional (the trait equivalent of implies:)."""
     condition: str
     target: str
+    value: str
 
 
-def _parse_trait_triggers(raw: str, trait_name: str, validator: BooleanValidator) -> List[TraitTriggerRule]:
-    """Parse X-Env-Trait-Triggers: one 'when=<condition> set (<token>)=y' rule
-    per line (DEB822 continuation lines, one physical line per rule).
+def _parse_trait_triggers(raw: str, trait_name: str) -> List[TraitTriggerRule]:
+    """Parse X-Env-Trait-Triggers: one 'when=<condition> set (<token>)=<value>'
+    rule per line (DEB822 continuation lines, one physical line per rule).
 
-    'validator' is the declaring trait's own, already-resolved Valid:
-    validator - guaranteed to be a BooleanValidator by from_metadata_fields
-    before this is called, so both the boolean-shape check and the
-    true-values check below delegate to it (validate()/describe()/
-    TRUE_VALUES) rather than hardcoding a duplicate class or value list."""
+    Purely syntactic here - the condition's grammar is validated, and the
+    action's shape ('set (<token>)=<value>') is checked, but the value
+    itself is carried through unvalidated. See TraitRegistry for why."""
     import conditions as _cond
 
     rules: List[TraitTriggerRule] = []
@@ -456,18 +466,7 @@ def _parse_trait_triggers(raw: str, trait_name: str, validator: BooleanValidator
                 f"Trait trigger action '{action}' for '{trait_name}' must be 'set (<token>)=<value>'"
             )
         target, value = match.group(1), match.group(2)
-        errors = validator.validate(value)
-        if errors:
-            raise ValueError(
-                f"Trait trigger action '{action}' for '{trait_name}': {errors[0]} "
-                f"({validator.describe()})"
-            )
-        if value.lower() not in validator.TRUE_VALUES:
-            raise ValueError(
-                f"Trait trigger action '{action}' for '{trait_name}' must set a true value "
-                f"(y/yes/true/1) - Triggers only ever activate a trait, never deactivate it"
-            )
-        rules.append(TraitTriggerRule(condition=condition, target=target))
+        rules.append(TraitTriggerRule(condition=condition, target=target, value=value))
     return rules
 
 
@@ -477,6 +476,7 @@ class EnvTrait:
 
     def __init__(self, name: str, desc: str = "", valid: str = "bool",
                  validator: Optional[BaseValidator] = None,
+                 default: Optional[str] = None,
                  requires: Optional[List[str]] = None,
                  triggers: Optional[List[TraitTriggerRule]] = None,
                  include: Optional[List[str]] = None,
@@ -485,6 +485,7 @@ class EnvTrait:
         self.desc = desc
         self.valid = valid
         self.validator = validator or BooleanValidator()
+        self.default = default
         self.requires = requires or []
         self.triggers = triggers or []
         self.include = include or []
@@ -514,18 +515,34 @@ class EnvTrait:
             validator = parse_validator(valid)
         except ValueError as exc:
             raise ValueError(f"{source}: trait '{local_name}' {XEnv.trait_valid(local_name)}: {exc}") from exc
-        if not isinstance(validator, BooleanValidator):
-            raise ValueError(
-                f"{source}: trait '{local_name}' {XEnv.trait_valid(local_name)} must be 'bool' - traits are "
-                f"presence-only (every Triggers: action activates a trait, it never carries an "
-                f"arbitrary value), got '{valid}' ({validator.describe()})"
-            )
+
+        # Every trait needs a default, same as X-Env-Var. Bool implicitly
+        # defaults to 'n', an empty-ok string type to "" - anything else
+        # must declare one via the bare base field.
+        default = metadata_dict.get(XEnv.trait_base(local_name))
+        if default is None:
+            if isinstance(validator, BooleanValidator):
+                default = "n"
+            elif not validator.validate(""):
+                default = ""
+            else:
+                raise ValueError(
+                    f"{source}: trait '{local_name}' is {XEnv.trait_valid(local_name)}: {valid} "
+                    f"but has no default value - add {XEnv.trait_base(local_name)}: <value>"
+                )
+        else:
+            errors = validator.validate(default)
+            if errors:
+                raise ValueError(
+                    f"{source}: trait '{local_name}' default value '{default}': {errors[0]} "
+                    f"({validator.describe()})"
+                )
 
         requires_raw = metadata_dict.get(XEnv.trait_requires(local_name), "")
         requires = EnvLayer._parse_dependency_list(requires_raw)
 
         triggers_raw = metadata_dict.get(XEnv.trait_triggers(local_name), "")
-        triggers = _parse_trait_triggers(triggers_raw, local_name, validator) if triggers_raw.strip() else []
+        triggers = _parse_trait_triggers(triggers_raw, local_name) if triggers_raw.strip() else []
 
         # File paths, not dependency tokens - _parse_dependency_list's charset
         # check rejects '/' and '.', so it doesn't fit here.
@@ -533,7 +550,7 @@ class EnvTrait:
         include = [i.strip() for i in include_raw.split(',') if i.strip()]
 
         return cls(
-            name=local_name, desc=desc, valid=valid, validator=validator,
+            name=local_name, desc=desc, valid=valid, validator=validator, default=default,
             requires=requires, triggers=triggers, include=include,
             source=source, position=position,
         )
@@ -1005,25 +1022,7 @@ class MetadataContainer:
                     # Skip other types of errors - they'll be caught during validation
                     pass
 
-        # Extract traits. Validated eagerly here (mirroring EnvLayer's own
-        # inline _validate_layer_fields call) rather than only via the
-        # separate --lint aggregator, so a typo'd attribute suffix is a hard
-        # error the moment the file loads, for every consumer alike.
-        # Delegates to metadata_parser.is_field_supported() - the same
-        # SUPPORTED_FIELD_PATTERNS-driven check --lint uses - rather than a
-        # second, independent notion of "supported", exactly as
-        # _validate_layer_fields does for X-Env-Layer-* fields (import
-        # deferred to here to avoid a circular import at module load).
-        try:
-            from metadata_parser import is_field_supported
-        except ImportError:
-            is_field_supported = None
-        if is_field_supported is not None:
-            for key in container.raw_metadata.keys():
-                if XEnv.is_trait_field(key) and not is_field_supported(key):
-                    fname = filepath.split('/')[-1] if filepath else "unknown"
-                    raise ValueError(f"Unsupported trait field '{key}' in {fname}")
-
+        # Extract traits.
         trait_position = 0
         for key in container.raw_metadata.keys():
             if XEnv.is_trait_desc_field(key):
@@ -1036,6 +1035,20 @@ class MetadataContainer:
                     trait_position += 1
                 except ValueError as e:
                     raise ValueError(f"Invalid specifier for trait {local_name}: {e}")
+
+        # Eager unsupported-field check, mirroring EnvLayer. Runs after
+        # trait discovery above (not before) since telling a base field
+        # apart from a typo'd suffix needs the discovered local names.
+        try:
+            from metadata_parser import is_field_supported
+        except ImportError:
+            is_field_supported = None
+        if is_field_supported is not None:
+            for key in container.raw_metadata.keys():
+                if (XEnv.is_trait_field(key) and not is_field_supported(key)
+                        and not XEnv.is_base_trait_field(key, container.traits.keys())):
+                    fname = filepath.split('/')[-1] if filepath else "unknown"
+                    raise ValueError(f"Unsupported trait field '{key}' in {fname}")
 
         # Extract required/optional environment variable lists
         required_vars_str = container.raw_metadata.get(XEnv.var_requires(), "")

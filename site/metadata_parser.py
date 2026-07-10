@@ -427,8 +427,13 @@ class Metadata:
                 continue
             if XEnv.is_layer_field(field_name) or XEnv.is_var_field(field_name):
                 continue
-            if not is_field_supported(field_name):
-                unknown_fields[field_name] = f"'{field_name}' is not supported"
+            if is_field_supported(field_name):
+                continue
+            # A bare base field (default value) looks like a typo'd suffix
+            # unless <local> is a real, already-discovered local name.
+            if XEnv.is_base_trait_field(field_name, self._container.traits.keys()):
+                continue
+            unknown_fields[field_name] = f"'{field_name}' is not supported"
         return unknown_fields
 
     def validate_layer_schema(self):

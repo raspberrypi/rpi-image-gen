@@ -1,0 +1,7 @@
+X-Env-Trait-freq-Desc: clock frequency in MHz
+X-Env-Trait-freq: 1500
+X-Env-Trait-freq-Valid: int:600-3000
+
+X-Env-Trait-turbo-Desc: turbo mode, bumps the clock to 3000
+X-Env-Trait-turbo-Valid: bool
+X-Env-Trait-turbo-Triggers: when=y set (hw:freq)=3000

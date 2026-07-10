@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Set, Union
 
 from metadata_parser import Metadata
 from env_types import EnvTrait, TRAIT_TOKEN_PATTERN
+from validators import BooleanValidator
 import conditions as _cond
 
 TOKEN_RE = re.compile(rf'^{TRAIT_TOKEN_PATTERN}$')
@@ -94,8 +95,12 @@ class TraitRegistry:
             for dep in trait.requires:
                 self._check_reference(dep, path, trait.name, "Requires")
             for rule in trait.triggers:
-                if rule.target != trait.name:
+                if rule.target == trait.name:
+                    target_validator = trait.validator
+                else:
                     self._check_reference(rule.target, path, trait.name, "Triggers")
+                    target_validator = self._definitions[rule.target].validator
+                self._check_trigger_value(rule, target_validator, path, trait.name)
 
             # A namespace node can be (re)defined once per root - a different
             # root extending it (eg, an OEM adding children under 'hw') is
@@ -141,6 +146,17 @@ class TraitRegistry:
                 f"{path}: '{name}' {field} references '{target}', a namespace node, not a trait"
             )
 
+    def _check_trigger_value(self, rule, validator, path: Path, name: str) -> None:
+        """Value must satisfy the TARGET's own Valid: rule, not the
+        declaring trait's - Triggers are routinely cross-targeting (eg an
+        SoC trait setting a sibling's clock-speed trait)."""
+        errors = validator.validate(rule.value)
+        if errors:
+            raise ValueError(
+                f"{path}: '{name}' Triggers action 'set ({rule.target})={rule.value}': "
+                f"{errors[0]} ({validator.describe()})"
+            )
+
     def expand(self, token: str) -> Dict[str, str]:
         """Closure of one token: hierarchy ancestors plus unconditional
         (when=y) Triggers, recursively. Conditional Triggers need a build's
@@ -174,6 +190,10 @@ class TraitRegistry:
         d = self._resolved.get(token)
         return d.valid if d else None
 
+    def get_validator(self, token: str):
+        d = self._resolved.get(token)
+        return d.validator if d else None
+
     def get_requires(self, token: str) -> List[str]:
         d = self._resolved.get(token)
         return d.requires if d else []
@@ -192,11 +212,47 @@ class TraitRegistry:
             if t == prefix or t.startswith(prefix + ':')
         }
 
-    def resolve(self, declared: Set[str]) -> Set[str]:
-        """Simulate a build's accumulated trait set from a set of directly
-        declared tokens (TODO layer manager injection point).
+    def _activate(self, token: str, value: str, active: Dict[str, str], seen: Set[str]) -> None:
+        """Activate 'token' with 'value', cascading to hierarchy ancestors
+        and unconditional (when=y) Triggers - mirrors _expand() but carries
+        values, not source paths. A boolean ancestor is always activated as
+        'y' regardless of its own load-time default ('n' means "at rest",
+        not "when activated"); a non-boolean ancestor uses its own default,
+        since there's no other value to fall back on. First write wins per
+        token, same dedup-via-seen as expand()."""
+        if token in seen:
+            return
+        seen.add(token)
+        parts = token.split(':')
+        for i in range(2, len(parts)):
+            ancestor = ':'.join(parts[:i])
+            ancestor_trait = self._resolved[ancestor]
+            ancestor_value = "y" if isinstance(ancestor_trait.validator, BooleanValidator) else ancestor_trait.default
+            self._activate(ancestor, ancestor_value, active, seen)
+        if token not in active:
+            trait = self._resolved[token]
+            errors = trait.validator.validate(value)
+            if errors:
+                raise ValueError(
+                    f"'{token}' cannot be set to '{value}': {errors[0]} ({trait.validator.describe()})"
+                )
+            active[token] = value
+        for rule in self._resolved[token].triggers:
+            if rule.condition == 'y':
+                self._activate(rule.target, rule.value, active, seen)
 
-        1. Expand each declared token (hierarchy + unconditional Triggers).
+    def resolve(self, declared: Union[Set[str], Dict[str, str]]) -> Dict[str, str]:
+        """Simulate a build's accumulated trait values from a set of
+        directly declared tokens (what LayerManager supplies from layers'
+        Provides, plus any trait: config overrides). A bare Set[str] is
+        shorthand for "every declared token gets its own canonical 'y'" -
+        only valid when every declared token is boolean; anything else must
+        be passed as an explicit {token: value} mapping, since there's no
+        sensible default for eg an int-typed trait (this is enforced by
+        _activate's own validation, not a separate check here).
+
+        1. Seed each declared token's value, then activate it (hierarchy
+           ancestors + unconditional Triggers cascade from there).
         2. Fixed point: fire any Trigger whose condition now holds, until
            nothing changes. A self-targeting rule fires on its condition
            alone - a cross-targeting rule also requires its source token to
@@ -205,11 +261,14 @@ class TraitRegistry:
            direct declaration, hierarchy ancestor, or a Trigger. If a token
            is active, its own preconditions must hold too.
         """
-        active: Set[str] = set()
-        for token in declared:
+        if not isinstance(declared, dict):
+            declared = {token: "y" for token in declared}
+
+        active: Dict[str, str] = {}
+        for token, value in declared.items():
             if token not in self._resolved:
                 raise ValueError(f"Unknown trait token: '{token}'")
-            active.update(self.expand(token).keys())
+            self._activate(token, value, active, set())
 
         changed = True
         while changed:
@@ -225,10 +284,10 @@ class TraitRegistry:
                             rule.condition == 'y' or _cond.evaluate(rule.condition, {}, active)
                         )
                     if fires:
-                        for t in self.expand(rule.target):
-                            if t not in active:
-                                active.add(t)
-                                changed = True
+                        before = len(active)
+                        self._activate(rule.target, rule.value, active, set())
+                        if len(active) != before:
+                            changed = True
 
         unmet: Dict[str, List[str]] = {}
         for token in active:

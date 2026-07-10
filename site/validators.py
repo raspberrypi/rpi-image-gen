@@ -328,12 +328,11 @@ def parse_validator(rule_str: str) -> BaseValidator:
     elif rule_str == "int":
         return IntegerValidator()
     elif rule_str.startswith("int:"):
-        try:
-            range_str = rule_str.split(":", 1)[1]
-            min_val, max_val = map(int, range_str.split("-"))
-            return IntegerValidator(min_val, max_val)
-        except Exception as e:
-            raise ValueError(f"Invalid int range format '{rule_str}': {e}")
+        range_str = rule_str.split(":", 1)[1]
+        parts = range_str.split("-")
+        if len(parts) != 2 or not all(p.lstrip("+").isdigit() for p in parts):
+            raise ValueError(f"Invalid '{rule_str}':\n{IntegerValidator.get_help_text()}")
+        return IntegerValidator(int(parts[0]), int(parts[1]))
     elif rule_str.startswith("regex:"):
         pattern = rule_str.split(":", 1)[1]
         return RegexValidator(pattern)

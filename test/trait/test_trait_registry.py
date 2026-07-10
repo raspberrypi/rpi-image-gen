@@ -36,6 +36,47 @@ def case_conditional_triggers_self_targeting() -> None:
         raise SystemExit("hw:derived did not fire with both conditions met")
 
 
+def case_typed_trait_carries_value() -> None:
+    # hw:freq is int-typed, not boolean - resolve() must carry its actual
+    # value through, not just membership
+    r = TraitRegistry(str(FIXTURES_DIR / "typed-trait"))
+
+    active = r.resolve({"hw:freq": "1800"})
+    if active.get("hw:freq") != "1800":
+        raise SystemExit(f"expected hw:freq=1800, got {active.get('hw:freq')}")
+
+    # a Trigger from another trait can also set it, carrying its own value
+    active = r.resolve({"hw:turbo": "y"})
+    if active.get("hw:freq") != "3000":
+        raise SystemExit(f"turbo Trigger should set hw:freq=3000, got {active.get('hw:freq')}")
+
+    # out-of-range value must be rejected, not silently accepted
+    try:
+        r.resolve({"hw:freq": "9999"})
+    except ValueError as exc:
+        if "hw:freq" not in str(exc):
+            raise SystemExit(f"expected error naming hw:freq, got: {exc}")
+    else:
+        raise SystemExit("hw:freq=9999 is out of range (600-3000) and should be rejected")
+
+    # a bare Set[str] declaration has no sensible default for a non-boolean
+    # trait - must fail, not silently coerce to some value
+    try:
+        r.resolve({"hw:freq"})
+    except ValueError:
+        pass
+    else:
+        raise SystemExit("bare declaration of a non-boolean trait should be rejected")
+
+
+def case_trigger_can_deactivate() -> None:
+    # y sets x to false - no bool-specific "must be true" restriction
+    r = TraitRegistry(str(FIXTURES_DIR / "trigger-can-deactivate"))
+    active = r.resolve({"hw:y": "y"})
+    if active.get("hw:x") != "false":
+        raise SystemExit(f"expected hw:x=false, got {active.get('hw:x')}")
+
+
 def case_external_srcroot_extends_real_tree() -> None:
     # OEM srcroot loaded alongside the built-in tree: a new namespace, plus
     # extending the built-in hw namespace with a child of its own
@@ -64,6 +105,8 @@ def case_external_srcroot_extends_real_tree() -> None:
 def main() -> None:
     case_by_prefix_colon_boundary()
     case_conditional_triggers_self_targeting()
+    case_typed_trait_carries_value()
+    case_trigger_can_deactivate()
     case_external_srcroot_extends_real_tree()
 
 
