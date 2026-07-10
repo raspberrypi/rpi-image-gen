@@ -1,0 +1,85 @@
+# Raspberry Pi CM5 Programming Jig image.
+#
+# Boots a CM5 (Lite variant, NVMe) into the full Raspberry Pi Desktop with
+# automatic login, then auto-launches Chromium (maximized) pointed at the
+# rpi-sb-provisioner web dashboard on http://localhost:3142. Also installs the
+# provisioner stack and the jig GPIO/LED configuration.
+#
+# Build with:
+#   rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ -c cm5-programming-jig.yaml
+#
+# Before building you should supply a login/administration credential for the
+# jig operator account (see README.adoc). Autologin to the desktop works even
+# without a password, but a password (or SSH key) is recommended for admin and
+# remote access.
+
+include:
+  file: trixie-minbase.yaml
+
+device:
+  layer: rpi-cm5
+  variant: lite
+  storage_type: nvme
+  hostname: cm5-jig
+  user1: jig
+  # A password for the 'jig' account is intentionally NOT committed here.
+  # Preferred: set it per-unit at flash time with a rpi-preseed.toml on the boot
+  # partition (Raspberry Pi Imager, or by hand - see README.adoc and the
+  # rpi-preseed.toml.example shipped on the boot partition). The [user] section
+  # must use name = "jig" to match the built-in operator account/autologin.
+  # Alternatively bake one at build time as an override after '--' (full
+  # IGconf_<section>_<key> name), e.g.:
+  #   rpi-image-gen build -S ./contrib/src/cm5-programming-jig/ \
+  #     -c cm5-programming-jig.yaml -- IGconf_device_user1pass='Ch4nge-me!'
+  # A build-time password must satisfy the complexity policy (>=8 chars, upper,
+  # lower, digit and one of @$!%*?&) and automatically grants password sudo.
+
+image:
+  name: cm5-jig
+  # Percentage sizes auto-scale with the (large) desktop + provisioner rootfs.
+  # Give the root partition generous headroom for provisioning working files,
+  # image caches and manufacturing data.
+  root_part_size: 400%
+
+layer:
+  app: cm5-jig-desktop
+  service: rpi-connect
+
+# Raspberry Pi Connect starts at boot via the rpi-connect layer's own default
+# (connect.on defaults to 'y'). It is intentionally not set here: the section
+# key 'on' is coerced to a YAML boolean by the config loader. To enrol
+# unattended, pass an auth key at build time as an override after '--':
+#   -- IGconf_connect_authkey='<key-or-path>'.
+
+jigdesktop:
+  url: "http://localhost:3142"
+
+packages:
+  # Provisioner stack and jig hardware configuration. These resolve from the
+  # Raspberry Pi apt archive configured by the base suite/device layers.
+  - rpi-sb-provisioner
+  - cm5-programming-jig-gpio-config
+  - rpi-systemd-gpio
+  # Ad-hoc secure file transfer to/from the jig (e.g. pulling logs or
+  # manufacturing data off the device without pre-shared SSH keys).
+  - magic-wormhole
+  # First-boot customisation. rpi-preseed applies a
+  # single TOML file (/boot/firmware/rpi-preseed.toml) on first boot, reusing
+  # the official Raspberry Pi helpers. Vendored locally (not in the apt
+  # archive); path is relative to the -S source directory. apt pulls its
+  # dependencies from the archive.
+  - pkgs/rpi-preseed_0.1.0_all.deb
+  # rpi-preseed Recommends (the base image builds with Install-Recommends=off,
+  # so list the ones we want it to drive explicitly, otherwise it silently uses
+  # weaker file-editing fallbacks):
+  #   userconf-pi          - rename/setup the operator account + password
+  #   raspberrypi-sys-mods - imager_custom helper (hostname / ssh / wlan)
+  #   raspi-config         - nonint interface toggles (i2c/spi/serial)
+  #   whois                - mkpasswd, for yescrypt password hashing
+  #   ssh-import-id        - imager_custom import_ssh_id (rpi-preseed
+  #                          [ssh].ssh_import_id: fetch keys from gh:/lp: IDs)
+  - userconf-pi
+  - raspberrypi-sys-mods
+  - raspi-config
+  - whois
+  - ssh-import-id

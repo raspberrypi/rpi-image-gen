@@ -1,0 +1,382 @@
+# METABEGIN
+# X-Env-Layer-Name: cm5-jig-desktop
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: app
+# X-Env-Layer-Desc: Full Raspberry Pi (labwc/Wayland) desktop for the CM5
+#  programming jig. Installs the modular rpd-* desktop metapackages, configures
+#  desktop autologin for the operator account and auto-launches Chromium
+#  (maximized, not locked kiosk) at a configurable URL - by default the
+#  rpi-sb-provisioner dashboard on http://localhost:3142. The browser runs on
+#  top of the normal desktop (panel + desktop icons) so the operator can
+#  minimize it to reach the full desktop.
+# X-Env-Layer-Requires: device-user-admin
+#
+# X-Env-VarPrefix: jigdesktop
+#
+# X-Env-Var-url: http://localhost:3142
+# X-Env-Var-url-Desc: URL the desktop browser opens automatically at login.
+#  Defaults to the local rpi-sb-provisioner web dashboard.
+# X-Env-Var-url-Required: n
+# X-Env-Var-url-Valid: regex:^https?://[a-zA-Z0-9.-]+(:[0-9]+)?(/.*)?$
+# X-Env-Var-url-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    # Lean Raspberry Pi Desktop on Wayland. rpd-wayland-core pulls in labwc,
+    # wf-panel-pi, lightdm and pi-greeter (via rpd-common) as hard dependencies.
+    # We deliberately avoid rpd-wayland-all (rpd-utilities/applications/developer/
+    # graphics) to keep the manufacturing image lean.
+    - rpd-wayland-core
+    # PIXEL look-and-feel. rpd-wayland-core ships /etc/xsettingsd/xsettingsd.conf
+    # which selects the "PiXtrix" GTK/icon theme, but the actual theme assets are
+    # only Recommends of the rpd-theme metapackage. The base image builds with
+    # APT::Install-Recommends=false, so we must install them explicitly -
+    # otherwise the desktop renders with no icons and no theme.
+    - pixtrix-theme
+    - pixtrix-icons
+    - gtk2-engines-pixflat
+    - fonts-nunito-sans
+    - fonts-liberation2
+    # Colour emoji font. Without it, emoji codepoints (e.g. U+1F4BE 💾 in the
+    # provisioner dashboard) render as missing-glyph "tofu". fontconfig and
+    # Chromium pick this up automatically for the emoji ranges; the other bundled
+    # fonts are Latin/mono only and cover no colour emoji.
+    - fonts-noto-color-emoji
+    - rpd-wallpaper
+    - rpd-wallpaper-trixie
+    - chromium
+    # First-boot customisation is handled by rpi-preseed (installed via the
+    # config's packages: list from the vendored .deb). It reads /boot/firmware/rpi-preseed.toml and drives the official
+    # RPi helpers (userconf, imager_custom, raspi-config nonint), writing Wi-Fi
+    # as a NetworkManager .nmconnection (matching the NM stack below).
+    #
+    # growpart (from cloud-guest-utils) extends the root partition to fill a
+    # larger NVMe/SD than the image was built for; resize2fs (e2fsprogs, already
+    # in the base) then grows the ext4 filesystem. Driven by the self-contained
+    # cm5-jig-growfs first-boot unit installed below (no cloud-init involved).
+    - cloud-guest-utils
+  customize-hooks:
+    - |-
+      #
+      # Boot to the graphical desktop and auto-login the primary (UID 1000)
+      # operator account. The autologin user is NOT hardcoded: rpi-preseed can
+      # rename UID 1000 to any [user].name on first boot (and move its home),
+      # so instead of pinning the literal build-time name we resolve UID 1000
+      # at boot and write the autologin drop-in from that. This keeps autologin
+      # working whatever the operator names the account.
+      #
+      # A build-time baseline drop-in (the default user) covers the case where
+      # nothing is preseeded; the sync unit below rewrites it before the
+      # display manager starts, so a rename is always reflected.
+      set -eu
+      chroot "$1" systemctl set-default graphical.target
+
+      install -d -m 0755 "$1/etc/lightdm/lightdm.conf.d"
+      cat > "$1/etc/lightdm/lightdm.conf.d/70-cm5-jig-autologin.conf" <<EOF
+      [Seat:*]
+      autologin-user=$IGconf_device_user1
+      autologin-user-timeout=0
+      user-session=rpd-labwc
+      autologin-session=rpd-labwc
+      EOF
+
+      # Sync script: point lightdm autologin at whoever owns UID 1000. Uses
+      # printf (no nested heredoc) so the drop-in is regenerated from the live
+      # account name on every boot.
+      cat > "$1/usr/local/sbin/cm5-jig-autologin-sync" <<'EOF'
+      #!/bin/sh
+      set -eu
+      u=$(getent passwd 1000 | cut -d: -f1)
+      [ -n "$u" ] || exit 0
+      install -d -m 0755 /etc/lightdm/lightdm.conf.d
+      printf '[Seat:*]\nautologin-user=%s\nautologin-user-timeout=0\nuser-session=rpd-labwc\nautologin-session=rpd-labwc\n' \
+          "$u" > /etc/lightdm/lightdm.conf.d/70-cm5-jig-autologin.conf
+      EOF
+      chmod 0755 "$1/usr/local/sbin/cm5-jig-autologin-sync"
+
+      # Ordered after rpi-preseed (which performs the UID 1000 rename + home
+      # move) and before the display manager reads its config, so autologin
+      # always targets the final operator name. Runs every boot (cheap, and
+      # self-heals a later rpi-preseed re-apply). If no rpi-preseed.toml is
+      # present, rpi-preseed.service is skipped by its ConditionPathExists and
+      # the After= ordering is still satisfied.
+      cat > "$1/etc/systemd/system/cm5-jig-autologin-sync.service" <<'UNIT'
+      [Unit]
+      Description=Point desktop autologin at the primary (UID 1000) account
+      # userconfig.service is the RPi first-boot rename (cancel-rename); order
+      # after it too, so we read the final UID 1000 name whether rpi-preseed
+      # renames synchronously or defers to that unit.
+      After=rpi-preseed.service userconfig.service local-fs.target
+      Before=display-manager.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/local/sbin/cm5-jig-autologin-sync
+
+      [Install]
+      WantedBy=multi-user.target
+      UNIT
+      $BDEBSTRAP_HOOKS/enable-units "$1" cm5-jig-autologin-sync.service
+    - |-
+      #
+      # Browser launcher: wait for the provisioner UI to come up, then run
+      # Chromium against it. Installed as a script so the wait/relaunch logic is
+      # kept out of the labwc autostart line.
+      set -eu
+      cat > "$1/usr/local/bin/cm5-jig-browser" <<'EOF'
+      #!/bin/sh
+      set -eu
+      URL="${1:-http://localhost:3142}"
+      # Wait up to ~90s for the target (e.g. rpi-provisioner-ui) to accept
+      # connections so Chromium does not open on a connection-refused error.
+      i=0
+      while [ "$i" -lt 90 ]; do
+          if curl -s -o /dev/null "$URL"; then
+              break
+          fi
+          i=$((i + 1))
+          sleep 1
+      done
+      # --password-store=basic keeps Chromium off the Secret Service, so it does
+      # not trigger a gnome-keyring unlock/create prompt on the passwordless
+      # autologin session (which otherwise blocks the browser until dismissed).
+      exec /usr/bin/chromium \
+          --start-maximized \
+          --noerrdialogs \
+          --disable-infobars \
+          --no-first-run \
+          --disable-features=CrashRecoveryBubble \
+          --password-store=basic \
+          "$URL"
+      EOF
+      chmod 0755 "$1/usr/local/bin/cm5-jig-browser"
+    - |-
+      #
+      # Auto-start the browser in the operator's labwc session. labwc-pi is
+      # launched with -m (merge), so this runs IN ADDITION to the system
+      # autostart (/etc/xdg/labwc/autostart) - the panel and desktop still
+      # start, with the browser layered on top.
+      set -eu
+      home="/home/$IGconf_device_user1"
+      install -d -m 0755 "$1$home/.config/labwc"
+      cat > "$1$home/.config/labwc/autostart" <<EOF
+      /usr/bin/lwrespawn /usr/local/bin/cm5-jig-browser "$IGconf_jigdesktop_url" &
+      EOF
+      chroot "$1" chown -R "$IGconf_device_user1:" "$home/.config"
+    - |-
+      #
+      # We provision the operator account at build time, so suppress the
+      # first-run wizard if present (ships with rpd-utilities, which we do not
+      # install - removal is defensive).
+      set -eu
+      rm -f "$1/etc/xdg/autostart/piwiz.desktop"
+    - |-
+      #
+      # Network stack: converge on NetworkManager. The suite (trixie-minbase)
+      # enables systemd-networkd + iwd with per-interface DHCP .network files,
+      # while the rpd-* desktop pulls in NetworkManager (also enabled) + netplan.
+      # Leaving both active races over eth0/wlan0 and splits Wi-Fi across two
+      # backends (iwd vs wpa_supplicant). We standardise on NetworkManager so:
+      #   * the desktop panel's network applet manages connections, and
+      #   * rpi-preseed's [wlan] applier works: it writes a NetworkManager
+      #     .nmconnection (/etc/NetworkManager/system-connections/preconfigured)
+      #     for the operator's Wi-Fi, which only takes effect with NM as manager.
+      set -eu
+      # Retire the systemd-networkd + iwd stack. Packages stay installed (owned
+      # by the suite) but the units are masked and the DHCP drop-ins removed, so
+      # NetworkManager is the sole manager. The null *.link files stay (they are
+      # processed by udev, not networkd) to keep kernel names eth0/wlan0.
+      rm -f "$1/etc/systemd/network/01-eth0.network" \
+            "$1/etc/systemd/network/02-wlan0.network"
+      chroot "$1" systemctl mask \
+        systemd-networkd.service systemd-networkd.socket \
+        systemd-networkd-wait-online.service iwd.service
+      # netplan default renderer -> NetworkManager, so any netplan config present
+      # renders to NM rather than the now-disabled systemd-networkd.
+      install -d -m 0755 "$1/etc/netplan"
+      cat > "$1/etc/netplan/00-cm5-jig-renderer.yaml" <<'EOF'
+      # Managed by the cm5-jig-desktop layer: make NetworkManager the default
+      # netplan backend.
+      network:
+        version: 2
+        renderer: NetworkManager
+      EOF
+      chmod 0600 "$1/etc/netplan/00-cm5-jig-renderer.yaml"
+      # NetworkManager is enabled by its own postinst, but be explicit.
+      $BDEBSTRAP_HOOKS/enable-units "$1" NetworkManager
+    - |-
+      #
+      # rpi-preseed boot template. rpi-preseed (installed from the config's
+      # packages: list) applies /boot/firmware/rpi-preseed.toml on first boot;
+      # its systemd units are ConditionPathExists-gated on that file, so with no
+      # config present the jig boots as a sealed appliance (jig account stays
+      # locked; desktop autologin still works). We ship an inert ".example"
+      # template (the units look for exactly 'rpi-preseed.toml', so the example
+      # never activates) plus a short README, so an operator writing the seed by
+      # hand has documented, jig-specific examples to copy. genimage builds the
+      # VFAT boot image from this /boot/firmware subtree. Raspberry Pi Imager
+      # writes rpi-preseed.toml directly when you use its OS customisation.
+      set -eu
+      install -d -m 0755 "$1/boot/firmware"
+      cat > "$1/boot/firmware/rpi-preseed.toml.example" <<'TOML'
+      config_version = "1.0"
+
+      # =====================================================================
+      # Raspberry Pi CM5 jig - rpi-preseed first-boot customisation TEMPLATE.
+      #
+      # This ".example" file is INACTIVE. To use it:
+      #   1. Copy it to 'rpi-preseed.toml' (drop the .example) on this partition.
+      #   2. Edit the values below (at minimum, set a [user] password).
+      #   3. Boot the jig - rpi-preseed applies it once, then stamps itself done.
+      #
+      # Raspberry Pi Imager writes rpi-preseed.toml for you if you use its OS
+      # customisation; this template is only needed for hand-editing.
+      # Reference: man rpi-preseed(5); full key list in
+      # /usr/share/rpi-preseed/rpi-preseed.schema on the running device.
+      # =====================================================================
+
+      [system]
+      #hostname = "cm5-jig"
+
+      [user]
+      # The built-in operator account is "jig". You may rename it to anything
+      # here - rpi-preseed renames the UID 1000 account and moves its home, and
+      # desktop autologin follows the renamed account automatically. Leave it as
+      # "jig" to keep the default name (the rename is then a no-op).
+      name = "jig"
+      # Set a password to enable console/SSH login and sudo. Plaintext is hashed
+      # on-device (yescrypt) unless password_encrypted = true (pre-hashed value).
+      #password = "ChangeMe-please"
+      #password_encrypted = false
+      #passwordless_sudo = false
+      # Supplementary groups for the operator account (append-only). List "sudo"
+      # to grant `sudo` (password-gated); use passwordless_sudo above for an
+      # unprompted sudoers rule. Unknown groups are skipped, not fatal.
+      #groups = ["sudo"]
+
+      [ssh]
+      #enabled = true
+      #password_authentication = false
+      #authorized_keys = [
+      #  "ssh-ed25519 AAAA...replace-with-your-key... you@host",
+      #]
+      # Fetch keys from GitHub/Launchpad IDs (needs network on first boot):
+      #ssh_import_id = ["gh:your-github-username"]
+
+      [wlan]
+      # Written as a NetworkManager connection (the jig uses NetworkManager).
+      #ssid = "MyNetwork"
+      #password = "my-wifi-passphrase"
+      #country = "GB"
+      #key_mgmt = "wpa-psk"   # none/owe (open), wpa-psk (WPA2), sae (WPA3)
+
+      [connect]
+      # Raspberry Pi Connect is installed and starts at boot. Enrol unattended
+      # with a token from your Connect account, or leave device-identity for
+      # hardware-based enrolment.
+      #enabled = true
+      #mode = "device-identity"
+      #token = "..."
+
+      [interfaces]
+      # The jig GPIO/LED config packages already set up the hardware; these are
+      # only for extra buses if you need them.
+      #i2c = true
+      #spi = false
+      #serial = "console"
+      TOML
+      cat > "$1/boot/firmware/README-rpi-preseed.txt" <<'RM'
+      Raspberry Pi CM5 jig - first-boot customisation (rpi-preseed)
+      ============================================================
+
+      This BOOT partition can carry a single TOML file that customises the jig
+      on first boot: the operator account (default name 'jig') password,
+      hostname, SSH, Wi-Fi, Raspberry Pi Connect enrolment and hardware
+      interfaces.
+
+      Quick start (by hand):
+        1. Copy  rpi-preseed.toml.example  ->  rpi-preseed.toml
+        2. Edit it - at minimum set the [user] password.
+        3. Save and boot the jig.
+
+      Or use Raspberry Pi Imager's OS customisation during flashing, which
+      writes rpi-preseed.toml for you.
+
+      Rules & notes:
+        * [user].name may be anything: rpi-preseed renames the built-in UID 1000
+          operator account (default 'jig') and moves its home, and the desktop
+          autologin follows the renamed account automatically. Leave it as "jig"
+          to keep the default.
+        * [user].groups adds the operator to extra groups (append-only). Add
+          "sudo" to give the account admin rights via `sudo` (password-gated);
+          set passwordless_sudo = true for an unprompted rule instead.
+        * The file is applied ONCE (idempotent run-once via a stamp in
+          /var/lib/rpi-preseed). To re-apply after editing, run on the device:
+              sudo rpi-preseed apply
+          or clear the stamp:  sudo rpi-preseed reset
+        * Secrets (passwords/tokens) in the file are redacted in place after a
+          successful apply.
+        * Wi-Fi is written as a NetworkManager connection (this image uses
+          NetworkManager as its sole network manager).
+        * With no rpi-preseed.toml present, the jig boots normally and the 'jig'
+          account stays locked (desktop autologin still works) - a sealed
+          appliance with no login/admin path.
+        * Inspect state on the device with:  rpi-preseed status
+      RM
+    - |-
+      #
+      # Root filesystem expansion (first boot). The image ships a small fixed
+      # root partition; on a larger NVMe/SD we grow it to fill the disk. This is
+      # self-contained (growpart + online resize2fs), NOT cloud-init: it runs
+      # unconditionally on first boot regardless of any rpi-preseed seed, so even
+      # a sealed unit expands. Idempotent via a stamp; ext4 online-resize means
+      # the root fs can grow while mounted.
+      set -eu
+      cat > "$1/usr/local/sbin/cm5-jig-growfs" <<'EOF'
+      #!/bin/sh
+      set -eu
+      stamp=/var/lib/cm5-jig/growfs-done
+      [ -e "$stamp" ] && exit 0
+      root_src=$(findmnt -no SOURCE / 2>/dev/null || true)
+      case "$root_src" in
+          /dev/*) : ;;
+          *) echo "cm5-jig-growfs: root source '$root_src' not a block device; skipping" >&2; exit 0 ;;
+      esac
+      name=$(basename "$root_src")
+      # Parent disk: prefer lsblk PKNAME, else strip the trailing partition
+      # suffix from the name (handles nvme0n1p2/mmcblk0p2 -> ...p<N> and sdaN).
+      disk=$(lsblk -no PKNAME "$root_src" 2>/dev/null | head -n1 || true)
+      [ -n "$disk" ] || disk=$(printf '%s' "$name" | sed -E 's/p?[0-9]+$//')
+      # Partition number: prefer sysfs, else the trailing digits of the name.
+      part=$(cat "/sys/class/block/$name/partition" 2>/dev/null || true)
+      [ -n "$part" ] || part=$(printf '%s' "$name" | sed -E 's/.*[^0-9]([0-9]+)$/\1/')
+      if [ -z "$disk" ] || [ -z "$part" ]; then
+          echo "cm5-jig-growfs: could not resolve disk/partition for $root_src; skipping" >&2
+          exit 0
+      fi
+      # growpart returns non-zero when there is nothing to do (NOCHANGE); treat
+      # that as success. resize2fs is a no-op when already at maximum size.
+      growpart "/dev/$disk" "$part" || true
+      resize2fs "$root_src" || true
+      mkdir -p "$(dirname "$stamp")"
+      : > "$stamp"
+      logger -t cm5-jig-growfs "root filesystem expansion complete on /dev/$disk$part" || true
+      EOF
+      chmod 0755 "$1/usr/local/sbin/cm5-jig-growfs"
+      cat > "$1/etc/systemd/system/cm5-jig-growfs.service" <<'UNIT'
+      [Unit]
+      Description=Expand the root filesystem to fill the disk (first boot)
+      After=local-fs.target
+      ConditionPathExists=!/var/lib/cm5-jig/growfs-done
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/local/sbin/cm5-jig-growfs
+
+      [Install]
+      WantedBy=multi-user.target
+      UNIT
+      $BDEBSTRAP_HOOKS/enable-units "$1" cm5-jig-growfs.service
