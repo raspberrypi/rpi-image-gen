@@ -106,6 +106,7 @@ See the link:./examples[examples directory] for tips and help.
 * `site/` - Core Python engine classes
 * `templates/` - Templating assets, eg doc generation
 * `test/` - Test harness
+* `trait/` - Built-in trait token definitions (hardware/boot capability hierarchy)
 
 == Basic Usage
 

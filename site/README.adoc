@@ -33,7 +33,7 @@ Resolves built-in and source directory root paths, config/layer/exec search path
 
 == site/config_loader.py
 
-Handles reading YAML/INI config files, resolving includes, and writing out the env file that feeds pipeline.
+Handles reading YAML config files, resolving includes, and writing out the env file that feeds pipeline. A `trait:` section is passed through as-is and serialised for pipeline.py to decode - forcing a trait on or off independent of any layer's `Provides:`. Also exposes the `ig config --trait` inspection CLI.
 
 == site/metadata_parser.py
 
@@ -54,10 +54,11 @@ Used by pipeline to perform final variable expansion.
 
 Discovery and introspection of all layers. Walks search roots, parses metadata, maintains the layer registry (self.layers, file paths, tags).
 Provides dependency graph operations (get build order, provider checks, reverse deps), schema checks used by pipeline pre-validation, and the user-facing ig CLI (list, describe, etc).
+Provider tokens are either plain labels or trait tokens (told apart by a colon), the latter resolved through a TraitRegistry - `_index_providers` expands hierarchy, fires Triggers, and validates Requires: for whatever a build's layers `Provides:`. A bare `Provides:` only activates a token, so it's boolean-only; other types need a Triggers: rule or a `trait:` config override for their value. Trait tokens can't appear in `AfterProvider` (rejected at parse time) since an ancestor/derived token has no single layer to order after.
 
 == site/trait_registry.py
 
-Loads trait token definitions (`X-Env-Trait-*` fields) from one or more `trait/` directories into a `TraitRegistry` - hierarchical tokens like `hw:storage:nvme`, built the same way layer files are (one deb822 stanza per file, reusing metadata_parser/env_types, no bespoke parsing). Hierarchy comes purely from position in each token's `Include:` chain. A token's `Valid:` can be any type the base validator classes support - `resolve()` takes a build's directly-declared tokens (a bare set, implying boolean "y", or an explicit `{token: value}` mapping) and returns the full active set as `{token: value}`: hierarchy ancestors and unconditional-Trigger targets always get "y" (structural activation, not an explicit assignment), while a `Triggers:` action's own value - validated against its *target's* type, not the declaring trait's, since Triggers routinely cross-target - carries through when it fires. Each declared token's own `Requires:` is validated along the way. Exposed for inspection via the `ig config --trait` CLI.
+Loads trait token definitions (`X-Env-Trait-*` fields) from one or more `trait/` directories into a `TraitRegistry` - hierarchical tokens like `hw:storage:nvme`, built the same way layer files are (deb822 stanzas). Hierarchy comes purely from position in each token's `Include:` chain. A token's `Valid:` can be any type the base validator classes support - `resolve()` takes a directly-declared trait token and returns the full active set as `{token: value}`. Hierarchy ancestors and Trigger assignments are validated against the *target's* type. Each declared token's own `Requires:` is validated along the way and available for inspection via the `ig config --trait` CLI.
 
 == site/pipeline.py
 

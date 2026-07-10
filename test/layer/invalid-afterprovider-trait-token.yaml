@@ -1,0 +1,7 @@
+# METABEGIN
+# X-Env-Layer-Name: test-invalid-afterprovider-trait-token
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-AfterProvider: hw:pcie
+# X-Env-Layer-Category: test
+# METAEND
+---

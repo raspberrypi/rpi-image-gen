@@ -153,8 +153,7 @@ class TraitRegistry:
         errors = validator.validate(rule.value)
         if errors:
             raise ValueError(
-                f"{path}: '{name}' Triggers action 'set ({rule.target})={rule.value}': "
-                f"{errors[0]} ({validator.describe()})"
+                f"{path}: '{name}' Triggers action 'set ({rule.target})={rule.value}': {errors[0]}"
             )
 
     def expand(self, token: str) -> Dict[str, str]:
@@ -233,9 +232,7 @@ class TraitRegistry:
             trait = self._resolved[token]
             errors = trait.validator.validate(value)
             if errors:
-                raise ValueError(
-                    f"'{token}' cannot be set to '{value}': {errors[0]} ({trait.validator.describe()})"
-                )
+                raise ValueError(f"'{token}': {errors[0]}")
             active[token] = value
         for rule in self._resolved[token].triggers:
             if rule.condition == 'y':

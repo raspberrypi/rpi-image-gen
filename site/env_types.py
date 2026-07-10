@@ -818,6 +818,13 @@ class EnvLayer:
 
         after_provider_str = metadata_dict.get(XEnv.layer_after_provider(), "")
         after_provider = cls._parse_dependency_list(after_provider_str, doc_mode)
+        if not doc_mode:
+            for token in after_provider:
+                if ':' in token:
+                    raise ValueError(
+                        f"{XEnv.layer_after_provider()}: '{token}' is a trait token - trait tokens "
+                        f"cannot be used in AfterProvider (use RequiresProvider instead)"
+                    )
 
         conflicts_str = metadata_dict.get(XEnv.layer_conflicts(), "")
         conflicts = cls._parse_dependency_list(conflicts_str, doc_mode)
@@ -1120,10 +1127,12 @@ class VariableResolver:
     def __init__(self):
         pass
 
-    def resolve(self, variable_definitions: Dict[str, List[EnvVariable]]) -> Dict[str, EnvVariable]:
+    def resolve(self, variable_definitions: Dict[str, List[EnvVariable]],
+                provider_index: Optional[Dict[str, Any]] = None) -> Dict[str, EnvVariable]:
         """
         Resolve variables and trigger injections until the injected set reaches
-        a stable fixed point.
+        a stable fixed point. 'provider_index' is passed through to condition
+        evaluation so has() works inside variable Triggers:/Conflicts:.
         """
         max_iterations = self.MAX_TRIGGER_ITERATIONS
         base_defs: Dict[str, List[EnvVariable]] = {k: list(v) for k, v in variable_definitions.items()}
@@ -1132,7 +1141,7 @@ class VariableResolver:
 
         for _ in range(max_iterations):
             resolved = self._resolve_pass(current_defs)
-            trigger_defs = self._collect_trigger_definitions(resolved)
+            trigger_defs = self._collect_trigger_definitions(resolved, provider_index)
             next_defs = self._merge_base_and_triggers(base_defs, trigger_defs)
             next_signature = self._definition_map_signature(next_defs)
             if next_signature == current_signature:
@@ -1294,7 +1303,8 @@ class VariableResolver:
                 merged.append(conflict)
         return merged
 
-    def _collect_trigger_definitions(self, resolved: Dict[str, EnvVariable]) -> Dict[str, List[EnvVariable]]:
+    def _collect_trigger_definitions(self, resolved: Dict[str, EnvVariable],
+                                      provider_index: Optional[Dict[str, Any]] = None) -> Dict[str, List[EnvVariable]]:
         """Build trigger-sourced definitions based on resolved values."""
         trigger_defs: Dict[str, List[EnvVariable]] = {}
         for env_var in resolved.values():
@@ -1303,6 +1313,7 @@ class VariableResolver:
                     rule.condition,
                     resolved,
                     env_var.source_layer,
+                    provider_index,
                 ):
                     continue
                 if rule.action != "set":
@@ -1338,6 +1349,7 @@ class VariableResolver:
         condition: str,
         resolved: Dict[str, EnvVariable],
         source_layer: Optional[str] = None,
+        provider_index: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Evaluate a trigger condition expression against resolved variables.
@@ -1362,7 +1374,7 @@ class VariableResolver:
 
         layer_note = f" (layer: {source_layer})" if source_layer else ""
         try:
-            return _cond.evaluate(condition, variables)
+            return _cond.evaluate(condition, variables, provider_index)
         except ValueError as e:
             raise ValueError(f"{e}{layer_note}") from e
 

@@ -1,0 +1,7 @@
+# METABEGIN
+# X-Env-Layer-Name: test-provider-trait-wants-storage
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: hw:storage
+# X-Env-Layer-Category: test
+# METAEND
+---

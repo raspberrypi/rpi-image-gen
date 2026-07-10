@@ -1,0 +1,7 @@
+# METABEGIN
+# X-Env-Layer-Name: test-provider-trait-nvme-only
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Provides: hw:storage:nvme
+# X-Env-Layer-Category: test
+# METAEND
+---
