@@ -1,0 +1,7 @@
+# METABEGIN
+# X-Env-Layer-Name: test-cond-requires-notfire-consumer
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: test-cond-requires-dep when=has('hw:bluetooth')
+# X-Env-Layer-Category: test
+# METAEND
+---

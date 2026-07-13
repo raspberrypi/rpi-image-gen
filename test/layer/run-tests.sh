@@ -804,6 +804,73 @@ run_test "provider-trait-invalid-override-not-masked-by-layer-cascade" \
 
 cleanup_env
 
+# Conditional X-Env-Layer-Requires: "name when=<expr>" - has() gated layer pull.
+# These use the real built-in trait/ tree (IGROOT/SRCROOT set to the repo root)
+# so has('hw:pcie') exercises a real trait token, same convention as the
+# provider-trait-* block above.
+run_test "conditional-requires-fires" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/conditional-requires-consumer.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/conditional-requires-dep.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-cond-requires-consumer \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     grep -q "^test-cond-requires-dep:" "$TMP_ORDER" && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"' \
+    0 \
+    "A conditional Requires: gated on has('hw:pcie') should pull in its dependency when the consumer itself unconditionally provides hw:pcie"
+
+cleanup_env
+run_test "conditional-requires-not-fires" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/conditional-requires-notfire-consumer.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/conditional-requires-dep.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-cond-requires-notfire-consumer \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     ! grep -q "^test-cond-requires-dep:" "$TMP_ORDER" && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"' \
+    0 \
+    "A conditional Requires: gated on an absent trait (has('hw:bluetooth')) should not pull in its dependency"
+
+cleanup_env
+run_test "conditional-requires-first-order-only" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/conditional-requires-firstorder-target.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/conditional-requires-firstorder-dep.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-cond-requires-firstorder-target \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     ! grep -q "^test-cond-requires-firstorder-dep:" "$TMP_ORDER" && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"' \
+    0 \
+    "A conditional Requires: gated on a token only provided by the very dependency it would pull in must not fire - single pass, no fixed point"
+
+cleanup_env
+
+# Single-file conditional-Requires: syntax errors (parse-time rejection)
+run_test "invalid-conditional-requires-bad-name-parse" \
+    "ig metadata --parse ${LAYERS}/invalid-conditional-requires-bad-name.yaml" \
+    1 \
+    "A conditional requires layer name containing whitespace should fail to parse"
+
+run_test "invalid-conditional-requires-bad-name-validate" \
+    "ig metadata --validate ${LAYERS}/invalid-conditional-requires-bad-name.yaml" \
+    1 \
+    "A conditional requires layer name containing whitespace should fail to validate"
+
+run_test "invalid-conditional-requires-bad-condition-parse" \
+    "ig metadata --parse ${LAYERS}/invalid-conditional-requires-bad-condition.yaml" \
+    1 \
+    "A malformed when= condition expression should fail to parse"
+
+run_test "invalid-conditional-requires-bad-condition-validate" \
+    "ig metadata --validate ${LAYERS}/invalid-conditional-requires-bad-condition.yaml" \
+    1 \
+    "A malformed when= condition expression should fail to validate"
+
+cleanup_env
+
 run_test "pipeline-build-order" \
     'TMP_ENV=$(mktemp) && TMP_ENV_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && \
      make_pipeline_env "$TMP_ENV" && \

@@ -1,0 +1,7 @@
+# METABEGIN
+# X-Env-Layer-Name: test-invalid-conditional-requires-bad-condition
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: some-layer when=has(
+# X-Env-Layer-Category: test
+# METAEND
+---

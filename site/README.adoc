@@ -55,6 +55,7 @@ Used by pipeline to perform final variable expansion.
 Discovery and introspection of all layers. Walks search roots, parses metadata, maintains the layer registry (self.layers, file paths, tags).
 Provides dependency graph operations (get build order, provider checks, reverse deps), schema checks used by pipeline pre-validation, and the user-facing ig CLI (list, describe, etc).
 Provider tokens are either plain labels or trait tokens (told apart by a colon), the latter resolved through a TraitRegistry - `_index_providers` expands hierarchy, fires Triggers, and validates Requires: for whatever a build's layers `Provides:`. A bare `Provides:` only activates a token, so it's boolean-only; other types need a Triggers: rule or a `trait:` config override for their value. Trait tokens can't appear in `AfterProvider` (rejected at parse time) since an ancestor/derived token has no single layer to order after.
+Conditional dependencies are supported via `X-Env-Layer-Requires` using the form `name when=<expr>` where a layer is only pulled in if `<expr>` is true. This is evaluatged against the provider index as built from the unconditional layers alone - a single pass, not a fixed point. Therefore a condition gated on a token only supplied by another conditionally-pulled layer never fires.
 
 == site/trait_registry.py
 
@@ -66,7 +67,7 @@ Main orchestrator for the application. Loads the base env file produced by confi
 
 == site/conditions.py
 
-Expression parser and evaluator for build-time conditions. Used by both trigger rules and conflict expressions to validate syntax at layer-load time and evaluate conditions against the resolved variable set at build time. Expressions use standard Python comparison syntax. See https://docs.python.org/3/reference/expressions.html#comparisons
+Expression parser and evaluator for build-time conditions. Used by trigger rules, conflict expressions, and conditional layer `Requires:` to validate syntax at layer-load time and evaluate conditions against the resolved variable set (and via `has()`/`not has()` for provider tokens) at build time. Expressions use standard Python comparison syntax. See https://docs.python.org/3/reference/expressions.html#comparisons
 
 == site/validators.py
 

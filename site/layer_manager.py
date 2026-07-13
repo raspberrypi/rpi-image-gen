@@ -600,6 +600,40 @@ class LayerManager:
         # checks direct-declaration conflicts and validates trait Requires:
         self._index_providers(build_order)
 
+        # Evaluate conditional Requires: (name when=<expr>) against the provider
+        # index built from unconditional layers. First-order only: a condition
+        # gated on a token only provided by another conditionally-pulled layer
+        # will not fire, since provider_index isn't rebuilt until after this pass.
+        import conditions as _cond
+        order_len_before = len(build_order)
+        for layer_name in list(build_order):
+            layer_info = self.get_layer_info(layer_name)
+            if not layer_info:
+                continue
+            for dep_name, condition in layer_info.get('conditional_deps', []):
+                try:
+                    fired = _cond.evaluate(condition, {}, self.provider_index)
+                except ValueError:
+                    fired = False
+                if not fired:
+                    continue
+                if dep_name not in self._name_to_versions:
+                    raise ValueError(
+                        f"Layer '{layer_name}' conditional dependency '{dep_name}' not found"
+                    )
+                # Insert dep and its transitive deps immediately before their requirer.
+                before = len(build_order)
+                add_layer_and_deps(dep_name)
+                new_layers = build_order[before:]
+                if new_layers:
+                    del build_order[before:]
+                    pos = build_order.index(layer_name)
+                    for i, new_layer in enumerate(new_layers):
+                        build_order.insert(pos + i, new_layer)
+
+        if len(build_order) > order_len_before:
+            self._index_providers(build_order)
+
         # Apply AfterProvider ordering constraints
         build_order = self._apply_provider_ordering(build_order)
 
@@ -1286,6 +1320,11 @@ def _layer_main(args):
                         _show_deps(manager.get_dependencies(dep), seen, indent + 1)
 
                 _show_deps(layer_info['depends'], set())
+
+            if layer_info.get('conditional_deps'):
+                print("Conditional-Depends:")
+                for dep_name, condition in layer_info['conditional_deps']:
+                    print(f"  - {dep_name} when={condition}")
 
             if layer_info['optional_depends']:
                 print(f"Optional-Depends: {', '.join(layer_info['optional_depends'])}")
