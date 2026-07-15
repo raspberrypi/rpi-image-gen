@@ -1,0 +1,391 @@
+= Trait Tokens
+:toc: left
+:toclevels: 3
+:sectlinks:
+:sectanchors:
+
+link:./index.adoc[← Back to Main Documentation]
+
+== Overview
+
+Trait tokens carry hardware, system and boot mechanism facts through the build engine, eg `hw:bluetooth:broadcom`. They let layers and build configs express characteristic-aware logic - such as selecting a crypto cipher based on acceleration, conditionally pulling in a firmware layer, or gating a layer entirely on a hardware requirement - without enumerating specific device classes.
+
+Trait tokens flow through the same provider mechanism as plain label tokens (`X-Env-Layer-Provides`, `X-Env-Layer-RequiresProvider`) and are evaluated by the same `has()` function used in trigger `when=` clauses, conflict expressions, and conditional layer requires (see link:./layer/index.adoc[layer/] for the full metadata reference).
+
+== Token Taxonomy
+
+Provider tokens fall into two classes, distinguished by the presence of a colon.
+
+**Label tokens** - plain identifiers with no colon (`systemd`, `debian-base`, `rpi-device`, `network-activator`). Arbitrary strings with no registry involvement. Any layer may declare a label token, and a conflict between two layers declaring the same label is always an error.
+
+**Trait tokens** - colon-separated, namespaced identifiers (`hw:bluetooth`, `boot:gpt`, `hw:soc:bcm2712`). Must be defined in the trait registry. Declaring one triggers automatic hierarchy expansion and `Triggers:` resolution (see <<_trait_expansion>>).
+
+The colon is the sole discriminator. The engine uses its presence to decide whether to validate against the registry and whether to perform expansion. Trait token names are deliberately shell-incompatible - colons are not valid in shell variable names, which makes it impossible to reference them in hooks or scripts. This is intentional and by design.
+
+== Namespaces
+
+The registry currently covers two namespaces:
+
+`hw:*`:: Hardware presence facts - silicon capabilities, onboard peripherals, accessible interfaces. A fact about what the hardware is and has, independent of whether any software in the build uses it.
+
+`boot:*`:: Boot mechanism facts - how the device boots, what the boot chain requires.
+
+Traits are intended to be simple, easy to read and write, and to understand. Using them to over-specify characteristics can be dangerous. While the registry will grow over time, premature namespace proliferation is as harmful as the wrong name.
+
+[[_trait_expansion]]
+== Trait Expansion
+
+Declaring a trait token triggers two automatic expansions, both resolved against the registry.
+
+=== Hierarchical parent inference
+
+Declaring `hw:X:Y` automatically also declares `hw:X`. Declaring `hw:wlan:broadcom` therefore also declares `hw:wlan`. Layer authors can gate on either the generic token (`has('hw:wlan')`) or the vendor-specific one (`has('hw:wlan:broadcom')`). Inferred parents are associated with the same declaring layer as the child.
+
+=== Triggers: expansion
+
+A registry entry may carry a `Triggers:` rule that pushes a value onto another token - either unconditionally (the trait equivalent of an `implies:` cascade) or conditionally, once a build's accumulated token set makes the condition true. This captures cross-branch derivations that hierarchy alone can't express. For example, declaring `hw:soc:bcm2712` cascades unconditionally into a microarchitecture fact (`hw:uarch:cortex-a76`), an architecture-extension fact (`hw:arch:arm:aes-accel`), and an execution-capability fact (`hw:exec:kernel:aarch64`) - three independent branches, all derivable from the SoC identity without the layer author enumerating them:
+
+[source]
+----
+X-Env-Trait-bcm2712-Desc: Broadcom BCM2712 - Raspberry Pi 5 / CM5 (quad Cortex-A76)
+X-Env-Trait-bcm2712-Valid: bool
+X-Env-Trait-bcm2712-Triggers:
+ when=y set (hw:uarch:cortex-a76)=y
+ when=y set (hw:arch:arm:aes-accel)=y
+ when=y set (hw:exec:kernel:aarch64)=y
+----
+
+A `when=` clause need not be the `y` sentinel - it can be a genuine, multi-token condition, evaluated to a fixed point against the build's accumulated trait set:
+
+[source]
+----
+X-Env-Trait-lpa44-Desc: 44-bit large physical address extension
+X-Env-Trait-lpa44-Valid: bool
+X-Env-Trait-lpa44-Triggers: when=has('hw:arch:arm:cortex-a72') and has('hw:arch:aarch64') set (hw:mmu:lpa44)=y
+----
+
+[IMPORTANT]
+====
+A trait `Triggers:` condition can only use `has()`/`not has()`, optionally combined with `and`/`or`. `IGconf_*` variable names are not usable. Trait resolution runs *before* variable resolution, so no variable dict exists - only the trait registry's own accumulated token set. See link:./layer/index.adoc#conditional-expressions[Conditional Expressions] for which contexts do support `IGconf_*`.
+====
+
+Triggered tokens are themselves subject to hierarchical parent inference. `hw:pcie` is declared directly by device layers rather than implied by SoC, since the same SoC can appear on boards that expose PCIe to the user and boards that don't - interface and peripheral accessibility belongs on the device, capabilities intrinsic to silicon belong on the SoC.
+
+[[_the-trait-registry]]
+== The Trait Registry
+
+The registry is a set of DEB822 files scanned from one or more `trait/` directories - the built-in root first, then a user `SRCROOT` if supplied (`-S`/`--srcroot`). Within each directory the top-level `*.deb822` scan is single-level, not recursive.
+
+[IMPORTANT]
+====
+A file meant to be reached only via `Include:` - including an OEM file extending a built-in namespace - must live in a subdirectory, never flat alongside the file whose `Include:` reaches it. A flat sibling gets loaded twice: once correctly via `Include:` and once directly by the top-level scan (with the wrong, empty prefix) - whichever happens first alphabetically silently wins, shadowing the other with no error.
+====
+
+=== File format
+
+Each file is one DEB822 stanza. A stanza can define several sibling local names, each built from `X-Env-Trait-<local>-*` fields - the same shape that layer files use for `X-Env-Var-<name>-*`. There is no `Name:`/`Parent:` field - **hierarchy comes purely from position in the `Include:` chain**, not from the local name itself. A local name is always a single, colon-free segment. The full dotted-colon token is assembled by prefixing with whichever ancestor's `Include:` pulled the file in.
+
+[cols="2,5",options="header"]
+|===
+|Field |Meaning
+
+|`X-Env-Trait-<local>` |Base/default value (no suffix, same pattern as `X-Env-Var-<name>`). Optional for boolean traits (defaults to `n`). Required for any type whose validator doesn't already accept an empty string.
+|`X-Env-Trait-<local>-Desc` |Human-readable description. Required.
+|`X-Env-Trait-<local>-Valid` |Validation type - any type the shared validator engine supports (`bool`, `int:<range>`, `string`, `regex:...`, `enum:...`, etc). Required, no implicit default.
+|`X-Env-Trait-<local>-Requires` |Comma-separated list of full trait tokens that must also be active whenever this token is *directly declared*. Necessity-only validation - see <<_requires-vs-triggers>>.
+|`X-Env-Trait-<local>-Triggers` |One `when=<condition> set (<target-token>)=<value>` rule per line (DEB822 continuation syntax). See <<_requires-vs-triggers>>.
+|`X-Env-Trait-<local>-Include` |Comma-separated list of files, resolved relative to the current file, that define this token's children.
+|===
+
+Real example - `trait/hw/periph.deb822` and `trait/hw/periph/storage.deb822`:
+
+[source]
+----
+X-Env-Trait-storage-Desc: Onboard or directly attached storage
+X-Env-Trait-storage-Valid: bool
+X-Env-Trait-storage-Include: periph/storage.deb822
+----
+
+[source]
+----
+X-Env-Trait-nvme-Desc: NVMe storage (soldered or socket-attached)
+X-Env-Trait-nvme-Valid: bool
+X-Env-Trait-nvme-Requires: hw:pcie:bus
+----
+
+`hw:storage:nvme` requires PCIe functionality, so declaring NVMe without `hw:pcie:bus` presence is a contradiction and is rejected.
+
+[[_requires-vs-triggers]]
+=== Requires: vs Triggers:
+
+These are deliberately two different fields rather than one field with a flag, so necessity and derivation can never be confused:
+
+`Requires:`:: Pure validation. "This token cannot be active without that one also being active." Checked against all activated tokens in the index.
+
+`Triggers:`:: Derivation/push. `when=y set (target)=value` fires unconditionally whenever the declaring token is active. A genuinely conditional rule (`when=<expr>`) fires once the expression evaluates true against the build's accumulated token set, evaluated to a fixed point alongside every other trigger in the tree. The value is validated against the *target* trait's `Valid:` type. `Triggers:` are routinely cross-targeting (an SoC token setting a sibling clock-speed token, as below).
+
+[source]
+----
+X-Env-Trait-freq-Desc: clock frequency in MHz
+X-Env-Trait-freq: 1500
+X-Env-Trait-freq-Valid: int:600-3000
+
+X-Env-Trait-turbo-Desc: turbo mode, bumps the clock to 3000
+X-Env-Trait-turbo-Valid: bool
+X-Env-Trait-turbo-Triggers: when=y set (hw:freq)=3000
+----
+
+Only use an unconditional derivation when the relationship is genuinely both necessary and sufficient. A real device example - `trait/hw/device/rpi/sbc/pi5.deb822` cascades a single device identity token into every fact that's always true of a Pi 5:
+
+[source]
+----
+X-Env-Trait-pi5-Desc: Raspberry Pi 5 - BCM2712 platform (quad Cortex-A76)
+X-Env-Trait-pi5-Valid: bool
+X-Env-Trait-pi5-Triggers:
+ when=y set (hw:soc:bcm2712)=y
+ when=y set (hw:pcie:bus)=y
+ when=y set (hw:storage:sd)=y
+ when=y set (hw:eeprom:rpi)=y
+ when=y set (hw:wlan:broadcom)=y
+ when=y set (hw:bluetooth:broadcom)=y
+ when=y set (hw:ethernet)=y
+ when=y set (boot:gpt)=y
+ when=y set (boot:rpi:dtbootpartn)=y
+----
+
+[source,bash]
+----
+$ rpi-image-gen config --tr hw:device:rpi:pi5
+hw:device:rpi:pi5
+  Desc: Raspberry Pi 5 - BCM2712 platform (quad Cortex-A76)
+  Type: bool
+  File: trait/hw/device/rpi/sbc/pi5.deb822
+  Activates:
+    boot:gpt
+    boot:rpi
+    boot:rpi:dtbootpartn
+    hw:arch
+    hw:arch:arm
+    hw:arch:arm:aes-accel
+    hw:arch:arm:sha-accel
+    hw:bluetooth
+    hw:bluetooth:broadcom
+    hw:crypto
+    hw:crypto:aes-accel
+    hw:crypto:sha-accel
+    hw:device
+    hw:device:rpi
+    hw:eeprom
+    hw:eeprom:rpi
+    hw:ethernet
+    hw:exec
+    hw:exec:kernel
+    hw:exec:kernel:aarch64
+    hw:exec:user
+    hw:exec:user:aarch32
+    hw:exec:user:aarch64
+    hw:isa
+    hw:isa:armv8
+    hw:pcie
+    hw:pcie:bus
+    hw:soc
+    hw:soc:bcm2712
+    hw:soc:pcie
+    hw:storage
+    hw:storage:sd
+    hw:uarch
+    hw:uarch:cortex-a76
+    hw:wlan
+    hw:wlan:broadcom
+----
+
+=== Duplicate definitions are a hard error
+
+A real (colon-containing) trait token may only ever be defined once, in one file, across every `trait/` directory in scope - there is no mechanism to reconcile a second definition. A duplicate will always result in an error. It is not possible to override a built-in token by redeclaring it - the only supported override point is the build config file's `trait:` section (see <<_build-config-overrides>>). This is the only way a trait can enabled/disabled/set outside of declaring it via a DEB822 stanza.
+
+Bare namespace nodes (eg, `hw`, `boot`) carry no declaration fact of their own - only an `Include:` list. Therefore a *different* source root may legitimately redefine one to extend it with new children (the OEM mechanism below). Two top-level files in the *same* root both defining the same namespace node is still an error.
+
+== OEM Custom Tokens
+
+An OEM drops a file into their own `SRCROOT/trait/` directory. Standard built-in tokens are already loaded, in registry-scan order, before any user directory is scanned - no explicit include of the built-in registry is needed:
+
+[source]
+----
+# SRCROOT/trait/myboard.deb822
+X-Env-Trait-acme-Desc: Custom carrier board tokens
+X-Env-Trait-acme-Valid: bool
+X-Env-Trait-acme-Include: acme/can.deb822,acme/gps.deb822
+----
+
+[source]
+----
+# SRCROOT/trait/acme/can.deb822
+X-Env-Trait-can-Desc: CAN bus controller on this carrier board
+X-Env-Trait-can-Valid: bool
+----
+
+`acme/can.deb822` and `acme/gps.deb822` must live under a subdirectory (`SRCROOT/trait/acme/`), not flat alongside `myboard.deb822` - see the top-level-scan warning in <<_the-trait-registry>>. A `Triggers:` rule may reference any already-loaded built-in token as its target, eg a carrier-identity token cascading into `hw:can`/`hw:gps` the same way a device token cascades into its own facts.
+
+== Declaring Traits on Layers
+
+=== X-Env-Layer-Provides
+
+Trait tokens are declared in `X-Env-Layer-Provides` alongside plain label tokens:
+
+[source]
+----
+# X-Env-Layer-Name: rpi5
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Raspberry Pi 5 specific device layer
+# X-Env-Layer-Version: 2.0.1
+# X-Env-Layer-Requires: rpi-device-base,rpi-linux-2712
+# X-Env-Layer-Provides: rpi-device,hw:device:rpi:pi5
+----
+
+Declaring `hw:device:rpi:pi5` resolves its full hierarchy and `Triggers:` cascade into all children (and everything those in turn cascade into), injecting the full expanded set into the provider index.
+
+[IMPORTANT]
+====
+A bare `Provides:` only ever *activates* a token, at its canonical value - for a boolean trait that's `y`. It cannot carry an explicit value, so a bare `Provides:` of a non-boolean trait (eg `hw:freq`) is a hard error naming the trait and its type. A non-boolean trait can only ever get its value from a `Triggers:` rule or an explicit `trait:` config override (see <<_build-config-overrides>>).
+====
+
+=== X-Env-Layer-RequiresProvider
+
+Declares that a token must be present somewhere in the build. The engine validates its existence but imposes no ordering constraint - trait tokens have no position in the build sequence, so this is the only field that makes sense for them:
+
+[source]
+----
+# X-Env-Layer-RequiresProvider: hw:bluetooth
+----
+
+The build is rejected at validation time if no layer (and no config override) provides `hw:bluetooth` or a descendant that implies it.
+
+=== AfterProvider restriction
+
+Trait tokens are not permitted in `X-Env-Layer-AfterProvider` - rejected at parse time with a clear error. Traits express presence, not build-order position. Use `RequiresProvider` instead.
+
+== Trait Presence Checks: has()
+
+`has('token')` returns `true` if the named token is present in the fully-expanded provider index. `not has('token')` returns `true` if it is absent. Both forms are valid anywhere a link:./layer/index.adoc#conditional-expressions[conditional expression] is accepted - trigger `when=` clauses, conflict expressions, and conditional layer `Requires:`.
+
+`has()` resolves against the expanded provider index, so `has('hw:wlan')` is true whether the device declared `hw:wlan` directly, whether it was inferred because the device declared `hw:wlan:broadcom`, or whether it arrived via another token's `Triggers:` cascade - the evaluator sees the complete expanded set. `has()` also works with plain label tokens (`has('systemd')`), which are indexed alongside trait tokens in the same provider index.
+
+`has()` is an engine metadata-only construct - it is not available in hooks, scripts, or any shell context.
+
+=== In trigger `when=` clauses
+
+A trigger can derive a variable's value purely from which trait is active, so the variable auto-adapts to whatever hardware or config-level state applies, instead of the layer author enumerating every device/variant combination:
+
+[source]
+----
+# X-Env-Var-storage_type-Triggers:
+#  when=has('hw:storage:sd') set IGconf_device_storage_type=sd policy=lazy
+#  when=has('hw:storage:emmc') set IGconf_device_storage_type=emmc policy=lazy
+----
+
+This suits a module that ships with one storage medium by default (asserted unconditionally by its own device-identity trait, eg `hw:device:rpi:cm5` cascading to `hw:storage:emmc`) but where a carrier board or config override can substitute another. A `Triggers:` rule can just as well set a second, purely informational variable from the same trait - eg deriving a human-facing `variant` label from `hw:storage:sd` - so that field reflects trait state rather than being the thing that drives it.
+
+=== In conflict expressions
+
+`has()`/`not has()` in a `Conflicts:` expression can validate that a declared `IGconf_*` value is actually backed by the trait state, or catch an impossible combination of traits with no `IGconf_*` reference at all:
+
+[source]
+----
+# X-Env-Var-storage_type-Conflicts:
+#  IGconf_device_storage_type == 'nvme' and not has('hw:storage:nvme')
+#  IGconf_device_storage_type == 'sd' and not has('hw:storage:sd')
+----
+
+[source]
+----
+# X-Env-Var-variant-Conflicts: has('hw:storage:emmc') and has('hw:storage:sd')
+----
+
+The first form rejects a selection the trait state doesn't support - eg choosing `nvme` storage when nothing asserted `hw:storage:nvme`. The second is a pure trait-vs-trait check: two mutually-exclusive storage traits both being active is a hardware impossibility, typically from a config override asserting one trait without suppressing the other. If a trait already carries a `Requires:` on another trait (eg an NVMe token requiring a PCIe token), there's no need to also duplicate that check here - the registry's own `Requires:` validation (see <<_requires-vs-triggers>>) will already cover it, earlier in the pipeline. Conflict expressions run after variable resolution and after the provider index is built, so both `IGconf_*` values and `has()` are available.
+
+=== In conditional layer Requires:
+
+Pull a layer into the build only when its required trait is present:
+
+[source]
+----
+# X-Env-Layer-Requires: bt-firmware when=has('hw:bluetooth'),rpi-boot-firmware when=has('boot:rpi:vc-firmware')
+----
+
+The condition is appended to the layer name with `when=`, separated by a space. Unconditional and conditional entries can be mixed freely in the same comma-separated field. See link:./layer/index.adoc#conditional-requires[Conditional Requires] in the layer metadata reference for the full syntax, the mixed-field form, and the single-pass/first-order evaluation limitation.
+
+[IMPORTANT]
+====
+As with trait `Triggers:` above, only `has()`/`not has()` (optionally combined with `and`/`or`) works in a conditional `Requires:` - `IGconf_*` variables are not available, since layer discovery runs before variable resolution.
+====
+
+[[_build-config-overrides]]
+== Build Config Overrides
+
+The `trait:` top-level key in a build config YAML is the single override point, taking precedence over anything declared by the registry or by layers:
+
+[source,yaml]
+----
+trait:
+  hw:bluetooth: false    # carrier board omits BT module
+  hw:acme:can: true      # carrier board adds a custom CAN interface
+  hw:freq: 1800          # explicit typed override for a non-boolean trait
+----
+
+`false`:: Removes the named token from the provider index, *and* any of its children by prefix match - `hw:storage: false` after a layer declares `hw:storage:nvme` removes both. Suppressing an ancestor does not require separately suppressing each child.
+
+`true`:: Injects the named boolean token as a provider, exactly as if a layer had declared it.
+
+All trait values are validated against their declared type, exactly as if a `Triggers:` rule had assigned it (`hw:freq: 1800` above).
+
+This is the canonical way to represent carrier-board customisations that have no dedicated layer, ie `trait: hw:bluetooth: false` would be a documented policy decision visible in the config file.
+
+== CLI: `rpi-image-gen config --trait`
+
+List every token in the loaded registry:
+
+[source,bash]
+----
+rpi-image-gen config --trait
+----
+
+Expand a single token to show its description, type, defining file, and full resolved `Triggers:`/hierarchy closure:
+
+[source,bash]
+----
+rpi-image-gen config --trait hw:soc:bcm2712
+----
+
+[source]
+----
+hw:soc:bcm2712
+  Desc: Broadcom BCM2712 - Raspberry Pi 5 / CM5 (quad Cortex-A76)
+  Type: bool
+  File: trait/hw/soc/broadcom.deb822
+  Activates:
+    hw:arch
+    hw:arch:arm
+    hw:arch:arm:aes-accel
+    hw:arch:arm:sha-accel
+    hw:crypto
+    hw:crypto:aes-accel
+    hw:crypto:sha-accel
+    hw:exec
+    hw:exec:kernel
+    hw:exec:kernel:aarch64
+    hw:exec:user
+    hw:exec:user:aarch32
+    hw:exec:user:aarch64
+    hw:isa
+    hw:isa:armv8
+    hw:soc
+    hw:uarch
+    hw:uarch:cortex-a76
+----
+
+To include tokens from a custom SRCROOT, pass `-S`/`--srcroot`:
+
+[source,bash]
+----
+rpi-image-gen config -S ./my-board --trait
+----

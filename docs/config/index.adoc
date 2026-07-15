@@ -243,6 +243,11 @@ The list-section merge warning above applies equally to multiple includes. If tw
 
 Any section name used in a configuration file maps directly to the `IGconf_<section>_*` variable namespace. A layer can declare a section via `X-Env-VarPrefix` in its metadata. This means that the set of meaningful section names in a build is determined by the layers included. Declaring a section allows a layer to expose a group of configuration variables. Some section names carry specific functional meaning because the build system actively responds to them.
 
+[NOTE]
+====
+`trait:` (see <<section-trait>>) is the one exception to the rule above - it is never translated to `IGconf_*` variables at all.
+====
+
 === device
 
 The `device` section (`X-Env-VarPrefix: device`) holds variables describing the target hardware. Variables in this section are declared by `device-base` and downstream device layers.
@@ -300,6 +305,22 @@ packages:
 Both list and mapping forms are supported. Local `.deb` files are installed before apt packages so that apt can satisfy any dependencies they introduce.
 
 Absolute paths are fully supported. Relative paths are resolved from the source directory and require `-S` to be specified, falling back to the rpi-image-gen root directory.
+
+[[section-trait]]
+=== trait
+
+Unlike every other section, `trait:` is **never** translated to `IGconf_<section>_*` variables. It's a reserved top-level key, passed through as-is and applied directly as a build-time override to the trait registry - taking precedence over anything declared by the registry itself or by a layer's `X-Env-Layer-Provides`.
+
+[source,yaml]
+----
+trait:
+  hw:bluetooth: false
+  hw:acme:can: true
+----
+
+`false` removes the named token (and any of its children, by prefix match) from the build's provider index, even if a layer in the build declares it. Any other value - `true` for a boolean trait, or an explicit typed value otherwise - injects the token, exactly as if a layer had declared it. Trait overrides merge across includes like any other section - the including file's entries win over an included file's on a shared token, and non-overlapping tokens from both are kept.
+
+See link:../trait.adoc[trait.adoc] for the full trait registry reference, including token namespaces, hierarchy, and `has()`.
 
 == Variable Sources and Precedence
 
@@ -506,7 +527,7 @@ The configuration system integrates with the layer management system to:
 
 Variables support different assignment policies:
 
-* **immediate**: Set the variable if it is currently unset (first-wins strategy). This is the default behavior.
+* **immediate**: Set the variable if it is currently unset (first-wins strategy). This is the default behaviour.
 * **lazy**: Applied after all layers are processed (last-wins strategy). Useful for defaults that can be overridden.
 * **force**: Always overwrite existing environment value, regardless of what was set before.
 * **skip**: Never set the variable.
