@@ -1,0 +1,4 @@
+X-Env-Trait-pcie-Desc: PCIe controller present in the SoC silicon. A board
+ using this SoC does not necessarily expose it as a usable interface (see
+ hw:pcie:bus)
+X-Env-Trait-pcie-Valid: bool

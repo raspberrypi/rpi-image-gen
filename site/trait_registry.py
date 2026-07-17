@@ -201,8 +201,9 @@ class TraitRegistry:
            nothing changes. A self-targeting rule fires on its condition
            alone - a cross-targeting rule also requires its source token to
            be active.
-        3. Validate Requires: but only for directly-declared tokens - a
-           token only reached via a Trigger carries no such promise.
+        3. Validate Requires for every active token, however it got there -
+           direct declaration, hierarchy ancestor, or a Trigger. If a token
+           is active, its own preconditions must hold too.
         """
         active: Set[str] = set()
         for token in declared:
@@ -230,7 +231,7 @@ class TraitRegistry:
                                 changed = True
 
         unmet: Dict[str, List[str]] = {}
-        for token in declared:
+        for token in active:
             missing = [r for r in self._resolved[token].requires if r not in active]
             if missing:
                 unmet[token] = missing

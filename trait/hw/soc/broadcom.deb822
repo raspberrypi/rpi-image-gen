@@ -7,6 +7,7 @@ X-Env-Trait-bcm2712-Triggers:
  when=y set (hw:exec:kernel:aarch64)=y
  when=y set (hw:exec:user:aarch64)=y
  when=y set (hw:exec:user:aarch32)=y
+ when=y set (hw:soc:pcie)=y
 
 X-Env-Trait-bcm2711-Desc: Broadcom BCM2711 - Raspberry Pi 4 / CM4 / CM4S (quad Cortex-A72)
 X-Env-Trait-bcm2711-Valid: bool
@@ -16,6 +17,7 @@ X-Env-Trait-bcm2711-Triggers:
  when=y set (hw:exec:kernel:aarch32)=y
  when=y set (hw:exec:user:aarch64)=y
  when=y set (hw:exec:user:aarch32)=y
+ when=y set (hw:soc:pcie)=y
 
 X-Env-Trait-bcm2837-Desc: Broadcom BCM2837 - Raspberry Pi 3 / CM3 (quad Cortex-A53)
 X-Env-Trait-bcm2837-Valid: bool

@@ -3,6 +3,7 @@ X-Env-Trait-cm5-lite-Valid: bool
 X-Env-Trait-cm5-lite-Triggers:
  when=y set (hw:device:rpi:cm)=y
  when=y set (hw:soc:bcm2712)=y
+ when=y set (hw:pcie:bus)=y
  when=y set (hw:eeprom:rpi)=y
  when=y set (boot:gpt)=y
  when=y set (boot:rpi:dtbootpartn)=y
