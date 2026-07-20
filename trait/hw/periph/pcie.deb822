@@ -1,0 +1,12 @@
+X-Env-Trait-bus-Desc: Physical PCIe lane exposed for user peripheral or storage
+ attachment
+X-Env-Trait-bus-Valid: bool
+
+X-Env-Trait-socket-Desc: Standard, rigid PCIe socket allowing direct card
+ insertion without intermediate cabling (any connector type)
+X-Env-Trait-socket-Valid: bool
+X-Env-Trait-socket-Requires: hw:pcie:bus
+
+X-Env-Trait-m2-Desc: PCIe-capable M.2 socket
+X-Env-Trait-m2-Valid: bool
+X-Env-Trait-m2-Triggers: when=y set (hw:pcie:socket)=y

@@ -1,0 +1,9 @@
+X-Env-Trait-pi3-Desc: Raspberry Pi 3 - BCM2837 platform (quad Cortex-A53)
+X-Env-Trait-pi3-Valid: bool
+X-Env-Trait-pi3-Triggers:
+ when=y set (hw:soc:bcm2837)=y
+ when=y set (hw:storage:sd)=y
+ when=y set (hw:wlan:broadcom)=y
+ when=y set (hw:bluetooth:broadcom)=y
+ when=y set (hw:ethernet)=y
+ when=y set (boot:rpi:vc-firmware)=y

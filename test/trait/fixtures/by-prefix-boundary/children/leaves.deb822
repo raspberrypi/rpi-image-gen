@@ -1,0 +1,5 @@
+X-Env-Trait-soc-Desc: real branch
+X-Env-Trait-soc-Valid: bool
+
+X-Env-Trait-soccer-Desc: shares a string prefix with 'soc' but not a colon boundary
+X-Env-Trait-soccer-Valid: bool

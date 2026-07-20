@@ -1,9 +1,8 @@
-import configparser
 import os
 import sys
 import yaml
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Tuple
 
 
 class ConfigLoader:
@@ -15,16 +14,8 @@ class ConfigLoader:
         self.search_paths = [Path(p).resolve() for p in (search_paths or ["./config"])]
         self.file_format = self._detect_format()
 
-        # Data will be stored as Dict[str, Dict[str, str]] regardless of source format
         self.data: Dict[str, Dict[str, str]] = {}
-
-        # Track which values are overridden
         self.overrides: Dict[str, str] = {}
-
-        # For backward compat - maintain config attribute for INI files
-        if self.file_format == 'ini':
-            # Disable interpolation to allow literal % chars
-            self.config = configparser.ConfigParser(interpolation=None)
 
         self._load()
         if self.overrides_path:
@@ -34,11 +25,7 @@ class ConfigLoader:
         suffix = Path(self.cfg_path).suffix.lower()
         if suffix in ['.yaml', '.yml']:
             return 'yaml'
-        elif suffix in ['.ini', '.cfg', '.conf']:
-            return 'ini'
-        else:
-            # Backward compat
-            return 'ini'
+        raise ValueError(f"Unsupported config file format '{suffix}' — only .yaml and .yml are supported")
 
     def _resolve_include(self, inc_name: str, parent_dir: Path) -> Path:
         """Resolve include file by trying parent dir then configured search paths."""
@@ -77,13 +64,8 @@ class ConfigLoader:
         raise FileNotFoundError(f"Config file not found: {self.cfg_path}{search_info}")
 
     def _load(self):
-        # Resolve config file path using search paths
         self.cfg_path = self._resolve_config_path()
-
-        if self.file_format == 'yaml':
-            self._load_yaml()
-        else:
-            self._load_ini()
+        self._load_yaml()
 
     def _load_yaml(self):
         """Load YAML file and convert to internal format"""
@@ -113,7 +95,6 @@ class ConfigLoader:
                     raise ValueError(f"YAML include directive in {path} missing 'file' key")
                 inc_path = self._resolve_include(inc_file, path.parent)
                 included_sections = _load_yaml_recursive(inc_path, visited)
-                # Remove include key before merging
                 yaml_data.pop('include', None)
 
             # Convert current file sections
@@ -143,37 +124,6 @@ class ConfigLoader:
             return merged
 
         self.data = _load_yaml_recursive(Path(self.cfg_path).resolve(), set())
-
-    def _load_ini(self):
-        """Load INI file using configparser"""
-        def _load_ini_recursive(path: Path, visited: set, cfg: configparser.ConfigParser):
-            if path in visited:
-                raise ValueError(f"Circular include detected in INI files: {path}")
-            visited.add(path)
-
-            buffer_lines = []
-            with open(path, 'r') as f:
-                for line in f:
-                    stripped = line.strip()
-                    if stripped.startswith('!include'):
-                        parts = stripped.split(maxsplit=1)
-                        if len(parts) != 2:
-                            raise ValueError(f"Invalid !include directive in {path}: {line}")
-                        inc_name = parts[1].strip()
-                        inc_path = self._resolve_include(inc_name, path.parent)
-                        _load_ini_recursive(inc_path, visited, cfg)
-                    else:
-                        buffer_lines.append(line)
-
-            cfg.read_string(''.join(buffer_lines))
-
-        # Disable interpolation
-        self.config = configparser.ConfigParser(interpolation=None)
-        self.config.optionxform = str
-        _load_ini_recursive(Path(self.cfg_path).resolve(), set(), self.config)
-
-        for section in self.config.sections():
-            self.data[section] = dict(self.config[section].items())
 
     def _load_overrides(self):
         """Load override file with key=value pairs and expand variables"""
@@ -477,15 +427,16 @@ class ConfigLoader:
 
 
 def ConfigLoader_register_parser(subparsers):
-    parser = subparsers.add_parser("config", help="Config utilities (.ini/.yaml)")
-    parser.add_argument("cfg_path", nargs="?", help="Path to config file (.ini/.yaml) (required unless using --gen)")
+    parser = subparsers.add_parser("config", help="Config utilities (.yaml)")
+    parser.add_argument("cfg_path", nargs="?", help="Path to config file (.yaml) (required unless using --gen)")
     parser.add_argument("--section", help="Section to load (load all if omitted)")
     parser.add_argument("--path", metavar="DIRS", help="Colon-separated search path for included files")
     parser.add_argument("--no-expand", action="store_true", help="Disable $VAR expansion")
     parser.add_argument("--write-to", metavar="FILE", help="Write variables to file instead of env load")
     parser.add_argument("--overrides", metavar="FILE", help="Override file with key=value pairs")
-    parser.add_argument("--gen", action="store_true", help="Generate example .ini and .yaml with include syntax")
-    parser.add_argument("--migrate", action="store_true", help="Convert INI to YAML and write to stdout")
+    parser.add_argument("-S", "--srcroot", dest="srcroot", metavar="DIR", help="Custom source tree (adds its trait/ to --trait search)")
+    parser.add_argument("--gen", action="store_true", help="Generate example .yaml with include syntax")
+    parser.add_argument("--trait", metavar="TOKEN", nargs="?", const="", help="Expand a trait token and show its full token set; omit TOKEN to list all")
     parser.set_defaults(func=_main)
 
 
@@ -494,12 +445,13 @@ def _main(args):
         _generate_boilerplate()
         return
 
-    if not args.cfg_path:
-        print("Error: cfg_path is required unless --gen is used", file=sys.stderr)
+    if args.trait is not None:
+        token = args.trait or args.cfg_path or ""
+        _show_trait(token, args)
         return
 
-    if args.migrate:
-        _migrate_to_yaml(args.cfg_path, args)
+    if not args.cfg_path:
+        print("Error: cfg_path is required unless --gen or --trait is used", file=sys.stderr)
         return
 
     try:
@@ -521,72 +473,72 @@ def _main(args):
         raise SystemExit(1)
 
 
-def _migrate_to_yaml(ini_path: str, args):
-    """Migrate INI syntax file to YAML and write to stdout"""
-    from pathlib import Path
+def _show_trait(token: str, args):
+    from trait_registry import TraitRegistry
 
-    yaml_data = {}
-    includes = []
+    igroot = os.environ.get('IGTOP', str(Path(__file__).parent.parent))
+    seen = set()
+    trait_dirs = []
+    for root in filter(None, [
+        igroot,
+        getattr(args, 'srcroot', None) or '',
+        *(s.strip() for s in (args.path.split(':') if getattr(args, 'path', None) else [])),
+    ]):
+        d = os.path.join(root, 'trait')
+        r = os.path.realpath(d)
+        if r not in seen:
+            seen.add(r)
+            trait_dirs.append(d)
 
-    # Parse the original file to extract includes and sections
-    ini_file = Path(ini_path)
-    current_section = None
+    try:
+        registry = TraitRegistry(trait_dirs)
+        tokens = registry.all_tokens if not token else registry.by_prefix(token)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1)
 
-    with open(ini_file, 'r') as f:
-        for line in f:
-            stripped = line.strip()
-            if stripped.startswith('!include'):
-                parts = stripped.split(maxsplit=1)
-                if len(parts) == 2:
-                    inc_name = parts[1].strip()
-                    # Convert .cfg to .yaml extension for the include
-                    if inc_name.endswith('.cfg'):
-                        inc_name = inc_name[:-4] + '.yaml'
-                    includes.append(inc_name)
-            elif stripped.startswith('[') and stripped.endswith(']'):
-                current_section = stripped[1:-1]
-            elif stripped and not stripped.startswith('#') and '=' in stripped and current_section:
-                key, value = stripped.split('=', 1)
-                key = key.strip()
-                value = value.strip()
-                if current_section not in yaml_data:
-                    yaml_data[current_section] = {}
-                yaml_data[current_section][key] = value
+    if not tokens:
+        if token:
+            print(f"No trait tokens match '{token}'", file=sys.stderr)
+        return
 
-    # Write the YAML output
-    print("# Generated by rpi-image-gen config --migrate")
-    print()
+    import textwrap
 
-    # includes at the top
-    if includes:
-        for inc in includes:
-            print(f"include:")
-            print(f"  file: {inc}")
+    bold = "\033[1m" if sys.stdout.isatty() else ""
+    reset = "\033[0m" if sys.stdout.isatty() else ""
+    cwd = Path.cwd()
+
+    entries = sorted(tokens.items())
+    for i, (t, source) in enumerate(entries):
+        try:
+            src = str(Path(source).relative_to(cwd))
+        except ValueError:
+            src = source
+        desc = registry.get_desc(t) or ""
+        valid = registry.get_valid(t) or ""
+        print(f"{bold}{t}{reset}")
+        if desc:
+            for line in textwrap.wrap(desc, width=76, initial_indent="  Desc: ", subsequent_indent="        "):
+                print(line)
+        if valid:
+            print(f"  Type: {valid}")
+        print(f"  File: {src}")
+        requires = registry.get_requires(t)
+        if requires:
+            print("  Requires:")
+            for r in requires:
+                print(f"    {r}")
+        implied = sorted(k for k in registry.expand(t) if k != t)
+        if implied:
+            print("  Activates:")
+            for k in implied:
+                print(f"    {k}")
+        if i < len(entries) - 1:
             print()
-
-    # sections
-    if yaml_data:
-        yaml.dump(yaml_data, sys.stdout, default_flow_style=False, sort_keys=False, indent=2)
 
 
 def _generate_boilerplate():
-    ini_top = """
-!include base.cfg
-
-[device]
-variant = lite
-storage_type = sd
-"""
-
-    ini_base = """
-[device]
-class = cm5
-storage_type = emmc
-sector_size = 512
-"""
-
-    yaml_top = """
-include:
+    yaml_top = """include:
   file: base.yaml
 
 device:
@@ -594,14 +546,11 @@ device:
   storage_type: sd
 """
 
-    yaml_base = """
-device:
+    yaml_base = """device:
   class: cm5
   storage_type: emmc
   sector_size: 512
 """
 
-    print("INI example (top.cfg):\n" + ini_top)
-    print("base.cfg:\n" + ini_base)
-    print("YAML example (top.yaml):\n" + yaml_top)
+    print("top.yaml:\n" + yaml_top)
     print("base.yaml:\n" + yaml_base)

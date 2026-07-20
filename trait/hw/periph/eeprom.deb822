@@ -1,0 +1,2 @@
+X-Env-Trait-rpi-Desc: Raspberry Pi SPI EEPROM - bootloader configuration storage
+X-Env-Trait-rpi-Valid: bool

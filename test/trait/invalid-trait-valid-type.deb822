@@ -1,0 +1,2 @@
+X-Env-Trait-x-Desc: claims a non-boolean type the engine can never produce
+X-Env-Trait-x-Valid: int:1-100

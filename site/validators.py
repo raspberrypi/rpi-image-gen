@@ -22,10 +22,17 @@ class BaseValidator(ABC):
 
 
 class BooleanValidator(BaseValidator):
+    # Single source of truth for accepted spellings, split by truthiness so
+    # callers that need to distinguish true from false (e.g. trait Triggers:
+    # actions, which may only ever assert true) don't have to hardcode their
+    # own parallel list that could drift out of sync with this one.
+    TRUE_VALUES = ("true", "1", "yes", "y")
+    FALSE_VALUES = ("false", "0", "no", "n")
+
     def validate(self, value: Optional[str]) -> list[str]:
         if value is None:
             return ["Value cannot be None"]
-        if value.lower() not in ("true", "false", "1", "0", "yes", "no", "y", "n"):
+        if value.lower() not in self.TRUE_VALUES + self.FALSE_VALUES:
             return [f"Value '{value}' is not a valid boolean."]
         return []
 

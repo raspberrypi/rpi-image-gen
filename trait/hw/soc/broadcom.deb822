@@ -1,0 +1,38 @@
+X-Env-Trait-bcm2712-Desc: Broadcom BCM2712 - Raspberry Pi 5 / CM5 (quad Cortex-A76)
+X-Env-Trait-bcm2712-Valid: bool
+X-Env-Trait-bcm2712-Triggers:
+ when=y set (hw:uarch:cortex-a76)=y
+ when=y set (hw:arch:arm:aes-accel)=y
+ when=y set (hw:arch:arm:sha-accel)=y
+ when=y set (hw:exec:kernel:aarch64)=y
+ when=y set (hw:exec:user:aarch64)=y
+ when=y set (hw:exec:user:aarch32)=y
+ when=y set (hw:soc:pcie)=y
+
+X-Env-Trait-bcm2711-Desc: Broadcom BCM2711 - Raspberry Pi 4 / CM4 / CM4S (quad Cortex-A72)
+X-Env-Trait-bcm2711-Valid: bool
+X-Env-Trait-bcm2711-Triggers:
+ when=y set (hw:uarch:cortex-a72)=y
+ when=y set (hw:exec:kernel:aarch64)=y
+ when=y set (hw:exec:kernel:aarch32)=y
+ when=y set (hw:exec:user:aarch64)=y
+ when=y set (hw:exec:user:aarch32)=y
+ when=y set (hw:soc:pcie)=y
+
+X-Env-Trait-bcm2837-Desc: Broadcom BCM2837 - Raspberry Pi 3 / CM3 (quad Cortex-A53)
+X-Env-Trait-bcm2837-Valid: bool
+X-Env-Trait-bcm2837-Triggers:
+ when=y set (hw:uarch:cortex-a53)=y
+ when=y set (hw:exec:kernel:aarch64)=y
+ when=y set (hw:exec:kernel:aarch32)=y
+ when=y set (hw:exec:user:aarch64)=y
+ when=y set (hw:exec:user:aarch32)=y
+
+X-Env-Trait-bcm2710-Desc: Broadcom BCM2710 (BCM2710A1) - quad Cortex-A53 die (used in BCM2837 package and RP3A0 SiP)
+X-Env-Trait-bcm2710-Valid: bool
+X-Env-Trait-bcm2710-Triggers:
+ when=y set (hw:uarch:cortex-a53)=y
+ when=y set (hw:exec:kernel:aarch64)=y
+ when=y set (hw:exec:kernel:aarch32)=y
+ when=y set (hw:exec:user:aarch64)=y
+ when=y set (hw:exec:user:aarch32)=y

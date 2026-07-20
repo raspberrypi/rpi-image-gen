@@ -1,0 +1,5 @@
+X-Env-Trait-rpi-Desc: Raspberry Pi device family
+X-Env-Trait-rpi-Valid: bool
+X-Env-Trait-rpi-Include: rpi/sbc/pi3.deb822,rpi/sbc/pi4.deb822,rpi/sbc/pi5.deb822,rpi/sbc/zero2w.deb822,
+ rpi/cm.deb822,rpi/cm/cm4.deb822,rpi/cm/cm4-lite.deb822,rpi/cm/cm4s.deb822,rpi/cm/cm4s-lite.deb822,
+ rpi/cm/cm5.deb822,rpi/cm/cm5-lite.deb822

@@ -1,0 +1,5 @@
+X-Env-Trait-aarch32-Desc: Can boot a 32-bit (AArch32) kernel
+X-Env-Trait-aarch32-Valid: bool
+
+X-Env-Trait-aarch64-Desc: Can boot a 64-bit (AArch64) kernel
+X-Env-Trait-aarch64-Valid: bool
