@@ -8,7 +8,7 @@ import shlex
 import subprocess
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass
 import yaml
 
@@ -17,6 +17,8 @@ from metadata_parser import Metadata
 from metadata_parser import print_env_var_descriptions
 
 from logger import log_warning, log_failure, log_error, log_info
+from trait_registry import provider_token_type
+from validators import BooleanValidator
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,8 @@ class LayerManager:
         show_loaded: bool = False,
         doc_mode: bool = False,
         fail_on_lint: bool = False,
+        trait_dirs: Optional[List[str]] = None,
+        trait_overrides: Optional[Dict[str, Any]] = None,
     ):
         if search_paths is None:
             search_paths = ['./layer']
@@ -54,21 +58,27 @@ class LayerManager:
         self.show_loaded = show_loaded
         self.doc_mode = doc_mode  # Relaxed loader, eg does not run generators for dynamic layers
         self.fail_on_lint = fail_on_lint
-        # provider index will be built after layers are loaded
+        # provider index is (re)built per build scope by _index_providers(), not globally here
         self.provider_index: Dict[str, str] = {}
-        self.provider_conflicts: Dict[str, Set[str]] = {}
+        # resolved trait values for this build scope (token -> value, eg "y"
+        # for a plain boolean presence, or an actual value like "1800" for a
+        # typed trait) - a separate dict from provider_index, which only
+        # ever tracks membership/attribution, never a value.
+        self.trait_values: Dict[str, str] = {}
         self.generated_root: Optional[Path] = None
         self.load_errors: Dict[str, str] = {}
         self.pending_generators: Dict[Tuple[str, str], tuple] = {}  # (layer_name, version) -> (cmd, input, output)
+        self._trait_overrides: Dict[str, Any] = trait_overrides or {}
+        self.trait_registry = None
+        if trait_dirs:
+            from trait_registry import TraitRegistry
+            self.trait_registry = TraitRegistry(trait_dirs)
 
         for path in self.search_paths:
             if not path.exists():
                 log_warning(f"Search path '{path}' does not exist")
 
         self.load_layers()
-
-        # now that self.layers is populated, build provider index
-        self._build_provider_index()
 
 
     def _handle_layer_load_error(self, rel_path: Path, message: str, exc: Optional[Exception] = None, layer_name: Optional[str] = None) -> None:
@@ -138,19 +148,95 @@ class LayerManager:
         v = self._latest_version(name)
         return (name, v) if v is not None else None
 
-    def _build_provider_index(self):
-        """Index providers to unique layer names"""
-        for (lname, _version), layer in self.layers.items():
-            info = layer.get_layer_info()
+    def _index_providers(self, build_order: List[str]) -> None:
+        """Index every provider token active for this build into provider_index.
+
+        Labels are opaque strings. Trait tokens resolve through
+        trait_registry (hierarchy expansion, Triggers, Requires:) - only the
+        direct declaration is duplicate-checked, so two layers sharing an
+        expanded ancestor is fine. Bare Provides: only activates a token, so
+        it's boolean-only; other types need a Triggers: rule or a trait:
+        override for their value.
+        """
+        self.provider_index = {}
+        self.trait_values = {}
+        directly_declared: Dict[str, str] = {}
+        declared_traits: Dict[str, str] = {}
+
+        # Seeded before layer Provides: below, so an invalid override is
+        # always validated and a valid one always wins attribution, even if
+        # a layer's own Trigger cascade would reach the same token first.
+        forced = set()
+        for token, value in self._trait_overrides.items():
+            if value is False:
+                continue  # handled in the removal pass below
+            if not self.trait_registry:
+                raise ValueError(f"trait override: '{token}' set but no trait registry is loaded")
+            if token not in self.trait_registry:
+                raise ValueError(f"trait override: '{token}' is not defined in the trait registry")
+            if value is True:
+                validator = self.trait_registry.get_validator(token)
+                if not isinstance(validator, BooleanValidator):
+                    raise ValueError(
+                        f"trait override: '{token}' is not a boolean trait ({validator.describe()}) - "
+                        f"give it an explicit value, eg trait: {{ {token}: <value> }}, not a bare true"
+                    )
+                declared_traits[token] = "y"
+            else:
+                declared_traits[token] = str(value)
+            forced.add(token)
+
+        for lname in build_order:
+            info = self.get_layer_info(lname)
             if not info:
                 continue
             for prov in info.get('provides', []):
-                existing = self.provider_index.get(prov)
+                existing = directly_declared.get(prov)
                 if existing and existing != lname:
-                    # record conflict but keep the first provider mapping (first-wins semantics)
-                    self.provider_conflicts.setdefault(prov, set()).update({existing, lname})
-                else:
+                    raise ValueError(
+                        f"Provider conflict: '{prov}' is declared by multiple layers: {existing}, {lname}"
+                    )
+                directly_declared[prov] = lname
+                if provider_token_type(prov) == 'label':
                     self.provider_index[prov] = lname
+                else:
+                    if not self.trait_registry:
+                        raise ValueError(
+                            f"Layer '{lname}' declares trait token '{prov}' but no trait registry is loaded"
+                        )
+                    if prov not in self.trait_registry:
+                        raise ValueError(f"Layer '{lname}' declares unknown trait '{prov}'")
+                    validator = self.trait_registry.get_validator(prov)
+                    if not isinstance(validator, BooleanValidator):
+                        raise ValueError(
+                            f"Layer '{lname}' provides '{prov}' bare, but it is not a boolean trait "
+                            f"({validator.describe()}) - Provides: only ever activates a trait, it "
+                            f"cannot carry a value; set it via a Triggers: rule or a trait: config override"
+                        )
+                    declared_traits.setdefault(prov, "y")
+
+        if declared_traits:
+            try:
+                active = self.trait_registry.resolve(declared_traits)
+            except ValueError as exc:
+                raise ValueError(f"Trait resolution failed: {exc}") from exc
+            for token in declared_traits:
+                source = '_config_' if token in forced else directly_declared[token]
+                for t in self.trait_registry.expand(token):
+                    self.provider_index.setdefault(t, source)
+            for token in active:
+                self.provider_index.setdefault(token, '(derived)')
+            self.trait_values = dict(active)
+
+        for token, value in self._trait_overrides.items():
+            if value is False:
+                to_remove = [t for t in self.provider_index
+                             if t == token or t.startswith(token + ':')]
+                if not to_remove:
+                    log_warning(f"trait override: '{token}' not in provider index")
+                for t in to_remove:
+                    self.provider_index.pop(t)
+                    self.trait_values.pop(t, None)
 
     def load_layers(self):
         """Discover and load all layer files, creating Metadata objects for each"""
@@ -510,8 +596,9 @@ class LayerManager:
         for layer in target_layers:
             add_layer_and_deps(layer)
 
-        # Fail if any capability is claimed by more than one layer
-        self._check_provider_conflicts_in_scope(build_order)
+        # Index providers for the build set (labels + trait tokens); also
+        # checks direct-declaration conflicts and validates trait Requires:
+        self._index_providers(build_order)
 
         # Apply AfterProvider ordering constraints
         build_order = self._apply_provider_ordering(build_order)
@@ -522,27 +609,24 @@ class LayerManager:
         return build_order
 
     def _validate_provider_requirements(self, build_order: List[str]) -> None:
-        """Validate that all required providers are satisfied by layers in the build order"""
-        # Collect all providers available in the build order
-        available_providers = set()
-        for layer_name in build_order:
-            layer_info = self.get_layer_info(layer_name)
-            if layer_info:
-                available_providers.update(layer_info.get('provides', []))
-
-        # Check both RequiresProvider (validation-only) and AfterProvider (validation + ordering)
+        """Must run after _index_providers() - provider_index already has
+        expanded trait ancestors, so RequiresProvider on eg hw:storage is
+        satisfied by a layer that only directly provides hw:storage:nvme."""
         for layer_name in build_order:
             layer_info = self.get_layer_info(layer_name)
             if layer_info:
                 for required_provider in (layer_info.get('provider_requires', []) +
                                           layer_info.get('after_provider', [])):
-                    if required_provider not in available_providers:
-                        raise ValueError(f"Layer '{layer_name}' requires provider '{required_provider}' but no layer in the dependency chain provides it")
+                    if required_provider not in self.provider_index:
+                        raise ValueError(
+                            f"Layer '{layer_name}' requires provider '{required_provider}' "
+                            f"but no layer in the dependency chain provides it"
+                        )
 
     def _apply_provider_ordering(self, build_order: List[str]) -> List[str]:
         """Stable-sort build_order so each AfterProvider consumer follows its provider."""
-        # Raw provides only - ordering is relative to the declaring layer only
-        # @TODO include capability token checking
+        # Labels only - trait tokens are rejected in AfterProvider at parse
+        # time, since an ancestor/derived token has no single layer to order after.
         cap_to_layer = {}
         for layer_name in build_order:
             layer_info = self.get_layer_info(layer_name)
@@ -619,20 +703,6 @@ class LayerManager:
             )
 
         return result
-
-    def _check_provider_conflicts_in_scope(self, layer_names: List[str]) -> None:
-        """Validate that no provider conflicts exist within the given scope of layers."""
-        # Build provider mapping only for the layers in scope
-        scope_providers = {}
-        for layer_name in layer_names:
-            layer_info = self.get_layer_info(layer_name)
-            if layer_info:
-                for provider in layer_info.get('provides', []):
-                    if provider in scope_providers:
-                        # Found a conflict within scope
-                        existing_layer = scope_providers[provider]
-                        raise ValueError(f"Provider conflict: '{provider}' is provided by multiple layers: {existing_layer}, {layer_name}")
-                    scope_providers[provider] = layer_name
 
     def _load_layer_yaml(self, filepath: str) -> Optional[dict]:
         try:

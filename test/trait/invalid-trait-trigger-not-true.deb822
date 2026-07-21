@@ -1,3 +1,0 @@
-X-Env-Trait-b-Desc: tries to set hw:a to false
-X-Env-Trait-b-Valid: bool
-X-Env-Trait-b-Triggers: when=y set (hw:a)=false

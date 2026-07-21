@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from collections import OrderedDict
 from typing import List, Optional, Dict, Tuple
@@ -46,6 +47,19 @@ def _pipeline_main(args):
     LogConfig.set_verbose(True)
 
     assignments: OrderedDict[str, str] = load_env_file(args.env_in)
+
+    # Extract trait overrides before seeding the environment - this is a
+    # reserved key, not an IGconf_* variable, and must not enter os.environ.
+    trait_overrides_raw = assignments.pop('_IG_TRAIT_OVERRIDES', None)
+    if trait_overrides_raw:
+        try:
+            trait_overrides = json.loads(trait_overrides_raw)
+        except json.JSONDecodeError as exc:
+            log_error(f"malformed _IG_TRAIT_OVERRIDES in env file: {exc}")
+            raise SystemExit(1)
+    else:
+        trait_overrides = {}
+
     # Seed environment with incoming assignments, but do not override any
     # pre-existing values (e.g., CLI overrides passed through the wrapper).
     for key, value in assignments.items():
@@ -56,10 +70,24 @@ def _pipeline_main(args):
         else:
             os.environ[key] = value
 
+    # Trait search dirs: IGROOT first, then SRCROOT, deduped by realpath -
+    # mirrors config_loader.py's _show_trait dir-assembly convention.
+    igroot = os.environ.get('IGROOT', '')
+    srcroot = os.environ.get('SRCROOT', '')
+    seen_trait_dirs = set()
+    trait_dirs = []
+    for root in filter(None, [igroot, srcroot]):
+        d = os.path.join(root, 'trait')
+        r = os.path.realpath(d)
+        if r not in seen_trait_dirs:
+            seen_trait_dirs.add(r)
+            trait_dirs.append(d)
+
     try:
-        manager = LayerManager(search_paths, ['*.yaml'], fail_on_lint=True)
+        manager = LayerManager(search_paths, ['*.yaml'], fail_on_lint=True,
+                                trait_dirs=trait_dirs, trait_overrides=trait_overrides)
     except ValueError as exc:
-        log_error(f"Error: {exc}")
+        log_error(f"{exc}")
         raise SystemExit(1)
 
     resolved_layers: List[str] = []
@@ -76,13 +104,13 @@ def _pipeline_main(args):
     try:
         build_order = manager.get_build_order(resolved_layers)
     except ValueError as exc:
-        log_error(f"Error: {exc}")
+        log_error(f"{exc}")
         raise SystemExit(1)
 
     try:
         manager.run_generators_for_layers(build_order)
     except ValueError as exc:
-        log_error(f"Error: {exc}")
+        log_error(f"{exc}")
         raise SystemExit(1)
 
     if not _validate_layers(manager, build_order):
@@ -99,10 +127,12 @@ def _pipeline_main(args):
     try:
         applied_values = _apply_layers(manager, build_order)
     except ValueError as exc:
-        log_error(f"Error: {exc}")
+        log_error(f"{exc}")
         raise SystemExit(1)
     for var_name, value in applied_values.items():
         assignments[var_name] = value
+
+    _log_providers(manager, build_order)
 
     if args.plan_out:
         _write_layer_plan(args.plan_out, build_order, manager)
@@ -147,6 +177,21 @@ def _inject_root_anchors(anchor_map: Dict[str, Dict[str, Optional[str]]], env_as
         value = env_assignments.get(root_var)
         if value:
             anchor_map.setdefault(f"@{root_var}", {"var": root_var, "value": value})
+
+
+def _log_providers(manager: LayerManager, build_order: List[str]) -> None:
+    build_set = set(build_order)
+    index = {t: l for t, l in manager.provider_index.items()
+             if l in build_set or l in ('_config_', '(derived)')}
+    if not index:
+        return
+    col = max(len(t) for t in index) + 2
+    log_info("PROVIDERS")
+    for token in sorted(index):
+        layer = '(config)' if index[token] == '_config_' else index[token]
+        value = manager.trait_values.get(token)
+        suffix = f"  = {value}" if value not in (None, "y") else ""
+        log_info(f"  {token:<{col}}{layer}{suffix}")
 
 
 def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) -> None:
@@ -222,7 +267,7 @@ def _apply_layers(
 ) -> OrderedDict[str, str]:
     variable_definitions = _collect_variable_definitions(manager, build_order)
     resolver = VariableResolver()
-    resolved_variables = resolver.resolve(variable_definitions)
+    resolved_variables = resolver.resolve(variable_definitions, manager.provider_index)
 
     applied: "OrderedDict[str, str]" = OrderedDict()
     ordered_vars = sorted(resolved_variables.values(), key=lambda env_var: env_var.position)
@@ -359,6 +404,27 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
                 )
                 ok = False
 
+    # Include trigger-injected variables so their required/validator checks are
+    # not silently skipped. resolver.resolve() runs the full trigger loop,
+    # including has()-gated triggers evaluated against provider_index.
+    trigger_resolved = resolver.resolve(variable_definitions, manager.provider_index)
+    for var_name, env_var in trigger_resolved.items():
+        if var_name in selected:
+            continue
+        selected[var_name] = env_var
+        current = os.environ.get(env_var.name)
+        if env_var.required and (current is None or current == ""):
+            log_error(f"[FAIL] {env_var.name} - REQUIRED but not set (layer: {env_var.source_layer})")
+            ok = False
+        elif current is not None and env_var.validator:
+            errors = env_var.validate_value(current)
+            if errors:
+                reason = "; ".join(errors)
+                log_error(
+                    f"[FAIL] {env_var.name}={current} (invalid value, reason: {reason}, layer: {env_var.source_layer})"
+                )
+                ok = False
+
     # Validate conflict expressions against resolved variable values.
     import conditions as _cond
 
@@ -379,7 +445,7 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
                 continue
             seen_exprs.add(expr)
             try:
-                fired = _cond.evaluate(expr, variables)
+                fired = _cond.evaluate(expr, variables, manager.provider_index)
             except ValueError:
                 continue
             if fired:

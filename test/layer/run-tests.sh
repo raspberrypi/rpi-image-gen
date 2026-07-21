@@ -734,6 +734,76 @@ run_test "provider-ordering-cycle" \
 
 cleanup_env
 
+# Invalid - trait token used in AfterProvider (parse-time rejection)
+run_test "invalid-afterprovider-trait-token-parse" \
+    "ig metadata --parse ${LAYERS}/invalid-afterprovider-trait-token.yaml" \
+    1 \
+    "A trait token (colon-containing) in AfterProvider should fail to parse"
+
+run_test "invalid-afterprovider-trait-token-validate" \
+    "ig metadata --validate ${LAYERS}/invalid-afterprovider-trait-token.yaml" \
+    1 \
+    "A trait token (colon-containing) in AfterProvider should fail to validate"
+
+# Provider-trait wiring: TraitRegistry plugged into LayerManager's provider
+# index. These use the real built-in trait/ tree (IGROOT set to the repo
+# root, not the fake make_pipeline_env path), so RequiresProvider on a
+# hierarchy ancestor and an unmet Requires: on a directly-provided trait
+# token are exercised against real tokens (hw:pcie, hw:storage, hw:storage:nvme).
+cleanup_env
+run_test "provider-trait-satisfied" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-trait-nvme-with-pcie.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-provider-trait-nvme-with-pcie --path "$TMP_DIR" \
+        --env-out "$TMP_OUT" >/dev/null && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"' \
+    0 \
+    "A layer directly providing hw:pcie and hw:storage:nvme together should build cleanly"
+
+cleanup_env
+run_test "provider-trait-unmet-requires" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-trait-nvme-only.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-provider-trait-nvme-only --path "$TMP_DIR" \
+        --env-out "$TMP_OUT" >/dev/null; RESULT=$?; \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"; \
+     exit $RESULT' \
+    1 \
+    "Providing hw:storage:nvme without hw:pcie should fail its unmet Requires:"
+
+cleanup_env
+run_test "provider-trait-ancestor-satisfies-requiresprovider" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-trait-nvme-with-pcie.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/provider-trait-wants-storage.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" \
+        --layers test-provider-trait-nvme-with-pcie test-provider-trait-wants-storage \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" >/dev/null && \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"' \
+    0 \
+    "RequiresProvider on a trait hierarchy ancestor (hw:storage) should be satisfied by a layer that only directly provides a child (hw:storage:nvme)"
+
+cleanup_env
+
+# An invalid trait: override value must be caught even when a layer's own
+# Provides: cascade would also reach the same (ancestor) token - overrides
+# are seeded before layers precisely so this race can't hide a bad value.
+run_test "provider-trait-invalid-override-not-masked-by-layer-cascade" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-trait-nvme-with-pcie.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n_IG_TRAIT_OVERRIDES={\"hw:storage\":100}\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-provider-trait-nvme-with-pcie \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" >/dev/null; RESULT=$?; \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"; \
+     exit $RESULT' \
+    1 \
+    "An invalid trait: override value for a token also reached via a layer's cascade (hw:storage, an ancestor of hw:storage:nvme) should still be rejected"
+
+cleanup_env
+
 run_test "pipeline-build-order" \
     'TMP_ENV=$(mktemp) && TMP_ENV_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && \
      make_pipeline_env "$TMP_ENV" && \

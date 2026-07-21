@@ -1,0 +1,6 @@
+X-Env-Trait-x-Desc: boolean target
+X-Env-Trait-x-Valid: bool
+
+X-Env-Trait-y-Desc: tries to set hw:x to a non-boolean value
+X-Env-Trait-y-Valid: bool
+X-Env-Trait-y-Triggers: when=y set (hw:x)=100

@@ -91,35 +91,15 @@ print_summary() {
 print_header "TRAIT REGISTRY TESTS"
 
 # Essentially lint / validation checkers
-run_test "invalid-trait-valid-type-parse" \
-    "ig metadata --parse ${TRAIT}/invalid-trait-valid-type.deb822" \
+run_test "invalid-trait-valid-malformed-parse" \
+    "ig metadata --parse ${TRAIT}/invalid-trait-valid-malformed.deb822" \
     1 \
-    "Trait with non-bool Valid: should fail to parse"
+    "Trait with a malformed Valid: rule should fail to parse"
 
-run_test "invalid-trait-valid-type-validate" \
-    "ig metadata --validate ${TRAIT}/invalid-trait-valid-type.deb822" \
+run_test "invalid-trait-valid-malformed-validate" \
+    "ig metadata --validate ${TRAIT}/invalid-trait-valid-malformed.deb822" \
     1 \
-    "Trait with non-bool Valid: should fail to validate"
-
-run_test "invalid-trait-trigger-non-boolean-parse" \
-    "ig metadata --parse ${TRAIT}/invalid-trait-trigger-non-boolean.deb822" \
-    1 \
-    "Trait Triggers: action with a non-boolean value should fail to parse"
-
-run_test "invalid-trait-trigger-non-boolean-validate" \
-    "ig metadata --validate ${TRAIT}/invalid-trait-trigger-non-boolean.deb822" \
-    1 \
-    "Trait Triggers: action with a non-boolean value should fail to validate"
-
-run_test "invalid-trait-trigger-not-true-parse" \
-    "ig metadata --parse ${TRAIT}/invalid-trait-trigger-not-true.deb822" \
-    1 \
-    "Trait Triggers: action setting a false-ish value should fail to parse"
-
-run_test "invalid-trait-trigger-not-true-validate" \
-    "ig metadata --validate ${TRAIT}/invalid-trait-trigger-not-true.deb822" \
-    1 \
-    "Trait Triggers: action setting a false-ish value should fail to validate"
+    "Trait with a malformed Valid: rule should fail to validate"
 
 run_test "invalid-trait-unsupported-field-parse" \
     "ig metadata --parse ${TRAIT}/invalid-trait-unsupported-field.deb822" \
@@ -152,6 +132,15 @@ run_test "trait-namespace-node-duplicate-within-same-root-is-error" \
     "ig config --trait -S ${TRAIT}/fixtures/namespace-same-root-duplicate" \
     1 \
     "Two top-level files in the same root both defining the same namespace node should be a hard error"
+
+# Triggers: action value is checked against the TARGET's own type, which
+# needs the whole tree loaded - not reachable via single-file ig metadata
+# --parse/--validate, only via the registry (hence -S here, not a bare
+# metadata check).
+run_test "trait-trigger-value-non-boolean-is-error" \
+    "ig config --trait -S ${TRAIT}/fixtures/trigger-value-non-boolean" \
+    1 \
+    "A Triggers: action setting a non-boolean value on a boolean target should be a hard error"
 
 # Functional verification - resolve() semantics (conditional Triggers,
 # Requires validate-only gating) that the --trait CLI never exercises,
