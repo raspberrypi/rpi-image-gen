@@ -29,4 +29,5 @@ cat genimage.cfg.in.$IGconf_image_rootfs_type | sed \
    -e "s|<VFAT_EXTRAARGS>|$VFAT_ARGS_STR|g" \
    -e "s|<BOOT_UUID>|$BOOT_UUID|g" \
    -e "s|<ROOT_UUID>|$ROOT_UUID|g" \
+   -e "s|<DISK_SIGNATURE>|$IGconf_image_disksig|g" \
    > ${genimg_in}/genimage.cfg
