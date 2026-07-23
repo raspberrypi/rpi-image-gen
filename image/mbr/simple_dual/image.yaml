@@ -3,7 +3,7 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Raspberry Pi OS style image layout with MBR, vfat
 #  boot partition, and a root partition that can be ext4 or btrfs.
-# X-Env-Layer-Version: 2.2.1
+# X-Env-Layer-Version: 2.3.0
 # X-Env-Layer-Requires: image-base,rpi-storage-binder
 # X-Env-Layer-Provides: image
 #
@@ -35,6 +35,12 @@
 # X-Env-Var-assetdir-Required: n
 # X-Env-Var-assetdir-Valid: dir
 # X-Env-Var-assetdir-Set: y
+#
+# X-Env-Var-disksig: random
+# X-Env-Var-disksig-Desc: MBR disk signature supplied as a 32-bit hexadecimal number, or 'random'
+# X-Env-Var-disksig-Required: n
+# X-Env-Var-disksig-Valid: regex:^(random|0x[0-9a-fA-F]{8})$
+# X-Env-Var-disksig-Set: lazy
 #
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Desc: Provisioning Map identifier for this image layout.

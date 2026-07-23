@@ -21,6 +21,7 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX> {
       align = 8M
       partition-table-type = "mbr"
       fill = true
+      disk-signature = "<DISK_SIGNATURE>"
    }
 
    partition boot {
