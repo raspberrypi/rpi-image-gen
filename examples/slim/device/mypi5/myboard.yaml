@@ -33,12 +33,12 @@ mmdebstrap:
     - path-exclude=/usr/lib/linux-image-*-v8/broadcom/bcm2837*
     - path-exclude=/usr/share/doc/firmware-brcm80211/
     - path-include=/usr/share/doc/firmware-brcm80211/copyright
-    - path-exclude=/lib/firmware/cypress/*
-    - path-include=/lib/firmware/cypress/cyfmac43455*
-    - path-exclude=/lib/firmware/brcm/*
-    - path-include=/lib/firmware/brcm/brcmfmac43455-sdio.raspberrypi,5*
-    - path-include=/lib/firmware/brcm/brcmfmac43455-sdio.txt
-    - path-include=/lib/firmware/brcm/BCM4345C0.raspberrypi,5*
+    - path-exclude=/usr/lib/firmware/cypress/*
+    - path-include=/usr/lib/firmware/cypress/cyfmac43455*
+    - path-exclude=/usr/lib/firmware/brcm/*
+    - path-include=/usr/lib/firmware/brcm/brcmfmac43455-sdio.raspberrypi,5*
+    - path-include=/usr/lib/firmware/brcm/brcmfmac43455-sdio.txt
+    - path-include=/usr/lib/firmware/brcm/BCM4345C0.raspberrypi,5*
   customize-hooks:
     - mkdir -p $1/boot/firmware
     - ln -sf firmware/overlays $1/boot/overlays
