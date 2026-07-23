@@ -93,20 +93,29 @@ class ConfigLoader:
                     raise ValueError(f"'trait' section in {path} must be a mapping")
                 trait_here = trait_data
 
-            # Handle include directive
+            # Handle include directive(s)
+            # Single form: include: file: foo.yaml
+            # List form:   include: [foo.yaml, bar.yaml]  (later entries override earlier)
             included_sections: Dict[str, Dict[str, str]] = {}
             included_trait: Dict[str, Any] = {}
-            if 'include' in yaml_data and isinstance(yaml_data['include'], list):
-                raise ValueError(
-                    f"List includes are not supported in {path}"
-                )
-            if 'include' in yaml_data and isinstance(yaml_data['include'], dict):
-                inc_file = yaml_data['include'].get('file')
-                if not inc_file:
-                    raise ValueError(f"YAML include directive in {path} missing 'file' key")
-                inc_path = self._resolve_include(inc_file, path.parent)
-                included_sections, included_trait = _load_yaml_recursive(inc_path, visited)
-                yaml_data.pop('include', None)
+            inc_directive = yaml_data.pop('include', None)
+            if inc_directive is not None:
+                if isinstance(inc_directive, dict):
+                    inc_files = [inc_directive.get('file')]
+                    if not inc_files[0]:
+                        raise ValueError(f"YAML include directive in {path} missing 'file' key")
+                elif isinstance(inc_directive, list):
+                    if not all(isinstance(e, str) for e in inc_directive):
+                        raise ValueError(f"'include' list in {path} must contain filename strings")
+                    inc_files = inc_directive
+                else:
+                    raise ValueError(f"'include' in {path} must be a mapping or list of filenames")
+                for inc_file in inc_files:
+                    inc_path = self._resolve_include(inc_file, path.parent)
+                    inc_sections, inc_trait = _load_yaml_recursive(inc_path, visited)
+                    for sect, mapping in inc_sections.items():
+                        included_sections.setdefault(sect, {}).update(mapping)
+                    included_trait.update(inc_trait)
 
             # Convert current file sections
             curr_sections: Dict[str, Dict[str, str]] = {}

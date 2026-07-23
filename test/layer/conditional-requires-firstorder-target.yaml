@@ -1,0 +1,7 @@
+# METABEGIN
+# X-Env-Layer-Name: test-cond-requires-firstorder-target
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: test-cond-requires-firstorder-dep when=has('hw:pcie')
+# X-Env-Layer-Category: test
+# METAEND
+---

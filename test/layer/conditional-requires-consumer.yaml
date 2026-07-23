@@ -1,0 +1,8 @@
+# METABEGIN
+# X-Env-Layer-Name: test-cond-requires-consumer
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Provides: hw:pcie
+# X-Env-Layer-Requires: test-cond-requires-dep when=has('hw:pcie')
+# X-Env-Layer-Category: test
+# METAEND
+---

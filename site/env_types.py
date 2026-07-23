@@ -765,6 +765,7 @@ class EnvLayer:
 
     def __init__(self, name: str, description: str = "", version: str = "1.0.0",
                  category: str = "general", deps: List[str] = None,
+                 conditional_deps: List[Tuple[str, str]] = None,
                  provides: List[str] = None, requires_provider: List[str] = None,
                  after_provider: List[str] = None,
                  conflicts: List[str] = None, layer_type: str = "static",
@@ -775,6 +776,7 @@ class EnvLayer:
         self.version = version
         self.category = category
         self.deps = deps or []
+        self.conditional_deps: List[Tuple[str, str]] = conditional_deps or []  # [(layer_name, condition)]
         self.provides = provides or []
         self.requires_provider = requires_provider or []
         self.after_provider = after_provider or []
@@ -808,7 +810,7 @@ class EnvLayer:
 
         # Parse dependency lists
         requires_str = metadata_dict.get(XEnv.layer_requires(), "")
-        requires = cls._parse_dependency_list(requires_str, doc_mode)
+        requires, conditional_deps = cls._parse_requires(requires_str, doc_mode)
 
         provides_str = metadata_dict.get(XEnv.layer_provides(), "")
         provides = cls._parse_dependency_list(provides_str, doc_mode)
@@ -842,6 +844,7 @@ class EnvLayer:
             version=version,
             category=category,
             deps=requires,
+            conditional_deps=conditional_deps,
             provides=provides,
             requires_provider=requires_provider,
             after_provider=after_provider,
@@ -851,6 +854,52 @@ class EnvLayer:
             config_file=config_file,
             sets=sets,
         )
+
+    @staticmethod
+    def _parse_requires(requires_str: str, doc_mode: bool = False) -> Tuple[List[str], List[Tuple[str, str]]]:
+        """Parse X-Env-Layer-Requires into unconditional and conditional dep lists.
+
+        A token of the form 'name when=expr' is conditional: returned as
+        (name, expr) in the second list, only pulled into the build if expr
+        evaluates to true against the provider index. All other tokens are
+        unconditional and returned in the first list, validated the same way
+        as every other dependency-list field.
+        """
+        if not requires_str.strip():
+            return [], []
+
+        import conditions as _cond
+
+        unconditional_tokens = []
+        conditional: List[Tuple[str, str]] = []
+
+        for dep in requires_str.split(','):
+            token = dep.strip()
+            if not token:
+                continue
+
+            if ' when=' in token:
+                layer_part, condition = token.split(' when=', 1)
+                layer_name = layer_part.strip()
+                condition = condition.strip()
+
+                if re.search(r"\s", layer_name):
+                    raise ValueError(
+                        f"Invalid layer name '{layer_name}' in conditional requires"
+                    )
+                if not (doc_mode and '${' in layer_name):
+                    if not re.match(r'^[A-Za-z0-9_:\-]+$', layer_name):
+                        raise ValueError(
+                            f"Invalid layer name '{layer_name}' in conditional requires"
+                            f" - only alphanum, dash, underscore, colon allowed"
+                        )
+                _cond.validate(condition)
+                conditional.append((layer_name, condition))
+            else:
+                unconditional_tokens.append(token)
+
+        unconditional = EnvLayer._parse_dependency_list(','.join(unconditional_tokens), doc_mode) if unconditional_tokens else []
+        return unconditional, conditional
 
     @staticmethod
     def _parse_dependency_list(depends_str: str, doc_mode: bool = False) -> List[str]:
@@ -968,6 +1017,7 @@ class EnvLayer:
             "type": self.layer_type,
             "generator": self.generator,
             "depends": self.deps,
+            "conditional_deps": self.conditional_deps,
             "optional_depends": [],  # Not currently supported
             "conflicts": self.conflicts,
             "config_file": self.config_file,
