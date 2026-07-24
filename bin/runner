@@ -182,32 +182,6 @@ phase_args() {
 }
 
 
-# Apply per-layer rootfs overlays using the layer plan.
-# YAML layer customize-hooks can execute before the discrete hooks get executed
-# by runner. This is because bdebstrap's --XXX-hook arg is invoked after the
-# merged YAML. Unfortunately, this means that a YAML layer's customize-hooks
-# cannot rely on the layer's overlay being applied before they run.
-apply_layer_overlays() {
-   local dest=$1
-   local plan=${PLAN:-}
-   [[ -n $plan && -f $plan ]] || return 0
-
-   local layer version static resolved overlay major minor patch
-   while IFS=: read -r layer version static resolved; do
-      [[ -n $layer && -n $static ]] || continue
-      [[ $layer == \#* ]] && continue
-      IFS='.' read -r major minor patch <<< "$version"
-      overlay="${static%.yaml}.rootfs-overlay"
-      if [[ -d $overlay ]]; then
-         msg "runner: layer overlay ($layer) [$overlay -> $dest]"
-         rsync -a -- "$overlay"/ "$dest"/
-         local rc=$?
-         [[ $rc -eq 0 ]] || die "runner: error applying layer overlay for $layer ($rc)"
-      fi
-   done < "$plan"
-}
-
-
 msg "runner: in $PHASE"
 case "$PHASE" in
    setup)
@@ -215,7 +189,6 @@ case "$PHASE" in
       run_phase_scripts "$PHASE" "$@"
       ;;
    customize)
-      apply_layer_overlays "$@"
       apply_overlays "$PHASE" "$@"
       run_phase_scripts "$PHASE" "$@"
       run_hook_phase "$PHASE" "$@"

@@ -235,7 +235,24 @@ export -f map_path
 # $3 = layer's static YAML path
 # $4 = path to write the synthesised file to
 synth_layer_pre() {
-   :
+   local name=$1 version=$2 layer=$3 out=$4
+   local stem=${layer%.yaml}
+   local hooks=()
+
+   local overlay="${stem}.rootfs-overlay"
+   [[ -d $overlay ]] && hooks+=( "rsync -a \"$overlay/\" \"\$1/\"" )
+
+   [[ ${#hooks[@]} -gt 0 ]] || return 0
+
+   msg "synth:pre $name $version"
+   {
+      echo 'mmdebstrap:'
+      echo '  customize-hooks:'
+      local h
+      for h in "${hooks[@]}"; do
+         printf '    - %s\n' "$h"
+      done
+   } > "$out"
 }
 export -f synth_layer_pre
 

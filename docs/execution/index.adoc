@@ -136,7 +136,7 @@ Hooks are optional but if a hook is to be executed, it must have executable perm
 
 * Resolves hook locations from tagged specs (`IGROOT:*`, `DEVICE_ASSET:*`, `VAR:IGconf_*`) so the same path resolves regardless of environment (e.g. host vs container).
 * Executes phase-specific hooks in a deterministic order.
-* Applies optional filesystem overlays during `customize`.
+* Applies optional filesystem overlays during `customize` (see Overlays below).
 * Supports fallback hook groups (A|B) so that built-in hooks run when no custom is provided.
 * Orchestrates deterministic hook execution with the correct environment and arguments, regardless of where the build runs.
 
@@ -187,14 +187,17 @@ Each location is independent: all present hooks run. Execution takes place from 
 
 === Overlays
 
-Filesystem overlays are applied during `customize`, in the following order (later entries take precedence):
+Two independent overlay mechanisms exist, applied at different times for different reasons.
 
-. **Per-layer overlays** - For each layer in build-plan order, if a directory named `<layer-stem>.rootfs-overlay` exists alongside the layer YAML file on disk (e.g. `my-layer.yaml` has `my-layer.rootfs-overlay/`), it is applied. This allows a layer to ship files into the target filesystem without hooks.
+**Per-layer overlays** are resolved before `bdebstrap` runs, while the build config is being assembled. For each mmdebstrap-keyed layer in build-plan order, if a directory named `<layer-stem>.rootfs-overlay` exists (eg `my-layer.yaml` has `my-layer.rootfs-overlay/`), its contents are automatically applied during `customize` but *ahead* of that layer's own `customize-hooks` block. This enables a layer's own hooks (eg, an `enable-units` call) to safely depend on files shipped by the layer's own overlay.
+
+**Device/image/source-tree overlays** are applied during the `customize` phase by `bin/runner`, in the following order (later entries take precedence):
+
 . **Device asset overlay** - `DEVICE_ASSET/device/rootfs-overlay`
 . **Image asset overlay** - `IMAGE_ASSET/device/rootfs-overlay`
 . **Source tree overlay** - `SRCROOT:rootfs-overlay`
 
-With the exception of YAML `customize-hooks`, all overlays are applied before `customize` hook scripts execute.
+These apply once, after every layer's own `customize-hooks` have already run.
 
 === Core
 
