@@ -143,19 +143,9 @@
 </li>
 <li><a href="#_configuration_file_support">Configuration File Support</a>
 <ul class="sectlevel2">
-<li><a href="#_yaml_configuration_format">YAML Configuration Format</a>
-<ul class="sectlevel3">
 <li><a href="#_mapping_sections">Mapping Sections</a></li>
 <li><a href="#_list_sections">List Sections</a></li>
-</ul>
-</li>
-<li><a href="#_ini_configuration_format">INI Configuration Format</a></li>
-<li><a href="#_configuration_includes">Configuration Includes</a>
-<ul class="sectlevel3">
-<li><a href="#_yaml_includes">YAML Includes</a></li>
-<li><a href="#_ini_includes">INI Includes</a></li>
-</ul>
-</li>
+<li><a href="#_configuration_includes">Configuration Includes</a></li>
 </ul>
 </li>
 <li><a href="#_section_names">Section Names</a>
@@ -164,6 +154,7 @@
 <li><a href="#_image">image</a></li>
 <li><a href="#_layer">layer</a></li>
 <li><a href="#_packages">packages</a></li>
+<li><a href="#section-trait">trait</a></li>
 </ul>
 </li>
 <li><a href="#_variable_sources_and_precedence">Variable Sources and Precedence</a>
@@ -212,12 +203,6 @@
 <li><a href="#_output_interpretation">Output Interpretation</a></li>
 </ul>
 </li>
-<li><a href="#_migration_and_compatibility">Migration and Compatibility</a>
-<ul class="sectlevel2">
-<li><a href="#_ini_to_yaml_migration">INI to YAML Migration</a></li>
-<li><a href="#_backward_compatibility">Backward Compatibility</a></li>
-</ul>
-</li>
 <li><a href="#_performance_considerations">Performance Considerations</a>
 <ul class="sectlevel2">
 <li><a href="#_configuration_loading_performance">Configuration Loading Performance</a></li>
@@ -237,7 +222,7 @@
 <h2 id="_overview"><a class="anchor" href="#_overview"></a><a class="link" href="#_overview">Overview</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>rpi-image-gen provides a flexible, hierarchical approach to managing build variables through multiple configuration sources with clear precedence rules. The system is built around the <code>IGconf_</code> prefix namespace and supports both INI and YAML file formats.</p>
+<p>rpi-image-gen provides a flexible, hierarchical approach to managing build variables through multiple configuration sources with clear precedence rules. The system is built around the <code>IGconf_</code> prefix namespace and uses YAML configuration files.</p>
 </div>
 </div>
 </div>
@@ -427,15 +412,10 @@ FINAL ENV
 <h2 id="_configuration_file_support"><a class="anchor" href="#_configuration_file_support"></a><a class="link" href="#_configuration_file_support">Configuration File Support</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The configuration system supports both INI and YAML file formats with automatic format detection based on file extension.</p>
+<p>The configuration system uses YAML configuration files with native support for hierarchical data and includes.</p>
 </div>
 <div class="sect2">
-<h3 id="_yaml_configuration_format"><a class="anchor" href="#_yaml_configuration_format"></a><a class="link" href="#_yaml_configuration_format">YAML Configuration Format</a></h3>
-<div class="paragraph">
-<p>YAML provides the most flexible configuration format with native support for hierarchical data and includes.</p>
-</div>
-<div class="sect3">
-<h4 id="_mapping_sections"><a class="anchor" href="#_mapping_sections"></a><a class="link" href="#_mapping_sections">Mapping Sections</a></h4>
+<h3 id="_mapping_sections"><a class="anchor" href="#_mapping_sections"></a><a class="link" href="#_mapping_sections">Mapping Sections</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">include:
@@ -456,8 +436,8 @@ image:
 </div>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_list_sections"><a class="anchor" href="#_list_sections"></a><a class="link" href="#_list_sections">List Sections</a></h4>
+<div class="sect2">
+<h3 id="_list_sections"><a class="anchor" href="#_list_sections"></a><a class="link" href="#_list_sections">List Sections</a></h3>
 <div class="paragraph">
 <p>In addition to mapping (key-value) sections, YAML configuration files support sequence (list) sections. List items are assigned 0-based numeric keys, producing the same <code>IGconf_&lt;section&gt;_&lt;key&gt;</code> variable format as mapping sections.</p>
 </div>
@@ -508,35 +488,32 @@ IGconf_packages_2=curl</code></pre>
 </table>
 </div>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_ini_configuration_format"><a class="anchor" href="#_ini_configuration_format"></a><a class="link" href="#_ini_configuration_format">INI Configuration Format</a></h3>
-<div class="paragraph">
-<p>INI format provides traditional section-based configuration:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-ini" data-lang="ini">!include base.cfg
-
-[env]
-MYVAR = UNCHANGED
-
-[device]
-class = pi5
-storage_type = sd
-hostname = ${IGconf_device_class}-$(tr -dc 'a-z' &lt; /dev/urandom | head -c 6)
-
-[image]
-compression = zstd
-boot_part_size = 200%
-root_part_size = 300%</code></pre>
-</div>
-</div>
-</div>
 <div class="sect2">
 <h3 id="_configuration_includes"><a class="anchor" href="#_configuration_includes"></a><a class="link" href="#_configuration_includes">Configuration Includes</a></h3>
 <div class="paragraph">
-<p>Both formats support including other configuration files to promote reusability and modularity. The include precedence order is shown in the table below.</p>
+<p>Configuration files support includes to promote reusability and modularity.</p>
+</div>
+<div class="paragraph">
+<p>A single file is included using a mapping with a <code>file</code> key:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">include:
+  file: base.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Multiple files are included using a list of filenames. Files are processed in order - later entries override earlier ones. The including file overrides all included content.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">include:
+  - device/cm5.yaml
+  - device/cm5io.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Include files are resolved using the following search order:</p>
 </div>
 <table class="tableblock frame-all grid-all stripes-even stretch">
 <colgroup>
@@ -569,35 +546,19 @@ root_part_size = 300%</code></pre>
 </tr>
 </tbody>
 </table>
-<div class="sect3">
-<h4 id="_yaml_includes"><a class="anchor" href="#_yaml_includes"></a><a class="link" href="#_yaml_includes">YAML Includes</a></h4>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">include:
-  file: shared/base.yaml</code></pre>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_ini_includes"><a class="anchor" href="#_ini_includes"></a><a class="link" href="#_ini_includes">INI Includes</a></h4>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-ini" data-lang="ini">!include shared/base.cfg</code></pre>
-</div>
-</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
 <div class="paragraph">
-<p>Therefore, included files are resolved using:</p>
+<p>The list-section merge warning above applies equally to multiple includes. If two included files both define a list section (e.g. <code>packages</code>), they merge positionally - later entries override earlier ones by index rather than appending. For predictable results, define list sections in only one file in an include chain.</p>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Parent directory</strong></p>
-</li>
-<li>
-<p><strong>Search path</strong></p>
-</li>
-</ol>
-</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -607,6 +568,20 @@ root_part_size = 300%</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Any section name used in a configuration file maps directly to the <code>IGconf_&lt;section&gt;_*</code> variable namespace. A layer can declare a section via <code>X-Env-VarPrefix</code> in its metadata. This means that the set of meaningful section names in a build is determined by the layers included. Declaring a section allows a layer to expose a group of configuration variables. Some section names carry specific functional meaning because the build system actively responds to them.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p><code>trait:</code> (see <a href="#section-trait">trait</a>) is the one exception to the rule above - it is never translated to <code>IGconf_*</code> variables at all.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="sect2">
 <h3 id="_device"><a class="anchor" href="#_device"></a><a class="link" href="#_device">device</a></h3>
@@ -680,6 +655,25 @@ root_part_size = 300%</code></pre>
 <p>Absolute paths are fully supported. Relative paths are resolved from the source directory and require <code>-S</code> to be specified, falling back to the rpi-image-gen root directory.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="section-trait"><a class="anchor" href="#section-trait"></a><a class="link" href="#section-trait">trait</a></h3>
+<div class="paragraph">
+<p>Unlike every other section, <code>trait:</code> is <strong>never</strong> translated to <code>IGconf_&lt;section&gt;_*</code> variables. It&#8217;s a reserved top-level key, passed through as-is and applied directly as a build-time override to the trait registry - taking precedence over anything declared by the registry itself or by a layer&#8217;s <code>X-Env-Layer-Provides</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">trait:
+  hw:bluetooth: false
+  hw:acme:can: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>false</code> removes the named token (and any of its children, by prefix match) from the build&#8217;s provider index, even if a layer in the build declares it. Any other value - <code>true</code> for a boolean trait, or an explicit typed value otherwise - injects the token, exactly as if a layer had declared it. Trait overrides merge across includes like any other section - the including file&#8217;s entries win over an included file&#8217;s on a shared token, and non-overlapping tokens from both are kept.</p>
+</div>
+<div class="paragraph">
+<p>See <a href="../trait.html">trait.adoc</a> for the full trait registry reference, including token namespaces, hierarchy, and <code>has()</code>.</p>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -710,7 +704,7 @@ root_part_size = 300%</code></pre>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Configuration Files</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">INI or YAML configuration files</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">YAML configuration files</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">3 (Lowest)</p></td>
@@ -916,10 +910,10 @@ $ rpi-image-gen build -c &lt;args&gt; -- ARCH=arm64 DISTRO=debian
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Parse main configuration file</strong> - Automatically detects INI or YAML format</p>
+<p><strong>Parse YAML configuration file</strong></p>
 </li>
 <li>
-<p><strong>Process includes recursively</strong> - Follows include directives with circular dependency detection</p>
+<p><strong>Process includes recursively</strong> - Follows include directives (single or list) in order, with circular dependency detection</p>
 </li>
 <li>
 <p><strong>Apply command line overrides</strong> - Processes variables specified after <code>--</code></p>
@@ -968,15 +962,11 @@ rpi-image-gen config myconfig.yaml --section device --write-to build.env -- IGco
 <div class="sect2">
 <h3 id="_config_generation"><a class="anchor" href="#_config_generation"></a><a class="link" href="#_config_generation">Config Generation</a></h3>
 <div class="paragraph">
-<p>Generate example configuration files:</p>
+<p>Generate an example YAML configuration:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Generate boilerplate INI and YAML examples
-rpi-image-gen config --gen
-
-# Migrate INI to YAML format
-rpi-image-gen config legacy.cfg --migrate &gt; modern.yaml</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen config --gen</code></pre>
 </div>
 </div>
 </div>
@@ -1015,7 +1005,7 @@ rpi-image-gen config legacy.cfg --migrate &gt; modern.yaml</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>immediate</strong>: Set the variable if it is currently unset (first-wins strategy). This is the default behavior.</p>
+<p><strong>immediate</strong>: Set the variable if it is currently unset (first-wins strategy). This is the default behaviour.</p>
 </li>
 <li>
 <p><strong>lazy</strong>: Applied after all layers are processed (last-wins strategy). Useful for defaults that can be overridden.</p>
@@ -1142,7 +1132,7 @@ rpi-image-gen config legacy.cfg --migrate &gt; modern.yaml</code></pre>
 <p><strong>Missing include files</strong>: Searches all configured paths before failing</p>
 </li>
 <li>
-<p><strong>Invalid YAML/INI syntax</strong>: Provides line numbers and context</p>
+<p><strong>Invalid YAML syntax</strong>: Provides line numbers and context</p>
 </li>
 <li>
 <p><strong>Undefined variable expansion</strong>: Fails fast with variable name</p>
@@ -1200,63 +1190,6 @@ OVR IGconf_device_hostname=pi5-test  # From command line override</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_migration_and_compatibility"><a class="anchor" href="#_migration_and_compatibility"></a><a class="link" href="#_migration_and_compatibility">Migration and Compatibility</a></h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_ini_to_yaml_migration"><a class="anchor" href="#_ini_to_yaml_migration"></a><a class="link" href="#_ini_to_yaml_migration">INI to YAML Migration</a></h3>
-<div class="paragraph">
-<p>Use the built-in migration tool:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen config legacy.cfg --migrate &gt; modern.yaml</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The migration tool:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Preserves include directives</strong> with updated syntax</p>
-</li>
-<li>
-<p><strong>Maintains section structure</strong> and variable relationships</p>
-</li>
-<li>
-<p><strong>Updates file extensions</strong> in include references</p>
-</li>
-<li>
-<p><strong>Adds migration comments</strong> for traceability</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_backward_compatibility"><a class="anchor" href="#_backward_compatibility"></a><a class="link" href="#_backward_compatibility">Backward Compatibility</a></h3>
-<div class="paragraph">
-<p>The configuration system maintains compatibility with:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Existing INI files</strong> through automatic format detection</p>
-</li>
-<li>
-<p><strong>Legacy include syntax</strong> (<code>!include</code> vs <code>include:</code>)</p>
-</li>
-<li>
-<p><strong>Environment variable patterns</strong> used by previous versions</p>
-</li>
-<li>
-<p><strong>Command-line interfaces</strong> with extended functionality</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="_performance_considerations"><a class="anchor" href="#_performance_considerations"></a><a class="link" href="#_performance_considerations">Performance Considerations</a></h2>
 <div class="sectionbody">
 <div class="sect2">
@@ -1295,7 +1228,7 @@ OVR IGconf_device_hostname=pi5-test  # From command line override</code></pre>
 <p><strong>Multiple configuration sources</strong> with clear precedence rules</p>
 </li>
 <li>
-<p><strong>Flexible file formats</strong> (INI and YAML) with include support</p>
+<p><strong>YAML configuration files</strong> with include support</p>
 </li>
 <li>
 <p><strong>Variable expansion</strong> supporting cross-references and environment integration</p>
