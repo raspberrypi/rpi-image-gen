@@ -150,6 +150,7 @@
 <li><a href="#_dependencies_and_providers">Dependencies and Providers</a>
 <ul class="sectlevel3">
 <li><a href="#_x_env_layer_requires">X-Env-Layer-Requires</a></li>
+<li><a href="#conditional-requires">Conditional Requires</a></li>
 <li><a href="#_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider">X-Env-Layer-Provides / X-Env-Layer-RequiresProvider / X-Env-Layer-AfterProvider</a></li>
 <li><a href="#_x_env_layer_sets">X-Env-Layer-Sets</a></li>
 </ul>
@@ -491,9 +492,56 @@ mmdebstrap:
 </div>
 </div>
 <div class="sect3">
+<h4 id="conditional-requires"><a class="anchor" href="#conditional-requires"></a><a class="link" href="#conditional-requires">Conditional Requires</a></h4>
+<div class="paragraph">
+<p>An entry in <code>X-Env-Layer-Requires</code> may be gated on a condition, so the layer is only pulled into the build if the condition evaluates to true:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml"># X-Env-Layer-Requires: bt-firmware when=has('hw:bluetooth')</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The condition is a standard <a href="#conditional-expressions">Conditional Expressions</a> expression, but restricted to <code>has()</code>/<code>not has()</code>, optionally combined with <code>and</code>/<code>or</code>. Unlike variable <code>Triggers:</code>/<code>Conflicts:</code>, no other comparison forms are accepted. Unconditional and conditional entries can be mixed freely in the same field, comma-separated:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml"># X-Env-Layer-Requires: base-layer,bt-firmware when=has('hw:bluetooth'),rpi-eeprom when=has('hw:eeprom:rpi')</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p><code>IGconf_*</code> variable names cannot be used in a conditional <code>Requires:</code> expression, only <code>has()</code>/<code>not has()</code> (optionally combined with <code>and</code>/<code>or</code>). Conditional requires are evaluated during layer discovery, before variable resolution has happened, so no variable dict is available - only the provider index. An expression like <code>when=IGconf_device_class == 'pi5'</code> may pass syntax validation but will silently never fire (because it is never true). Use <code>has()</code> with a provider (ie, trait or label) token instead.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Conditional requires are evaluated once, in a single pass, against a provider index only built from unconditionally-required layers. A condition gated on a token that is only provided by another <strong>conditionally</strong> required layer will not fire - that token is absent from the provider index at evaluation time (ie, the provider index is not rebuilt until after the pass completes). Gate conditional required layers only on tokens provided by layers you know are unconditionally part of the build (<code>hw:*</code> tokens are the common case). This single pass approach should be sufficient for most use cases.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
 <h4 id="_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider"><a class="anchor" href="#_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider"></a><a class="link" href="#_x_env_layer_provides_x_env_layer_requiresprovider_x_env_layer_afterprovider">X-Env-Layer-Provides / X-Env-Layer-RequiresProvider / X-Env-Layer-AfterProvider</a></h4>
 <div class="paragraph">
-<p><code>X-Env-Layer-Provides</code> declares one or more capability tokens that this layer makes available to the rest of the build. Other layers reference these tokens rather than a specific layer name, which keeps the dependency abstract and substitutable.</p>
+<p><code>X-Env-Layer-Provides</code> declares one or more capability tokens that this layer makes available to the rest of the build. Other layers reference these tokens rather than a specific layer name, which keeps the dependency abstract and substitutable. A colon-separated token (eg <code>hw:bluetooth</code>) is a trait token, resolved through the trait registry. See <a href="../trait.html">trait.adoc</a> for the full trait registry reference, including how tokens expand, <code>has()</code>, and the build config <code>trait:</code> override.</p>
 </div>
 <div class="paragraph">
 <p>All fields share the same capability contract model:</p>
@@ -629,7 +677,49 @@ mmdebstrap:
 <div class="sect2">
 <h3 id="conditional-expressions"><a class="anchor" href="#conditional-expressions"></a><a class="link" href="#conditional-expressions">Conditional Expressions</a></h3>
 <div class="paragraph">
-<p>Conditional expressions are supported in trigger <code>when=</code> clauses and conflict expressions. They use standard <a href="https://docs.python.org/3/reference/expressions.html#comparisons" target="<em>blank">Python comparison syntax</a>. Variable names must be fully qualified <code>IGconf</em>*</code> names. Comparison values must be quoted strings. An unquoted value such as <code>pi5</code> would be interpreted as a variable name and rejected at lint time.</p>
+<p>Conditional expressions appear in several contexts: variable <code>Triggers:</code>/<code>Conflicts:</code>, trait <code>Triggers:</code> (see <a href="../trait.html">trait.adoc</a>), and conditional layer <code>Requires:</code> (see <a href="#conditional-requires">Conditional Requires</a>). All of them share common syntax, parsed and validated the same way, using standard <a href="https://docs.python.org/3/reference/expressions.html#comparisons" target="<em>blank">Python comparison syntax</a>. Variable names must be fully qualified <code>IGconf</em>*</code> names. Comparison values must be quoted strings. An unquoted value such as <code>pi5</code> would be interpreted as a variable name and rejected at lint time.</p>
+</div>
+<div class="paragraph">
+<p>Despite being common syntax, it does not mean every context can use it consistently everywhere - what&#8217;s available at <strong>evaluation</strong> time depends on what data exists at that point in the build:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Context</th>
+<th class="tableblock halign-left valign-top"><code>IGconf_*</code> variables</th>
+<th class="tableblock halign-left valign-top"><code>has()</code> / <code>not has()</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Var-*-Triggers</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Var-*-Conflicts</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-*-Triggers</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>no</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Conditional <code>X-Env-Layer-Requires</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>no</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Trait <code>Triggers:</code> are resolved before variable resolution runs, and conditional layer <code>Requires:</code> are evaluated during layer discovery. Before that, neither has a variable dict to check against, only the provider index built so far. An <code>IGconf_*</code> reference in either context still parses and validates cleanly (it&#8217;s the same syntax), but it will silently never fires at evaluation time.</p>
 </div>
 <table class="tableblock frame-all grid-all stripes-even stretch">
 <colgroup>
@@ -667,10 +757,18 @@ mmdebstrap:
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>or</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>IGconf_a == 'x' or IGconf_b == 'y'</code></p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>has()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>has('hw:bluetooth')</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>not has()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>not has('hw:bluetooth')</code></p></td>
+</tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p>To check for a non-empty value, use <code>!= ''</code>. Syntax errors and unknown variable references are caught at lint time, not at build time.</p>
+<p>To check for a non-empty value, use <code>!= ''</code>. <code>has('token')</code> checks for the presence of a trait or label token in the fully-expanded provider index - see the trait registry documentation for how tokens enter that index. Syntax errors and unknown variable references are caught at lint time, not at build time.</p>
 </div>
 </div>
 <div class="sect2">
@@ -931,7 +1029,7 @@ mmdebstrap:
 <h2 id="_configuration_variables"><a class="anchor" href="#_configuration_variables"></a><a class="link" href="#_configuration_variables">Configuration Variables</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The environment variables declared by a layer customise build behavior:</p>
+<p>The environment variables declared by a layer customise build behaviour:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1029,7 +1127,7 @@ IGconf_layer_app=my-app</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>rpi-image-gen would attempt to locate layers <code><code>trixie-minbase</code></code>,<code><code>rpi5</code></code> and <code><code>my-app</code></code>, including their depdendencies. Deduplication of layers occurs at the resolution phase, meaning that specifying duplicate layer names is harmless and basically a nop.</p>
+<p>rpi-image-gen would attempt to locate layers <code><code>trixie-minbase</code></code>,<code><code>rpi5</code></code> and <code><code>my-app</code></code>, including their dependencies. Deduplication of layers occurs at the resolution phase, meaning that specifying duplicate layer names is harmless and basically a nop.</p>
 </div>
 </div>
 </div>

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rpi-image-gen Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .content { margin-bottom: 40px; }
+        .layer-list { margin-bottom: 30px; }
+        .layer-item { margin-bottom: 8px; }
+        .layer-item a { text-decoration: none; color: #007acc; font-weight: 500; }
+        .layer-item a:hover { text-decoration: underline; }
+        .layer-desc { color: #666; margin-left: 10px; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
+        h3 { color: #000; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px; }
+        /* AsciiDoc table styling */
+        .tableblock { border-collapse: collapse; margin: 1.25em 0; table-layout: fixed !important; }
+        .tableblock.frame-all { border: 1px solid #dedede; }
+        .tableblock.grid-all th, .tableblock.grid-all td { border: 1px solid #dedede; }
+        .tableblock.stretch { table-layout: fixed !important; }
+        .tableblock.frame-all.grid-all.stretch { table-layout: fixed !important; }
+        .tableblock th, .tableblock td { padding: 0.5625em 0.625em; text-align: left; vertical-align: top; }
+        .tableblock th { background: #f8f9fa; font-weight: 600; color: rgba(0,0,0,.8); }
+        .tableblock tbody tr:nth-child(even) { background: #f8f8f7; }
+        .tableblock p { margin: 0; line-height: 1.6; }
+        .tableblock .halign-left { text-align: left; }
+        .tableblock .halign-center { text-align: center; }
+        .tableblock .halign-right { text-align: right; }
+        .tableblock .valign-top { vertical-align: top; }
+        .tableblock .valign-middle { vertical-align: middle; }
+        .tableblock .valign-bottom { vertical-align: bottom; }
+
+        /* Simple code block styling */
+        .listingblock pre {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .listingblock pre code {
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_overview">Overview</a></li>
+<li><a href="#_token_taxonomy">Token Taxonomy</a></li>
+<li><a href="#_namespaces">Namespaces</a></li>
+<li><a href="#_trait_expansion">Trait Expansion</a>
+<ul class="sectlevel2">
+<li><a href="#_hierarchical_parent_inference">Hierarchical parent inference</a></li>
+<li><a href="#_triggers_expansion">Triggers: expansion</a></li>
+</ul>
+</li>
+<li><a href="#_the-trait-registry">The Trait Registry</a>
+<ul class="sectlevel2">
+<li><a href="#_file_format">File format</a></li>
+<li><a href="#_requires-vs-triggers">Requires: vs Triggers:</a></li>
+<li><a href="#_duplicate_definitions_are_a_hard_error">Duplicate definitions are a hard error</a></li>
+</ul>
+</li>
+<li><a href="#_oem_custom_tokens">OEM Custom Tokens</a></li>
+<li><a href="#_declaring_traits_on_layers">Declaring Traits on Layers</a>
+<ul class="sectlevel2">
+<li><a href="#_x_env_layer_provides">X-Env-Layer-Provides</a></li>
+<li><a href="#_x_env_layer_requiresprovider">X-Env-Layer-RequiresProvider</a></li>
+<li><a href="#_afterprovider_restriction">AfterProvider restriction</a></li>
+</ul>
+</li>
+<li><a href="#_trait_presence_checks_has">Trait Presence Checks: has()</a>
+<ul class="sectlevel2">
+<li><a href="#_in_trigger_when_clauses">In trigger <code>when=</code> clauses</a></li>
+<li><a href="#_in_conflict_expressions">In conflict expressions</a></li>
+<li><a href="#_in_conditional_layer_requires">In conditional layer Requires:</a></li>
+</ul>
+</li>
+<li><a href="#_build-config-overrides">Build Config Overrides</a></li>
+<li><a href="#_cli_rpi_image_gen_config_trait">CLI: <code>rpi-image-gen config --trait</code></a></li>
+</ul>
+</div>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="./index.html">← Back to Main Documentation</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a><a class="link" href="#_overview">Overview</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Trait tokens carry hardware, system and boot mechanism facts through the build engine, eg <code>hw:bluetooth:broadcom</code>. They let layers and build configs express characteristic-aware logic - such as selecting a crypto cipher based on acceleration, conditionally pulling in a firmware layer, or gating a layer entirely on a hardware requirement - without enumerating specific device classes.</p>
+</div>
+<div class="paragraph">
+<p>Trait tokens flow through the same provider mechanism as plain label tokens (<code>X-Env-Layer-Provides</code>, <code>X-Env-Layer-RequiresProvider</code>) and are evaluated by the same <code>has()</code> function used in trigger <code>when=</code> clauses, conflict expressions, and conditional layer requires (see <a href="./layer/index.html">layer/</a> for the full metadata reference).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_token_taxonomy"><a class="anchor" href="#_token_taxonomy"></a><a class="link" href="#_token_taxonomy">Token Taxonomy</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Provider tokens fall into two classes, distinguished by the presence of a colon.</p>
+</div>
+<div class="paragraph">
+<p><strong>Label tokens</strong> - plain identifiers with no colon (<code>systemd</code>, <code>debian-base</code>, <code>rpi-device</code>, <code>network-activator</code>). Arbitrary strings with no registry involvement. Any layer may declare a label token, and a conflict between two layers declaring the same label is always an error.</p>
+</div>
+<div class="paragraph">
+<p><strong>Trait tokens</strong> - colon-separated, namespaced identifiers (<code>hw:bluetooth</code>, <code>boot:gpt</code>, <code>hw:soc:bcm2712</code>). Must be defined in the trait registry. Declaring one triggers automatic hierarchy expansion and <code>Triggers:</code> resolution (see <a href="#_trait_expansion">Trait Expansion</a>).</p>
+</div>
+<div class="paragraph">
+<p>The colon is the sole discriminator. The engine uses its presence to decide whether to validate against the registry and whether to perform expansion. Trait token names are deliberately shell-incompatible - colons are not valid in shell variable names, which makes it impossible to reference them in hooks or scripts. This is intentional and by design.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_namespaces"><a class="anchor" href="#_namespaces"></a><a class="link" href="#_namespaces">Namespaces</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The registry currently covers two namespaces:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>hw:*</code></dt>
+<dd>
+<p>Hardware presence facts - silicon capabilities, onboard peripherals, accessible interfaces. A fact about what the hardware is and has, independent of whether any software in the build uses it.</p>
+</dd>
+<dt class="hdlist1"><code>boot:*</code></dt>
+<dd>
+<p>Boot mechanism facts - how the device boots, what the boot chain requires.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Traits are intended to be simple, easy to read and write, and to understand. Using them to over-specify characteristics can be dangerous. While the registry will grow over time, premature namespace proliferation is as harmful as the wrong name.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trait_expansion"><a class="anchor" href="#_trait_expansion"></a><a class="link" href="#_trait_expansion">Trait Expansion</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Declaring a trait token triggers two automatic expansions, both resolved against the registry.</p>
+</div>
+<div class="sect2">
+<h3 id="_hierarchical_parent_inference"><a class="anchor" href="#_hierarchical_parent_inference"></a><a class="link" href="#_hierarchical_parent_inference">Hierarchical parent inference</a></h3>
+<div class="paragraph">
+<p>Declaring <code>hw:X:Y</code> automatically also declares <code>hw:X</code>. Declaring <code>hw:wlan:broadcom</code> therefore also declares <code>hw:wlan</code>. Layer authors can gate on either the generic token (<code>has('hw:wlan')</code>) or the vendor-specific one (<code>has('hw:wlan:broadcom')</code>). Inferred parents are associated with the same declaring layer as the child.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_triggers_expansion"><a class="anchor" href="#_triggers_expansion"></a><a class="link" href="#_triggers_expansion">Triggers: expansion</a></h3>
+<div class="paragraph">
+<p>A registry entry may carry a <code>Triggers:</code> rule that pushes a value onto another token - either unconditionally (the trait equivalent of an <code>implies:</code> cascade) or conditionally, once a build&#8217;s accumulated token set makes the condition true. This captures cross-branch derivations that hierarchy alone can&#8217;t express. For example, declaring <code>hw:soc:bcm2712</code> cascades unconditionally into a microarchitecture fact (<code>hw:uarch:cortex-a76</code>), an architecture-extension fact (<code>hw:arch:arm:aes-accel</code>), and an execution-capability fact (<code>hw:exec:kernel:aarch64</code>) - three independent branches, all derivable from the SoC identity without the layer author enumerating them:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>X-Env-Trait-bcm2712-Desc: Broadcom BCM2712 - Raspberry Pi 5 / CM5 (quad Cortex-A76)
+X-Env-Trait-bcm2712-Valid: bool
+X-Env-Trait-bcm2712-Triggers:
+ when=y set (hw:uarch:cortex-a76)=y
+ when=y set (hw:arch:arm:aes-accel)=y
+ when=y set (hw:exec:kernel:aarch64)=y</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>when=</code> clause need not be the <code>y</code> sentinel - it can be a genuine, multi-token condition, evaluated to a fixed point against the build&#8217;s accumulated trait set:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>X-Env-Trait-lpa44-Desc: 44-bit large physical address extension
+X-Env-Trait-lpa44-Valid: bool
+X-Env-Trait-lpa44-Triggers: when=has('hw:arch:arm:cortex-a72') and has('hw:arch:aarch64') set (hw:mmu:lpa44)=y</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A trait <code>Triggers:</code> condition can only use <code>has()</code>/<code>not has()</code>, optionally combined with <code>and</code>/<code>or</code>. <code>IGconf_*</code> variable names are not usable. Trait resolution runs <strong>before</strong> variable resolution, so no variable dict exists - only the trait registry&#8217;s own accumulated token set. See <a href="./layer/index.html#conditional-expressions">Conditional Expressions</a> for which contexts do support <code>IGconf_*</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Triggered tokens are themselves subject to hierarchical parent inference. <code>hw:pcie</code> is declared directly by device layers rather than implied by SoC, since the same SoC can appear on boards that expose PCIe to the user and boards that don&#8217;t - interface and peripheral accessibility belongs on the device, capabilities intrinsic to silicon belong on the SoC.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the-trait-registry"><a class="anchor" href="#_the-trait-registry"></a><a class="link" href="#_the-trait-registry">The Trait Registry</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The registry is a set of DEB822 files scanned from one or more <code>trait/</code> directories - the built-in root first, then a user <code>SRCROOT</code> if supplied (<code>-S</code>/<code>--srcroot</code>). Within each directory the top-level <code>*.deb822</code> scan is single-level, not recursive.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A file meant to be reached only via <code>Include:</code> - including an OEM file extending a built-in namespace - must live in a subdirectory, never flat alongside the file whose <code>Include:</code> reaches it. A flat sibling gets loaded twice: once correctly via <code>Include:</code> and once directly by the top-level scan (with the wrong, empty prefix) - whichever happens first alphabetically silently wins, shadowing the other with no error.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_file_format"><a class="anchor" href="#_file_format"></a><a class="link" href="#_file_format">File format</a></h3>
+<div class="paragraph">
+<p>Each file is one DEB822 stanza. A stanza can define several sibling local names, each built from <code>X-Env-Trait-&lt;local&gt;-<strong></code> fields - the same shape that layer files use for <code>X-Env-Var-&lt;name&gt;-</strong></code>. There is no <code>Name:</code>/<code>Parent:</code> field - <strong>hierarchy comes purely from position in the <code>Include:</code> chain</strong>, not from the local name itself. A local name is always a single, colon-free segment. The full dotted-colon token is assembled by prefixing with whichever ancestor&#8217;s <code>Include:</code> pulled the file in.</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 71.4286%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-&lt;local&gt;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Base/default value (no suffix, same pattern as <code>X-Env-Var-&lt;name&gt;</code>). Optional for boolean traits (defaults to <code>n</code>). Required for any type whose validator doesn&#8217;t already accept an empty string.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-&lt;local&gt;-Desc</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Human-readable description. Required.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-&lt;local&gt;-Valid</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Validation type - any type the shared validator engine supports (<code>bool</code>, <code>int:&lt;range&gt;</code>, <code>string</code>, <code>regex:&#8230;&#8203;</code>, <code>enum:&#8230;&#8203;</code>, etc). Required, no implicit default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-&lt;local&gt;-Requires</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comma-separated list of full trait tokens that must also be active whenever this token is <strong>directly declared</strong>. Necessity-only validation - see <a href="#_requires-vs-triggers">Requires: vs Triggers:</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-&lt;local&gt;-Triggers</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One <code>when=&lt;condition&gt; set (&lt;target-token&gt;)=&lt;value&gt;</code> rule per line (DEB822 continuation syntax). See <a href="#_requires-vs-triggers">Requires: vs Triggers:</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-&lt;local&gt;-Include</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comma-separated list of files, resolved relative to the current file, that define this token&#8217;s children.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Real example - <code>trait/hw/periph.deb822</code> and <code>trait/hw/periph/storage.deb822</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>X-Env-Trait-storage-Desc: Onboard or directly attached storage
+X-Env-Trait-storage-Valid: bool
+X-Env-Trait-storage-Include: periph/storage.deb822</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>X-Env-Trait-nvme-Desc: NVMe storage (soldered or socket-attached)
+X-Env-Trait-nvme-Valid: bool
+X-Env-Trait-nvme-Requires: hw:pcie:bus</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>hw:storage:nvme</code> requires PCIe functionality, so declaring NVMe without <code>hw:pcie:bus</code> presence is a contradiction and is rejected.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_requires-vs-triggers"><a class="anchor" href="#_requires-vs-triggers"></a><a class="link" href="#_requires-vs-triggers">Requires: vs Triggers:</a></h3>
+<div class="paragraph">
+<p>These are deliberately two different fields rather than one field with a flag, so necessity and derivation can never be confused:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>Requires:</code></dt>
+<dd>
+<p>Pure validation. "This token cannot be active without that one also being active." Checked against all activated tokens in the index.</p>
+</dd>
+<dt class="hdlist1"><code>Triggers:</code></dt>
+<dd>
+<p>Derivation/push. <code>when=y set (target)=value</code> fires unconditionally whenever the declaring token is active. A genuinely conditional rule (<code>when=&lt;expr&gt;</code>) fires once the expression evaluates true against the build&#8217;s accumulated token set, evaluated to a fixed point alongside every other trigger in the tree. The value is validated against the <strong>target</strong> trait&#8217;s <code>Valid:</code> type. <code>Triggers:</code> are routinely cross-targeting (an SoC token setting a sibling clock-speed token, as below).</p>
+</dd>
+</dl>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>X-Env-Trait-freq-Desc: clock frequency in MHz
+X-Env-Trait-freq: 1500
+X-Env-Trait-freq-Valid: int:600-3000
+
+X-Env-Trait-turbo-Desc: turbo mode, bumps the clock to 3000
+X-Env-Trait-turbo-Valid: bool
+X-Env-Trait-turbo-Triggers: when=y set (hw:freq)=3000</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Only use an unconditional derivation when the relationship is genuinely both necessary and sufficient. A real device example - <code>trait/hw/device/rpi/sbc/pi5.deb822</code> cascades a single device identity token into every fact that&#8217;s always true of a Pi 5:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>X-Env-Trait-pi5-Desc: Raspberry Pi 5 - BCM2712 platform (quad Cortex-A76)
+X-Env-Trait-pi5-Valid: bool
+X-Env-Trait-pi5-Triggers:
+ when=y set (hw:soc:bcm2712)=y
+ when=y set (hw:pcie:bus)=y
+ when=y set (hw:storage:sd)=y
+ when=y set (hw:eeprom:rpi)=y
+ when=y set (hw:wlan:broadcom)=y
+ when=y set (hw:bluetooth:broadcom)=y
+ when=y set (hw:ethernet)=y
+ when=y set (boot:gpt)=y
+ when=y set (boot:rpi:dtbootpartn)=y</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen config --tr hw:device:rpi:pi5
+hw:device:rpi:pi5
+  Desc: Raspberry Pi 5 - BCM2712 platform (quad Cortex-A76)
+  Type: bool
+  File: trait/hw/device/rpi/sbc/pi5.deb822
+  Activates:
+    boot:gpt
+    boot:rpi
+    boot:rpi:dtbootpartn
+    hw:arch
+    hw:arch:arm
+    hw:arch:arm:aes-accel
+    hw:arch:arm:sha-accel
+    hw:bluetooth
+    hw:bluetooth:broadcom
+    hw:crypto
+    hw:crypto:aes-accel
+    hw:crypto:sha-accel
+    hw:device
+    hw:device:rpi
+    hw:eeprom
+    hw:eeprom:rpi
+    hw:ethernet
+    hw:exec
+    hw:exec:kernel
+    hw:exec:kernel:aarch64
+    hw:exec:user
+    hw:exec:user:aarch32
+    hw:exec:user:aarch64
+    hw:isa
+    hw:isa:armv8
+    hw:pcie
+    hw:pcie:bus
+    hw:soc
+    hw:soc:bcm2712
+    hw:soc:pcie
+    hw:storage
+    hw:storage:sd
+    hw:uarch
+    hw:uarch:cortex-a76
+    hw:wlan
+    hw:wlan:broadcom</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_duplicate_definitions_are_a_hard_error"><a class="anchor" href="#_duplicate_definitions_are_a_hard_error"></a><a class="link" href="#_duplicate_definitions_are_a_hard_error">Duplicate definitions are a hard error</a></h3>
+<div class="paragraph">
+<p>A real (colon-containing) trait token may only ever be defined once, in one file, across every <code>trait/</code> directory in scope - there is no mechanism to reconcile a second definition. A duplicate will always result in an error. It is not possible to override a built-in token by redeclaring it - the only supported override point is the build config file&#8217;s <code>trait:</code> section (see <a href="#_build-config-overrides">Build Config Overrides</a>). This is the only way a trait can enabled/disabled/set outside of declaring it via a DEB822 stanza.</p>
+</div>
+<div class="paragraph">
+<p>Bare namespace nodes (eg, <code>hw</code>, <code>boot</code>) carry no declaration fact of their own - only an <code>Include:</code> list. Therefore a <strong>different</strong> source root may legitimately redefine one to extend it with new children (the OEM mechanism below). Two top-level files in the <strong>same</strong> root both defining the same namespace node is still an error.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_oem_custom_tokens"><a class="anchor" href="#_oem_custom_tokens"></a><a class="link" href="#_oem_custom_tokens">OEM Custom Tokens</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An OEM drops a file into their own <code>SRCROOT/trait/</code> directory. Standard built-in tokens are already loaded, in registry-scan order, before any user directory is scanned - no explicit include of the built-in registry is needed:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># SRCROOT/trait/myboard.deb822
+X-Env-Trait-acme-Desc: Custom carrier board tokens
+X-Env-Trait-acme-Valid: bool
+X-Env-Trait-acme-Include: acme/can.deb822,acme/gps.deb822</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># SRCROOT/trait/acme/can.deb822
+X-Env-Trait-can-Desc: CAN bus controller on this carrier board
+X-Env-Trait-can-Valid: bool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>acme/can.deb822</code> and <code>acme/gps.deb822</code> must live under a subdirectory (<code>SRCROOT/trait/acme/</code>), not flat alongside <code>myboard.deb822</code> - see the top-level-scan warning in <a href="#_the-trait-registry">The Trait Registry</a>. A <code>Triggers:</code> rule may reference any already-loaded built-in token as its target, eg a carrier-identity token cascading into <code>hw:can</code>/<code>hw:gps</code> the same way a device token cascades into its own facts.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_declaring_traits_on_layers"><a class="anchor" href="#_declaring_traits_on_layers"></a><a class="link" href="#_declaring_traits_on_layers">Declaring Traits on Layers</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_x_env_layer_provides"><a class="anchor" href="#_x_env_layer_provides"></a><a class="link" href="#_x_env_layer_provides">X-Env-Layer-Provides</a></h3>
+<div class="paragraph">
+<p>Trait tokens are declared in <code>X-Env-Layer-Provides</code> alongside plain label tokens:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Layer-Name: rpi5
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Raspberry Pi 5 specific device layer
+# X-Env-Layer-Version: 2.0.1
+# X-Env-Layer-Requires: rpi-device-base,rpi-linux-2712
+# X-Env-Layer-Provides: rpi-device,hw:device:rpi:pi5</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Declaring <code>hw:device:rpi:pi5</code> resolves its full hierarchy and <code>Triggers:</code> cascade into all children (and everything those in turn cascade into), injecting the full expanded set into the provider index.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A bare <code>Provides:</code> only ever <strong>activates</strong> a token, at its canonical value - for a boolean trait that&#8217;s <code>y</code>. It cannot carry an explicit value, so a bare <code>Provides:</code> of a non-boolean trait (eg <code>hw:freq</code>) is a hard error naming the trait and its type. A non-boolean trait can only ever get its value from a <code>Triggers:</code> rule or an explicit <code>trait:</code> config override (see <a href="#_build-config-overrides">Build Config Overrides</a>).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_x_env_layer_requiresprovider"><a class="anchor" href="#_x_env_layer_requiresprovider"></a><a class="link" href="#_x_env_layer_requiresprovider">X-Env-Layer-RequiresProvider</a></h3>
+<div class="paragraph">
+<p>Declares that a token must be present somewhere in the build. The engine validates its existence but imposes no ordering constraint - trait tokens have no position in the build sequence, so this is the only field that makes sense for them:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Layer-RequiresProvider: hw:bluetooth</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The build is rejected at validation time if no layer (and no config override) provides <code>hw:bluetooth</code> or a descendant that implies it.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_afterprovider_restriction"><a class="anchor" href="#_afterprovider_restriction"></a><a class="link" href="#_afterprovider_restriction">AfterProvider restriction</a></h3>
+<div class="paragraph">
+<p>Trait tokens are not permitted in <code>X-Env-Layer-AfterProvider</code> - rejected at parse time with a clear error. Traits express presence, not build-order position. Use <code>RequiresProvider</code> instead.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trait_presence_checks_has"><a class="anchor" href="#_trait_presence_checks_has"></a><a class="link" href="#_trait_presence_checks_has">Trait Presence Checks: has()</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>has('token')</code> returns <code>true</code> if the named token is present in the fully-expanded provider index. <code>not has('token')</code> returns <code>true</code> if it is absent. Both forms are valid anywhere a <a href="./layer/index.html#conditional-expressions">conditional expression</a> is accepted - trigger <code>when=</code> clauses, conflict expressions, and conditional layer <code>Requires:</code>.</p>
+</div>
+<div class="paragraph">
+<p><code>has()</code> resolves against the expanded provider index, so <code>has('hw:wlan')</code> is true whether the device declared <code>hw:wlan</code> directly, whether it was inferred because the device declared <code>hw:wlan:broadcom</code>, or whether it arrived via another token&#8217;s <code>Triggers:</code> cascade - the evaluator sees the complete expanded set. <code>has()</code> also works with plain label tokens (<code>has('systemd')</code>), which are indexed alongside trait tokens in the same provider index.</p>
+</div>
+<div class="paragraph">
+<p><code>has()</code> is an engine metadata-only construct - it is not available in hooks, scripts, or any shell context.</p>
+</div>
+<div class="sect2">
+<h3 id="_in_trigger_when_clauses"><a class="anchor" href="#_in_trigger_when_clauses"></a><a class="link" href="#_in_trigger_when_clauses">In trigger <code>when=</code> clauses</a></h3>
+<div class="paragraph">
+<p>A trigger can derive a variable&#8217;s value purely from which trait is active, so the variable auto-adapts to whatever hardware or config-level state applies, instead of the layer author enumerating every device/variant combination:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Var-storage_type-Triggers:
+#  when=has('hw:storage:sd') set IGconf_device_storage_type=sd policy=lazy
+#  when=has('hw:storage:emmc') set IGconf_device_storage_type=emmc policy=lazy</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This suits a module that ships with one storage medium by default (asserted unconditionally by its own device-identity trait, eg <code>hw:device:rpi:cm5</code> cascading to <code>hw:storage:emmc</code>) but where a carrier board or config override can substitute another. A <code>Triggers:</code> rule can just as well set a second, purely informational variable from the same trait - eg deriving a human-facing <code>variant</code> label from <code>hw:storage:sd</code> - so that field reflects trait state rather than being the thing that drives it.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_in_conflict_expressions"><a class="anchor" href="#_in_conflict_expressions"></a><a class="link" href="#_in_conflict_expressions">In conflict expressions</a></h3>
+<div class="paragraph">
+<p><code>has()</code>/<code>not has()</code> in a <code>Conflicts:</code> expression can validate that a declared <code>IGconf_*</code> value is actually backed by the trait state, or catch an impossible combination of traits with no <code>IGconf_*</code> reference at all:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Var-storage_type-Conflicts:
+#  IGconf_device_storage_type == 'nvme' and not has('hw:storage:nvme')
+#  IGconf_device_storage_type == 'sd' and not has('hw:storage:sd')</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Var-variant-Conflicts: has('hw:storage:emmc') and has('hw:storage:sd')</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first form rejects a selection the trait state doesn&#8217;t support - eg choosing <code>nvme</code> storage when nothing asserted <code>hw:storage:nvme</code>. The second is a pure trait-vs-trait check: two mutually-exclusive storage traits both being active is a hardware impossibility, typically from a config override asserting one trait without suppressing the other. If a trait already carries a <code>Requires:</code> on another trait (eg an NVMe token requiring a PCIe token), there&#8217;s no need to also duplicate that check here - the registry&#8217;s own <code>Requires:</code> validation (see <a href="#_requires-vs-triggers">Requires: vs Triggers:</a>) will already cover it, earlier in the pipeline. Conflict expressions run after variable resolution and after the provider index is built, so both <code>IGconf_*</code> values and <code>has()</code> are available.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_in_conditional_layer_requires"><a class="anchor" href="#_in_conditional_layer_requires"></a><a class="link" href="#_in_conditional_layer_requires">In conditional layer Requires:</a></h3>
+<div class="paragraph">
+<p>Pull a layer into the build only when its required trait is present:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># X-Env-Layer-Requires: bt-firmware when=has('hw:bluetooth'),rpi-boot-firmware when=has('boot:rpi:vc-firmware')</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The condition is appended to the layer name with <code>when=</code>, separated by a space. Unconditional and conditional entries can be mixed freely in the same comma-separated field. See <a href="./layer/index.html#conditional-requires">Conditional Requires</a> in the layer metadata reference for the full syntax, the mixed-field form, and the single-pass/first-order evaluation limitation.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>As with trait <code>Triggers:</code> above, only <code>has()</code>/<code>not has()</code> (optionally combined with <code>and</code>/<code>or</code>) works in a conditional <code>Requires:</code> - <code>IGconf_*</code> variables are not available, since layer discovery runs before variable resolution.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_build-config-overrides"><a class="anchor" href="#_build-config-overrides"></a><a class="link" href="#_build-config-overrides">Build Config Overrides</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>trait:</code> top-level key in a build config YAML is the single override point, taking precedence over anything declared by the registry or by layers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">trait:
+  hw:bluetooth: false    # carrier board omits BT module
+  hw:acme:can: true      # carrier board adds a custom CAN interface
+  hw:freq: 1800          # explicit typed override for a non-boolean trait</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>false</code></dt>
+<dd>
+<p>Removes the named token from the provider index, <strong>and</strong> any of its children by prefix match - <code>hw:storage: false</code> after a layer declares <code>hw:storage:nvme</code> removes both. Suppressing an ancestor does not require separately suppressing each child.</p>
+</dd>
+<dt class="hdlist1"><code>true</code></dt>
+<dd>
+<p>Injects the named boolean token as a provider, exactly as if a layer had declared it.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>All trait values are validated against their declared type, exactly as if a <code>Triggers:</code> rule had assigned it (<code>hw:freq: 1800</code> above).</p>
+</div>
+<div class="paragraph">
+<p>This is the canonical way to represent carrier-board customisations that have no dedicated layer, ie <code>trait: hw:bluetooth: false</code> would be a documented policy decision visible in the config file.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cli_rpi_image_gen_config_trait"><a class="anchor" href="#_cli_rpi_image_gen_config_trait"></a><a class="link" href="#_cli_rpi_image_gen_config_trait">CLI: <code>rpi-image-gen config --trait</code></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>List every token in the loaded registry:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen config --trait</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expand a single token to show its description, type, defining file, and full resolved <code>Triggers:</code>/hierarchy closure:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen config --trait hw:soc:bcm2712</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>hw:soc:bcm2712
+  Desc: Broadcom BCM2712 - Raspberry Pi 5 / CM5 (quad Cortex-A76)
+  Type: bool
+  File: trait/hw/soc/broadcom.deb822
+  Activates:
+    hw:arch
+    hw:arch:arm
+    hw:arch:arm:aes-accel
+    hw:arch:arm:sha-accel
+    hw:crypto
+    hw:crypto:aes-accel
+    hw:crypto:sha-accel
+    hw:exec
+    hw:exec:kernel
+    hw:exec:kernel:aarch64
+    hw:exec:user
+    hw:exec:user:aarch32
+    hw:exec:user:aarch64
+    hw:isa
+    hw:isa:armv8
+    hw:soc
+    hw:uarch
+    hw:uarch:cortex-a76</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To include tokens from a custom SRCROOT, pass <code>-S</code>/<code>--srcroot</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">rpi-image-gen config -S ./my-board --trait</code></pre>
+</div>
+</div>
+</div>
+</div>
+
+    </div>
+
+    
+</body>
+</html>
