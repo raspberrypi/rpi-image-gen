@@ -1,0 +1,15 @@
+[Unit]
+Description=Generate missing SSH host keys
+After=local-fs.target
+Before=ssh.service
+ConditionFileIsExecutable=/usr/bin/ssh-keygen
+ConditionPathIsReadWrite=/etc/ssh
+ConditionPathIsSymbolicLink=!/etc/ssh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ssh-keygen -A
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
