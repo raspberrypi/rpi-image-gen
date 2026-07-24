@@ -19,6 +19,7 @@ Documentation can be served locally using `rpi-image-gen docs`, which starts a w
 - link:./execution/index.adoc[execution/] Execution flow overview
 - link:./config/index.adoc[config/] Configuration system
 - link:./layer/index.adoc[layer/] Layer information and metadata
+- link:./trait.adoc[trait] Trait token registry - hardware, system and boot mechanism facts
 - link:./provisioning/index.adoc[provisioning/] Device provisioning information
 
 == Terminology

@@ -67,7 +67,7 @@ def md2html(content: str, format: str = 'asciidoc') -> str:
 
     # Post-process: convert .adoc links to .html for web navigation
     import re
-    html_output = re.sub(r'href="([^"]+)\.adoc"', r'href="\1.html"', html_output)
+    html_output = re.sub(r'href="([^"]+)\.adoc(#[^"]*)?"', r'href="\1.html\2"', html_output)
     return html_output
 
 
@@ -157,6 +157,27 @@ def main():
         index_file = doc_dir / 'index.html'
         index_file.write_text(index_html)
         print(f"Generated: {index_file}")
+
+
+        # Generate trait page
+        trait_md = doc_dir / 'trait.adoc'
+        if trait_md.exists():
+            md_content = trait_md.read_text()
+            trait_content = md2html(md_content)
+        else:
+            raise Exception("No content for trait page!")
+
+        # Render trait page
+        trait_template = env.get_template('index.html')
+        trait_html = trait_template.render(
+            content=trait_content,
+            layers=[]  # No layers
+        )
+
+        # Write trait page
+        trait_file = doc_dir / 'trait.html'
+        trait_file.write_text(trait_html)
+        print(f"Generated: {trait_file}")
 
 
         # Generate config index page

@@ -158,9 +158,37 @@ This enables dynamic layer dependency resolution based on build-time variables s
 Only variables present in the environment can be used in dependencies.
 ====
 
+[[conditional-requires]]
+==== Conditional Requires
+
+An entry in `X-Env-Layer-Requires` may be gated on a condition, so the layer is only pulled into the build if the condition evaluates to true:
+
+[source,yaml]
+----
+# X-Env-Layer-Requires: bt-firmware when=has('hw:bluetooth')
+----
+
+The condition is a standard <<conditional-expressions>> expression, but restricted to `has()`/`not has()`, optionally combined with `and`/`or`. Unlike variable `Triggers:`/`Conflicts:`, no other comparison forms are accepted. Unconditional and conditional entries can be mixed freely in the same field, comma-separated:
+
+[source,yaml]
+----
+# X-Env-Layer-Requires: base-layer,bt-firmware when=has('hw:bluetooth'),rpi-eeprom when=has('hw:eeprom:rpi')
+----
+
+[IMPORTANT]
+====
+`IGconf_*` variable names cannot be used in a conditional `Requires:` expression, only `has()`/`not has()` (optionally combined with `and`/`or`). Conditional requires are evaluated during layer discovery, before variable resolution has happened, so no variable dict is available - only the provider index. An expression like `when=IGconf_device_class == 'pi5'` may pass syntax validation but will silently never fire (because it is never true). Use `has()` with a provider (ie, trait or label) token instead.
+====
+
+[IMPORTANT]
+====
+
+Conditional requires are evaluated once, in a single pass, against a provider index only built from unconditionally-required layers. A condition gated on a token that is only provided by another *conditionally* required layer will not fire - that token is absent from the provider index at evaluation time (ie, the provider index is not rebuilt until after the pass completes). Gate conditional required layers only on tokens provided by layers you know are unconditionally part of the build (`hw:*` tokens are the common case). This single pass approach should be sufficient for most use cases.
+====
+
 ==== X-Env-Layer-Provides / X-Env-Layer-RequiresProvider / X-Env-Layer-AfterProvider
 
-`X-Env-Layer-Provides` declares one or more capability tokens that this layer makes available to the rest of the build. Other layers reference these tokens rather than a specific layer name, which keeps the dependency abstract and substitutable.
+`X-Env-Layer-Provides` declares one or more capability tokens that this layer makes available to the rest of the build. Other layers reference these tokens rather than a specific layer name, which keeps the dependency abstract and substitutable. A colon-separated token (eg `hw:bluetooth`) is a trait token, resolved through the trait registry. See link:../trait.adoc[trait.adoc] for the full trait registry reference, including how tokens expand, `has()`, and the build config `trait:` override.
 
 All fields share the same capability contract model:
 
@@ -228,7 +256,21 @@ Variable values support dynamic placeholders:
 [[conditional-expressions]]
 === Conditional Expressions
 
-Conditional expressions are supported in trigger `when=` clauses and conflict expressions. They use standard https://docs.python.org/3/reference/expressions.html#comparisons[Python comparison syntax,window=_blank]. Variable names must be fully qualified `IGconf_*` names. Comparison values must be quoted strings. An unquoted value such as `pi5` would be interpreted as a variable name and rejected at lint time.
+Conditional expressions appear in several contexts: variable `Triggers:`/`Conflicts:`, trait `Triggers:` (see link:../trait.adoc[trait.adoc]), and conditional layer `Requires:` (see <<conditional-requires>>). All of them share common syntax, parsed and validated the same way, using standard https://docs.python.org/3/reference/expressions.html#comparisons[Python comparison syntax,window=_blank]. Variable names must be fully qualified `IGconf_*` names. Comparison values must be quoted strings. An unquoted value such as `pi5` would be interpreted as a variable name and rejected at lint time.
+
+Despite being common syntax, it does not mean every context can use it consistently everywhere - what's available at *evaluation* time depends on what data exists at that point in the build:
+
+[cols="2,1,1",options="header"]
+|===
+|Context |`IGconf_*` variables |`has()` / `not has()`
+
+|`X-Env-Var-*-Triggers`      | yes | yes
+|`X-Env-Var-*-Conflicts`     | yes | yes
+|`X-Env-Trait-*-Triggers`    | *no* | yes
+|Conditional `X-Env-Layer-Requires` | *no* | yes
+|===
+
+Trait `Triggers:` are resolved before variable resolution runs, and conditional layer `Requires:` are evaluated during layer discovery. Before that, neither has a variable dict to check against, only the provider index built so far. An `IGconf_*` reference in either context still parses and validates cleanly (it's the same syntax), but it will silently never fires at evaluation time.
 
 [cols="1,3",options="header"]
 |===
@@ -240,9 +282,11 @@ Conditional expressions are supported in trigger `when=` clauses and conflict ex
 |`not in` |`IGconf_device_class not in ['zero2w']`
 |`and`    |`IGconf_a == 'x' and IGconf_b == 'y'`
 |`or`     |`IGconf_a == 'x' or IGconf_b == 'y'`
+|`has()`     |`has('hw:bluetooth')`
+|`not has()` |`not has('hw:bluetooth')`
 |===
 
-To check for a non-empty value, use `!= ''`. Syntax errors and unknown variable references are caught at lint time, not at build time.
+To check for a non-empty value, use `!= ''`. `has('token')` checks for the presence of a trait or label token in the fully-expanded provider index - see the trait registry documentation for how tokens enter that index. Syntax errors and unknown variable references are caught at lint time, not at build time.
 
 === Triggers
 
@@ -388,7 +432,7 @@ Examples:
 
 == Configuration Variables
 
-The environment variables declared by a layer customise build behavior:
+The environment variables declared by a layer customise build behaviour:
 
 - **Validation**: Each variable includes validation rules (types, ranges, patterns)
 - **Placeholders**: Support for dynamic values like `${DIRECTORY}` and `${FILENAME}`
@@ -458,7 +502,7 @@ IGconf_layer_bar=rpi5
 IGconf_layer_app=my-app
 ----
 
-rpi-image-gen would attempt to locate layers ```trixie-minbase```,```rpi5``` and ```my-app```, including their depdendencies. Deduplication of layers occurs at the resolution phase, meaning that specifying duplicate layer names is harmless and basically a nop.
+rpi-image-gen would attempt to locate layers ```trixie-minbase```,```rpi5``` and ```my-app```, including their dependencies. Deduplication of layers occurs at the resolution phase, meaning that specifying duplicate layer names is harmless and basically a nop.
 
 == How to Use This Documentation
 
