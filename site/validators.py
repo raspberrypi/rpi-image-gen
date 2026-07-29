@@ -142,6 +142,40 @@ KEYWORDS:
     keywords:dev,test,staging,prod         - Environment shortcuts"""
 
 
+class ListEnumValidator(BaseValidator):
+    def __init__(self, options: list[str]):
+        self.options = options
+
+    def validate(self, value: Optional[str]) -> list[str]:
+        if value is None:
+            return ["Value cannot be None"]
+        items = [x.strip() for x in value.split(",")]
+        if items == [""]:
+            return ["Value cannot be empty"]
+        errors = []
+        seen = set()
+        for item in items:
+            if not item:
+                errors.append("Value contains an empty entry")
+                continue
+            if item not in self.options:
+                errors.append(f"'{item}' is not one of: {', '.join(self.options)}")
+            elif item in seen:
+                errors.append(f"'{item}' is listed more than once")
+            seen.add(item)
+        return errors
+
+    def describe(self) -> str:
+        return f"Comma-separated subset of: {', '.join(self.options)}"
+
+    @classmethod
+    def get_help_text(cls) -> str:
+        return """list:value1,value2,value3  - Comma-separated subset of the listed values (one or more, no duplicates)
+  Examples:
+    list:rsa,ecdsa,ed25519          - One or more SSH host key types
+    list:eth0,wlan0,usb0            - One or more network interfaces"""
+
+
 class RegexValidator(BaseValidator):
     def __init__(self, pattern: str):
         self.pattern = pattern
@@ -339,6 +373,9 @@ def parse_validator(rule_str: str) -> BaseValidator:
     elif rule_str.startswith("keywords:"):
         options = [x.strip() for x in rule_str.split(":", 1)[1].split(",")]
         return EnumValidator(options)
+    elif rule_str.startswith("list:"):
+        options = [x.strip() for x in rule_str.split(":", 1)[1].split(",")]
+        return ListEnumValidator(options)
     elif rule_str == "file":
         return PathValidator('file')
     elif rule_str == "file-nzero":
