@@ -226,6 +226,74 @@ map_path() {
 export -f map_path
 
 
+# Write out a layer's pre config in mmdebstrap keyed YAML at the given path.
+# Optional. Loaded immediately before the layer's own YAML. Use to influence
+# the order of operations when bdebstrap merges all YAML prior to mmdebstrap
+# handoff.
+# $1 = layer name
+# $2 = layer version
+# $3 = layer's static YAML path
+# $4 = path to write the synthesised file to
+synth_layer_pre() {
+   local name=$1 version=$2 layer=$3 out=$4
+   local stem=${layer%.yaml}
+   local hooks=()
+
+   local overlay="${stem}.rootfs-overlay"
+   [[ -d $overlay ]] && hooks+=( "rsync -a \"$overlay/\" \"\$1/\"" )
+
+   [[ ${#hooks[@]} -gt 0 ]] || return 0
+
+   msg "synth:pre $name $version"
+   {
+      echo 'mmdebstrap:'
+      echo '  customize-hooks:'
+      local h
+      for h in "${hooks[@]}"; do
+         printf '    - %s\n' "$h"
+      done
+   } > "$out"
+}
+export -f synth_layer_pre
+
+
+# Write out a layer's post config in mmdebstrap keyed YAML at the given path.
+# Optional. Loaded immediately after the layer's own YAML. Use to influence
+# the order of operations when bdebstrap merges all YAML prior to mmdebstrap
+# handoff.
+# $1 = layer name
+# $2 = layer version
+# $3 = layer's static YAML path
+# $4 = path to write the synthesised file to
+synth_layer_post() {
+   :
+}
+export -f synth_layer_post
+
+
+# Filters a layer plan down to layers that declare an mmdebstrap: mapping.
+filter_mmdebstrap_layers() {
+   python3 -c '
+import sys, pathlib, yaml
+for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
+    if not raw or raw.startswith("#"):
+        continue
+    parts = raw.split(":", 3)
+    if len(parts) != 4 or not parts[0] or not parts[3]:
+        continue
+    layer, version, static, resolved = parts
+    try:
+        data = yaml.safe_load(open(resolved, "rb"))
+    except Exception as e:
+        print(f"{resolved}: {e}", file=sys.stderr)
+        sys.exit(2)
+    if isinstance(data, dict) and data.get("mmdebstrap"):
+        print(f"{layer}:{version}:{static}:{resolved}")
+' "$1"
+}
+export -f filter_mmdebstrap_layers
+
+
 # General purpose key=value normaliser that escapes characters that would
 # break shell expansion.
 safe_kv() {

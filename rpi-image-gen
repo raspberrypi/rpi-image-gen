@@ -365,35 +365,46 @@ prepare_build_config()
    msg "\nFINAL ENV"
    mapfile_kv "${ctx[FINALENV]}" process_conf_opt
 
-   # Load resolved layers from the plan that contain an mmdebstrap mapping
    msg "\nMMDEBSTRAP"
-   local total=0 added=0 skipped=0
-   local specs="${TMPDIR}/layer.resolved"
+   local total=0 added=0
 
-   : > $specs
+   # Sanity check resolved layers from the plan
    while IFS=: read -r layer version static resolved; do
       [[ -n $layer && -n $resolved ]] || continue
       [[ $layer == \#* ]] && continue
-
       ((total++))
       [[ -f $resolved ]] || die "Layer $layer ($resolved) not found"
-      printf '%s:%s="%s"\n' "$layer" "$version" "$resolved" >> "$specs"
    done < "${ctx[LAYER_PLAN]}"
 
-   while IFS=: read -r layer version yaml; do
-      _bdebstrap+=( --config "$yaml" )
-      msg "Loaded $layer${version:+ v${version}}"
+   # Extract only those that contain an mmdebstrap mapping
+   local layers
+   layers=$(filter_mmdebstrap_layers "${ctx[LAYER_PLAN]}") \
+      || die "Failed to parse one or more YAML layers"
+
+   # Construct the bdebstrap ordered chain, including synthesised layers
+   while IFS=: read -r layer version static resolved; do
+      [[ -n $layer ]] || continue
       ((added++))
-   done < <(python3 - "$specs" <<'PY'
-import sys, yaml, pathlib
-for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
-    layer_ver, path = raw.split('=', 1)
-    path = path.strip().strip('"')
-    data = yaml.safe_load(pathlib.Path(path).read_bytes())
-    if isinstance(data, dict) and data.get("mmdebstrap"):
-        print(f"{layer_ver}:{path}")
-PY
-)
+
+      local stem cfg=()
+      stem="$(basename "${static%.yaml}")-${added}"
+      local prefile="${TMPDIR}/${stem}.pre.yaml" postfile="${TMPDIR}/${stem}.post.yaml"
+
+      synth_layer_pre "$layer" "$version" "$static" "$prefile" \
+         || die "Layer $layer ($static): pre-synth failed"
+      [[ -f $prefile ]] && cfg+=( --config "$prefile" )
+
+      cfg+=( --config "$resolved" )
+
+      synth_layer_post "$layer" "$version" "$static" "$postfile" \
+         || die "Layer $layer ($static): post-synth failed"
+      [[ -f $postfile ]] && cfg+=( --config "$postfile" )
+
+      _bdebstrap+=( "${cfg[@]}" )
+
+      msg "Loaded $layer${version:+ ${version}}"
+   done <<< "$layers"
+
    local skipped=$((total - added))
    msg "Loaded ${added}/${total}, skipped $skipped"
 
