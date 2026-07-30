@@ -1,0 +1,33 @@
+#!/bin/sh
+# Start a getty on the console device dictated by the policy
+
+[ -r /etc/console.conf ] && . /etc/console.conf
+
+case "${CONSOLE_DEV:-serial}" in
+   usb)
+      # Can't spawn without CDC-ACM
+      tty=ttyGS0
+      [ -c "/dev/$tty" ] || { sleep 5; exit 1; }
+
+      # Wait for a host to attach
+      state=$(cat /sys/class/udc/*/state 2>/dev/null | head -n1)
+      [ "$state" = configured ] || { sleep 5; exit 1; }
+
+      # A gadget port has no modem or flow control
+      stty -F "/dev/$tty" clocal -crtscts -ixon -ixoff 2>/dev/null || :
+
+      # Write nothing until the host sends something
+      while ! read -r _ < "/dev/$tty" 2>/dev/null; do sleep 2; done
+
+      # Carrier means something on a gadget port. Losing it hangs up the shell
+      clocal=-L
+      ;;
+   *)
+      tty=$(awk '{print $1}' /proc/consoles | grep -E '^tty(AMA|S)[0-9]+$' | head -n1)
+      # No consoles. Sleep to avoid init spinning
+      [ -n "$tty" ] || { sleep 5; exit 1; }
+      clocal=-L
+      ;;
+esac
+
+exec getty ${GETTY_ARGS:-} ${clocal} "$tty" 115200 vt100

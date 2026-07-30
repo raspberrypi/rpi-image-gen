@@ -1,0 +1,8 @@
+image <IMAGE_NAME>.vfat {
+   vfat {
+      label = "BOOTFS"
+      extraargs = "-S <SECTOR_SIZE>"
+   }
+   size = 100%
+   mountpoint = "/bootfs"
+}

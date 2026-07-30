@@ -1,0 +1,199 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-microboot-base
+# X-Env-Layer-Category: distribution
+# X-Env-Layer-Desc: Microboot filesystem base plus tooling hooks to pack a
+#  minimal filesystem into a single directory suitable for post-processing
+#  to create bootable media.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: device-base,device-user-credentials
+# X-Env-Layer-Provides: debian-base
+#
+# X-Env-VarPrefix: u
+#
+# X-Env-Var-initsys: busybox
+# X-Env-Var-initsys-Desc: The init system of choice for the initramfs
+# X-Env-Var-initsys-Required: n
+# X-Env-Var-initsys-Valid: keywords:busybox,systemd
+# X-Env-Var-initsys-Set: force
+#
+# X-Env-Var-console: none
+# X-Env-Var-console-Desc: Console policy for the microboot base filesystem.
+#  'none' runs no getty, leaving no interactive console.
+#  'login' runs a getty with a login prompt.
+#  'autologin' runs a getty that execs a root shell without authenticating.
+#  Both login types run on the first serial console the kernel reports.
+#  'usb-' forms are equivalent policies on /dev/ttyGS0 (gadget serial port)
+#  for an image attached over USB (needs a gadget with CDC-ACM support).
+# X-Env-Var-console-Required: n
+# X-Env-Var-console-Valid: keywords:none,login,autologin,usb-login,usb-autologin
+# X-Env-Var-console-Set: y
+# X-Env-Var-console-Conflicts:
+#  IGconf_u_console in ['login', 'usb-login'] and IGconf_device_user1passhash == ''
+#  IGconf_u_console in ['autologin', 'usb-autologin'] and IGconf_device_user1passhash != ''
+#  IGconf_device_user1pass != ''
+#
+# X-Env-Var-services: network
+# X-Env-Var-services-Desc: Which of this layer's own boot services start.
+#  Services shipped by other layers are not governed here.
+# X-Env-Var-services-Required: n
+# X-Env-Var-services-Valid: list:none,network
+# X-Env-Var-services-Set: y
+#
+# X-Env-Var-initramfs_list: ${DOTD}/initramfs.list.${IGconf_u_initsys}
+# X-Env-Var-initramfs_list-Desc: Path to a file listing files/directories to
+#  include in the microboot initramfs from the donor chroot. Resolved via
+#  dracut-install, pulling in shared library dependencies automatically.
+#  List only what you want. Not transitive dependencies.
+# X-Env-Var-initramfs_list-Required: n
+# X-Env-Var-initramfs_list-Valid: file-nzero
+# X-Env-Var-initramfs_list-Set: y
+#
+# X-Env-Var-modules_list: ${DOTD}/modules.list
+# X-Env-Var-modules_list-Desc: Path to a file listing kernel modules to
+#  include in the microboot initramfs from the donor chroot. Resolved via
+#  dracut-install. List only what you actually want. Not transitive dependencies.
+# X-Env-Var-modules_list-Required: n
+# X-Env-Var-modules_list-Valid: file-nzero
+# X-Env-Var-modules_list-Set: y
+#
+# X-Env-Var-init_overlay: ${DOTD}/init/${IGconf_u_initsys}/overlay
+# X-Env-Var-init_overlay-Desc: Filesystem overlay used to seed the microboot
+#  initramfs.
+# X-Env-Var-init_overlay-Required: n
+# X-Env-Var-init_overlay-Valid: dir
+# X-Env-Var-init_overlay-Set: y
+#
+# X-Env-Var-service_policy: ${DOTD}/init/${IGconf_u_initsys}/service-policy
+# X-Env-Var-service_policy-Desc: Applies init service policy to staging
+# X-Env-Var-service_policy-Required: n
+# X-Env-Var-service_policy-Valid: file-nzero
+# X-Env-Var-service_policy-Set: y
+#
+# X-Env-Var-dracut_install_opts: -v
+# X-Env-Var-dracut_install_opts-Desc: Extra command-line flags passed to
+#  every dracut-install invocation. See man(8) dracut.
+# X-Env-Var-dracut_install_opts-Required: n
+# X-Env-Var-dracut_install_opts-Valid: string-or-empty
+# X-Env-Var-dracut_install_opts-Set: y
+#
+# X-Env-Var-dracut_install_env:
+# X-Env-Var-dracut_install_env-Desc: Extra environment variables applied
+#  to every dracut-install invocation, as a space-separated KEY=value list
+#  (eg "DRACUT_LDD=/some/other/ldd DRACUT_NO_XATTR=1"). See man(8) dracut.
+# X-Env-Var-dracut_install_env-Required: n
+# X-Env-Var-dracut_install_env-Valid: string-or-empty
+# X-Env-Var-dracut_install_env-Set: y
+# METAEND
+---
+mmdebstrap:
+  architectures:
+    - arm64
+  mode: auto
+  variant: extract
+  suite: trixie
+  mirrors:
+    - ${IGTOP}/templates/debian/apt/trixie-recovery.sources
+  packages:
+    - libc6-udeb
+    - bash
+    - mount
+    - base-files
+    - base-passwd
+    - busybox
+    - dracut-install
+    - kmod
+    - liblzma5
+    - libzstd1
+    - coreutils
+    - libc-bin
+    - openntpd
+    - netplug
+  extract-hooks:
+    - |-
+      set -u
+      mkdir -p "$1/initramfs-root/proc"
+      mkdir -p "$1/initramfs-root/sys"
+      mkdir -p "$1/initramfs-root/dev/pts"
+      mkdir -m 1777 -p "$1/initramfs-root/tmp"
+      mkdir -p "$1/initramfs-root/run"
+      mkdir -p "$1/staging"
+      mkdir -p "$1/bootfs/overlays"
+    - chroot "$1" ldconfig || true
+    - ln -sf bash "$1/usr/bin/sh"
+    # kernel image install
+    - |-
+      set -u
+      kernel=
+      for k in "$1"/boot/vmlinuz-*; do
+        [ -f "$k" ] || continue
+        [ -z "$kernel" ] || { echo "microboot: more than one kernel image in /boot" >&2; exit 1; }
+        kernel=$k
+      done
+      [ -n "$kernel" ] || { echo "microboot: no kernel image found under /boot" >&2; exit 1; }
+      install -m 0644 "$kernel" "$1/bootfs/vmlinuz"
+    # Seed DTBs and overlays
+    - |-
+      set -u
+      ver=
+      for d in "$1"/lib/modules/*/ ; do
+        [ -d "$d" ] || continue
+        [ -z "$ver" ] || { echo "microboot: more than one kernel installed" >&2; exit 1; }
+        ver=$(basename "$d")
+      done
+      [ -n "$ver" ] || { echo "microboot: no kernel modules directory" >&2; exit 1; }
+      kdir="$1/usr/lib/linux-image-$ver"
+      [ -d "$kdir" ] || { echo "microboot: no linux $ver dir found" >&2; exit 1; }
+      cp -a "$kdir"/broadcom/*.dtb "$1/bootfs/"
+      cp -a "$kdir"/overlays/*.dtb* "$1/bootfs/overlays/"
+    # Install boot firmware if present
+    - |-
+      set -u
+      if [ -d "$1/usr/lib/raspi-firmware" ]; then
+        cp -a "$1/usr/lib/raspi-firmware/." "$1/bootfs/"
+      fi
+    # Defaults only. Can be overridden by downstream hook.
+    - |-
+      cat > "$1/bootfs/config.txt" <<-'EOF'
+      	[all]
+      	arm_64bit=1
+      	kernel=vmlinuz
+      	initramfs initramfs.cpio.zst followkernel
+      	EOF
+      cat > "$1/bootfs/cmdline.txt" <<-'EOF'
+      	console=serial0,115200 console=tty1 loglevel=4
+      	EOF
+    # Install seed lists for dracut
+    - |-
+      set -u
+      cp "$IGconf_u_initramfs_list" "$1/initramfs.list"
+      cp "$IGconf_u_modules_list" "$1/modules.list"
+    #
+    # Begin staging dir creation
+    - |-
+      set -e
+      if [ "$IGconf_u_initsys" = "busybox" ] ; then
+        mkdir -p "$1/staging/usr/bin"
+        cp -p "$1/usr/bin/busybox" "$1/staging/usr/bin/"
+        chroot "$1" /usr/bin/busybox --install -s /staging/usr/bin
+        # Must use relative links otherwise links follow to the chroot
+        ln -sf usr/bin/busybox "$1/staging/init"
+        ln -sf usr/bin "$1/staging/bin"
+        ln -sf usr/bin "$1/staging/sbin"
+        ln -sf bin "$1/staging/usr/sbin"
+      else
+        echo "microboot: non-busybox init currently unsupported" >&2 ; exit 1
+      fi
+    # Apply overlay to staging
+    - rsync -a --chmod=go-w --exclude='.gitkeep' -- "$IGconf_u_init_overlay"/ "$1/staging/"
+    #
+    # Future hooks can inject here for a clean point to inspect/strip/modify the
+    # assembled tree before it becomes part of the initramfs. Nothing else after
+    # this point is init system specific. Hooks handle the rest.
+    #
+  aptopts:
+    - APT::Install-Suggests "false"
+    - APT::Install-Recommends "false"
+  dpkgopts:
+    - path-exclude=/usr/share/doc/*
+    - path-exclude=/usr/share/man/*
+    - path-exclude=/usr/share/locale/*

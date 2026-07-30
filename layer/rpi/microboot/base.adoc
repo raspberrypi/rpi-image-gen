@@ -1,0 +1,69 @@
+= Microboot Filesystem Base
+
+This layer builds a minimal, bootable filesystem packed as a compressed initramfs. It is intended to be built on by downstream layers.
+
+== Build model
+
+Unlike conventional layers, this layer bootstraps with `variant: extract` meaning that packages are unpacked into the chroot but never configured. No maintainer scripts run, so files that might otherwise be expected to exist may not. This 'donor' chroot serves as a 'parts bin' rather than the final target destination. Nothing in it ships in the final image unless something copies it out.
+
+[IMPORTANT]
+====
+Because the variant is `extract`, mmdebstrap *only* runs setup and extract hooks. A downstream/consumer layer that integrates with it must do so from a setup or extract hook.
+====
+
+Four directories matter, all beneath the chroot passed to every hook as `$1`:
+
+[cols="1,4", options="header"]
+|===
+| Path | Contents
+
+| `$1` | The donor chroot. Unpacked packages only, curated out.
+| `$1/staging` | The microboot filesystem as it is being assembled. Overlay content, busybox applet links, account files, etc.
+| `$1/initramfs-root` | What actually becomes the initramfs. Staging is synced here, then dracut-install adds binaries, libraries and modules from the donor chroot.
+| `$1/bootfs` | The boot filesystem contents, eg kernel, DTBs, firmware, `config.txt`, `cmdline.txt` and the packed initramfs.
+|===
+
+== Integration points
+
+=== Boot files
+
+`config.txt` and `cmdline.txt` are written as defaults. To replace either, copy your own into `$1/bootfs` from a standalone hook:
+
+[source,bash]
+----
+#!/bin/bash
+set -euo pipefail
+cp "$LAYER_DOTD/config.txt" "$1/bootfs/config.txt"
+----
+
+=== Initramfs content
+
+Two lists drive what is curated out of the donor chroot using `dracut-install` which pulls in dependencies automatically. Both lists swept across the build plan, so any layer extends them by shipping fragments in its own companion directory:
+
+`<stem>.d/initramfs.list.<initsys>`:: Files and directories to install.
+`<stem>.d/modules.list`:: Kernel modules to install.
+
+Fragments are appended to the base lists, which are held by `IGconf_u_initramfs_list` and `IGconf_u_modules_list`. Comments and blank lines are ignored.
+
+For content that is not a file to curate, write directly into `$1/staging` or `$1/initramfs-root`.
+
+=== Console and credentials
+
+The console policy is a variable naming both a device and an authentication mode for the console exposed by the system.
+
+`usb-login` and `usb-autologin` are schemes that only apply to `/dev/ttyGS0`, the gadget serial port. This may be useful for an image reached over a USB cable rather than a UART. This layer does not build a USB gadget: something else must create one with a CDC-ACM function.
+
+The non-root account exists so that a service need not run as uid 0.
+
+[WARNING]
+====
+The busybox initramfs verifies passwords using busybox's own crypt implementation. The pre-built Debian busybox does not support yescrypt. Generate a hashed password using `bin/genpasswd <chroot>/staging`, which detects this correctly.
+====
+
+=== Services
+
+`IGconf_u_services` selects which of the layer's own services start. `none` starts none. A service left out stays in the image, switched off.
+
+Supported service names map to underlying units via a `service-policy` list which is particular to the init system.
+
+Services from other layers are not governed by this mechanism.

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+mount -a
+echo /usr/bin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+
+serial=$(cat /proc/device-tree/serial-number 2>/dev/null | tr -d '\0')
+if [ -n "$serial" ]; then
+  suffix=${serial#"${serial%????????}"}
+  hostname "microboot-$suffix"
+  echo "microboot-$suffix" > /etc/hostname
+fi
+
+model=$(cat /proc/device-tree/model 2>/dev/null | tr -d '\0')
+{
+  [ -n "$model" ] && echo "$model"
+  echo "Hostname: $(hostname)"
+  [ -n "$serial" ] && echo "Serial:   $serial"
+  echo "Kernel:   $(uname -r)"
+  echo ""
+} > /etc/motd
+
+for script in /etc/init.d/S*; do
+  [ -x "$script" ] && "$script" start
+done

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Sync staging into the initramfs root
+rsync -a -- "$1/staging"/ "$1/initramfs-root"/

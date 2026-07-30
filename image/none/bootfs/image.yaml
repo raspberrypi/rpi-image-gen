@@ -1,0 +1,9 @@
+# METABEGIN
+# X-Env-Layer-Name: image-bootfs
+# X-Env-Layer-Category: image
+# X-Env-Layer-Desc: Packs /bootfs directly into a FAT filesystem image. No
+#  partition table. For boot media that's consumed as a raw filesystem
+#  rather than a partitioned disk, eg loaded directly into RAM via rpiboot.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: image-base
+# METAEND

@@ -1,0 +1,47 @@
+#!/bin/bash
+
+set -euo pipefail
+
+di=/usr/lib/dracut/dracut-install
+[ -x "$1/$di" ] || die "microboot: dracut not found"
+
+
+# Install listed files into the initramfs root
+mapfile -t entries < <(grep -v '^[[:space:]]*#' "$1/initramfs.list" \
+   | grep -v '^[[:space:]]*$')
+
+if [ ${#entries[@]} -gt 0 ]; then
+   env ${IGconf_u_dracut_install_env:-} \
+      chroot "$1" "$di" -l -D /initramfs-root \
+      ${IGconf_u_dracut_install_opts:-} -a "${entries[@]}"
+fi
+
+
+# Install listed modules into the initramfs root
+mapfile -t modules < <(grep -v '^[[:space:]]*#' "$1/modules.list" \
+   | grep -v '^[[:space:]]*$')
+
+if [ ${#modules[@]} -gt 0 ]; then
+   ver=
+   for d in "$1"/lib/modules/*/ ; do
+      [ -d "$d" ] || continue
+      [ -z "$ver" ] || die "microboot: more than one kernel installed"
+      ver=$(basename "$d")
+   done
+   [ -n "$ver" ] || die "microboot: no kernel modules directory"
+
+   chroot "$1" depmod --basedir / "$ver"
+   env ${IGconf_u_dracut_install_env:-} \
+      chroot "$1" "$di" -D /initramfs-root \
+      --kerneldir "/lib/modules/$ver" \
+      ${IGconf_u_dracut_install_opts:-} -m "${modules[@]}"
+
+   # modinfo
+   mkdir -p "$1/initramfs-root/lib/modules/$ver"
+   for f in modules.order modules.builtin modules.builtin.modinfo; do
+      if [ -e "$1/lib/modules/$ver/$f" ]; then
+         cp -a "$1/lib/modules/$ver/$f" "$1/initramfs-root/lib/modules/$ver/"
+      fi
+   done
+   chroot "$1" depmod --basedir /initramfs-root "$ver"
+fi

@@ -1,0 +1,86 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Console policy, applied to staging before it's synced into the initramfs
+# root.
+staging="$1/staging"
+
+# The policy names a device and an authentication mode. Derives CONSOLE_DEV
+# and GETTY_ARGS for consumers.
+if [ "${IGconf_u_console:-none}" = none ]; then
+   # No getty - nothing to prompt for, nothing to authenticate
+   sed -i '\#^::respawn:/etc/init.d/console-getty#d' "$staging/etc/inittab"
+   rm -f "$staging/etc/init.d/console-getty" \
+         "$staging/etc/console-login" \
+         "$staging/etc/console.conf"
+else
+   case "$IGconf_u_console" in
+      usb-*) dev=usb ;;
+      *)     dev=serial ;;
+   esac
+
+   case "$IGconf_u_console" in
+      *autologin)
+         args='-n -l /etc/console-login'
+         ;;
+      *)
+         # No args - getty execs /bin/login itself
+         args=
+         rm -f "$staging/etc/console-login"
+         ;;
+   esac
+
+   printf 'CONSOLE_DEV=%s\nGETTY_ARGS="%s"\n' "$dev" "$args" \
+      > "$staging/etc/console.conf"
+fi
+
+# Regular user account so anything that mustn't run as uid 0 can be supported
+user=$IGconf_device_user1
+home=/home/$user
+hash=${IGconf_device_user1passhash:-}
+
+# Only a login console gives the account a usable shell
+case "$IGconf_u_console" in
+   login|usb-login) shell=/bin/sh ;;
+   *)               shell=/sbin/nologin ;;
+esac
+
+# Allocate as adduser would when no id specified
+next_free() {  # $1 = file, $2 = field
+   local id last=999
+   while IFS= read -r id; do
+      case $id in ''|*[!0-9]*) continue ;; esac
+      [ "$id" -ge 1000 ] && [ "$id" -lt 60000 ] && [ "$id" -gt "$last" ] && last=$id
+   done < <(cut -d: -f"$2" "$1")
+   echo $((last + 1))
+}
+
+uid=${IGconf_device_user1uid:-}
+gid=${IGconf_device_user1gid:-}
+[ -n "$uid" ] || uid=$(next_free "$staging/etc/passwd" 3)
+[ -n "$gid" ] || gid=$(next_free "$staging/etc/group" 3)
+
+# Busybox verifies with its own crypt, but no yescrypt. Fail the build rather
+# than ship an unusable login.
+if [ -n "$hash" ] && [ "$IGconf_u_initsys" = busybox ]; then
+   case "$hash" in
+      \$1\$*|\$5\$*|\$6\$*) ;;
+      *) die "microboot: busybox cannot verify this hash - generate one" ;;
+   esac
+fi
+
+# No hash means a locked account
+[ -n "$hash" ] || hash='!'
+
+for f in passwd group shadow; do
+   grep -v "^${user}:" "$staging/etc/$f" > "$staging/etc/$f.new" || :
+   mv "$staging/etc/$f.new" "$staging/etc/$f"
+done
+
+printf '%s:x:%s:%s:%s:%s:%s\n' "$user" "$uid" "$gid" "$user" "$home" "$shell" \
+   >> "$staging/etc/passwd"
+printf '%s:x:%s:\n' "$user" "$gid" >> "$staging/etc/group"
+printf '%s:%s:::::::\n' "$user" "$hash" >> "$staging/etc/shadow"
+
+mkdir -p "$staging$home"
