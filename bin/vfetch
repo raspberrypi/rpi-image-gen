@@ -4,7 +4,7 @@ set -euo pipefail
 
 # File fetch with verification and cache support
 # Usage:
-#   [IGconf_sys_cachedir=/path/to/cache] <script> <metadata.file> </path/to/output.file>
+#   [IGconf_sys_cachedir=/path/to/cache] <script> <metadata.file> </path/to/output.file> [offline: y|n]
 #
 # Metadata - mirrors supported, use consistent name:
 #   <name> <algo:hex> <url or local path>
@@ -25,7 +25,7 @@ die (){
 }
 
 
-meta="${1:-}"; dest="${2:-}"
+meta="${1:-}"; dest="${2:-}"; offline="${3:-n}"
 [[ -n "$meta" && -n "$dest" ]] || die "Expected args: <metadata.file> </path/to/output.file>"
 
 
@@ -110,6 +110,7 @@ done < "${meta}"
 
 [[ -n "${target_name}" ]] || die "No metadata entries in $meta"
 
+[[ "$offline" == "y" ]] && die "Offline: no verified cache for ${target_name}, no network fetch"
 
 # Pass 2: download each candidate and verify with its own expected digest
 while IFS= read -r line || [[ -n "${line}" ]]; do
