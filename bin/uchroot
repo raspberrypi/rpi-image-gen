@@ -3,7 +3,9 @@
 # safe userspec chroot wrapper as local user IGconf_device_user1 with shell
 # command execution.
 # This user is created by rpi-user-credentials as a valid regular local user
-# with home dir. The command is 
+# with home dir. UID/GID are read from the chroot's own /etc/passwd and passed
+# to chroot --userspec as numeric +UID:+GID to avoid NSS name lookup (and any
+# cross-root library loading hazards).
 set -u
 
 if [ $# -eq 0 ]; then
@@ -30,9 +32,10 @@ if [ -r "${dir}/etc/passwd" ]; then
       # home is 6th field
       home_dir=$(echo "$spec" | cut -d: -f6)
       if [ -d "${dir}${home_dir}" ]; then
-         # GID is 4th field
+         # UID/GID are 3rd/4th field
+         user_uid=$(echo "$spec" | cut -d: -f3)
          user_gid=$(echo "$spec" | cut -d: -f4)
-         userspec="${IGconf_device_user1}:${user_gid}"
+         userspec="+${user_uid}:+${user_gid}"
 
          USER="$IGconf_device_user1" \
          LOGNAME="$IGconf_device_user1" \
