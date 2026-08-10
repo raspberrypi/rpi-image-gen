@@ -2,9 +2,9 @@
 # X-Env-Layer-Name: rpi5
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi 5 specific device layer
-# X-Env-Layer-Version: 2.0.1
+# X-Env-Layer-Version: 3.0.0
 # X-Env-Layer-Requires: rpi-device-base,rpi-linux-2712
-# X-Env-Layer-Provides: rpi-device
+# X-Env-Layer-Provides: rpi-device,hw:device:rpi:pi5
 #
 # X-Env-VarPrefix: device
 #
@@ -18,8 +18,10 @@
 # X-Env-Var-storage_type-Desc: Storage media the image is intended for, as seen
 #  by the OS.
 # X-Env-Var-storage_type-Required: n
-# X-Env-Var-storage_type-Valid: sd,nvme,usb
+# X-Env-Var-storage_type-Valid: sd,nvme
 # X-Env-Var-storage_type-Set: y
+# X-Env-Var-storage_type-Conflicts:
+#  IGconf_device_storage_type == 'nvme' and not has('hw:storage:nvme')
 #
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Device specific asset directory

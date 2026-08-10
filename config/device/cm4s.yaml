@@ -1,0 +1,11 @@
+# External interfaces may depend on carrier board. Include a carrier
+# config that declares traits for those available (eg. hw:ethernet).
+device:
+  layer: rpi-cm4
+  variant: S
+
+trait:
+  hw:storage:emmc: true
+  hw:storage:sd: false
+  hw:wlan: false
+  hw:bluetooth: false

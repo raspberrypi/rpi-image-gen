@@ -8,7 +8,7 @@
 #  Downstream layer implementation-dependent.
 # X-Env-Layer-Requires:
 # X-Env-Layer-RequiresProvider: rpi-device
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 #
 # X-Env-VarPrefix: device
 #
@@ -18,8 +18,8 @@
 # X-Env-Var-luks2_cipher-Valid: string
 # X-Env-Var-luks2_cipher-Set: lazy
 # X-Env-Var-luks2_cipher-Triggers:
-#  when=IGconf_device_class in ['pi5','cm5'] set IGconf_device_luks2_cipher=aes-xts-plain64 policy=lazy
-#  when=IGconf_device_class in ['pi4','cm4','pi3','zero2w'] set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
+#  when=has('hw:crypto:aes-accel') set IGconf_device_luks2_cipher=aes-xts-plain64 policy=lazy
+#  when=not has('hw:crypto') set IGconf_device_luks2_cipher=xchacha12,aes-adiantum-plain64 policy=lazy
 #
 # X-Env-Var-luks2_hash: sha256
 # X-Env-Var-luks2_hash-Desc: The hash algorithm used for LUKS2 metadata integrity.

@@ -4,7 +4,7 @@
 # X-Env-Layer-Desc: Raspberry Pi Zero 2 W specific device layer
 # X-Env-Layer-Version: 2.0.1
 # X-Env-Layer-Requires: rpi-generic64
-# X-Env-Layer-Provides: rpi-device
+# X-Env-Layer-Provides: rpi-device,hw:device:rpi:zero2w
 #
 # X-Env-VarPrefix: device
 #

@@ -1,0 +1,8 @@
+device:
+  layer: rpi5
+
+# Example - configuration targets a device with an M.2 HAT fitted that has
+# NVMe storage available.
+trait:
+  hw:storage:nvme: true
+  hw:pcie:m2: true

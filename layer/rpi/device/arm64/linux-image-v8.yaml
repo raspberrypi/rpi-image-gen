@@ -2,8 +2,9 @@
 # X-Env-Layer-Name: rpi-linux-v8
 # X-Env-Layer-Category: kernel
 # X-Env-Layer-Desc: Raspberry Pi v8 kernel
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Requires: linux-base
+# X-Env-Layer-RequiresProvider: hw:device:rpi,hw:isa:armv8
 # METAEND
 ---
 env:

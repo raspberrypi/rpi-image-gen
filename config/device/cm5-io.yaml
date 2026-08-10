@@ -1,0 +1,7 @@
+include:
+  - device/cm5.yaml
+  - device/cm5io.yaml
+
+# Example - configuration enables NVMe storage via the M.2 M-key expansion slot
+trait:
+  hw:storage:nvme: true

@@ -1,0 +1,4 @@
+# External interfaces may depend on carrier board. Include a carrier
+# config that declares traits for those available (eg. hw:ethernet).
+device:
+  layer: rpi-cm4
