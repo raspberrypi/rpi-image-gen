@@ -30,7 +30,7 @@ VERITY_ARGS_SYSTEM="\
 # Set up the partition layout for tryboot support. Partition numbering
 # relates directly to the layout in genimage.cfg.in
 
-cat << EOF > "${genimg_in}/autoboot.txt"
+cat << EOF > "${fs}/bootfs/autoboot.txt"
 [all]
 tryboot_a_b=1
 boot_partition=2
