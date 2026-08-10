@@ -37,6 +37,9 @@ PKG_CONFIGURE_OPTS ?=
 PKG_LIB_SHARED     ?= lib$(patsubst lib%,%,$(PKG_NAME))*.so*
 PKG_MAKE_OPTS      ?=
 
+# Set to y for offline builds - no network access during package build
+IG_OFFLINE ?= n
+
 PKG_USE_HOST_PKGCONFIG ?= 0
 ifeq ($(PKG_USE_HOST_PKGCONFIG),1)
 ifneq ($(PKG_BUILD_GNU_TYPE),$(PKG_HOST_GNU_TYPE))
@@ -95,7 +98,7 @@ $(PKG_BUILD_LOG):
 
 $(PKG_ARCHIVE_PATH): $(PKG_META_PATH) | $(PKG_WORK_DIR) $(PKG_BUILD_LOG)
 	$(call msg,GET)
-	@$(call run,vfetch $(PKG_META_PATH) $@)
+	@$(call run,vfetch $(PKG_META_PATH) $@ $(IG_OFFLINE))
 
 $(PKG_SOURCE_ROOT): $(PKG_ARCHIVE_PATH) $(PKG_PATCHES)
 	$(call msg,UNPACK)
@@ -129,6 +132,7 @@ ifeq ($(PKG_BUILD_SCHEME),pysrc)
 define installwheel
 	$(call run,env $(PKG_ENVIRONMENT) \
 		python3 -m pip install \
+			$(PIP_ARGS) \
 			--find-links $(PIP_WHEELS) \
 			--root=$(1) \
 			--prefix="$(PKG_PREFIX)" \
@@ -143,13 +147,19 @@ PIP_WHEELS := $(PKG_CACHE_ROOT)/pip-wheels
 PKG_ENVIRONMENT += PIP_CACHE_DIR=$(PIP_CACHE)
 PKG_ENVIRONMENT += PIP_PREFER_BINARY=1
 
+ifeq ($(IG_OFFLINE),y)
+PIP_ARGS += --no-index --find-links $(PIP_WHEELS) --no-build-isolation
+PKG_ENVIRONMENT += PIP_NO_INDEX=1
+PKG_ENVIRONMENT += PIP_FIND_LINKS=$(PIP_WHEELS)
+endif
+
 $(PKG_CACHE_ROOT) $(PIP_CACHE) $(PIP_WHEELS):
 	@mkdir -p $@
 
 $(PKG_BUILD_STAMP): $(PKG_SOURCE_STAMP) | $(PIP_CACHE) $(PIP_WHEELS)
 	$(call msg,BUILD)
 	@$(call run,env $(PKG_ENVIRONMENT) \
-		python3 -m pip wheel --wheel-dir $(PIP_WHEELS) $(PKG_SOURCE_PATH))
+		python3 -m pip wheel $(PIP_ARGS) --wheel-dir $(PIP_WHEELS) $(PKG_SOURCE_PATH))
 	@touch $@
 
 $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR)
