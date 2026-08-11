@@ -302,6 +302,21 @@
 <p>Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.</p>
 </div>
 <div class="sect2">
+<h3 id="_why_var_is_slot_local_by_default">Why /var is slot-local by default</h3>
+<div class="paragraph">
+<p>Read literally, FHS supports sharing most of <code>/var</code> across slots: <code>/var/lib</code> is explicitly persistent per-host application state (unlike <code>/run</code>, which FHS separates out precisely because it is <strong>not</strong> meant to survive), and <code>/var/log</code>, <code>/var/spool</code>, and most software that keeps working state under <code>/var/lib</code> (NetworkManager, databases, container runtimes) expect that state to survive an upgrade.</p>
+</div>
+<div class="paragraph">
+<p>But "survives an upgrade" and "survives a rollback" are different guarantees, and rollback is the reason this layout exists. State shared across slots can be written or migrated by a newer slot into a form the older slot&#8217;s software cannot read. If a rollback then hits state it doesn&#8217;t understand, the rollback - the main safety mechanism this A/B layout provides - is compromised.</p>
+</div>
+<div class="paragraph">
+<p>Enumerating every <code>/var</code> path that is safe to share, and keeping that list correct as packages change what they write, is more failure-prone than making sharing an explicit, per-layer decision. Slot-local by default means a layer&#8217;s on-disk state is simply absent/reset after a slot change unless the layer says otherwise. That makes the safe outcome the automatic one: a layer author who forgets to declare sharing ends up with reset state, not a silently shared state that a rollback can&#8217;t read. Sharing is therefore opt-in, applied only where a maintainer has actually verified the application&#8217;s state is safe (or required) to carry across slots - e.g. <code>machine-id</code> for identity stability, or NetworkManager&#8217;s connection profiles and secret key for network continuity.</p>
+</div>
+<div class="paragraph">
+<p>If you are writing a layer whose software keeps state under <code>/var</code> that users would reasonably expect to survive an update - credentials, device identity, accumulated data, long-lived queues - assume it will be wiped or reset on the next slot flip unless you add a <code>slot-shared.d</code> entry for it.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_how_it_works">How it works</h3>
 <div class="olist arabic">
 <ol class="arabic">
