@@ -78,10 +78,10 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX> {
 image bootconfig.vfat {
    vfat {
       label = "BOOTCONFIG"
-      file "autoboot.txt" { image = "autoboot.txt" }
       extraargs = "-s 1 -S <SECTOR_SIZE>"
    }
    size = 32M
+   mountpoint = "/bootfs"
 }
 
 image boot.vfat {
