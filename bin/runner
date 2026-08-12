@@ -96,7 +96,7 @@ apply_overlays() {
    for spec in ${FS_OVERLAYS[$phase]}; do
       if src=$(map_path "$spec") && [[ -d $src ]]; then
          msg "runner: overlay [$src -> $dest]"
-         rsync -a -- "$src"/ "$dest"/
+         rsync -a --exclude='.keep' --exclude='.empty' -- "$src"/ "$dest"/
          local rc=$?
          [[ $rc -eq 0 ]] || die "runner: error applying overlay ($rc)"
       fi

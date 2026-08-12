@@ -240,7 +240,7 @@ synth_layer_pre() {
    local hooks=()
 
    local overlay="${stem}.rootfs-overlay"
-   [[ -d $overlay ]] && hooks+=( "rsync -a \"$overlay/\" \"\$1/\"" )
+   [[ -d $overlay ]] && hooks+=( "rsync -a --exclude='.keep' --exclude='.empty' \"$overlay/\" \"\$1/\"" )
 
    [[ ${#hooks[@]} -gt 0 ]] || return 0
 
