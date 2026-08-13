@@ -1,11 +1,11 @@
 #!/bin/sh
 # shellcheck shell=sh
 
-set -u
-
 # Tag an incoming block device as boot-device-backed for udev IMPORT.
 # This script is boot critical and must be compatible with minimal shell
 # environments such as klibc, and be as POSIX compliant as possible.
+
+set -u
 
 die() {
    msg="ERROR: $*"
@@ -42,16 +42,56 @@ read_dt_u32() {
 }
 
 
+# Locate the USB-attached disk that carries our boot partition.
+#
+# The firmware reports a USB boot only via boot-mode; unlike mmcblk0/nvme0n1 it
+# does NOT tell us which block device it booted from, and USB enumeration order
+# is not deterministic (sda/sdb can swap). We therefore identify the boot disk
+# by content: the USB-attached disk holding a vfat partition labelled BOOT (the
+# label this image stamps on its firmware partition, matched by 99-rpi-05-image
+# to by-slot/boot). Prints the disk kname (e.g. "sda") on success.
+usb_boot_disk() {
+   for d in /sys/block/sd*; do
+      [ -e "$d" ] || continue
+      # USB-attached? (sysfs device path passes through a usb controller)
+      case "$(readlink -f "$d/device" 2>/dev/null)" in
+         *[/]usb[0-9]*|*[/]usb/*) ;;
+         *) continue;;
+      esac
+      disk=${d##*/}
+      for p in "$d/$disk"*; do
+         [ -r "$p/partition" ] || continue
+         part=${p##*/}
+         if [ "$(blkid -s LABEL -o value "/dev/$part" 2>/dev/null)" = "BOOT" ] &&
+            [ "$(blkid -s TYPE  -o value "/dev/$part" 2>/dev/null)" = "vfat" ]; then
+            echo "$disk"
+            return 0
+         fi
+      done
+   done
+   return 1
+}
+
+
 MODEL=$(cat /proc/device-tree/model) || die "no model data"
 read -r _ _ GEN REV <<EOF
 $MODEL
 EOF
-BOOT_MODE=$(read_dt_u32 /proc/device-tree/chosen/bootloader/boot-mode) || die "no boot-mode"
+
+# RPI_BOOTDEV_TEST_BOOTMODE overrides the firmware boot-mode for offline
+# testing only; it is never set in normal operation.
+BOOT_MODE=${RPI_BOOTDEV_TEST_BOOTMODE:-$(read_dt_u32 /proc/device-tree/chosen/bootloader/boot-mode)} \
+   || die "no boot-mode"
 BOOT_PARTN=$(read_dt_u32 /proc/device-tree/chosen/bootloader/partition) || die "no boot-part"
 
 case $BOOT_MODE in
    1) BOOT_DEV=mmcblk0; PART_SEP=p;;
    6) BOOT_DEV=nvme0n1; PART_SEP=p;;
+   4|5)  # USB mass storage (USB-MSD). Discover the device by content since the
+         # firmware doesn't name it. Partitions are sdX1, sdX2, ... (no 'p').
+      BOOT_DEV=$(usb_boot_disk) || die "no USB boot disk (vfat BOOT partition) found"
+      PART_SEP=
+      ;;
    *) exit 1;; # Not a storage device, or one we can associate to a linux blkdev
 esac
 
