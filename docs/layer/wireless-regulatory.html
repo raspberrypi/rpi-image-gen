@@ -123,7 +123,7 @@
     <div class="header">
         <h1>wireless-regulatory</h1>
         <span class="badge">connectivity</span>
-        <span class="badge">v1.1.0</span>
+        <span class="badge">v1.3.0</span>
         <p>Wireless regulatory database</p>
     </div>
     <div class="section">
@@ -157,9 +157,9 @@
  /etc/modprobe.d/cfg80211_regdomain.conf. Additional phy settings may be
  required.</td>
                     <td>
-                           <code>GB</code>
+                           <code>00</code>
                     </td>
-                    <td>Non-empty string value</td>
+                    <td>Must match regex pattern: ^[A-Z0-9]{2}$</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
