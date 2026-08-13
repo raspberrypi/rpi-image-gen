@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: wireless-regulatory
 # X-Env-Layer-Category: connectivity
 # X-Env-Layer-Desc: Wireless regulatory database
-# X-Env-Layer-Version: 1.2.0
+# X-Env-Layer-Version: 1.3.0
 # X-Env-Layer-Provides: wireless-regdb
 #
 # X-Env-VarPrefix: ieee80211
@@ -13,7 +13,7 @@
 #  /etc/modprobe.d/cfg80211_regdomain.conf. Additional phy settings may be
 #  required.
 # X-Env-Var-regdom-Required: n
-# X-Env-Var-regdom-Valid: string
+# X-Env-Var-regdom-Valid: regex:^[A-Z0-9]{2}$
 # X-Env-Var-regdom-Set: y
 #
 # METAEND
