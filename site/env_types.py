@@ -1135,6 +1135,7 @@ class MetadataContainer:
             "FILENAME": os.path.basename(abs_path),
             "DIRECTORY": os.path.dirname(abs_path),
             "FILEPATH": abs_path,
+            "STEM": os.path.splitext(os.path.basename(abs_path))[0],
         }
 
     def _substitute_placeholders(self, text: str, placeholders: Dict[str, str]) -> str:

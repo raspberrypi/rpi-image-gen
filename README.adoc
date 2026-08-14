@@ -91,6 +91,7 @@ See the link:./examples[examples directory] for tips and help.
 === Directory Structure
 
 * `bin/` - Common executable files and utilities
+* `builtin/` - Built-in hooks and helper tooling
 * `config/` - Configuration files
 * `contrib/` - Optional, community-maintained extensions and tooling outside the supported core
 * `device/` - Device specific assets
@@ -102,7 +103,6 @@ See the link:./examples[examples directory] for tips and help.
 * `layer-hooks/` - Common hooks used by layer library
 * `lib/` - Execution helpers and macros, eg CLI handling, reusable constructs
 * `package/` - Build recipes and framework for tools
-* `scripts/` - Dedicated functional hooks, eg for bdebstrap
 * `site/` - Core Python engine classes
 * `templates/` - Templating assets, eg doc generation
 * `test/` - Test harness

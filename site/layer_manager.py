@@ -43,7 +43,7 @@ class LayerManager:
         if search_paths is None:
             search_paths = ['./layer']
         if file_patterns is None:
-            file_patterns = ['*.yaml', '*.yml']
+            file_patterns = ['*.yaml']
 
         self.search_roots = self._build_search_roots(search_paths)
         self.search_paths = [root.path for root in self.search_roots]
@@ -883,20 +883,18 @@ class LayerManager:
 
         return None
 
+    # Overlay directories a layer may ship under its <stem>.d/, in the order
+    # they are applied. rootfs-overlay is a compat spelling of
+    # customize.overlay and so is applied ahead of it.
+    OVERLAY_DIRS = ('rootfs-overlay', 'customize.overlay',
+                    'postbuild.overlay', 'preimage.overlay')
+
     def _get_overlays(self, layer_name: str, key=None) -> list:
         layer_path = self.layer_files.get(key if key is not None else self._resolve_key(layer_name))
         if not layer_path:
             return []
-        layer_dir = Path(layer_path).parent
-        stem = Path(layer_path).stem
-        parts = ['base'] if (layer_dir / f'{stem}.rootfs-overlay').is_dir() else []
-        parts += sorted(
-            (f'v{suffix}'
-             for d in layer_dir.glob(f'{stem}.rootfs-overlay-*')
-             if d.is_dir() and (suffix := d.name.split(".rootfs-overlay-")[1]).isdigit()),
-            key=lambda v: int(v[1:])
-        )
-        return parts
+        assetdir = Path(layer_path).parent / f'{Path(layer_path).stem}.d'
+        return [name for name in self.OVERLAY_DIRS if (assetdir / name).is_dir()]
 
     def get_layer_documentation_data(self, layer_name: str):
         """Extract structured layer data for documentation generation"""
@@ -1007,7 +1005,7 @@ class LayerManager:
 
         yaml_file_path = self.layer_files[key]
 
-        # Convert .yaml/.yml extension to appropriate format extension
+        # Convert the .yaml extension to appropriate format extension
         from pathlib import Path
         yaml_path = Path(yaml_file_path)
 
@@ -1175,8 +1173,8 @@ def LayerManager_register_parser(subparsers, root=None):
                        help='show this help message and exit')
 
     parser.add_argument('--path', '-p', default=default_paths, help=help_text)
-    parser.add_argument('--patterns', nargs='+', default=['*.yaml', '*.yml'],
-                       help='File patterns to search (default: *.yaml *.yml)')
+    parser.add_argument('--patterns', nargs='+', default=['*.yaml'],
+                       help='File patterns to search (default: *.yaml)')
     parser.add_argument('--list', '-l', action='store_true',
                        help='List all available layers')
     parser.add_argument('--describe', metavar='LAYER[=VERSION]',

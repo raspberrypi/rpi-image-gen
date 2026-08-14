@@ -14,14 +14,14 @@ cat << EOF > ${rootfs}/etc/fstab
 EOF
 
 
-cp ro_assets.cfg.in ${genimg_in}/genimage01.cfg
+cp "$LAYER_DIR/ro_assets.cfg.in" ${genimg_in}/genimage01.cfg
 
 FW_SIZE=150%
 ROOT_SIZE=200%
 
 WRITER=$(readlink -f writer.sh)
 
-cat main.cfg.in | sed \
+cat "$LAYER_DIR/main.cfg.in" | sed \
    -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
    -e "s|<IMAGE_NAME>|$IGconf_image_name|g" \
    -e "s|<IMAGE_SUFFIX>|$IGconf_image_suffix|g" \

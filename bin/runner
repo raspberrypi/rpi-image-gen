@@ -16,157 +16,39 @@ PLAN="$2"
 shift 2
 
 
-# Script bundles in these dirs are executed in this order
+# The phase name is the only key runner works from - it is the prefix every
+# hook and overlay is discovered by. A layer's own are found by walking the
+# build plan and looking under that layer's <stem>.d. Hooks belonging to no
+# layer live in these directories, scanned in this order and executed after
+# all layers.
 dirs=()
-add_dir 'DEVICE_ASSET:bdebstrap'     # device hooks
-add_dir 'IMAGE_ASSET:bdebstrap'      # image hooks
-add_dir 'SRCROOT:bdebstrap'          # source tree hooks
-add_dir 'IGROOT:scripts/bdebstrap'   # built-in hooks
+add_dir 'SRCROOT:hooks'          # source tree hooks
+add_dir 'IGROOT:builtin/hooks'   # built-in hooks
 
 
-# Execute these hooks at the appropriate phase
-declare -A HOOK_PHASES=(
-   [setup]="\
-IGROOT:pre-build.sh \
-IGdevice:pre-build.sh IGimage:pre-build.sh \
-DEVICE_ASSET:pre-build.sh IMAGE_ASSET:pre-build.sh \
-SRCROOT:pre-build.sh"
-
-   [post-build]="\
-IGROOT:post-build.sh \
-IGdevice:post-build.sh IGimage:post-build.sh \
-DEVICE_ASSET:post-build.sh IMAGE_ASSET:post-build.sh \
-SRCROOT:post-build.sh"
-
-   [pre-image]="\
-IGROOT:pre-image.sh \
-IGdevice:pre-image.sh IGimage:pre-image.sh \
-DEVICE_ASSET:pre-image.sh IMAGE_ASSET:pre-image.sh \
-SRCROOT:pre-image.sh"
-
-   [post-image]="\
-IGROOT:post-image.sh \
-IGdevice:post-image.sh IGimage:post-image.sh \
-DEVICE_ASSET:post-image.sh IMAGE_ASSET:post-image.sh \
-SRCROOT:post-image.sh"
-
-   [finalize]="\
-IGROOT:finalize.sh \
-IGdevice:finalize.sh IGimage:finalize.sh \
-DEVICE_ASSET:finalize.sh IMAGE_ASSET:finalize.sh \
-SRCROOT:finalize.sh"
-
-   [sbom]='VAR:IGconf_sbom_hook'
-   [deploy]='VAR:IGconf_deploy_hook'
-)
-
-
-# Optional filesystem overlays applied at the appropriate phase
-declare -A FS_OVERLAYS=(
+# Source tree overlays, applied once at the given phase after every layer's
+# own content
+declare -A TREE_OVERLAYS=(
    [customize]="\
-IMAGE_ASSET:device/rootfs-overlay \
-DEVICE_ASSET:device/rootfs-overlay \
 SRCROOT:rootfs-overlay"
 )
 
 
-# Execution wrapper
-runhook() {
-   local path=$1; shift || true
-   local dir=$(dirname "$path")
-   local name=$(basename "$path")
-
-   if [[ -x $path ]]; then
-      msg "runner: $dir [run $name] [args $@]"
-      env -C "$dir" "./$name" "$@" # honour script shebang
-      local rc=$?
-      [[ $rc -eq 0 ]] || die "runner: $dir/$name ($rc)"
-   else
-      warn "runner: $dir [ignored, non-executable $name]"
-   fi
-}
-
-
-# Apply overlays
-apply_overlays() {
-   local phase=$1 dest=$2
-   [[ -n ${FS_OVERLAYS[$phase]:-} && -d $dest ]] || return 0
-
-   local spec src
-   for spec in ${FS_OVERLAYS[$phase]}; do
-      if src=$(map_path "$spec") && [[ -d $src ]]; then
-         msg "runner: overlay [$src -> $dest]"
-         rsync -a --exclude='.keep' --exclude='.empty' -- "$src"/ "$dest"/
-         local rc=$?
-         [[ $rc -eq 0 ]] || die "runner: error applying overlay ($rc)"
-      fi
-   done
-}
-
-
-# Execute script bundles in all dirs for a given phase
-run_phase_scripts() {
-   local phase=$1; shift || true
-   local dir script s err
-   for dir in "${dirs[@]}"; do
-      [[ -d $dir ]] || continue
-      if compgen -G "${dir}/${phase}"* >/dev/null; then
-         for script in "${dir}/${phase}"*; do
-            s=$(basename "$script")
-            stem="${s%%.*}"
-            if [[ $stem =~ ^[a-zA-Z0-9-]+$ ]]; then
-               runhook "$script" "$@"
-            else
-               warn "runner: $dir [skipped $s]"
-            fi
-         done
-      fi
-   done
-}
-
-
-# Execute hooks for a given phase, support conditional groups
-run_hook_phase() {
-   local phase=$1; shift || true
-   local specs=${HOOK_PHASES[$phase]:-}
-   [[ -n $specs ]] || return 0
-
-   # Latch phase args if there are any. This still allows positional
-   # args if runner gets them.
-   local args=()
-   while IFS= read -r -d '' arg ; do
-      args+=("$arg")
-   done < <(phase_args "$phase")
-   args+=("$@")
-
-   local group spec path
-   for group in $specs; do
-      IFS='|' read -r -a _choices <<< "$group"
-      for spec in "${_choices[@]}"; do
-         path=$(map_path "$spec")
-         if path=$(map_path "$spec" 2>/dev/null) && [[ -f $path ]]; then
-            runhook "$path" "${args[@]}"
-            break
-         fi
-      done
-   done
-}
-
-
-# per-phase positional arg tweaks
+# Extra positional args a phase hands to everything it runs. The first is the
+# directory the phase operates on, and so the overlay destination.
 phase_args() {
    local phase=$1
    shift || true
 
    case $phase in
-      post-build)
+      postbuild)
          set -- "$@" "${IGconf_target_path:?"required for $phase"}"
          ;;
-      pre-image)
+      preimage)
          set -- "$@" "${IGconf_target_path:?"required for $phase"}"
          set -- "$@" "${IGconf_image_outputdir:?"required for $phase"}"
          ;;
-      post-image)
+      postimage)
          set -- "$@" "${IGconf_image_outputdir:?"required for $phase"}"
          ;;
       sbom)
@@ -178,34 +60,124 @@ phase_args() {
          ;;
       *)
    esac
-   printf '%s\0' "$@"
+   # No output at all when the phase adds nothing, otherwise a lone format
+   # pass would emit one empty argument
+   [[ $# -eq 0 ]] || printf '%s\0' "$@"
 }
 
 
+# Run one hook from its own directory. An env file, when non-empty and present,
+# is supported.
+runhook() {
+   local envfile=$1 path=$2; shift 2 || true
+   local dir=$(dirname "$path")
+   local name=$(basename "$path")
+
+   if [[ ! -x $path ]]; then
+      warn "runner: $dir [ignored, non-executable $name]"
+      return 0
+   fi
+
+   msg "runner: $dir [run $name] [args $@]"
+   if [[ -n $envfile && -f $envfile ]]; then
+      runenv "$envfile" -C "$dir" "./$name" "$@"
+   else
+      env -C "$dir" "./$name" "$@"
+   fi
+   local rc=$?
+   [[ $rc -eq 0 ]] || die "runner: $dir/$name ($rc)"
+}
+
+
+# rsync an overlay directory over a destination
+apply_overlay() {
+   local src=$1 dest=$2
+
+   [[ -d $src && -n $dest && -d $dest ]] || return 0
+
+   msg "runner: overlay [$src -> $dest]"
+   rsync -a --chmod=go-w --exclude='.keep' --exclude='.empty' -- "$src/" "$dest/"
+   local rc=$?
+   [[ $rc -eq 0 ]] || die "runner: error applying overlay ($rc)"
+}
+
+
+# Run every <phase>* script in a directory, lexicographic order. Subdirectories
+# are not traversed and the file extension is ignored.
+run_dir_hooks() {
+   local dir=$1 phase=$2 envfile=$3; shift 3 || true
+
+   [[ -d $dir ]] || return 0
+   compgen -G "${dir}/${phase}"* >/dev/null || return 0
+
+   local script name stem
+   for script in "${dir}/${phase}"*; do
+      [[ -f $script ]] || continue   # subdirectories are not traversed
+      name=$(basename "$script")
+      stem="${name%%.*}"
+      if [[ $stem =~ ^[a-zA-Z0-9-]+$ ]]; then
+         runhook "$envfile" "$script" "$@"
+      else
+         warn "runner: $dir [skipped $name]"
+      fi
+   done
+}
+
+
+# Per-layer phased execution
+_run_layer_step() {
+   local layer=$1 version=$2 stem=$3 phase=$4; shift 4
+   local dest=${1:-}
+   local ldir vmajor vminor vpatch
+
+   # customize is the only phase runner does not apply an overlay for: those
+   # are applied by the layer's synthesised pre-config so that a layer's
+   # overlay lands ahead of its own customize-hooks
+   [[ $phase == customize ]] || apply_overlay "${stem}.d/${phase}.overlay" "$dest"
+
+   # Hooks run from their own directory, so a layer's must be told where the
+   # layer itself lives to reach anything else it ships
+   ldir=$(dirname "$stem")
+   IFS='.' read -r vmajor vminor vpatch <<< "$version"
+
+   LAYER_NAME=$layer LAYER_VERSION=$version LAYER_DIR=$ldir \
+   LAYER_VERSION_MAJOR=$vmajor LAYER_VERSION_MINOR=$vminor \
+   LAYER_VERSION_PATCH=$vpatch \
+   run_dir_hooks "${stem}.d/hooks" "$phase" "${stem}.d/env" "$@"
+}
+
+
+# Everything that happens in a phase, in order. Each step is skipped when the
+# phase has nothing for it, so no phase needs special-casing. $1 is the
+# directory the phase operates on, and so the overlay destination.
+run_phase() {
+   local phase=$1; shift || true
+   local dest=${1:-}
+
+   # Layers in build plan order. A layer's overlay is applied before that same
+   # layer's hooks, so its hooks may rely on its own overlay content.
+   plan_foreach _run_layer_step "$phase" "$@"
+
+   # Source tree overlays, after every layer's own content
+   local spec src
+   for spec in ${TREE_OVERLAYS[$phase]:-}; do
+      src=$(map_path "$spec") && apply_overlay "$src" "$dest"
+   done
+
+   # Hooks belonging to no layer
+   local dir
+   for dir in "${dirs[@]}"; do
+      run_dir_hooks "$dir" "$phase" "${dir}/env" "$@"
+   done
+}
+
+
+args=()
+while IFS= read -r -d '' arg ; do
+   args+=("$arg")
+done < <(phase_args "$PHASE")
+args+=("$@")
+
 msg "runner: in $PHASE"
-case "$PHASE" in
-   setup)
-      run_hook_phase "$PHASE" "$@"
-      run_phase_scripts "$PHASE" "$@"
-      ;;
-   customize)
-      apply_overlays "$PHASE" "$@"
-      run_phase_scripts "$PHASE" "$@"
-      run_hook_phase "$PHASE" "$@"
-      ;;
-   extract|essential|cleanup)
-      run_phase_scripts "$PHASE" "$@"
-      ;;
-   post-build)
-      run_hook_phase "$PHASE" "$@"
-      ;;
-   pre-image|post-image)
-      run_hook_phase "$PHASE" "$@"
-      ;;
-   finalize|sbom|deploy)
-      run_hook_phase "$PHASE" "$@"
-      ;;
-   *)
-      ;;
-esac
+run_phase "$PHASE" "${args[@]}"
 msg "runner: out $PHASE"

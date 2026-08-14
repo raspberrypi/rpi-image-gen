@@ -40,7 +40,7 @@ EOF
 
 
 # Write genimage template
-cat "genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
+cat "$LAYER_DIR/genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
    -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
    -e "s|<IMAGE_NAME>|$IGconf_image_name|g" \
    -e "s|<IMAGE_SUFFIX>|$IGconf_image_suffix|g" \
@@ -48,10 +48,10 @@ cat "genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
    -e "s|<SYSTEM_SIZE>|$IGconf_image_system_part_size|g" \
    -e "s|<PERSISTENT_SIZE>|$IGconf_image_data_part_size|g" \
    -e "s|<SECTOR_SIZE>|$IGconf_device_sector_size|g" \
-   -e "s|<SLOTP>|'$(readlink -ef slot-post-process.sh)'|g" \
+   -e "s|<SLOTP>|'$(readlink -ef "$LAYER_DIR/slot-post-process.sh")'|g" \
    -e "s|<BOOT_LABEL>|$BOOT_LABEL|g" \
    -e "s|<SYSTEM_UUID>|$SYSTEM_UUID|g" \
-   -e "s|<MKE2FS_CONF>|'$(readlink -ef mke2fs.conf)'|g" \
+   -e "s|<MKE2FS_CONF>|'$(readlink -ef "$LAYER_DIR/mke2fs.conf")'|g" \
    -e "s|<MKE2FS_SYSTEM>|$MKE2FS_ARGS_SYSTEM|g" \
    -e "s|<MKE2FS_DATA>|$MKE2FS_ARGS_DATA|g" \
    -e "s|<EROFS_SYSTEM>|$EROFS_ARGS_SYSTEM|g" \
@@ -174,7 +174,7 @@ if ls "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf >/dev/null 2>&1; then
       done < "$conf"
 
       if [ "$version" != "1" ]; then
-         die "pre-image: $conf: unsupported slot-shared version '${version:-missing}'"
+         die "preimage: $conf: unsupported slot-shared version '${version:-missing}'"
       fi
 
       for path in $paths; do

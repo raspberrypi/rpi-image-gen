@@ -237,10 +237,14 @@ export -f map_path
 synth_layer_pre() {
    local name=$1 version=$2 layer=$3 out=$4
    local stem=${layer%.yaml}
-   local hooks=()
+   local hooks=() overlay
 
-   local overlay="${stem}.rootfs-overlay"
-   [[ -d $overlay ]] && hooks+=( "rsync -a --exclude='.keep' --exclude='.empty' \"$overlay/\" \"\$1/\"" )
+   # Overlays this layer applies during customize, in this order.
+   # Overlays for all other phases are applied by bin/runner.
+   for overlay in "${stem}.d/rootfs-overlay" "${stem}.d/overlay" "${stem}.d/customize.overlay"; do
+      [[ -d $overlay ]] || continue
+      hooks+=( "rsync -a --chmod=go-w --exclude='.keep' --exclude='.empty' \"$overlay/\" \"\$1/\"" )
+   done
 
    [[ ${#hooks[@]} -gt 0 ]] || return 0
 
@@ -271,8 +275,11 @@ synth_layer_post() {
 export -f synth_layer_post
 
 
-# Filters a layer plan down to layers that declare an mmdebstrap: mapping.
-filter_mmdebstrap_layers() {
+# Emits the resolved path of every layer in the plan that declares an
+# mmdebstrap: mapping. A layer absent from this list contributes no config of
+# its own to the bdebstrap chain, but may still contribute synthesised pre/post
+# config, eg for an overlay it ships.
+mmdebstrap_layer_paths() {
    python3 -c '
 import sys, pathlib, yaml
 for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
@@ -288,10 +295,31 @@ for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
         print(f"{resolved}: {e}", file=sys.stderr)
         sys.exit(2)
     if isinstance(data, dict) and data.get("mmdebstrap"):
-        print(f"{layer}:{version}:{static}:{resolved}")
+        print(resolved)
 ' "$1"
 }
-export -f filter_mmdebstrap_layers
+export -f mmdebstrap_layer_paths
+
+
+# Calls callback once per layer in plan order: callback layer version stem
+# [extra args]. stem has .yaml stripped, the prefix for a layer's <stem>.d.
+# Uses the caller's own $PLAN when in scope (bin/runner's own calls), else
+# derives it - a hook running as its own process has no such variable.
+# $1 = callback function name
+# $@ = extra args forwarded to every call
+plan_foreach() {
+   local callback=${1:?"plan_foreach: callback required"}; shift
+   local plan=${PLAN:-${IGconf_sys_bootstrapdir:?"plan_foreach: IGconf_sys_bootstrapdir not set"}/layer.plan}
+   local layer version static resolved stem
+
+   [[ -f $plan ]] || return 0
+   while IFS=: read -r layer version static resolved; do
+      [[ -n $layer && $layer != \#* ]] || continue
+      stem="${static%.yaml}"
+      "$callback" "$layer" "$version" "$stem" "$@"
+   done < "$plan"
+}
+export -f plan_foreach
 
 
 # General purpose key=value normaliser that escapes characters that would

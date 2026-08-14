@@ -107,7 +107,7 @@ Generators that use `argparse` or `getopt` should parse from `argv[3:]`, as `arg
 
 `X-Env-Layer-Description`: Human-readable description of the layer's purpose
 
-`X-Env-Layer-Category`: Categorisation (device, image, etc.)
+`X-Env-Layer-Category`: Categorisation (device, image, etc.). Freeform. Not validated.
 
 `X-Env-Layer-Version`: Layer version in `major.minor.patch` format (all components must be non-negative integers with no leading zeros)
 
@@ -249,7 +249,9 @@ Variable values support dynamic placeholders:
 
 `${DIRECTORY}`: Directory containing the layer file
 
-`${FILENAME}`: Name of the layer file (without extension)
+`${FILENAME}`: Name of the layer file, including its extension
+
+`${STEM}`: Name of the layer file without its extension. Compose it to reach the layer's own `.d` directory, where it ships its hooks and overlays - `${DIRECTORY}/${STEM}.d/hooks`. Written this way the path survives a rename of the layer file.
 
 `${FILEPATH}`: Full path to the layer file
 
@@ -435,7 +437,7 @@ Examples:
 The environment variables declared by a layer customise build behaviour:
 
 - **Validation**: Each variable includes validation rules (types, ranges, patterns)
-- **Placeholders**: Support for dynamic values like `${DIRECTORY}` and `${FILENAME}`
+- **Placeholders**: Support for dynamic values like `${DIRECTORY}`, `${FILENAME}` and `${STEM}`
 - **Set Policies**: Control when and how variables are applied during layer resolution
 - **Documentation**: Integrated help and validation error messages
 

@@ -18,7 +18,7 @@ done
 
 
 # Install provision map, populating placeholders
-pmap="${IGconf_image_assetdir:-}/device/provisionmap-${IGconf_image_pmap:-}.json"
+pmap="../device/provisionmap-${IGconf_image_pmap:-}.json"
 if [ -f "$pmap" ]; then
    env \
       BOOT_UUID="$BOOT_UUID" \
