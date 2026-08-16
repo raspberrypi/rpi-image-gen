@@ -1,0 +1,25 @@
+# METABEGIN
+# X-Env-Layer-Name: cloud-init
+# X-Env-Layer-Category: provisioning
+# X-Env-Layer-Desc: Cloud init for rpi-image-gen
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Provides: pi-cloud-init
+# METAEND
+---
+mmdebstrap:
+  architectures:
+    - arm64
+  mode: auto
+  variant: custom
+  packages:
+    - cloud-init
+    - hostname
+    - userconf-pi
+  setup-hooks:
+    - install -v -D -m 0644 -t $1/etc/cloud/cloud.cfg.d/ files/sys-tweaks/99_raspberry-pi.cfg
+    - install -v -D -m 0600 -t $1/etc/netplan/ files/net-tweaks/00-network-manager-all.yaml
+  customize-hooks:
+    - 'sed -i "s/name: pi/name: $IGconf_user1/" $1/etc/cloud/cloud.cfg'
+  aptopts:
+    - APT::Install-Suggests "false"
+    - APT::Install-Recommends "false"

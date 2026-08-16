@@ -1,0 +1,11 @@
+device:
+  layer: rpi5
+  storage_type: sd
+
+image:
+  layer: image-rpios
+  boot_part_size: 1G
+  root_part_size: 1G
+
+layer:
+  everything: cloud-init
