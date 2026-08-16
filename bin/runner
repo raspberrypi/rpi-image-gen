@@ -96,7 +96,12 @@ apply_overlays() {
    for spec in ${FS_OVERLAYS[$phase]}; do
       if src=$(map_path "$spec") && [[ -d $src ]]; then
          msg "runner: overlay [$src -> $dest]"
-         rsync -a --exclude='.keep' --exclude='.empty' -- "$src"/ "$dest"/
+         # --chmod=go-w: an overlay is a directory in the build environment, and
+         # rsync -a would copy its modes verbatim - including onto "$dest"
+         # itself. A source tree with group/world-writable directories (some CI
+         # runners check out that way) therefore produces a rootfs with a
+         # world-writable /, /usr, /usr/sbin and /etc.
+         rsync -a --chmod=go-w --exclude='.keep' --exclude='.empty' -- "$src"/ "$dest"/
          local rc=$?
          [[ $rc -eq 0 ]] || die "runner: error applying overlay ($rc)"
       fi
