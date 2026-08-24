@@ -344,22 +344,53 @@ mmdebstrap:
           /dev/*) : ;;
           *) echo "cm5-jig-growfs: root source '$root_src' not a block device; skipping" >&2; exit 0 ;;
       esac
-      name=$(basename "$root_src")
+      # Resolve the symlink before deriving any names from it. The kernel
+      # command line boots this image by slot (root=/dev/disk/by-slot/system),
+      # so findmnt reports that path rather than the underlying node -- and
+      # basename of it is "system", which encodes neither a disk nor a
+      # partition number.
+      root_dev=$(readlink -f "$root_src" 2>/dev/null || true)
+      case "$root_dev" in
+          /dev/*) : ;;
+          *) echo "cm5-jig-growfs: cannot resolve '$root_src' to a device node; skipping" >&2; exit 0 ;;
+      esac
+      name=$(basename "$root_dev")
       # Parent disk: prefer lsblk PKNAME, else strip the trailing partition
       # suffix from the name (handles nvme0n1p2/mmcblk0p2 -> ...p<N> and sdaN).
-      disk=$(lsblk -no PKNAME "$root_src" 2>/dev/null | head -n1 || true)
+      disk=$(lsblk -no PKNAME "$root_dev" 2>/dev/null | head -n1 || true)
       [ -n "$disk" ] || disk=$(printf '%s' "$name" | sed -E 's/p?[0-9]+$//')
       # Partition number: prefer sysfs, else the trailing digits of the name.
       part=$(cat "/sys/class/block/$name/partition" 2>/dev/null || true)
       [ -n "$part" ] || part=$(printf '%s' "$name" | sed -E 's/.*[^0-9]([0-9]+)$/\1/')
-      if [ -z "$disk" ] || [ -z "$part" ]; then
-          echo "cm5-jig-growfs: could not resolve disk/partition for $root_src; skipping" >&2
+      # Both must be present AND well-formed. Checking only for emptiness lets
+      # a non-numeric partition through to growpart, which rejects it -- and
+      # with the failure swallowed and the stamp written regardless, the disk
+      # would stay small forever with nothing in the journal to say why.
+      case "$part" in
+          ''|*[!0-9]*)
+              echo "cm5-jig-growfs: '$part' is not a partition number for $root_dev; skipping" >&2
+              exit 0 ;;
+      esac
+      if [ -z "$disk" ]; then
+          echo "cm5-jig-growfs: could not resolve parent disk for $root_dev; skipping" >&2
           exit 0
       fi
-      # growpart returns non-zero when there is nothing to do (NOCHANGE); treat
-      # that as success. resize2fs is a no-op when already at maximum size.
-      growpart "/dev/$disk" "$part" || true
-      resize2fs "$root_src" || true
+      # growpart exits 0 when it resized, 1 when no change was needed, and 2 on
+      # a real error. Only the first two mean the partition is now the right
+      # size; anything else must not be stamped, so the next boot retries.
+      # `cmd; rc=$?` would not survive `set -e`: growpart's NOCHANGE is a
+      # non-zero exit, so the shell would abort before rc was ever assigned.
+      # `|| rc=$?` puts it in a condition context, which set -e ignores.
+      rc=0
+      growpart "/dev/$disk" "$part" || rc=$?
+      case "$rc" in
+          0|1) : ;;
+          *) echo "cm5-jig-growfs: growpart /dev/$disk $part failed (exit $rc); not stamping" >&2
+             exit 1 ;;
+      esac
+      # Online ext4 grow; a no-op when the filesystem already fills the
+      # partition. Resize the symlink path, which is what is actually mounted.
+      resize2fs "$root_src"
       mkdir -p "$(dirname "$stamp")"
       : > "$stamp"
       logger -t cm5-jig-growfs "root filesystem expansion complete on /dev/$disk$part" || true

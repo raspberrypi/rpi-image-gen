@@ -79,14 +79,43 @@ echo "Creating manifest..."
 } > "$IGconf_deploy_dir/deployed.json"
 
 # Create a .tar.zst IDP archive suitable for upload to rpi-sb-provisioner.
-# Bundles uncompressed image.json + sparse images at the top level of the tar.
+# Bundles uncompressed image.json + the per-partition sparse images it
+# references, at the top level of the tar. The whole-disk image is deliberately
+# excluded: consumers flash per-partition, resolving payloads through
+# image.json's .layout.partitionimages[].simage, and never read it. Globbing
+# *.sparse instead would bundle it too, roughly doubling the archive for
+# nothing.
 # Requires zstd, so only run when the compression scheme guarantees it is available.
 if [[ "$IGconf_deploy_compression" == "zstd" ]] && [[ -f "${IGconf_image_outputdir}/image.json" ]]; then
     echo "Creating IDP archive..."
+
+    # Take the payload list from image.json itself so the archive always holds
+    # exactly what the consumer resolves. A/B layouts legitimately reference one
+    # sparse image from several partitions (boot_a and boot_b both point at
+    # boot.vfat.sparse), hence the dedupe; sorted for a reproducible tar.
+    simages=$(python3 -c '
+import json, sys
+
+with open(sys.argv[1]) as f:
+    desc = json.load(f)
+
+pimages = desc.get("layout", {}).get("partitionimages", {})
+names = {p["simage"] for p in pimages.values()
+         if isinstance(p, dict) and p.get("simage")}
+if not names:
+    sys.exit("image.json declares no partition sparse images")
+print("\n".join(sorted(names)))
+' "${IGconf_image_outputdir}/image.json")
+
     idp_files=("image.json")
-    for f in "${IGconf_image_outputdir}"/*.sparse; do
-        [[ -f "$f" ]] && idp_files+=("$(basename "$f")")
-    done
+    while IFS= read -r s; do
+        [[ -n "$s" ]] || continue
+        # A referenced payload that is absent yields an archive the provisioner
+        # rejects as incomplete, so fail here rather than ship it.
+        [[ -f "${IGconf_image_outputdir}/${s}" ]] || \
+           { echo "IDP archive incomplete: image.json references missing $s" >&2; exit 1; }
+        idp_files+=("$s")
+    done <<< "$simages"
 
     archive_name="${IGconf_image_name:-image}-${IGconf_artefact_version:-unknown}.tar.zst"
     tar -C "${IGconf_image_outputdir}" -cf - "${idp_files[@]}" \
