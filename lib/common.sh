@@ -32,10 +32,40 @@ run()
    _ret=$?
    if [[ $_ret -ne 0 ]]
    then
-      die "[$*] ($_ret)"
+      die "run[$*] ($_ret)"
    fi
 }
 export -f run
+
+
+# run -i with a set of standard env variables
+runsafe()
+{
+   # run wraps env, but env needs its own options (including -C) ahead of any
+   # key=value, so a leading -C from a caller has to stay ahead of what we add
+   local args=("$@") copt=()
+   if [[ ${1:-} == -C ]]; then
+      copt=("$1" "$2")
+      args=("${@:3}")
+   fi
+
+   # Run in a clean room with var whitelist
+   run -i "${copt[@]}" \
+      PATH="${PATH:-}" \
+      SHELL="${SHELL:-}" \
+      HOME="${HOME:-}" \
+      ${TERM:+TERM="$TERM"} \
+      ${PYTHONPATH:+PYTHONPATH="$PYTHONPATH"} \
+      ${NS_SETUP:+NS_SETUP="$NS_SETUP"} \
+      ${_NS_APT_ARCHIVES:+_NS_APT_ARCHIVES="$_NS_APT_ARCHIVES"} \
+      "${args[@]}"
+   _ret=$?
+   if [[ $_ret -ne 0 ]]
+   then
+      die "runsafe[$*] ($_ret)"
+   fi
+}
+export -f runsafe
 
 
 rund()
@@ -43,7 +73,15 @@ rund()
    if [ "$#" -gt 1 ] && [ -d  "$1" ] ; then
       local _dir="$1"
       shift 1
-      run -C "$_dir" "$@"
+
+      local clean=0
+      [[ ${1:-} == -s ]] && { clean=1; shift 1; }
+
+      if [[ $clean -eq 1 ]]; then
+         runsafe -C "$_dir" "$@"
+      else
+         run -C "$_dir" "$@"
+      fi
    fi
 }
 export -f rund
@@ -56,13 +94,14 @@ runenv() {
 
     # collect env options
     local -a env_opts
+    local safe=0
     while (( $# )); do
-        case $1 in
-            -C)  env_opts+=("$1" "$2"); shift 2 ;;
-            -i|-u|--ignore-environment) env_opts+=("$1"); shift ;;
-            --) shift; break ;; # explicit terminate
-            *)  break ;;
-        esac
+       case $1 in
+          -C) env_opts+=("$1" "$2"); shift 2 ;;
+          -s) safe=1; shift 1 ;;
+          --) shift; break ;; # explicit terminate
+          *)  break ;;
+       esac
     done
 
     # remaining words are the command to run
@@ -71,10 +110,14 @@ runenv() {
     # convert to kv
     local -a env_args
     while IFS='=' read -r k v; do
-        env_args+=("$k=$v")
+       env_args+=("$k=$v")
     done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;s/"//g' "$file")
 
-    run "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
+    if [[ $safe -eq 1 ]]; then
+       runsafe "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
+    else
+       run "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
+    fi
 }
 export -f runenv
 
