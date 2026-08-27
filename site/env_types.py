@@ -1,8 +1,17 @@
 import re
 import shlex
+import uuid
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any, Tuple
 from validators import BaseValidator, BooleanValidator, parse_validator
+
+# Namespace for a layer's UUID: uuid5 of (name, version), reproducible.
+_LAYER_UUID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "rpi-image-gen.layer")
+
+
+def _layer_uuid(name: str, version: str) -> str:
+    """Reproducible per-(name, version) UUID; shared by ${UUID} and EnvLayer.uuid."""
+    return str(uuid.uuid5(_LAYER_UUID_NAMESPACE, f"{name}:{version}")) if name else ""
 
 
 # X-Env field helpers
@@ -774,6 +783,7 @@ class EnvLayer:
         self.name = name
         self.description = description
         self.version = version
+        self.uuid = _layer_uuid(name, version)
         self.category = category
         self.deps = deps or []
         self.conditional_deps: List[Tuple[str, str]] = conditional_deps or []  # [(layer_name, condition)]
@@ -1013,6 +1023,7 @@ class EnvLayer:
             "name": self.name,
             "description": self.description,
             "version": self.version,
+            "uuid": self.uuid,
             "category": self.category,
             "type": self.layer_type,
             "generator": self.generator,
@@ -1131,11 +1142,17 @@ class MetadataContainer:
         """Return dict with placeholder values for this file."""
         import os
         abs_path = os.path.abspath(self.filepath)
+        # self.layer isn't built yet at this point, so read raw_metadata directly.
+        layer_name = self.raw_metadata.get(XEnv.layer_name(), "")
+        layer_version = self.raw_metadata.get(XEnv.layer_version(), "1.0.0")
         return {
             "FILENAME": os.path.basename(abs_path),
             "DIRECTORY": os.path.dirname(abs_path),
             "FILEPATH": abs_path,
             "STEM": os.path.splitext(os.path.basename(abs_path))[0],
+            "NAME": layer_name,
+            "VERSION": layer_version,
+            "UUID": _layer_uuid(layer_name, layer_version),
         }
 
     def _substitute_placeholders(self, text: str, placeholders: Dict[str, str]) -> str:

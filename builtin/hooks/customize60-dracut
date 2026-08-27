@@ -13,22 +13,22 @@ mkdir -p "$1/etc/dracut.conf.d/"
 echo "RPI_BOOT_MEDIA=\"${IGconf_device_storage_type}\"" \
    > "$1/etc/dracut.conf.d/60-rpi-common.conf"
 
-_sweep_dracut_conf() {
-   local layer=$1 version=$2 stem=$3 dest=$4
-   local dir="${stem}.d/device/dracut.conf.d"
+sweep_dracut_conf() {
+   local layer=$1 version=$2 stempath=$3 dest=$4
+   local dir="${stempath}.d/device/dracut.conf.d"
    [[ -d $dir ]] || return 0
    msg "dracut(conf): installing for $layer $version"
    rsync --archive "${dir}/" "$dest"
 }
-plan_foreach _sweep_dracut_conf "$1/etc/dracut.conf.d/"
+foreach_layer_in_plan sweep_dracut_conf "$1/etc/dracut.conf.d/"
 
-_sweep_dracut_modules() {
-   local layer=$1 version=$2 stem=$3 dest=$4
-   local dir="${stem}.d/device/dracut.modules.d"
+sweep_dracut_modules() {
+   local layer=$1 version=$2 stempath=$3 dest=$4
+   local dir="${stempath}.d/device/dracut.modules.d"
    [[ -d $dir ]] || return 0
    msg "dracut(mod): installing for $layer $version"
    rsync --archive "${dir}/" "$dest"
 }
-plan_foreach _sweep_dracut_modules "$1/usr/lib/dracut/modules.d/"
+foreach_layer_in_plan sweep_dracut_modules "$1/usr/lib/dracut/modules.d/"
 
 chroot "$1" dracut --force --regenerate-all --no-hostonly

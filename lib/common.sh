@@ -236,12 +236,12 @@ export -f map_path
 # $4 = path to write the synthesised file to
 synth_layer_pre() {
    local name=$1 version=$2 layer=$3 out=$4
-   local stem=${layer%.yaml}
+   local stempath=${layer%.yaml}
    local hooks=() overlay
 
    # Overlays this layer applies during customize, in this order.
    # Overlays for all other phases are applied by bin/runner.
-   for overlay in "${stem}.d/rootfs-overlay" "${stem}.d/overlay" "${stem}.d/customize.overlay"; do
+   for overlay in "${stempath}.d/rootfs-overlay" "${stempath}.d/overlay" "${stempath}.d/customize.overlay"; do
       [[ -d $overlay ]] || continue
       hooks+=( "rsync -a --chmod=go-w --exclude='.keep' --exclude='.empty' \"$overlay/\" \"\$1/\"" )
    done
@@ -301,25 +301,25 @@ for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
 export -f mmdebstrap_layer_paths
 
 
-# Calls callback once per layer in plan order: callback layer version stem
-# [extra args]. stem has .yaml stripped, the prefix for a layer's <stem>.d.
+# foreach_layer_in_plan: calls callback once per layer in plan order:
+# Expects: callback layer version stempath [extra args]
+# stempath is the layer's static filename path with .yaml stripped so
+# directly usable to derive its companion dir path <stempath>.d.
 # Uses the caller's own $PLAN when in scope (bin/runner's own calls), else
-# derives it - a hook running as its own process has no such variable.
-# $1 = callback function name
-# $@ = extra args forwarded to every call
-plan_foreach() {
-   local callback=${1:?"plan_foreach: callback required"}; shift
-   local plan=${PLAN:-${IGconf_sys_bootstrapdir:?"plan_foreach: IGconf_sys_bootstrapdir not set"}/layer.plan}
-   local layer version static resolved stem
+# derives it.
+foreach_layer_in_plan() {
+   local callback=${1:?"foreach_layer_in_plan: callback required"}; shift
+   local plan=${PLAN:-${IGconf_sys_bootstrapdir:?"foreach_layer_in_plan: IGconf_sys_bootstrapdir not set"}/layer.plan}
+   local layer version static resolved stempath
 
    [[ -f $plan ]] || return 0
    while IFS=: read -r layer version static resolved; do
       [[ -n $layer && $layer != \#* ]] || continue
-      stem="${static%.yaml}"
-      "$callback" "$layer" "$version" "$stem" "$@"
+      stempath="${static%.yaml}"
+      "$callback" "$layer" "$version" "$stempath" "$@"
    done < "$plan"
 }
-export -f plan_foreach
+export -f foreach_layer_in_plan
 
 
 # General purpose key=value normaliser that escapes characters that would

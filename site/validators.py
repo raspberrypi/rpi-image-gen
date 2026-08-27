@@ -449,7 +449,10 @@ def get_validator_documentation_data() -> dict:
             {'name': '${FILENAME}', 'description': 'layer metadata file name, including extension'},
             {'name': '${STEM}', 'description': 'layer metadata file name, without extension'},
             {'name': '${DIRECTORY}', 'description': 'directory containing the file'},
-            {'name': '${FILEPATH}', 'description': 'absolute path to the file'}
+            {'name': '${FILEPATH}', 'description': 'absolute path to the file'},
+            {'name': '${NAME}', 'description': "the layer's X-Env-Layer-Name"},
+            {'name': '${VERSION}', 'description': "the layer's X-Env-Layer-Version"},
+            {'name': '${UUID}', 'description': "UUID derived from the layer's name and version, stable across builds"}
         ]
     }
 
@@ -506,7 +509,10 @@ def get_validation_help() -> str:
         "  ${STEM}       - layer metadata file name, without extension",
         "  ${DIRECTORY}  - directory containing the file",
         "  ${FILEPATH}   - absolute path to the file",
-        "  Escape with \\${NAME} to keep the literal text.\n",
+        "  ${NAME}       - the layer's X-Env-Layer-Name",
+        "  ${VERSION}    - the layer's X-Env-Layer-Version",
+        "  ${UUID}       - UUID derived from the layer's name and version, stable across builds",
+        "  Escape with \\${...} to keep the literal text.\n",
 
         "SET POLICY (X-Env-Var-*-Set):",
         "  force       - always overwrite existing environment value",

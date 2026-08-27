@@ -13,14 +13,14 @@ mkdir -p "$1/etc/initramfs-tools/conf.d/"
 echo "RPI_BOOT_MEDIA=\"${IGconf_device_storage_type}\"" \
    > "$1/etc/initramfs-tools/conf.d/rpi-common"
 
-_sweep_initramfs_tools() {
-   local layer=$1 version=$2 stem=$3 dest=$4
-   local dir="${stem}.d/device/initramfs-tools"
+sweep_initramfs_tools() {
+   local layer=$1 version=$2 stempath=$3 dest=$4
+   local dir="${stempath}.d/device/initramfs-tools"
    [[ -d $dir ]] || return 0
    msg "initramfs-tools: installing for $layer $version"
    rsync --archive --verbose "${dir}/" "$dest"
 }
-plan_foreach _sweep_initramfs_tools "$1/etc/initramfs-tools/"
+foreach_layer_in_plan sweep_initramfs_tools "$1/etc/initramfs-tools/"
 
 # Hint if the image layout has declared a rootfs type. This helps ensure
 # the appropriate fsck binaries are installed.

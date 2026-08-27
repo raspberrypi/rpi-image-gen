@@ -125,25 +125,25 @@ run_dir_hooks() {
 
 
 # Per-layer phased execution
-_run_layer_step() {
-   local layer=$1 version=$2 stem=$3 phase=$4; shift 4
+run_layer_step() {
+   local layer=$1 version=$2 stempath=$3 phase=$4; shift 4
    local dest=${1:-}
    local ldir vmajor vminor vpatch
 
    # customize is the only phase runner does not apply an overlay for: those
    # are applied by the layer's synthesised pre-config so that a layer's
    # overlay lands ahead of its own customize-hooks
-   [[ $phase == customize ]] || apply_overlay "${stem}.d/${phase}.overlay" "$dest"
+   [[ $phase == customize ]] || apply_overlay "${stempath}.d/${phase}.overlay" "$dest"
 
    # Hooks run from their own directory, so a layer's must be told where the
    # layer itself lives to reach anything else it ships
-   ldir=$(dirname "$stem")
+   ldir=$(dirname "$stempath")
    IFS='.' read -r vmajor vminor vpatch <<< "$version"
 
    LAYER_NAME=$layer LAYER_VERSION=$version LAYER_DIR=$ldir \
    LAYER_VERSION_MAJOR=$vmajor LAYER_VERSION_MINOR=$vminor \
    LAYER_VERSION_PATCH=$vpatch \
-   run_dir_hooks "${stem}.d/hooks" "$phase" "${stem}.d/env" "$@"
+   run_dir_hooks "${stempath}.d/hooks" "$phase" "${stempath}.d/env" "$@"
 }
 
 
@@ -156,7 +156,7 @@ run_phase() {
 
    # Layers in build plan order. A layer's overlay is applied before that same
    # layer's hooks, so its hooks may rely on its own overlay content.
-   plan_foreach _run_layer_step "$phase" "$@"
+   foreach_layer_in_plan run_layer_step "$phase" "$@"
 
    # Source tree overlays, after every layer's own content
    local spec src

@@ -255,6 +255,12 @@ Variable values support dynamic placeholders:
 
 `${FILEPATH}`: Full path to the layer file
 
+`${NAME}`: The layer's `X-Env-Layer-Name`
+
+`${VERSION}`: The layer's `X-Env-Layer-Version`
+
+`${UUID}`: A UUID derived from the layer's name and version. Deterministic - the same layer always gets the same UUID, stable across builds rather than freshly random each run.
+
 [[conditional-expressions]]
 === Conditional Expressions
 
@@ -437,7 +443,7 @@ Examples:
 The environment variables declared by a layer customise build behaviour:
 
 - **Validation**: Each variable includes validation rules (types, ranges, patterns)
-- **Placeholders**: Support for dynamic values like `${DIRECTORY}`, `${FILENAME}` and `${STEM}`
+- **Placeholders**: Support for dynamic values like `${DIRECTORY}`, `${FILENAME}`, `${STEM}`, `${NAME}`, `${VERSION}` and `${UUID}`
 - **Set Policies**: Control when and how variables are applied during layer resolution
 - **Documentation**: Integrated help and validation error messages
 
