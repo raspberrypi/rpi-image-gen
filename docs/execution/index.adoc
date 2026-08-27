@@ -82,6 +82,11 @@ Set up the build environment and assemble bdebstrap parameters with the necessar
   ** All compatible YAML layer files
   ** Installing core hook runners for setup, extract, essential, customize, and cleanup phases
 
+[NOTE]
+====
+Stages 4-6 below name several hook points (eg `prebuild`). Each is a point where any number of custom scripts can run, not a single fixed filename - see <<hooks>> for the full mechanism, and <<overlays>> for how filesystem overlays fit alongside them.
+====
+
 == Stage 4: Filesystem Generation
 
 === Purpose
@@ -89,11 +94,10 @@ Create the filesystem and generate the Software Bill of Materials.
 
 === Activities
 
-* *Hook*`[prebuild.sh]`
+* Hook point <<hooks,`prebuild`>>
   ** _Example Use_ - Custom validation of pre-build settings
-* *Filesystem Generation*: Execute bdebstrap
-* *Overlays*: Apply static filesystem overlays
-* *Hook*`[postbuild.sh]`
+* *Filesystem Generation*: Execute bdebstrap, including its own `setup`/`extract`/`essential`/`customize`/`cleanup` hook points and <<overlays,overlays>>
+* Hook point <<hooks,`postbuild`>>
   ** _Example Use_ - Custom installation of image or device specific assets, eg boot configuration files.
 * *SBOM*: Execute the Software Bill of Materials provider to create the SBOM file.
 
@@ -105,10 +109,10 @@ Create disk images from the prepared filesystem using the provider.
 
 === Activities
 
-* *Hook*`[preimage.sh]`
+* Hook point <<hooks,`preimage`>>
   ** _Example Use_ - Creating genimage templates, setting up image creation resources.
 * *Image Generation*: Execute the image provider to create images.
-* *Hook*`[postimage.sh]`
+* Hook point <<hooks,`postimage`>>
   ** _Example Use_ - Custom packaging, signing with device keys, etc.
 
 == Stage 6: Deployment
@@ -123,6 +127,7 @@ Install and compress:
 * **Build**: Raw disk and sparse images, filesystem archives
 * **Audit**: SBOM, manifests
 
+[[hooks]]
 == Hooks
 
 [IMPORTANT]
@@ -132,12 +137,13 @@ Hooks are optional but if a hook is to be executed, it must have executable perm
 
 === Overview
 
-`rpi-image-gen` runs all hooks in _phases_ via script `bin/runner`. Runner is responsible for invoking all hook scripts outside of layer declarations and is the single entry point every hook runs through. `bdebstrap` invokes it for each lifecycle phase (setup, customize, etc.) and the main script calls it for image, SBOM, and deploy phases. Runner:
+Two distinct kinds of hook exist. A layer may declare hooks natively inline in its own YAML (eg `mmdebstrap: customize-hooks:`) - these run as bdebstrap merges and executes each phase's hook list, and are documented alongside the rest of a layer's YAML, not here.
 
-* Resolves hook locations from tagged specs (`SRCROOT:*`, `VAR:IGconf_*`) so the same path resolves regardless of environment (e.g. host vs container).
+`rpi-image-gen` runs the other kind - standalone hook *files* - in _phases_ via script `bin/runner`. Runner is the single entry point every standalone hook runs through. `bdebstrap` invokes it for each lifecycle phase (setup, customize, etc.), wired in as the *last* hook bdebstrap runs for that phase - so every standalone hook runner finds (per-layer, source tree, or built-in) always runs after every layer's own inline YAML hooks for the same phase. The main script calls runner directly for image, SBOM, and deploy phases, which have no YAML-native hook equivalent since they run outside bdebstrap entirely. Runner:
+
+* Resolves hook locations from tagged specs (`SRCROOT:*`, `IGROOT:*`) so the same path resolves regardless of environment (e.g. host vs container).
 * Executes phase-specific hooks in a deterministic order.
-* Applies filesystem overlays named after the phase that applies them (see Overlays below).
-* Supports fallback hook groups (A|B) so that built-in hooks run when no custom is provided.
+* Applies filesystem overlays named after the phase that applies them (see <<overlays>>).
 * Orchestrates deterministic hook execution with the correct environment and arguments, regardless of where the build runs.
 
 The phase name is the only key runner works from - it is the prefix every hook and overlay is discovered by, and every phase takes the same path through runner. Within a phase, work happens in a fixed order, and any step with nothing to do is simply skipped:
@@ -153,8 +159,8 @@ Consequently a phase needs no special-casing to gain a hook or an overlay: shipp
 [cols="1,1,4", options="header"]
 |===
 | Phase      | Context   | Execution
+| prebuild   | main      | Before bdebstrap runs
 | setup      | bdebstrap | After build output directory creation, before any packages are downloaded or installed
-| prebuild   | bdebstrap | Within setup phase
 | extract    | bdebstrap | After `Essential:yes` packages have been extracted, before installing them
 | essential  | bdebstrap | After `Essential:yes` packages have been installed, before installing remaining packages
 | customize  | bdebstrap | After all packages are installed, before cleanup commences
@@ -176,7 +182,7 @@ For every phase, runner scans two kinds of location, always in this order:
 .. Source tree (`SRCROOT/hooks`)
 .. Built-in (`IGROOT/builtin/hooks`)
 
-Runner scans for `<phase>*` hooks (eg `customize*`, `preimage05-do-something`) inside `hooks/` subdirectories at each location. It executes matching hooks (alphanumeric basename) in that order. Subdirectories aren’t traversed; the file extension is ignored.
+Runner scans for `<phase>*` hooks (eg `customize*`, `preimage05-do-something`) inside `hooks/` subdirectories at each location, executing matching hooks (alphanumeric basename) in lexicographic order - hence the numbered-prefix convention used throughout (`customize01-`, `essential01`, `cleanup50-apt-cache`, etc), which controls run order for multiple hooks at the same location and phase. Subdirectories aren't traversed; the file extension is ignored.
 
 A per-layer hook runs from its own directory, so anything else the layer ships must be reached through the environment runner provides it:
 
@@ -193,6 +199,7 @@ A per-layer hook runs from its own directory, so anything else the layer ships m
 
 A hook reading a template the layer ships alongside its YAML therefore writes `"$LAYER_DIR/genimage.cfg.in"` rather than relying on the working directory.
 
+[[overlays]]
 === Overlays
 
 Two independent overlay mechanisms exist, applied at different times for different reasons.
@@ -202,7 +209,7 @@ Two independent overlay mechanisms exist, applied at different times for differe
 [cols="1,4", options="header"]
 |===
 | Overlay              | Applied
-| `customize.overlay`  | Before `bdebstrap` runs, positioned immediately ahead of that layer's own `customize-hooks`, so a layer's own hooks (eg an `enable-units` call) can depend on its own overlay content
+| `customize.overlay`  | During bdebstrap's `customize` phase, immediately ahead of that layer's own `customize-hooks`, so a layer's own hooks (eg an `enable-units` call) can depend on its own overlay content
 | `postbuild.overlay`  | By `bin/runner` during `postbuild`, so the content is present in the tree when the SBOM is generated
 | `preimage.overlay`   | By `bin/runner` during `preimage`, after the SBOM and before image generation
 |===
@@ -218,7 +225,7 @@ Prefer `customize.overlay` for anything landing in the filesystem. An overlay ap
 
 Overlays are applied with `rsync` and include `--chmod=go-w`, so a file keeps whatever mode it declares except that the transfer cannot make it group or world writable. Anything needing to be widely writable in the built filesystem must be made so by a hook rather than by shipping it that way.
 
-`<layer-stem>.d/rootfs-overlay` and `<layer-stem>.d/overlay` are both accepted as compat spellings of `customize.overlay`, so an existing `rootfs-overlay` tree can be moved into the layer's `.d/` unchanged, or a layer can use the shorter `overlay` name where it doesn't need to say which phase applies it. Where a layer ships more than one, they are applied oldest spelling first (`rootfs-overlay`, then `overlay`, then `customize.overlay`), so the later spelling wins on any file more than one provides.
+`<layer-stem>.d/rootfs-overlay` and `<layer-stem>.d/overlay` are both accepted as compat spellings of `customize.overlay`, offering perhaps a more intuitive or human-readable name for an overlay directory. It's not recommended to mix more than one of these.
 
 A layer needs no `mmdebstrap:` mapping of its own to ship an overlay - every layer in the plan is offered pre/post synthesis.
 
