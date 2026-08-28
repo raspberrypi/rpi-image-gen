@@ -367,14 +367,16 @@ prepare_build_config()
 
    msg "\nMMDEBSTRAP"
    local total=0 added=0
+   local PLAN="${ctx[LAYER_PLAN]}"
 
    # Sanity check resolved layers from the plan
-   while IFS=: read -r layer version static resolved; do
-      [[ -n $layer && -n $resolved ]] || continue
-      [[ $layer == \#* ]] && continue
+   _sanity_check_layer() {
+      local layer=$1 resolved=$4
+      [[ -n $resolved ]] || return 0
       ((total++))
       [[ -f $resolved ]] || die "Layer $layer ($resolved) not found"
-   done < "${ctx[LAYER_PLAN]}"
+   }
+   foreach_layer_in_plan _sanity_check_layer
 
    # Layers declaring an mmdebstrap mapping contribute their own config
    local mmpaths
@@ -390,32 +392,34 @@ prepare_build_config()
    # Construct the bdebstrap ordered chain, including synthesised layers.
    # Every layer is offered pre/post synth, whether or not it has an mmdebstrap
    # mapping of its own, so that a config-only layer can still ship an overlay.
-   local idx=0
-   while IFS=: read -r layer version static resolved; do
-      [[ -n $layer && $layer != \#* ]] || continue
-      ((idx++))
+   # Use the per-layer workdir for pre/post synth, created but never wiped, so
+   # build artefacts survive across builds.
+   _build_layer_config() {
+      local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5
+      local cfg=()
 
-      local stem cfg=()
-      stem="$(basename "${static%.yaml}")-${idx}"
-      local prefile="${TMPDIR}/${stem}.pre.yaml" postfile="${TMPDIR}/${stem}.post.yaml"
+      mkdir -p "$workdir"
 
-      synth_layer_pre "$layer" "$version" "$static" "$prefile" \
-         || die "Layer $layer ($static): pre-synth failed"
+      local prefile="${workdir}/pre.yaml" postfile="${workdir}/post.yaml"
+
+      synth_layer_pre "$layer" "$version" "$stempath" "$prefile" \
+         || die "Layer $layer ($stempath): pre-synth failed"
       [[ -f $prefile ]] && cfg+=( --config "$prefile" )
 
       [[ -n ${mmset[$resolved]:-} ]] && cfg+=( --config "$resolved" )
 
-      synth_layer_post "$layer" "$version" "$static" "$postfile" \
-         || die "Layer $layer ($static): post-synth failed"
+      synth_layer_post "$layer" "$version" "$stempath" "$postfile" \
+         || die "Layer $layer ($stempath): post-synth failed"
       [[ -f $postfile ]] && cfg+=( --config "$postfile" )
 
-      [[ ${#cfg[@]} -gt 0 ]] || continue
+      [[ ${#cfg[@]} -gt 0 ]] || return 0
       ((added++))
 
       _bdebstrap+=( "${cfg[@]}" )
 
       msg "Loaded $layer${version:+ ${version}}"
-   done < "${ctx[LAYER_PLAN]}"
+   }
+   foreach_layer_in_plan _build_layer_config
 
    local skipped=$((total - added))
    msg "Loaded ${added}/${total}, skipped $skipped"
@@ -520,21 +524,40 @@ deploy() {
 
 ###############################################################################
 # Clean
+#   Output directories
+#   Host build artefacts
 ###############################################################################
 clean_worktree() {
    msg "\nCLEAN"
    : "${ctx[FINALENV]?FINALENV is not set}"
 
+   local -a keys=(
+      IGconf_target_path
+      IGconf_image_outputdir
+      IGconf_image_deploydir
+      IGconf_sys_buildroot
+      IGconf_sys_workroot
+   )
    local key val
-   for key in IGconf_target_path IGconf_image_outputdir IGconf_image_deploydir; do
+   for key in "${keys[@]}"; do
       val=$(get_var "$key" "${ctx[FINALENV]}") || continue
-      [[ -e $val ]] || continue
-      ask "Remove $key [$val]?" y || continue
-      if [[ $key == IGconf_target_path ]]; then
-         run ns rm -rf -- "$val"
-      else
-         rm -rf -- "$val"
-      fi
+      case $key in
+         IGconf_target_path)
+            [[ -e $val ]] || continue
+            ask "Remove $key [$val]?" y && run ns rm -rf -- "$val"
+            ;;
+         IGconf_sys_workroot)
+            local gnutype
+            gnutype=$(get_var DEB_BUILD_GNU_TYPE "${ctx[FINALENV]}") || continue
+            val="${val}/${gnutype}"
+            [[ -e $val ]] || continue
+            ask "Remove host support packages [$val]?" y && rm -rf -- "$val"
+            ;;
+         *)
+            [[ -e $val ]] || continue
+            ask "Remove $key [$val]?" y && rm -rf -- "$val"
+            ;;
+      esac
    done
 }
 

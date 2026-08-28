@@ -244,6 +244,10 @@ map_path() {
          [[ -n ${IGconf_image_assetdir:-} ]] || return 1
          base=${IGconf_image_assetdir}
          ;;
+      WORKROOT)
+         [[ -n ${IGconf_sys_workroot:-} ]] || return 1
+         base=${IGconf_sys_workroot}
+         ;;
       DYN*)
          [[ -n ${DYNROOT:-} ]] || return 1
          base="${DYNROOT}/${tag#DYN}"
@@ -275,11 +279,10 @@ export -f map_path
 # handoff.
 # $1 = layer name
 # $2 = layer version
-# $3 = layer's static YAML path
+# $3 = layer's stempath (resolved - see foreach_layer_in_plan)
 # $4 = path to write the synthesised file to
 synth_layer_pre() {
-   local name=$1 version=$2 layer=$3 out=$4
-   local stempath=${layer%.yaml}
+   local name=$1 version=$2 stempath=$3 out=$4
    local hooks=() overlay
 
    # Overlays this layer applies during customize, in this order.
@@ -310,7 +313,7 @@ export -f synth_layer_pre
 # handoff.
 # $1 = layer name
 # $2 = layer version
-# $3 = layer's static YAML path
+# $3 = layer's stempath (resolved - see foreach_layer_in_plan)
 # $4 = path to write the synthesised file to
 synth_layer_post() {
    :
@@ -328,10 +331,10 @@ import sys, pathlib, yaml
 for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
     if not raw or raw.startswith("#"):
         continue
-    parts = raw.split(":", 3)
-    if len(parts) != 4 or not parts[0] or not parts[3]:
+    parts = raw.split(":", 4)
+    if len(parts) != 5 or not parts[0] or not parts[3]:
         continue
-    layer, version, static, resolved = parts
+    layer, version, static, resolved, workdir = parts
     try:
         data = yaml.safe_load(open(resolved, "rb"))
     except Exception as e:
@@ -345,21 +348,23 @@ export -f mmdebstrap_layer_paths
 
 
 # foreach_layer_in_plan: calls callback once per layer in plan order:
-# Expects: callback layer version stempath [extra args]
-# stempath is the layer's static filename path with .yaml stripped so
-# directly usable to derive its companion dir path <stempath>.d.
+# Expects: callback layer version stempath resolved workdir [extra args]
+# stempath and workdir are already resolved (map_path) to real paths -
+# callbacks never need to know either can be a tagged spec. resolved is
+# passed as-is, matching mmdebstrap_layer_paths's own output, for callers
+# doing mmset-style lookups against it.
 # Uses the caller's own $PLAN when in scope (bin/runner's own calls), else
 # derives it.
 foreach_layer_in_plan() {
    local callback=${1:?"foreach_layer_in_plan: callback required"}; shift
    local plan=${PLAN:-${IGconf_sys_bootstrapdir:?"foreach_layer_in_plan: IGconf_sys_bootstrapdir not set"}/layer.plan}
-   local layer version static resolved stempath
+   local layer version static resolved workdir stempath
 
    [[ -f $plan ]] || return 0
-   while IFS=: read -r layer version static resolved; do
+   while IFS=: read -r layer version static resolved workdir; do
       [[ -n $layer && $layer != \#* ]] || continue
-      stempath="${static%.yaml}"
-      "$callback" "$layer" "$version" "$stempath" "$@"
+      stempath="$(map_path "${static%.yaml}")"
+      "$callback" "$layer" "$version" "$stempath" "$resolved" "$(map_path "$workdir")" "$@"
    done < "$plan"
 }
 export -f foreach_layer_in_plan

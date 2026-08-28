@@ -14,7 +14,7 @@ echo "RPI_BOOT_MEDIA=\"${IGconf_device_storage_type}\"" \
    > "$1/etc/initramfs-tools/conf.d/rpi-common"
 
 sweep_initramfs_tools() {
-   local layer=$1 version=$2 stempath=$3 dest=$4
+   local layer=$1 version=$2 stempath=$3 _=$4 _=$5 dest=$6
    local dir="${stempath}.d/device/initramfs-tools"
    [[ -d $dir ]] || return 0
    msg "initramfs-tools: installing for $layer $version"

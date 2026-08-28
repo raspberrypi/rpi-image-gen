@@ -14,7 +14,7 @@ echo "RPI_BOOT_MEDIA=\"${IGconf_device_storage_type}\"" \
    > "$1/etc/dracut.conf.d/60-rpi-common.conf"
 
 sweep_dracut_conf() {
-   local layer=$1 version=$2 stempath=$3 dest=$4
+   local layer=$1 version=$2 stempath=$3 _=$4 _=$5 dest=$6
    local dir="${stempath}.d/device/dracut.conf.d"
    [[ -d $dir ]] || return 0
    msg "dracut(conf): installing for $layer $version"
@@ -23,7 +23,7 @@ sweep_dracut_conf() {
 foreach_layer_in_plan sweep_dracut_conf "$1/etc/dracut.conf.d/"
 
 sweep_dracut_modules() {
-   local layer=$1 version=$2 stempath=$3 dest=$4
+   local layer=$1 version=$2 stempath=$3 _=$4 _=$5 dest=$6
    local dir="${stempath}.d/device/dracut.modules.d"
    [[ -d $dir ]] || return 0
    msg "dracut(mod): installing for $layer $version"

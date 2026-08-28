@@ -452,7 +452,8 @@ def get_validator_documentation_data() -> dict:
             {'name': '${FILEPATH}', 'description': 'absolute path to the file'},
             {'name': '${NAME}', 'description': "the layer's X-Env-Layer-Name"},
             {'name': '${VERSION}', 'description': "the layer's X-Env-Layer-Version"},
-            {'name': '${UUID}', 'description': "UUID derived from the layer's name and version, stable across builds"}
+            {'name': '${UUID}', 'description': "UUID derived from the layer's name and version, stable across builds"},
+            {'name': '${WORKDIR}', 'description': "the layer's own persistent, uniquely namespaced work directory for per-layer build operations"}
         ]
     }
 
@@ -512,6 +513,7 @@ def get_validation_help() -> str:
         "  ${NAME}       - the layer's X-Env-Layer-Name",
         "  ${VERSION}    - the layer's X-Env-Layer-Version",
         "  ${UUID}       - UUID derived from the layer's name and version, stable across builds",
+        "  ${WORKDIR}    - the layer's own persistent, uniquely namespaced work directory",
         "  Escape with \\${...} to keep the literal text.\n",
 
         "SET POLICY (X-Env-Var-*-Set):",
