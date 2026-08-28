@@ -40,6 +40,17 @@ Each layer is a YAML file containing:
 - **Dependencies**: Automatic resolution of layer prerequisites
 - **Customisation**: Override defaults through environment variables set via the config file
 
+== Hooks and Overlays
+
+Beyond its YAML, a layer may ship standalone hook scripts and filesystem overlays alongside it, under a `<layer-stem>.d/` directory next to `<layer-stem>.yaml`:
+
+- **`<layer-stem>.d/hooks/`**: Scripts named `<phase>*` (eg `customize05-enable-units`), run by `bin/runner` at the matching build phase, in lexicographic order.
+- **`<layer-stem>.d/<phase>.overlay/`**: A tree synchronised into the filesystem build in progress at the matching phase, eg `customize.overlay/`.
+
+See link:../execution/index.adoc#hooks[Hooks] and link:../execution/index.adoc#overlays[Overlays] in the execution documentation for the full mechanism, phase list, and environment variables a hook can rely on.
+
+A layer's generated documentation page lists any hooks and overlays it actually ships, per phase.
+
 == X-Env Metadata
 Layers use a custom X-Env metadata schema that strictly follows the DEB822 format (https://repolib.readthedocs.io/en/latest/deb822-format.html) embedded within YAML comment blocks. The metadata is delimited by `# METABEGIN` and `# METAEND` markers and parsed using the standard `python3-debian` DEB822 parser. By using metadata fields a layer can define attributes, dependencies, and configuration variables. The metadata is parsed separately from the standard YAML content.
 
