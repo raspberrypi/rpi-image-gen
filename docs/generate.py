@@ -34,6 +34,8 @@ def md2html(content: str, format: str = 'asciidoc') -> str:
                 '-a', 'table-frame=all',    # Table frame
                 '-a', 'table-grid=all',     # Table grid
                 '-a', 'table-stripes=even', # Table striping
+                '-a', 'sectanchors',        # Hoverable heading anchors
+                '-a', 'sectlinks',          # Headings link to themselves
                 '-'
             ], input=content, capture_output=True, text=True, check=True)
             html_output = result.stdout
@@ -81,7 +83,7 @@ def main():
     templates_dir = script_dir.parent / 'templates' / 'docs' / 'html'
 
     # jinja init
-    env = Environment(loader=FileSystemLoader(str(templates_dir)))
+    env = Environment(loader=FileSystemLoader(str(templates_dir)), autoescape=True)
 
     # Load layers
     layer_paths = [
@@ -257,13 +259,34 @@ def main():
         layer_index_template = env.get_template('layer-index.html')
         layer_index_html = layer_index_template.render(
             content=layer_index_content,
-            layers=layers_info
+            layers=[]  # Layer list lives on the layer reference page
         )
 
         # Write layer index page
         layer_index_file = layer_dir / 'index.html'
         layer_index_file.write_text(layer_index_html)
         print(f"Generated: {layer_index_file}")
+
+
+        # Generate layer reference page - the index of all available layers
+        layer_ref_md = script_dir / 'layer_reference.adoc'
+        if layer_ref_md.exists():
+            md_content = layer_ref_md.read_text()
+            layer_ref_content = md2html(md_content)
+        else:
+            raise Exception("No content for layer reference!")
+
+        # Render layer reference page
+        layer_ref_template = env.get_template('index.html')
+        layer_ref_html = layer_ref_template.render(
+            content=layer_ref_content,
+            layers=layers_info
+        )
+
+        # Write layer reference page
+        layer_ref_file = doc_dir / 'layer_reference.html'
+        layer_ref_file.write_text(layer_ref_html)
+        print(f"Generated: {layer_ref_file}")
 
         # Generate validation help page
         help_template = env.get_template('variable-validation.html')

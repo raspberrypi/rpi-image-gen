@@ -1,0 +1,15 @@
+= rpi-image-gen - Layer Reference
+:toc: left
+:toclevels: 2
+:sectlinks:
+:sectanchors:
+
+link:./index.adoc[← Back to Main Documentation]
+
+An index of every layer shipped with rpi-image-gen, grouped by category. Select a layer to see its
+attributes, variables, dependencies, hooks and overlays.
+
+For an explanation of what layers are, how they are composed and the metadata they declare, see
+link:./layer/index.adoc[Layer Documentation].
+
+== Layer Library

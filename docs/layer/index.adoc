@@ -6,6 +6,9 @@
 
 link:../index.adoc[← Back to Main Documentation]
 
+TIP: For an index of every layer shipped with rpi-image-gen, see the
+link:../layer_reference.html[Layer Reference].
+
 == What are Layers?
 
 Layers are modular, composable components that define specific aspects of your Raspberry Pi build. Each layer encapsulates a specific and focussed piece of functionality and can declare dependencies on other layers, creating a flexible build system. Layers have been loosely grouped into categories with a super-set being as follows.
