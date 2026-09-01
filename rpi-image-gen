@@ -65,7 +65,7 @@ dependencies_check --category bootstrap "${IGTOP}/depends" || exit 1
 TMPDIR=$(mktemp -d || exit 1 )
 trap 'rm -rf "$TMPDIR"' EXIT
 $IGTOP/bin/ig env "${argv[@]}" > "${TMPDIR}/host.json" || die
-source <("${IGTOP}/scripts/host2sh.py" "${TMPDIR}/host.json")
+source <("${IGTOP}/builtin/scripts/host2sh.py" "${TMPDIR}/host.json")
 
 : "${HOST_CONFIG_PATH?missing}"
 : "${HOST_LAYER_PATH?missing}"
@@ -376,34 +376,46 @@ prepare_build_config()
       [[ -f $resolved ]] || die "Layer $layer ($resolved) not found"
    done < "${ctx[LAYER_PLAN]}"
 
-   # Extract only those that contain an mmdebstrap mapping
-   local layers
-   layers=$(filter_mmdebstrap_layers "${ctx[LAYER_PLAN]}") \
+   # Layers declaring an mmdebstrap mapping contribute their own config
+   local mmpaths
+   mmpaths=$(mmdebstrap_layer_paths "${ctx[LAYER_PLAN]}") \
       || die "Failed to parse one or more YAML layers"
 
-   # Construct the bdebstrap ordered chain, including synthesised layers
+   local -A mmset=()
+   local mmpath
+   while IFS= read -r mmpath; do
+      [[ -n $mmpath ]] && mmset[$mmpath]=1
+   done <<< "$mmpaths"
+
+   # Construct the bdebstrap ordered chain, including synthesised layers.
+   # Every layer is offered pre/post synth, whether or not it has an mmdebstrap
+   # mapping of its own, so that a config-only layer can still ship an overlay.
+   local idx=0
    while IFS=: read -r layer version static resolved; do
-      [[ -n $layer ]] || continue
-      ((added++))
+      [[ -n $layer && $layer != \#* ]] || continue
+      ((idx++))
 
       local stem cfg=()
-      stem="$(basename "${static%.yaml}")-${added}"
+      stem="$(basename "${static%.yaml}")-${idx}"
       local prefile="${TMPDIR}/${stem}.pre.yaml" postfile="${TMPDIR}/${stem}.post.yaml"
 
       synth_layer_pre "$layer" "$version" "$static" "$prefile" \
          || die "Layer $layer ($static): pre-synth failed"
       [[ -f $prefile ]] && cfg+=( --config "$prefile" )
 
-      cfg+=( --config "$resolved" )
+      [[ -n ${mmset[$resolved]:-} ]] && cfg+=( --config "$resolved" )
 
       synth_layer_post "$layer" "$version" "$static" "$postfile" \
          || die "Layer $layer ($static): post-synth failed"
       [[ -f $postfile ]] && cfg+=( --config "$postfile" )
 
+      [[ ${#cfg[@]} -gt 0 ]] || continue
+      ((added++))
+
       _bdebstrap+=( "${cfg[@]}" )
 
       msg "Loaded $layer${version:+ ${version}}"
-   done <<< "$layers"
+   done < "${ctx[LAYER_PLAN]}"
 
    local skipped=$((total - added))
    msg "Loaded ${added}/${total}, skipped $skipped"
@@ -429,9 +441,9 @@ generate_filesystem()
 
    local -n _benv="${ctx[ENV_BDEBSTRAP]}" # via nameref
 
-   runenv "${ctx[FINALENV]}" ns runner pre-build "${ctx[LAYER_PLAN]}"
+   runenv "${ctx[FINALENV]}" -s ns runner prebuild "${ctx[LAYER_PLAN]}"
 
-   rund "${ctx[SRCROOT]}" ns bdebstrap \
+   rund "${ctx[SRCROOT]}" -s ns bdebstrap \
       "${_benv[@]}" \
       --setup-hook     "runner setup     '${ctx[LAYER_PLAN]}' \"\$@\"" \
       --extract-hook   "runner extract   '${ctx[LAYER_PLAN]}' \"\$@\"" \
@@ -439,22 +451,22 @@ generate_filesystem()
       --customize-hook "runner customize '${ctx[LAYER_PLAN]}' \"\$@\"" \
       --cleanup-hook   "runner cleanup   '${ctx[LAYER_PLAN]}' \"\$@\""
 
-   runenv "${ctx[FINALENV]}" ns runner post-build "${ctx[LAYER_PLAN]}"
+   runenv "${ctx[FINALENV]}" -s ns runner postbuild "${ctx[LAYER_PLAN]}"
 
    [[ ${ctx[INTERACTIVE]} == y ]] && \
       { ask "Filesystem complete. Proceed to SBOM?" y || exit 0 ; }
 
    msg "\nSBOM"
-   runenv "${ctx[FINALENV]}" ns runner sbom "${ctx[LAYER_PLAN]}"
+   runenv "${ctx[FINALENV]}" -s ns runner sbom "${ctx[LAYER_PLAN]}"
 }
 
 
 
 ###############################################################################
 # Stage 5: Image generation
-#   pre-image hooks
+#   preimage hooks
 #   Invoke image provider
-#   post-image hooks
+#   postimage hooks
 ###############################################################################
 generate_images() {
    local provider=$(get_var IGconf_image_provider "${ctx[FINALENV]}")
@@ -467,14 +479,14 @@ generate_images() {
 
    msg "\nIMAGE"
 
-   runenv "${ctx[FINALENV]}" ns runner pre-image "${ctx[LAYER_PLAN]}"
+   runenv "${ctx[FINALENV]}" -s ns runner preimage "${ctx[LAYER_PLAN]}"
 
    if [[ "$provider" == genimage && -d "$filesystem" ]] ; then
       mkdir -p "${TMPDIR}/genimage"
       local cfg
       for cfg in "${output_path}"/genimage*.cfg; do
          [[ -f $cfg ]] || continue
-         runenv "${ctx[FINALENV]}" ns env genimage \
+         runenv "${ctx[FINALENV]}" -s ns env genimage \
             --rootpath   "$filesystem" \
             --tmppath    "${TMPDIR}/genimage" \
             --inputpath  "$output_path" \
@@ -486,7 +498,7 @@ generate_images() {
       done
    fi
 
-   runenv "${ctx[FINALENV]}" ns runner post-image "${ctx[LAYER_PLAN]}"
+   runenv "${ctx[FINALENV]}" -s ns runner postimage "${ctx[LAYER_PLAN]}"
 }
 
 
@@ -496,12 +508,12 @@ generate_images() {
 #   Install build assets for distribution
 ###############################################################################
 deploy() {
-   runenv "${ctx[FINALENV]}" ns runner finalize "${ctx[LAYER_PLAN]}"
+   runenv "${ctx[FINALENV]}" -s ns runner finalize "${ctx[LAYER_PLAN]}"
 
    [[ ${ctx[INTERACTIVE]} == y ]] && { ask "Deploy assets?" y || exit 0 ; }
 
    msg "\nDEPLOY"
-   runenv "${ctx[FINALENV]}" ns runner deploy "${ctx[LAYER_PLAN]}"
+   runenv "${ctx[FINALENV]}" -s ns runner deploy "${ctx[LAYER_PLAN]}"
 }
 
 

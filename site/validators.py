@@ -446,9 +446,13 @@ def get_validator_documentation_data() -> dict:
             {'name': 'skip', 'class': 'skip', 'description': 'Never set the variable. Useful for optional variables or when you want to disable a variable.'}
         ],
         'placeholders': [
-            {'name': '${FILENAME}', 'description': 'layer metadata file name'},
+            {'name': '${FILENAME}', 'description': 'layer metadata file name, including extension'},
+            {'name': '${STEM}', 'description': 'layer metadata file name, without extension'},
             {'name': '${DIRECTORY}', 'description': 'directory containing the file'},
-            {'name': '${FILEPATH}', 'description': 'absolute path to the file'}
+            {'name': '${FILEPATH}', 'description': 'absolute path to the file'},
+            {'name': '${NAME}', 'description': "the layer's X-Env-Layer-Name"},
+            {'name': '${VERSION}', 'description': "the layer's X-Env-Layer-Version"},
+            {'name': '${UUID}', 'description': "UUID derived from the layer's name and version, stable across builds"}
         ]
     }
 
@@ -501,10 +505,14 @@ def get_validation_help() -> str:
         "TIP: Use `ig metadata --lint <file>` to quickly check syntax and field names without validating environment variables.\n",
 
         "PLACEHOLDERS (auto-substituted in values):",
-        "  ${FILENAME}   - layer metadata file name",
+        "  ${FILENAME}   - layer metadata file name, including extension",
+        "  ${STEM}       - layer metadata file name, without extension",
         "  ${DIRECTORY}  - directory containing the file",
         "  ${FILEPATH}   - absolute path to the file",
-        "  Escape with \\${NAME} to keep the literal text.\n",
+        "  ${NAME}       - the layer's X-Env-Layer-Name",
+        "  ${VERSION}    - the layer's X-Env-Layer-Version",
+        "  ${UUID}       - UUID derived from the layer's name and version, stable across builds",
+        "  Escape with \\${...} to keep the literal text.\n",
 
         "SET POLICY (X-Env-Var-*-Set):",
         "  force       - always overwrite existing environment value",

@@ -15,7 +15,7 @@ for v in BOOT_LABEL BOOT_UUID ROOT_UUID CRYPT_UUID; do
 done
 
 # Install provision map, populating placeholders
-pmap="${IGconf_image_assetdir:-}/device/provisionmap-${IGconf_image_pmap:-}.json"
+pmap="../device/provisionmap-${IGconf_image_pmap:-}.json"
 if [ -f "$pmap" ]; then
    env \
       CRYPT_UUID="$CRYPT_UUID" \

@@ -2,13 +2,10 @@
 # X-Env-Layer-Name: deploy-base
 # X-Env-Layer-Category: build
 # X-Env-Layer-Desc: Deployment and organisation for build output artefacts
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Requires: artefact-base,sys-build-base
 #
 # X-Env-VarPrefix: deploy
-#
-# X-Env-VarRequires: IGconf_sys_workroot,IGconf_artefact_version
-# X-Env-VarRequires-Valid: string,string
 #
 # X-Env-Var-compression: zstd
 # X-Env-Var-compression-Desc: Compression scheme used when deploying assets.
@@ -29,13 +26,6 @@
 # X-Env-Var-dir-Required: n
 # X-Env-Var-dir-Valid: string
 # X-Env-Var-dir-Set: y
-#
-# X-Env-Var-hook: ${DIRECTORY}/deploy.sh
-# X-Env-Var-hook-Desc: Hook to deploy all assets. This hook will install
-#  final assets to $IGconf_deploy_dir.
-# X-Env-Var-hook-Required: n
-# X-Env-Var-hook-Valid: string
-# X-Env-Var-hook-Set: y
 #
 # METAEND
 ---

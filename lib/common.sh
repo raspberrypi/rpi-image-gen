@@ -32,10 +32,40 @@ run()
    _ret=$?
    if [[ $_ret -ne 0 ]]
    then
-      die "[$*] ($_ret)"
+      die "run[$*] ($_ret)"
    fi
 }
 export -f run
+
+
+# run -i with a set of standard env variables
+runsafe()
+{
+   # run wraps env, but env needs its own options (including -C) ahead of any
+   # key=value, so a leading -C from a caller has to stay ahead of what we add
+   local args=("$@") copt=()
+   if [[ ${1:-} == -C ]]; then
+      copt=("$1" "$2")
+      args=("${@:3}")
+   fi
+
+   # Run in a clean room with var whitelist
+   run -i "${copt[@]}" \
+      PATH="${PATH:-}" \
+      SHELL="${SHELL:-}" \
+      HOME="${HOME:-}" \
+      ${TERM:+TERM="$TERM"} \
+      ${PYTHONPATH:+PYTHONPATH="$PYTHONPATH"} \
+      ${NS_SETUP:+NS_SETUP="$NS_SETUP"} \
+      ${_NS_APT_ARCHIVES:+_NS_APT_ARCHIVES="$_NS_APT_ARCHIVES"} \
+      "${args[@]}"
+   _ret=$?
+   if [[ $_ret -ne 0 ]]
+   then
+      die "runsafe[$*] ($_ret)"
+   fi
+}
+export -f runsafe
 
 
 rund()
@@ -43,7 +73,15 @@ rund()
    if [ "$#" -gt 1 ] && [ -d  "$1" ] ; then
       local _dir="$1"
       shift 1
-      run -C "$_dir" "$@"
+
+      local clean=0
+      [[ ${1:-} == -s ]] && { clean=1; shift 1; }
+
+      if [[ $clean -eq 1 ]]; then
+         runsafe -C "$_dir" "$@"
+      else
+         run -C "$_dir" "$@"
+      fi
    fi
 }
 export -f rund
@@ -56,13 +94,14 @@ runenv() {
 
     # collect env options
     local -a env_opts
+    local safe=0
     while (( $# )); do
-        case $1 in
-            -C)  env_opts+=("$1" "$2"); shift 2 ;;
-            -i|-u|--ignore-environment) env_opts+=("$1"); shift ;;
-            --) shift; break ;; # explicit terminate
-            *)  break ;;
-        esac
+       case $1 in
+          -C) env_opts+=("$1" "$2"); shift 2 ;;
+          -s) safe=1; shift 1 ;;
+          --) shift; break ;; # explicit terminate
+          *)  break ;;
+       esac
     done
 
     # remaining words are the command to run
@@ -71,10 +110,14 @@ runenv() {
     # convert to kv
     local -a env_args
     while IFS='=' read -r k v; do
-        env_args+=("$k=$v")
+       env_args+=("$k=$v")
     done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;s/"//g' "$file")
 
-    run "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
+    if [[ $safe -eq 1 ]]; then
+       runsafe "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
+    else
+       run "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
+    fi
 }
 export -f runenv
 
@@ -236,11 +279,15 @@ export -f map_path
 # $4 = path to write the synthesised file to
 synth_layer_pre() {
    local name=$1 version=$2 layer=$3 out=$4
-   local stem=${layer%.yaml}
-   local hooks=()
+   local stempath=${layer%.yaml}
+   local hooks=() overlay
 
-   local overlay="${stem}.rootfs-overlay"
-   [[ -d $overlay ]] && hooks+=( "rsync -a --exclude='.keep' --exclude='.empty' \"$overlay/\" \"\$1/\"" )
+   # Overlays this layer applies during customize, in this order.
+   # Overlays for all other phases are applied by bin/runner.
+   for overlay in "${stempath}.d/rootfs-overlay" "${stempath}.d/overlay" "${stempath}.d/customize.overlay"; do
+      [[ -d $overlay ]] || continue
+      hooks+=( "rsync -a --chmod=go-w --exclude='.keep' --exclude='.empty' \"$overlay/\" \"\$1/\"" )
+   done
 
    [[ ${#hooks[@]} -gt 0 ]] || return 0
 
@@ -271,8 +318,11 @@ synth_layer_post() {
 export -f synth_layer_post
 
 
-# Filters a layer plan down to layers that declare an mmdebstrap: mapping.
-filter_mmdebstrap_layers() {
+# Emits the resolved path of every layer in the plan that declares an
+# mmdebstrap: mapping. A layer absent from this list contributes no config of
+# its own to the bdebstrap chain, but may still contribute synthesised pre/post
+# config, eg for an overlay it ships.
+mmdebstrap_layer_paths() {
    python3 -c '
 import sys, pathlib, yaml
 for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
@@ -288,10 +338,31 @@ for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
         print(f"{resolved}: {e}", file=sys.stderr)
         sys.exit(2)
     if isinstance(data, dict) and data.get("mmdebstrap"):
-        print(f"{layer}:{version}:{static}:{resolved}")
+        print(resolved)
 ' "$1"
 }
-export -f filter_mmdebstrap_layers
+export -f mmdebstrap_layer_paths
+
+
+# foreach_layer_in_plan: calls callback once per layer in plan order:
+# Expects: callback layer version stempath [extra args]
+# stempath is the layer's static filename path with .yaml stripped so
+# directly usable to derive its companion dir path <stempath>.d.
+# Uses the caller's own $PLAN when in scope (bin/runner's own calls), else
+# derives it.
+foreach_layer_in_plan() {
+   local callback=${1:?"foreach_layer_in_plan: callback required"}; shift
+   local plan=${PLAN:-${IGconf_sys_bootstrapdir:?"foreach_layer_in_plan: IGconf_sys_bootstrapdir not set"}/layer.plan}
+   local layer version static resolved stempath
+
+   [[ -f $plan ]] || return 0
+   while IFS=: read -r layer version static resolved; do
+      [[ -n $layer && $layer != \#* ]] || continue
+      stempath="${static%.yaml}"
+      "$callback" "$layer" "$version" "$stempath" "$@"
+   done < "$plan"
+}
+export -f foreach_layer_in_plan
 
 
 # General purpose key=value normaliser that escapes characters that would

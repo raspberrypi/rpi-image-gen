@@ -11,7 +11,7 @@ examples/nested_image/
 |   `-- embedded_squashfs
 |       |-- main.cfg.in
 |       |-- myimage.yaml
-|       |-- pre-image.sh
+|       |-- preimage.sh
 |       |-- ro_assets.cfg.in
 |       `-- writer.sh
 `-- README.md

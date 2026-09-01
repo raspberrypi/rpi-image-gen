@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eu
+
+if ! grep-dctrl -q -XFStatus "install ok installed" -a \
+   -XFPackage dracut $1/var/lib/dpkg/status ; then
+   exit 0
+fi
+
+# Install files
+
+mkdir -p "$1/etc/dracut.conf.d/"
+echo "RPI_BOOT_MEDIA=\"${IGconf_device_storage_type}\"" \
+   > "$1/etc/dracut.conf.d/60-rpi-common.conf"
+
+sweep_dracut_conf() {
+   local layer=$1 version=$2 stempath=$3 dest=$4
+   local dir="${stempath}.d/device/dracut.conf.d"
+   [[ -d $dir ]] || return 0
+   msg "dracut(conf): installing for $layer $version"
+   rsync --archive "${dir}/" "$dest"
+}
+foreach_layer_in_plan sweep_dracut_conf "$1/etc/dracut.conf.d/"
+
+sweep_dracut_modules() {
+   local layer=$1 version=$2 stempath=$3 dest=$4
+   local dir="${stempath}.d/device/dracut.modules.d"
+   [[ -d $dir ]] || return 0
+   msg "dracut(mod): installing for $layer $version"
+   rsync --archive "${dir}/" "$dest"
+}
+foreach_layer_in_plan sweep_dracut_modules "$1/usr/lib/dracut/modules.d/"
+
+chroot "$1" dracut --force --regenerate-all --no-hostonly

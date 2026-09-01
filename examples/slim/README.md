@@ -10,20 +10,20 @@ examples/slim/
 |   `-- mypi5
 |       |-- cmdline.txt
 |       |-- config.txt
-|       |-- device
-|       |   `-- rootfs-overlay
+|       |-- myboard.d
+|       |   `-- overlay
 |       |       |-- boot
 |       |       |   `-- firmware
 |       |       |       `-- cmdline.txt
 |       |       `-- etc
 |       |           `-- fstab
 |       |-- myboard.yaml
-|       `-- post-build.sh
+|       `-- postbuild.sh
 |-- image
 |   `-- compact
 |       |-- genimage.cfg.in
 |       |-- myimage-layout.yaml
-|       `-- pre-image.sh
+|       `-- preimage.sh
 |-- layer
 |   |-- slim-customisations.yaml
 |   `-- slim.yaml

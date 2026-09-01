@@ -8,7 +8,7 @@ genimg_in=$2
 FW_SIZE=100%
 ROOT_SIZE=100%
 
-cat genimage.cfg.in | sed \
+cat "$LAYER_DIR/genimage.cfg.in" | sed \
    -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
    -e "s|<IMAGE_NAME>|$IGconf_image_name|g" \
    -e "s|<IMAGE_SUFFIX>|$IGconf_image_suffix|g" \

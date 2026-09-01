@@ -39,10 +39,10 @@ Let's set up a simple project that includes a configuration file, an sshd config
 
 [,sh]
 ----
-mkdir -p myproject/bdebstrap
+mkdir -p myproject/hooks
 echo -e 'ClientAliveInterval 60' > myproject/sshdkeepalive.conf
-echo -e '#!/bin/bash\n\nset -eu\n\nchroot $1 sh -c "apt-get -y install network-manager"\ncp ../sshdkeepalive.conf $1/etc/sshd_config.d/\nchroot $1 sh -c "nmcli --offline connection add type wifi ssid $SSID wifi-sec.psk $PSK wifi-sec.key-mgmt wpa-psk autoconnect yes > /etc/NetworkManager/system-connections/$SSID.nmconnection"\nchroot $1 sh -c "chmod 600 /etc/NetworkManager/system-connections/wlan.nmconnection"' > myproject/bdebstrap/customize90-myscript
-chmod 755 myproject/bdebstrap/customize90-myscript
+echo -e '#!/bin/bash\n\nset -eu\n\nchroot $1 sh -c "apt-get -y install network-manager"\ncp ../sshdkeepalive.conf $1/etc/sshd_config.d/\nchroot $1 sh -c "nmcli --offline connection add type wifi ssid $SSID wifi-sec.psk $PSK wifi-sec.key-mgmt wpa-psk autoconnect yes > /etc/NetworkManager/system-connections/$SSID.nmconnection"\nchroot $1 sh -c "chmod 600 /etc/NetworkManager/system-connections/wlan.nmconnection"' > myproject/hooks/customize90-myscript
+chmod 755 myproject/hooks/customize90-myscript
 ----
 
 === A Simple Base Configuration
