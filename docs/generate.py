@@ -14,7 +14,7 @@ from layer_manager import LayerManager
 from validators import get_validator_documentation_data
 
 
-def md2html(content: str, format: str = 'asciidoc') -> str:
+def md2html(content: str, format: str = 'asciidoc', site: str = '.') -> str:
     import subprocess
 
     supported_formats = {'asciidoc', 'markdown'}
@@ -36,6 +36,7 @@ def md2html(content: str, format: str = 'asciidoc') -> str:
                 '-a', 'table-stripes=even', # Table striping
                 '-a', 'sectanchors',        # Hoverable heading anchors
                 '-a', 'sectlinks',          # Headings link to themselves
+                '-a', f'site={site}',       # Doc root, relative to this page
                 '-'
             ], input=content, capture_output=True, text=True, check=True)
             html_output = result.stdout
@@ -119,7 +120,7 @@ def main():
                 # If present, convert companion doc to HTML
                 if doc_data.get('companion_doc'):
                     print('Companion: ', layer_name)
-                    doc_data['companion_html'] = md2html(doc_data['companion_doc'])
+                    doc_data['companion_html'] = md2html(doc_data['companion_doc'], site='..')
                 else:
                     doc_data['companion_html'] = ""
 
@@ -186,7 +187,7 @@ def main():
         index_md = config_dir / 'index.adoc'
         if index_md.exists():
             md_content = index_md.read_text()
-            index_content = md2html(md_content)
+            index_content = md2html(md_content, site='..')
         else:
             raise Exception("No content for config index!")
 
@@ -208,7 +209,7 @@ def main():
         index_md = prov_dir / 'index.adoc'
         if index_md.exists():
             md_content = index_md.read_text()
-            index_content = md2html(md_content)
+            index_content = md2html(md_content, site='..')
         else:
             raise Exception("No content for provisioning index!")
 
@@ -230,7 +231,7 @@ def main():
         index_md = exec_dir / 'index.adoc'
         if index_md.exists():
             md_content = index_md.read_text()
-            index_content = md2html(md_content)
+            index_content = md2html(md_content, site='..')
         else:
             raise Exception("No content for execution index!")
 
@@ -252,7 +253,7 @@ def main():
         layer_index_md = script_dir / 'layer' / 'index.adoc'
         if layer_index_md.exists():
             layer_md_content = layer_index_md.read_text()
-            layer_index_content = md2html(layer_md_content)
+            layer_index_content = md2html(layer_md_content, site='..')
         else:
             raise Exception("No content for layer index!")
 
