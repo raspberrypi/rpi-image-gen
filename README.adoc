@@ -82,7 +82,7 @@ rpi-image-gen is developed on Raspberry Pi OS, with Debian Bookworm and Trix
 
 * **link:docs/index.adoc[Index]** - Comprehensive reference for the configuration system, layer management, metadata, variable validation, provisioning, execution flow, etc.
 
-The latest documentation is also available at https://raspberrypi.github.io/rpi-image-gen. Run `rpi-image-gen docs` to browse docs matching your local version. This starts a web server on port 3142. Point your browser to the URL printed on startup.
+The latest documentation is also available at https://raspberrypi.github.io/rpi-image-gen. Run `rpi-image-gen docs` to browse docs matching your local version. This starts a web server on port 3142, or on the port given as an argument, eg `rpi-image-gen docs 9000`. Point your browser to the URL printed on startup.
 
 === Examples
 

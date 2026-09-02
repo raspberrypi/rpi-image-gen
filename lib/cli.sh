@@ -18,7 +18,7 @@ Supported commands:
   layer    [options]    Layer operations (delegated)
   metadata [options]    Layer metadata operations (delegated)
   config   [options]    Config file operations (delegated)
-  docs                  Serve project documentation on http://<host>:3142
+  docs     [port]       Serve project documentation on http://<host>:<port> (default 3142)
 
 Delegated commands are processed by the core engine helper (bin/ig).
 
