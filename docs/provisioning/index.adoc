@@ -43,8 +43,8 @@ rpi-image-gen provides the link:../layer/rpi-idp.html[rpi-idp layer] layer which
 
 The IDP and PMAP document formats are formally defined by JSON schemas (draft-07), located in `layer/rpi/schemas/`. These decouple document validation from the rpi-image-gen build flow - any toolchain capable of producing a conforming IDP document can participate in the Raspberry Pi provisioning flow without depending on rpi-image-gen.
 
-* link:../schemas/idp/v2/schema.html[IDP Schema Reference]
-* link:../schemas/provisionmap/v1/schema.html[PMAP Schema Reference]
+* link:../schemas/rpi/idp/v2/schema.html[IDP Schema Reference,window=_blank]
+* link:../schemas/rpi/provisionmap/v1/schema.html[PMAP Schema Reference,window=_blank]
 
 Schema validation is performed automatically at build time. The schemas can also be used independently to validate hand-authored or third-party generated IDP and PMAP documents.
 
