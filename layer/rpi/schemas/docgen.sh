@@ -16,9 +16,14 @@ h1 {
 }
 '
 
+here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+out="${here}/../../../docs/schemas/$(basename "$(dirname "$here")")"
+
+cd "$here"
 find . -name 'schema.json' | while read -r schema; do
-    dir="$(dirname "$schema")"
-    generate-schema-doc --config template_name=md "$schema" "${dir}/schema.md"
-    generate-schema-doc --config template_name=js "$schema" "${dir}/schema.html"
-    echo "$RPI_CSS" >> "${dir}/schema_doc.css"
+    dest="${out}/$(dirname "${schema#./}")"
+    mkdir -p "$dest"
+    generate-schema-doc --config template_name=md "$schema" "${dest}/schema.md"
+    generate-schema-doc --config template_name=js "$schema" "${dest}/schema.html"
+    echo "$RPI_CSS" >> "${dest}/schema_doc.css"
 done

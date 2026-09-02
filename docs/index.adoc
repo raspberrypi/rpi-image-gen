@@ -12,14 +12,14 @@ For general information, see the https://github.com/raspberrypi/rpi-image-gen[pr
 - **Technical Documentation**: https://raspberrypi.github.io/rpi-image-gen/
 - **Project Information**: https://github.com/raspberrypi/rpi-image-gen
 
-Documentation can be served locally using `rpi-image-gen docs`, which starts a web server on port 3142. Point your browser to the URL printed on startup.
+Documentation can be served locally using `rpi-image-gen docs`, which starts a web server on port 3142 by default unless another is given. Point your browser to the URL printed on startup.
 
 == Documentation Structure
 
 - link:./execution/index.adoc[execution/] Execution flow overview
 - link:./config/index.adoc[config/] Configuration system
 - link:./layer/index.adoc[layer/] Layer information and metadata
-- link:./layer_reference.html[layer reference] Index of all available layers
+- link:./layer_reference.adoc[layer reference] Index of all available layers
 - link:./trait.adoc[trait] Trait token registry - hardware, system and boot mechanism facts
 - link:./provisioning/index.adoc[provisioning/] Device provisioning information
 

@@ -43,9 +43,11 @@ case $cmd in
    build|clean|layer|metadata|config) ;;
    help) cli_help ; exit 0 ;;
    doc*)
+      port=${1:-3142}
+      [[ $port =~ ^[0-9]+$ ]] && (( port > 0 && port < 65536 )) || die "docs: invalid port '$port'"
       bind=$(hostname -I | cut -d' ' -f1)
-      echo "Point your browser at http://${bind}:3142"
-      python3 -m http.server 3142 --directory "${IGTOP}/docs/" --bind "$bind"
+      echo "Point your browser at http://${bind}:${port}"
+      python3 -m http.server "$port" --directory "${IGTOP}/docs/" --bind "$bind"
       exit 0
       ;;
    *) cli_help; die "Unknown command" ;;
