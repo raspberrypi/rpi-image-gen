@@ -195,6 +195,9 @@ def _log_providers(manager: LayerManager, build_order: List[str]) -> None:
 
 
 def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) -> None:
+    # A WORKROOT: tag, not ${WORKDIR}'s "${@WORKROOT}/..." anchor form -
+    # @WORKROOT may need real shell evaluation this process can't do; bash
+    # resolves the tag via map_path, same as DEVICE_ASSET/IMAGE_ASSET.
     try:
         with open(path, "w", encoding="utf-8") as handle:
             for layer in build_order:
@@ -202,7 +205,8 @@ def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) 
                 version = info.get("version", "")
                 static = manager.layer_source_files.get(manager._resolve_key(layer), "")
                 resolved = manager.layer_files.get(manager._resolve_key(layer), "")
-                handle.write(f'{layer}:{version}:{static}:{resolved}\n')
+                workdir = f"WORKROOT:{info.get('workdir_suffix', '')}"
+                handle.write(f'{layer}:{version}:{static}:{resolved}:{workdir}\n')
         print(f"Layer plan written to: {path}")
     except Exception as exc:
         print(f"Error writing layer plan to {path}: {exc}")

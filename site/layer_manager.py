@@ -883,18 +883,36 @@ class LayerManager:
 
         return None
 
-    # Overlay directories a layer may ship under its <stem>.d/, in the order
-    # they are applied. rootfs-overlay is a compat spelling of
-    # customize.overlay and so is applied ahead of it.
-    OVERLAY_DIRS = ('rootfs-overlay', 'customize.overlay',
-                    'postbuild.overlay', 'preimage.overlay')
+    # Phases bin/runner invokes, in the order they run.
+    PHASES = ('prebuild', 'setup', 'extract', 'essential', 'customize',
+              'cleanup', 'postbuild', 'sbom', 'preimage', 'postimage',
+              'finalize', 'deploy')
 
-    def _get_overlays(self, layer_name: str, key=None) -> list:
+    # Compat spellings of customize.overlay, checked only for that phase.
+    CUSTOMIZE_OVERLAY_COMPAT = ('rootfs-overlay', 'overlay')
+
+    def _layer_assetdir(self, layer_name: str, key=None):
         layer_path = self.layer_files.get(key if key is not None else self._resolve_key(layer_name))
         if not layer_path:
+            return None
+        return Path(layer_path).parent / f'{Path(layer_path).stem}.d'
+
+    def _get_phase_content(self, layer_name: str, key=None) -> list:
+        """Per-phase overlay/hooks a layer ships under its <stem>.d/."""
+        assetdir = self._layer_assetdir(layer_name, key)
+        if not assetdir:
             return []
-        assetdir = Path(layer_path).parent / f'{Path(layer_path).stem}.d'
-        return [name for name in self.OVERLAY_DIRS if (assetdir / name).is_dir()]
+        hooksdir = assetdir / 'hooks'
+        content = []
+        for phase in self.PHASES:
+            overlay = f'{phase}.overlay' if (assetdir / f'{phase}.overlay').is_dir() else None
+            if not overlay and phase == 'customize':
+                overlay = next((n for n in self.CUSTOMIZE_OVERLAY_COMPAT
+                                 if (assetdir / n).is_dir()), None)
+            hooks = sorted(p.name for p in hooksdir.glob(f'{phase}*')) if hooksdir.is_dir() else []
+            if overlay or hooks:
+                content.append({'phase': phase, 'overlay': overlay, 'hooks': hooks})
+        return content
 
     def get_layer_documentation_data(self, layer_name: str):
         """Extract structured layer data for documentation generation"""
@@ -995,7 +1013,7 @@ class LayerManager:
             'dependencies': dependencies,
             'reverse_dependencies': reverse_dependencies,
             'anchors': anchors,
-            'overlays': self._get_overlays(layer_name)
+            'phases': self._get_phase_content(layer_name)
         }
 
     def _get_companion_doc(self, layer_name: str, format: str = 'markdown') -> str:
@@ -1291,9 +1309,18 @@ def _layer_main(args):
             layer_path = manager.layer_files.get(lkey, "<unknown>")
             rel_layer_path = manager.layer_relpaths.get(lkey, layer_path)
             print(f"Path: {rel_layer_path}")
-            overlays = manager._get_overlays(layer_name, key=lkey)
-            if overlays:
-                print(f"Overlay: {', '.join(overlays)}")
+            phases = manager._get_phase_content(layer_name, key=lkey)
+            overlay_phases = [p for p in phases if p['overlay']]
+            if overlay_phases:
+                print("Overlays:")
+                for p in overlay_phases:
+                    print(f"  - {p['phase']}: {p['overlay']}")
+
+            hook_phases = [p for p in phases if p['hooks']]
+            if hook_phases:
+                print("Hooks:")
+                for p in hook_phases:
+                    print(f"  - {p['phase']}: {', '.join(p['hooks'])}")
 
             mmdebstrap = manager._get_mmdebstrap_config(layer_name, key=lkey)
             if mmdebstrap:

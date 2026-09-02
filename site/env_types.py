@@ -14,6 +14,21 @@ def _layer_uuid(name: str, version: str) -> str:
     return str(uuid.uuid5(_LAYER_UUID_NAMESPACE, f"{name}:{version}")) if name else ""
 
 
+def _layer_workdir_suffix(name: str, version: str) -> str:
+    """Per-layer path suffix beneath @WORKROOT (no anchor prefix) - what the
+    plan needs, since @WORKROOT may require real shell evaluation this
+    engine can't do. name-version is unambiguous: version is validated
+    elsewhere to strict major.minor.patch, so it never contains '-'."""
+    return f"build/layer/{name}-{version}" if name else ""
+
+
+def _layer_workdir(name: str, version: str) -> str:
+    """Per-(name, version) work directory template, anchored to @WORKROOT;
+    shared by ${WORKDIR} and EnvLayer.workdir."""
+    suffix = _layer_workdir_suffix(name, version)
+    return f"${{@WORKROOT}}/{suffix}" if suffix else ""
+
+
 # X-Env field helpers
 class XEnv:
     """Helper for constructing X-Env field names consistently."""
@@ -784,6 +799,8 @@ class EnvLayer:
         self.description = description
         self.version = version
         self.uuid = _layer_uuid(name, version)
+        self.workdir = _layer_workdir(name, version)
+        self.workdir_suffix = _layer_workdir_suffix(name, version)
         self.category = category
         self.deps = deps or []
         self.conditional_deps: List[Tuple[str, str]] = conditional_deps or []  # [(layer_name, condition)]
@@ -1024,6 +1041,8 @@ class EnvLayer:
             "description": self.description,
             "version": self.version,
             "uuid": self.uuid,
+            "workdir": self.workdir,
+            "workdir_suffix": self.workdir_suffix,
             "category": self.category,
             "type": self.layer_type,
             "generator": self.generator,
@@ -1153,6 +1172,7 @@ class MetadataContainer:
             "NAME": layer_name,
             "VERSION": layer_version,
             "UUID": _layer_uuid(layer_name, layer_version),
+            "WORKDIR": _layer_workdir(layer_name, layer_version),
         }
 
     def _substitute_placeholders(self, text: str, placeholders: Dict[str, str]) -> str:

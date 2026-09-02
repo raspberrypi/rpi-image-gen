@@ -126,7 +126,7 @@ run_dir_hooks() {
 
 # Per-layer phased execution
 run_layer_step() {
-   local layer=$1 version=$2 stempath=$3 phase=$4; shift 4
+   local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5 phase=$6; shift 6
    local dest=${1:-}
    local ldir vmajor vminor vpatch
 
@@ -141,6 +141,7 @@ run_layer_step() {
    IFS='.' read -r vmajor vminor vpatch <<< "$version"
 
    LAYER_NAME=$layer LAYER_VERSION=$version LAYER_DIR=$ldir \
+   LAYER_WORKDIR=$workdir LAYER_FILE=$resolved \
    LAYER_VERSION_MAJOR=$vmajor LAYER_VERSION_MINOR=$vminor \
    LAYER_VERSION_PATCH=$vpatch \
    run_dir_hooks "${stempath}.d/hooks" "$phase" "${stempath}.d/env" "$@"

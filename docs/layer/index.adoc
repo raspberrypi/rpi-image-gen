@@ -6,6 +6,9 @@
 
 link:../index.adoc[← Back to Main Documentation]
 
+TIP: For an index of every layer shipped with rpi-image-gen, see the
+link:../layer_reference.html[Layer Reference].
+
 == What are Layers?
 
 Layers are modular, composable components that define specific aspects of your Raspberry Pi build. Each layer encapsulates a specific and focussed piece of functionality and can declare dependencies on other layers, creating a flexible build system. Layers have been loosely grouped into categories with a super-set being as follows.
@@ -39,6 +42,17 @@ Each layer is a YAML file containing:
 - **Validation**: Built-in variable validation prevents configuration errors
 - **Dependencies**: Automatic resolution of layer prerequisites
 - **Customisation**: Override defaults through environment variables set via the config file
+
+== Hooks and Overlays
+
+Beyond its YAML, a layer may ship standalone hook scripts and filesystem overlays alongside it, under a `<layer-stem>.d/` directory next to `<layer-stem>.yaml`:
+
+- **`<layer-stem>.d/hooks/`**: Scripts named `<phase>*` (eg `customize05-enable-units`), run by `bin/runner` at the matching build phase, in lexicographic order.
+- **`<layer-stem>.d/<phase>.overlay/`**: A tree synchronised into the filesystem build in progress at the matching phase, eg `customize.overlay/`.
+
+See link:../execution/index.adoc#hooks[Hooks] and link:../execution/index.adoc#overlays[Overlays] in the execution documentation for the full mechanism, phase list, and environment variables a hook can rely on.
+
+A layer's generated documentation page lists any hooks and overlays it actually ships, per phase.
 
 == X-Env Metadata
 Layers use a custom X-Env metadata schema that strictly follows the DEB822 format (https://repolib.readthedocs.io/en/latest/deb822-format.html) embedded within YAML comment blocks. The metadata is delimited by `# METABEGIN` and `# METAEND` markers and parsed using the standard `python3-debian` DEB822 parser. By using metadata fields a layer can define attributes, dependencies, and configuration variables. The metadata is parsed separately from the standard YAML content.
@@ -261,6 +275,8 @@ Variable values support dynamic placeholders:
 
 `${UUID}`: A UUID derived from the layer's name and version. Deterministic - the same layer always gets the same UUID, stable across builds rather than freshly random each run.
 
+`${WORKDIR}`: The layer's own persistent, uniquely namespaced work directory for per-layer build operations.
+
 [[conditional-expressions]]
 === Conditional Expressions
 
@@ -443,7 +459,7 @@ Examples:
 The environment variables declared by a layer customise build behaviour:
 
 - **Validation**: Each variable includes validation rules (types, ranges, patterns)
-- **Placeholders**: Support for dynamic values like `${DIRECTORY}`, `${FILENAME}`, `${STEM}`, `${NAME}`, `${VERSION}` and `${UUID}`
+- **Placeholders**: Support for dynamic values like `${DIRECTORY}`, `${FILENAME}`, `${STEM}`, `${NAME}`, `${VERSION}`, `${UUID}` and `${WORKDIR}`
 - **Set Policies**: Control when and how variables are applied during layer resolution
 - **Documentation**: Integrated help and validation error messages
 
