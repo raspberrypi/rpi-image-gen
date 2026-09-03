@@ -361,11 +361,16 @@ foreach_layer_in_plan() {
    local layer version static resolved workdir stempath
 
    [[ -f $plan ]] || return 0
-   while IFS=: read -r layer version static resolved workdir; do
+   local -a lines
+   mapfile -t lines < "$plan"
+
+   local line
+   for line in "${lines[@]}"; do
+      IFS=: read -r layer version static resolved workdir <<< "$line"
       [[ -n $layer && $layer != \#* ]] || continue
       stempath="$(map_path "${static%.yaml}")"
       "$callback" "$layer" "$version" "$stempath" "$resolved" "$(map_path "$workdir")" "$@"
-   done < "$plan"
+   done
 }
 export -f foreach_layer_in_plan
 
