@@ -130,11 +130,6 @@ Install and compress:
 [[hooks]]
 == Hooks
 
-[IMPORTANT]
-====
-Hooks are optional but if a hook is to be executed, it must have executable permissions for the user performing the build.
-====
-
 === Overview
 
 Two distinct kinds of hook exist. A layer may declare hooks natively inline in its own YAML (eg `mmdebstrap: customize-hooks:`) - these run as bdebstrap merges and executes each phase's hook list, and are documented alongside the rest of a layer's YAML, not here.
@@ -153,6 +148,13 @@ The phase name is the only key runner works from - it is the prefix every hook a
 . **Source tree and built-in hooks** for this phase
 
 Consequently a phase needs no special-casing to gain a hook or an overlay: shipping a file whose name starts with the phase, in the right place, is the whole of it.
+
+[IMPORTANT]
+====
+Hooks are optional but if a hook is to be executed, it must have executable permissions for the user performing the build.
+
+A hook must not read from standard input. Runner passes the build's stdin through to hooks unchanged, so a hook that reads it will block waiting for terminal input on an interactive build. Where a hook needs data, it should take it from the environment runner provides or a file the layer ships.
+====
 
 === Phases
 
@@ -190,11 +192,13 @@ A per-layer hook runs from its own directory, so anything else the layer ships m
 |===
 | Variable | Value
 | `LAYER_NAME`            | The layer's declared `X-Env-Layer-Name`
-| `LAYER_VERSION`         | The layer's full version string
+| `LAYER_VERSION`         | The layer's declared `X-Env-Layer-Version`
 | `LAYER_VERSION_MAJOR`   | Major component of the version
 | `LAYER_VERSION_MINOR`   | Minor component of the version
 | `LAYER_VERSION_PATCH`   | Patch component of the version
 | `LAYER_DIR`             | Directory containing the layer file, ie the parent of `<layer-stem>.d`
+| `LAYER_FILE`            | The resolved layer's filename (full path)
+| `LAYER_WORKDIR`         | The layer's work directory (created automatically)
 |===
 
 A hook reading a template the layer ships alongside its YAML therefore writes `"$LAYER_DIR/genimage.cfg.in"` rather than relying on the working directory.
