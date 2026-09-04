@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -eu
+
+# Output images must be a multiple of the device sector size
+for f in "${1}/${IGconf_image_name}"*.${IGconf_image_suffix} ; do
+   [[ -f "$f" ]] || continue
+   truncate -s %"${IGconf_device_sector_size}" "$f"
+done

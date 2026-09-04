@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -eu
+
+# Inventory of the deploy directory
+
+deploy_dir=$1
+
+echo "Creating manifest..."
+{
+  echo "{"
+  echo "  \"deployment_info\": {"
+  echo "    \"version\": \"${IGconf_artefact_version:-}\","
+  echo "    \"date\": \"$(date -Iseconds)\""
+  echo "  },"
+  echo "  \"files\": ["
+
+  first=true
+  for f in "$deploy_dir"/*; do
+    [[ -f "$f" ]] || continue
+    [[ "$(basename "$f")" == "deployed.json" ]] && continue
+    [[ "$first" == true ]] || echo ","
+    first=false
+
+    size=$(stat -c %s "$f")
+    mime_type=$(file -b --mime-type "$f" 2>/dev/null || echo "unknown")
+
+    echo "    {"
+    echo "      \"name\": \"$(basename "$f")\","
+    echo "      \"size\": $size,"
+    echo "      \"mime_type\": \"$mime_type\","
+    echo "      \"sha1\": \"$(sha1sum "$f" | cut -d' ' -f1)\""
+    echo "    }"
+  done
+
+  echo "  ]"
+  echo "}"
+} > "$deploy_dir/deployed.json"

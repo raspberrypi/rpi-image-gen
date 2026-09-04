@@ -12,5 +12,5 @@ mkdir -p $upd
 ln -sf ../system.sparse ${upd}/system
 ln -sf ../boot.sparse ${upd}/boot
 
-msg "Packing..."
-cd $upd && tar -I zstd -h -cf  ${1}/update.tar.zst -- *
+msg "Packing for OTA..."
+cd $upd && tar -I zstd -h -cf  ${1}/"${IGconf_image_name:-image}".update.tar.zst -- *
