@@ -3,14 +3,13 @@
 set -eu
 
 
-fstabs=()
 opts=()
 pmap_installed=false
 
 pmap="${IGconf_image_outputdir}/provisionmap.json"
 
+# Validate an installed Provisioning Map against its schema
 if [ -f "$pmap" ] ; then
-   # Validate installed Provisioning Map against its schema
    pmap --schema "$IGconf_image_pmap_schema" --file "$pmap" ||
       die "IDP: Installed Provisioning Map failed validation."
    pmap_installed=true
@@ -19,15 +18,8 @@ else
    warn "IDP: No Provisioning Map installed. Raspberry Pi provisioning flow unsupported."
 fi
 
+# Only genimage output is supported for IDP flow
 if [ "${IGconf_image_provider:-}" = "genimage" ] && [ -f ${1}/genimage.cfg ] ; then
-   fstabs+=("${1}"/fstab*)
-   for f in "${fstabs[@]}" ; do
-      if [ -f "$f" ] ; then
-         opts+=('-f' $f)
-      fi
-   done
-
-   # Generate the IDP doc
    image2json -g ${1}/genimage.cfg "${opts[@]}" > ${1}/image.json ||
       die "IDP: Doc generation failed."
 
@@ -41,14 +33,3 @@ if [ "${IGconf_image_provider:-}" = "genimage" ] && [ -f ${1}/genimage.cfg ] ; t
          die "IDP: Merged PMAP failed validation."
    fi
 fi
-
-
-files=()
-
-for f in "${1}/${IGconf_image_name}"*.${IGconf_image_suffix} ; do
-   files+=($f)
-   [[ -f "$f" ]] || continue
-
-   # Ensure that the output image is a multiple of the selected sector size
-   truncate -s %${IGconf_device_sector_size} $f
-done
