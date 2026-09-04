@@ -8,57 +8,6 @@ genimg_in=$2
 [[ -d "$fs" ]] || exit 0
 
 
-# Load pre-defined UUIDs
-. ${genimg_in}/img_uuids
-
-
-# mkfs args: UUIDs are image-structural
-MKE2FS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_ext4_mkfs_args:-}"
-MKE2FS_ARGS_DATA="${IGconf_fs_ext4_mkfs_args:-}"
-EROFS_ARGS_SYSTEM="-U $SYSTEM_UUID ${IGconf_fs_erofs_mkfs_args:-}"
-
-# verity
-VERITY_ARGS_SYSTEM="\
- --data-block-size ${IGconf_linux_page_size:-4096} \
- --hash-block-size ${IGconf_linux_page_size:-4096} \
- --hash sha256 \
- --uuid ${VERITY_UUID} \
- --salt $(uuidgen | tr -d '-') \
- --root-hash-file ${IGconf_image_outputdir}/system.roothash"
-
-
-# Set up the partition layout for tryboot support. Partition numbering
-# relates directly to the layout in genimage.cfg.in
-
-cat << EOF > "${fs}/bootfs/autoboot.txt"
-[all]
-tryboot_a_b=1
-boot_partition=2
-[tryboot]
-boot_partition=3
-EOF
-
-
-# Write genimage template
-cat "$LAYER_DIR/genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
-   -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
-   -e "s|<IMAGE_NAME>|$IGconf_image_name|g" \
-   -e "s|<IMAGE_SUFFIX>|$IGconf_image_suffix|g" \
-   -e "s|<BOOT_SIZE>|$IGconf_image_boot_part_size|g" \
-   -e "s|<SYSTEM_SIZE>|$IGconf_image_system_part_size|g" \
-   -e "s|<PERSISTENT_SIZE>|$IGconf_image_data_part_size|g" \
-   -e "s|<SECTOR_SIZE>|$IGconf_device_sector_size|g" \
-   -e "s|<SLOTP>|'$(readlink -ef "$LAYER_DIR/slot-post-process.sh")'|g" \
-   -e "s|<BOOT_LABEL>|$BOOT_LABEL|g" \
-   -e "s|<SYSTEM_UUID>|$SYSTEM_UUID|g" \
-   -e "s|<MKE2FS_CONF>|'$(readlink -ef "$LAYER_DIR/mke2fs.conf")'|g" \
-   -e "s|<MKE2FS_SYSTEM>|$MKE2FS_ARGS_SYSTEM|g" \
-   -e "s|<MKE2FS_DATA>|$MKE2FS_ARGS_DATA|g" \
-   -e "s|<EROFS_SYSTEM>|$EROFS_ARGS_SYSTEM|g" \
-   -e "s|<VERITY_SYSTEM>|$VERITY_ARGS_SYSTEM|g" \
-   > ${genimg_in}/genimage.cfg
-
-
 # Create persistent skeleton - must match part names in genimage.cfg.in
 mkdir -p ${fs}/persistent/slots/system_a/var
 mkdir -p ${fs}/persistent/slots/system_b/var
@@ -84,6 +33,7 @@ done
 rm -f "${fs}/etc/machine-id"
 rm -f "${fs}/var/lib/dbus/machine-id"
 install -m0644 -o root -g root /dev/null "${fs}/etc/machine-id"
+install -d -m 0755 "${fs}/var/lib/dbus/"
 ln -s /etc/machine-id "${fs}/var/lib/dbus/machine-id"
 
 
@@ -214,10 +164,3 @@ fi
 # Perms for bind mounts on the immutable root
 chmod 755 "${fs}/home"
 chmod 755 "${fs}/var"
-
-
-# Generate the persistent skeleton suitable for on-device overlay
-tar --xattrs --xattrs-include='*' --acls --numeric-owner \
-   -C "${fs}/persistent" \
-   -czf "${genimg_in}/persistent-skel.tar.gz" \
-   --exclude='lost+found' .

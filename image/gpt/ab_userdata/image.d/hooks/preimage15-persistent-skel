@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -eu
+
+fs=$1
+genimg_in=$2
+
+[[ -d "$fs" ]] || exit 0
+
+
+# Generate the persistent skeleton suitable for on-device overlay
+tar --xattrs --xattrs-include='*' --acls --numeric-owner \
+   -C "${fs}/persistent" \
+   -czf "${genimg_in}/persistent-skel.tar.gz" \
+   --exclude='lost+found' .
