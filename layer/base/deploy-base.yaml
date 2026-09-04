@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: deploy-base
 # X-Env-Layer-Category: build
 # X-Env-Layer-Desc: Deployment and organisation for build output artefacts
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Requires: artefact-base,sys-build-base
 #
 # X-Env-VarPrefix: deploy
@@ -29,3 +29,6 @@
 #
 # METAEND
 ---
+mmdebstrap:
+  setup-hooks:
+    - mkdir -p "$IGconf_deploy_dir"

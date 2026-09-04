@@ -34,35 +34,33 @@ SRCROOT:rootfs-overlay"
 )
 
 
-# Extra positional args a phase hands to everything it runs. The first is the
-# directory the phase operates on, and so the overlay destination.
+# Extra positional args a phase hands to everything it runs.
 phase_args() {
    local phase=$1
-   shift || true
 
+   PHASE_ARGS=()
    case $phase in
       postbuild)
-         set -- "$@" "${IGconf_target_path:?"required for $phase"}"
+         PHASE_ARGS+=("${IGconf_target_path:?"required for $phase"}")
          ;;
       preimage)
-         set -- "$@" "${IGconf_target_path:?"required for $phase"}"
-         set -- "$@" "${IGconf_image_outputdir:?"required for $phase"}"
+         PHASE_ARGS+=("${IGconf_target_path:?"required for $phase"}")
+         PHASE_ARGS+=("${IGconf_image_outputdir:?"required for $phase"}")
          ;;
       postimage)
-         set -- "$@" "${IGconf_image_outputdir:?"required for $phase"}"
+         PHASE_ARGS+=("${IGconf_image_outputdir:?"required for $phase"}")
          ;;
       sbom)
-         set -- "$@" "${IGconf_target_path:?"required for $phase"}"
-         set -- "$@" "${IGconf_target_dir:?"required for $phase"}"
+         PHASE_ARGS+=("${IGconf_target_path:?"required for $phase"}")
+         PHASE_ARGS+=("${IGconf_target_dir:?"required for $phase"}")
          ;;
       deploy)
-         [[ -n ${IGconf_deploy_dir:-} ]] && set -- "$@" "$IGconf_deploy_dir"
+         PHASE_ARGS+=("${IGconf_deploy_dir:?"required for $phase"}")
+         [[ -d $IGconf_deploy_dir ]] ||
+            die "runner: $phase: $IGconf_deploy_dir does not exist"
          ;;
       *)
    esac
-   # No output at all when the phase adds nothing, otherwise a lone format
-   # pass would emit one empty argument
-   [[ $# -eq 0 ]] || printf '%s\0' "$@"
 }
 
 
@@ -173,11 +171,9 @@ run_phase() {
 }
 
 
-args=()
-while IFS= read -r -d '' arg ; do
-   args+=("$arg")
-done < <(phase_args "$PHASE")
-args+=("$@")
+declare -a PHASE_ARGS
+phase_args "$PHASE"
+args=("${PHASE_ARGS[@]}" "$@")
 
 msg "runner: in $PHASE"
 run_phase "$PHASE" "${args[@]}"

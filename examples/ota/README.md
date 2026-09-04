@@ -6,7 +6,7 @@ This is a skeleton system that:
 * Installs Raspberry Pi Connect Lite
 * Installs and configures Raspberry Pi experimental OTA functionality
 
-One of the by-products of the build is `update.tar.zst` located under `work/image-myapp/` which can be deployed to the device via Raspberry Pi Connect to update it.
+The build produces an OTA bundle named after the image, `<image.name>.update.tar.zst`, which is placed in the deploy directory alongside the disk image and IDP archive. It can be deployed to the device via Raspberry Pi Connect to update it.
 
 A device can auto-signin with Raspberry Pi Connect on first boot in one of two ways:
 

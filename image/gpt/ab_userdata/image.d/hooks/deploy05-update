@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -eu
+
+# The OTA bundle is packed by a prior script and is already a compressed archive
+upd="${IGconf_image_outputdir}/${IGconf_image_name:-image}.update.tar.zst"
+[[ -f "$upd" ]] || exit 0
+cp -v "$upd" "${1}"
