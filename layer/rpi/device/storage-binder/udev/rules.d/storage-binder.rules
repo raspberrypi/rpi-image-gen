@@ -9,6 +9,12 @@ SUBSYSTEM=="block", KERNEL=="mmcblk0p*", ACTION=="add|change", \
 SUBSYSTEM=="block", KERNEL=="nvme0n1p*", ACTION=="add|change", \
   IMPORT{program}="/usr/bin/rpi-bootdev-tag -u -d $env{DEVNAME}"
 
+# Non-DM partitions: USB mass storage (sd*). The tagger only tags these when the
+# firmware boot-mode is USB and the disk carries our boot partition, so this is
+# a harmless no-op for any non-boot USB disk that happens to be attached.
+SUBSYSTEM=="block", KERNEL=="sd[a-z]*[0-9]", ACTION=="add|change", \
+  IMPORT{program}="/usr/bin/rpi-bootdev-tag -u -d $env{DEVNAME}"
+
 # DM devices
 SUBSYSTEM=="block", KERNEL=="dm-*", ENV{DM_NAME}=="?*", ACTION=="add|change", \
   IMPORT{program}="/usr/bin/rpi-bootdev-tag -u -d $env{DEVNAME} -m $env{DM_NAME}"
