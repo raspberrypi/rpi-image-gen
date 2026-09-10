@@ -65,9 +65,10 @@ phase_args() {
 
 
 # Run one hook from its own directory. An env file, when non-empty and present,
-# is supported.
+# is supported. Variables named by $envref are exported to the hook alone.
 runhook() {
-   local envfile=$1 path=$2; shift 2 || true
+   local envref=$1 envfile=$2 path=$3; shift 3 || true
+   local -n _lenv=$envref
    local dir=$(dirname "$path")
    local name=$(basename "$path")
 
@@ -78,9 +79,9 @@ runhook() {
 
    msg "runner: $dir [run $name] [args $@]"
    if [[ -n $envfile && -f $envfile ]]; then
-      runenv "$envfile" -C "$dir" "./$name" "$@"
+      runenv "$envfile" -C "$dir" "${_lenv[@]}" "./$name" "$@"
    else
-      env -C "$dir" "./$name" "$@"
+      env -C "$dir" "${_lenv[@]}" "./$name" "$@"
    fi
    local rc=$?
    [[ $rc -eq 0 ]] || die "runner: $dir/$name ($rc)"
@@ -103,7 +104,7 @@ apply_overlay() {
 # Run every <phase>* script in a directory, lexicographic order. Subdirectories
 # are not traversed and the file extension is ignored.
 run_dir_hooks() {
-   local dir=$1 phase=$2 envfile=$3; shift 3 || true
+   local dir=$1 phase=$2 envfile=$3 envref=$4; shift 4 || true
 
    [[ -d $dir ]] || return 0
    compgen -G "${dir}/${phase}"* >/dev/null || return 0
@@ -114,7 +115,7 @@ run_dir_hooks() {
       name=$(basename "$script")
       stem="${name%%.*}"
       if [[ $stem =~ ^[a-zA-Z0-9-]+$ ]]; then
-         runhook "$envfile" "$script" "$@"
+         runhook "$envref" "$envfile" "$script" "$@"
       else
          warn "runner: $dir [skipped $name]"
       fi
@@ -134,15 +135,24 @@ run_layer_step() {
    [[ $phase == customize ]] || apply_overlay "${stempath}.d/${phase}.overlay" "$dest"
 
    # Hooks run from their own directory, so a layer's must be told where the
-   # layer itself lives to reach anything else it ships
+   # layer lives in order to reach anything it ships. A companion directory
+   # is optional, so it is only announced when the layer ships one
    ldir=$(dirname "$stempath")
    IFS='.' read -r vmajor vminor vpatch <<< "$version"
 
-   LAYER_NAME=$layer LAYER_VERSION=$version LAYER_DIR=$ldir \
-   LAYER_WORKDIR=$workdir LAYER_FILE=$resolved \
-   LAYER_VERSION_MAJOR=$vmajor LAYER_VERSION_MINOR=$vminor \
-   LAYER_VERSION_PATCH=$vpatch \
-   run_dir_hooks "${stempath}.d/hooks" "$phase" "${stempath}.d/env" "$@"
+   local -a lvars=(
+      "LAYER_NAME=$layer"
+      "LAYER_VERSION=$version"
+      "LAYER_VERSION_MAJOR=$vmajor"
+      "LAYER_VERSION_MINOR=$vminor"
+      "LAYER_VERSION_PATCH=$vpatch"
+      "LAYER_DIR=$ldir"
+      "LAYER_FILE=$resolved"
+      "LAYER_WORKDIR=$workdir"
+   )
+   [[ -d ${stempath}.d ]] && lvars+=( "LAYER_DOTD=${stempath}.d" )
+
+   run_dir_hooks "${stempath}.d/hooks" "$phase" "${stempath}.d/env" lvars "$@"
 }
 
 
@@ -163,10 +173,12 @@ run_phase() {
       src=$(map_path "$spec") && apply_overlay "$src" "$dest"
    done
 
-   # Hooks belonging to no layer
+   # Hooks belonging to no layer. Could split this so that builtin hooks get
+   # additional env settings
    local dir
+   local -a novars=()
    for dir in "${dirs[@]}"; do
-      run_dir_hooks "$dir" "$phase" "${dir}/env" "$@"
+      run_dir_hooks "$dir" "$phase" "${dir}/env" novars "$@"
    done
 }
 

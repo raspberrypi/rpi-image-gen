@@ -197,6 +197,7 @@ A per-layer hook runs from its own directory, so anything else the layer ships m
 | `LAYER_VERSION_MINOR`   | Minor component of the version
 | `LAYER_VERSION_PATCH`   | Patch component of the version
 | `LAYER_DIR`             | Directory containing the layer file, ie the parent of `<layer-stem>.d`
+| `LAYER_DOTD`            | The layer's companion directory `<layer-stem>.d`. Only set when the layer ships one
 | `LAYER_FILE`            | The resolved layer's filename (full path)
 | `LAYER_WORKDIR`         | The layer's work directory (created automatically)
 |===
