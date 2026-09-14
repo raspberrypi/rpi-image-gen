@@ -1,0 +1,26 @@
+# METABEGIN
+# X-Env-Layer-Name: mass-storage-gadget-base
+# X-Env-Layer-Category: example
+# X-Env-Layer-Desc: Expose the board's storage to a USB host as mass storage
+#  with console support.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: rpi-microboot-base
+#
+# X-Env-VarPrefix: gadget
+#
+# X-Env-Var-assetdir: ${DOTD}
+# X-Env-Var-assetdir-Desc: This layer's own files
+# X-Env-Var-assetdir-Required: n
+# X-Env-Var-assetdir-Valid: dir
+# X-Env-Var-assetdir-Set: y
+# X-Env-Var-assetdir-Conflicts: IGconf_u_initsys != 'busybox'
+# METAEND
+---
+mmdebstrap:
+  extract-hooks:
+    # Content this layer ships goes straight into staging
+    - |-
+      set -eu
+      mkdir -p "$1/staging/etc/init.d"
+      install -m 0755 "$IGconf_gadget_assetdir/S60gadget" \
+         "$1/staging/etc/init.d/S60gadget"

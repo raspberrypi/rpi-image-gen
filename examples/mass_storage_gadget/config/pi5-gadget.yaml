@@ -1,0 +1,13 @@
+device:
+  layer: example-gadget-pi5
+
+image:
+  layer: image-bootfs
+  name: mygadget
+
+layer:
+  - mass-storage-gadget-base
+
+u:
+  services: none
+  console: usb-autologin

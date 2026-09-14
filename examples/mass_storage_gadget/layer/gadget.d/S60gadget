@@ -1,0 +1,89 @@
+#!/bin/sh
+# Expose every block device the board can see to a USB host, and offer a
+# serial console on the same cable.
+#
+[ "${1:-start}" = start ] || exit 0
+
+set -e
+
+CONFIGFS=/sys/kernel/config
+GADGET=$CONFIGFS/usb_gadget/rpimsg
+
+# dwc2 is the device controller, enabled in peripheral mode by config.txt.
+# libcomposite provides the configfs interface below
+modprobe dwc2 2>/dev/null || true
+modprobe libcomposite 2>/dev/null || true
+
+grep -q " $CONFIGFS " /proc/mounts || mount -t configfs none "$CONFIGFS"
+
+mkdir -p "$GADGET"
+cd "$GADGET"
+
+echo 0x0a5c > idVendor    # Broadcom
+echo 0x0104 > idProduct   # Multifunction Composite Gadget
+echo 0x0100 > bcdDevice
+echo 0x0200 > bcdUSB
+
+serial=$(cat /proc/device-tree/serial-number 2>/dev/null | tr -d '\0')
+mkdir -p strings/0x409
+echo "${serial:-unknown}"                    > strings/0x409/serialnumber
+echo "Raspberry Pi"                          > strings/0x409/manufacturer
+echo "Raspberry Pi mass storage gadget"      > strings/0x409/product
+
+mkdir -p configs/c.1/strings/0x409
+echo "Mass storage and serial console" > configs/c.1/strings/0x409/configuration
+echo 250 > configs/c.1/MaxPower
+
+# Serial console. A usb- console policy runs a getty on /dev/ttyGS0, which
+# does not exist until this function is bound - the getty waits for it.
+mkdir -p functions/acm.usb0
+ln -sf functions/acm.usb0 configs/c.1/
+
+DEVICES="nvme0n1 mmcblk0"
+
+# Blocking wait for devices
+n=0
+while [ "$n" -lt 3 ]; do
+   missing=
+   for dev in $DEVICES; do
+      [ -b "/dev/$dev" ] || missing=y
+   done
+   [ -n "$missing" ] || break
+   n=$((n + 1))
+   sleep 1
+done
+
+# One LUN per device that's present
+id=0
+for dev in $DEVICES; do
+   [ -b "/dev/$dev" ] || continue
+
+   f=functions/mass_storage.usb$id
+   mkdir -p "$f"
+   echo 1 > "$f/stall"
+   echo 0 > "$f/lun.0/cdrom"
+   echo 0 > "$f/lun.0/ro"
+   echo 0 > "$f/lun.0/nofua"
+   echo "$dev"      > "$f/lun.0/inquiry_string"
+   echo "/dev/$dev" > "$f/lun.0/file"
+   ln -sf "$f" configs/c.1/
+
+   id=$((id + 1))
+done
+
+# Autoprobe udc so whichever one the board exposes in peripheral mode is the
+# one to bind to.
+n=0
+while [ "$n" -lt 15 ]; do
+   udc=$(ls /sys/class/udc 2>/dev/null | head -n1)
+   if [ -n "$udc" ]; then
+      echo "$udc" > UDC
+      echo "gadget: bound to $udc with $id LUN(s)"
+      exit 0
+   fi
+   n=$((n + 1))
+   sleep 1
+done
+
+echo "gadget: no UDC appeared - is dwc2 in peripheral mode?" >&2
+exit 1
