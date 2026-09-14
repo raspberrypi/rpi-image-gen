@@ -8,7 +8,9 @@ After=multi-user.target
 [Service]
 User=$KIOSK_USER
 TTYPath=/dev/tty1
-Environment="XDG_RUNTIME_DIR=$KIOSK_RUNDIR"
+RuntimeDirectory=$KIOSK_RUNDIR_NAME
+RuntimeDirectoryMode=0700
+Environment="XDG_RUNTIME_DIR=/run/$KIOSK_RUNDIR_NAME"
 Restart=always
 ExecStart=/usr/bin/cage -- $KIOSK_APP
 StandardError=journal

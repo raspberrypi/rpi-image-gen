@@ -1,6 +1,6 @@
 # METABEGIN
 # X-Env-Layer-Name: example-kiosk
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.0.0
 # X-Env-Layer-Category: example
 # X-Env-Layer-Desc: Example webkiosk layer showing how to define configuration
 #  variables, declare packages and create a start up script. We depend on the
@@ -24,8 +24,9 @@ mmdebstrap:
   customize-hooks:
     - |
       export KIOSK_USER="$IGconf_device_user1"
-      export KIOSK_RUNDIR="/home/$IGconf_device_user1"
+      export KIOSK_RUNDIR_NAME="kiosk"
       export KIOSK_URL="$IGconf_kiosk_url"
-      export KIOSK_APP="/usr/bin/chromium $KIOSK_URL https://time.is/London --kiosk --noerrdialogs --disable-infobars --no-first-run --enable-features=OverlayScrollbar --start-maximized"
+      #export KIOSK_APP="/usr/bin/chromium $KIOSK_URL --kiosk --noerrdialogs --disable-infobars --no-first-run --force-dark-mode --enable-features=OverlayScrollbar,WebUIDarkMode --start-maximized --user-data-dir=/run/$KIOSK_RUNDIR_NAME/chromium"
+      export KIOSK_APP="/usr/bin/chromium $KIOSK_URL --kiosk --noerrdialogs --disable-infobars --no-first-run --enable-features=OverlayScrollbar --start-maximized --user-data-dir=/run/$KIOSK_RUNDIR_NAME/chromium"
       envsubst < kiosk.service.tpl > $1/etc/systemd/system/kiosk.service
     - $BDEBSTRAP_HOOKS/enable-units "$1" kiosk
