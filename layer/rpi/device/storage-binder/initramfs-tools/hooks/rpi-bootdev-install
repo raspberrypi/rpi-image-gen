@@ -8,4 +8,6 @@ esac
 
 copy_exec /usr/bin/od
 copy_exec /usr/bin/rpi-bootdev-tag
+# blkid is needed by rpi-bootdev-tag's USB boot-disk discovery (label/type probe).
+copy_exec /sbin/blkid 2>/dev/null || copy_exec /usr/sbin/blkid 2>/dev/null || true
 copy_file config /etc/udev/rules.d/99-rpi-00-bootdev.rules /etc/udev/rules.d/99-rpi-00-bootdev.rules
