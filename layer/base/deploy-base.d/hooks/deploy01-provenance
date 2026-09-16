@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -eu
+
+cp "${IGconf_target_dir}/SOURCE_DATE_EPOCH" "$1"
