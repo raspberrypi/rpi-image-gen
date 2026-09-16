@@ -30,6 +30,16 @@
 # X-Env-Var-root_part_size-Valid: size
 # X-Env-Var-root_part_size-Set: y
 #
+# X-Env-Var-cmdline_extra:
+# X-Env-Var-cmdline_extra-Desc: Additional kernel command line parameters,
+#  appended to the cmdline.txt written to the boot partition. Existing
+#  parameters are not removed or de-duplicated; how a repeated parameter is
+#  treated depends on the parameter. cmdline.txt is written as a single
+#  line. Specific to this layer; other image layers silently ignore it.
+# X-Env-Var-cmdline_extra-Required: n
+# X-Env-Var-cmdline_extra-Valid: string-or-empty
+# X-Env-Var-cmdline_extra-Set: y
+#
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Image specific asset directory
 # X-Env-Var-assetdir-Required: n
