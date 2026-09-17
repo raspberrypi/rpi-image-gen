@@ -42,6 +42,20 @@
 # X-Env-Var-disksig-Valid: regex:^(random|0x[0-9a-fA-F]{8})$
 # X-Env-Var-disksig-Set: lazy
 #
+# X-Env-Var-rootdev_scheme: by-slot
+# X-Env-Var-rootdev_scheme-Desc: How root and boot are referenced in /etc/fstab
+#  and on the kernel command line.
+#  by-slot: /dev/disk/by-slot symlinks created by this layout's udev rule.
+#  partuuid: PARTUUID derived from the MBR disk signature, as Raspberry Pi OS
+#  tooling expects. Not available with pmap 'crypt', where partition 2 holds
+#  the LUKS2 container rather than the root filesystem.
+# X-Env-Var-rootdev_scheme-Required: n
+# X-Env-Var-rootdev_scheme-Valid: by-slot,partuuid
+# X-Env-Var-rootdev_scheme-Set: y
+# X-Env-Var-rootdev_scheme-Conflicts:
+#  IGconf_image_rootdev_scheme == 'partuuid' and IGconf_image_pmap == 'crypt'
+#  IGconf_image_rootdev_scheme == 'partuuid' and IGconf_image_disksig == '0x00000000'
+#
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Desc: Provisioning Map identifier for this image layout.
 #  All partitions will be provisioned unencrypted (clear).
