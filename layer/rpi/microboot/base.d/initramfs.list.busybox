@@ -1,0 +1,7 @@
+# Files to include in the microboot initramfs, one per line. Comments and blank
+# lines are ignored. Each entry is resolved via dracut-install.
+# List only what you want - not transitive dependencies.
+/usr/bin/busybox
+/usr/sbin/netplugd
+/etc/netplug/netplug
+/usr/sbin/ntpd

@@ -1,0 +1,19 @@
+# METABEGIN
+# X-Env-Layer-Name: example-gadget-pi5
+# X-Env-Layer-Category: example
+# X-Env-Layer-Desc: Example device layer for a Pi 5 / CM5 microboot image.
+#  Supplies the kernel and nothing else.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: device-base,rpi-debian-trixie
+# X-Env-Layer-Provides: device,rpi-device
+#
+# X-Env-VarPrefix: device
+#
+# X-Env-Var-class: pi5
+# METAEND
+---
+mmdebstrap:
+  architectures:
+    - arm64
+  packages:
+    - linux-image-rpi-2712

@@ -15,15 +15,16 @@ else
 fi
 [ -n "$password" ] || { echo "Empty password" >&2; exit 1; }
 
-method="sha-512"
+method=""
 if [ -f "$chroot/etc/login.defs" ]; then
    m=$(awk '/^[[:space:]]*ENCRYPT_METHOD[[:space:]]+/ {print tolower($2)}' "$chroot/etc/login.defs")
    [ -n "${m:-}" ] && method="$m"
 fi
-if [ "$method" = "" ] && [ -f "$chroot/etc/pam.d/common-password" ] &&
+if [ -z "$method" ] && [ -f "$chroot/etc/pam.d/common-password" ] &&
    grep -q yescrypt "$chroot/etc/pam.d/common-password"; then
    method="yescrypt"
 fi
+[ -n "$method" ] || method="sha-512"
 
 case "$method" in
    sha512|sha-512) method="sha-512" ;;

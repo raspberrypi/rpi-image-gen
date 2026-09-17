@@ -265,7 +265,9 @@ Variable values support dynamic placeholders:
 
 `${FILENAME}`: Name of the layer file, including its extension
 
-`${STEM}`: Name of the layer file without its extension. Compose it to reach the layer's own `.d` directory, where it ships its hooks and overlays - `${DIRECTORY}/${STEM}.d/hooks`. Written this way the path survives a rename of the layer file.
+`${STEM}`: Name of the layer file without its extension
+
+`${DOTD}`: The layer's optional companion directory, ie `${DIRECTORY}/${STEM}.d`, where it ships its hooks, overlays, etc.
 
 `${FILEPATH}`: Full path to the layer file
 
@@ -459,7 +461,7 @@ Examples:
 The environment variables declared by a layer customise build behaviour:
 
 - **Validation**: Each variable includes validation rules (types, ranges, patterns)
-- **Placeholders**: Support for dynamic values like `${DIRECTORY}`, `${FILENAME}`, `${STEM}`, `${NAME}`, `${VERSION}`, `${UUID}` and `${WORKDIR}`
+- **Placeholders**: Support for dynamic values like `${DIRECTORY}`, `${FILENAME}`, `${STEM}`, `${NAME}`, `${VERSION}`, `${UUID}`, `${WORKDIR}` and `${DOTD}`
 - **Set Policies**: Control when and how variables are applied during layer resolution
 - **Documentation**: Integrated help and validation error messages
 

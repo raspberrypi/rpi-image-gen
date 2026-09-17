@@ -1,0 +1,10 @@
+X-IG-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+Types: deb
+URIs: http://deb.debian.org/debian
+Suites: trixie
+Components: main main/debian-installer
+
+Types: deb
+URIs: http://deb.debian.org/debian-security
+Suites: trixie-security
+Components: main

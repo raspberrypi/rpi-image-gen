@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -eu
+
+fs=$1
+genimg_in=$2
+
+cat "$LAYER_DIR/genimage.cfg.in" | sed \
+   -e "s|<IMAGE_NAME>|$IGconf_image_name|g" \
+   -e "s|<SECTOR_SIZE>|$IGconf_device_sector_size|g" \
+   > "${genimg_in}/genimage.cfg"

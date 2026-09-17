@@ -1,0 +1,4 @@
+# The gadget framework plus block devices to the host and serial console
+libcomposite
+usb_f_mass_storage
+usb_f_acm

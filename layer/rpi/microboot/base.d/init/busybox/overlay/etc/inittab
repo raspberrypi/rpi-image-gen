@@ -1,0 +1,15 @@
+::sysinit:mount -t proc proc /proc
+::sysinit:mount -t devtmpfs devtmpfs /dev
+::sysinit:mkdir -p /dev/pts /dev/shm
+::sysinit:mount -a
+null::sysinit:ln -sf /proc/self/fd /dev/fd
+null::sysinit:ln -sf /proc/self/fd/0 /dev/stdin
+null::sysinit:ln -sf /proc/self/fd/1 /dev/stdout
+null::sysinit:ln -sf /proc/self/fd/2 /dev/stderr
+::sysinit:/etc/init.d/rcS
+
+::respawn:/etc/init.d/console-getty
+
+::ctrlaltdel:reboot
+::shutdown:umount -a -r
+

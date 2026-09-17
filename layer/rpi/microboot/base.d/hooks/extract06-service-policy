@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Apply init system service policy to staging before sync to initramfs root
+exec "$IGconf_u_service_policy" "$1/staging" "$IGconf_u_services"

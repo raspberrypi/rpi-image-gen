@@ -1,0 +1,3 @@
+#!/bin/sh
+[ -r /etc/motd ] && cat /etc/motd
+exec /bin/sh -l

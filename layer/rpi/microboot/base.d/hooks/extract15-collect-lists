@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Any layer in the plan may extend the microboot initramfs by shipping list
+# fragments beside its own. Microboot sweeps all layers in the plan to find
+# these fragments.
+sweep_list() {
+   local layer=$1 version=$2 stempath=$3 _=$4 _=$5 name=$6 base=$7 dest=$8
+   local frag="${stempath}.d/${name}"
+
+   [[ -f $frag ]] || return 0
+   [[ $(realpath -m "$frag") != $(realpath -m "$base") ]] || return 0
+
+   msg "microboot: using $name from $layer $version"
+   printf '\n# %s %s\n' "$layer" "$version" >> "$dest"
+   cat "$frag" >> "$dest"
+}
+
+foreach_layer_in_plan sweep_list "initramfs.list.${IGconf_u_initsys}" \
+   "$IGconf_u_initramfs_list" "$1/initramfs.list"
+
+foreach_layer_in_plan sweep_list "modules.list" \
+   "$IGconf_u_modules_list" "$1/modules.list"

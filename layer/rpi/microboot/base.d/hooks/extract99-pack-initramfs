@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -euo pipefail
+
+root="$1/initramfs-root"
+
+# Normalise uid/gid first before packing - safe default
+chown -R 0:0 "$root"
+
+# uid/gid/home come from the account itself
+spec=$(grep "^${IGconf_device_user1}:" "$root/etc/passwd" || true)
+if [ -n "$spec" ]; then
+   home=$(echo "$spec" | cut -d: -f6)
+   if [ -d "${root}/${home}" ]; then
+      chown -R "$(echo "$spec" | cut -d: -f3):$(echo "$spec" | cut -d: -f4)" \
+         "${root}/${home}"
+   fi
+fi
+
+# Pack the curated initramfs root into /bootfs
+cd "$root"
+find . -print0 \
+   | cpio --null -o -H newc --quiet \
+   | zstd --ultra --long -22 -q > "$1/bootfs/initramfs.cpio.zst"

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Just replace the base layer's default config.txt wholesale
+cat > "$1/bootfs/config.txt" <<-'EOF'
+	[all]
+	arm_64bit=1
+	kernel=vmlinuz
+	initramfs initramfs.cpio.zst followkernel
+	
+	# Peripheral mode. Without this there is no UDC for the gadget to bind to
+	dtoverlay=dwc2,dr_mode=peripheral
+EOF

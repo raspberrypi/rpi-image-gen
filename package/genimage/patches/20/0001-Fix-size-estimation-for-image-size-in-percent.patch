@@ -1,0 +1,94 @@
+From ff62494fdce6fc9e5389a29d8162156b8c39e9aa Mon Sep 17 00:00:00 2001
+From: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+Date: Sat, 25 Jul 2026 06:34:33 +0200
+Subject: [PATCH] Fix size estimation for image size in percent
+
+Commit 8d9c1a2 ("genimage: allow percentages for image sizes") introduced
+the option to specity image sizes as a percentage of the initial data.
+Size estimation for this option is based on the root path only, which
+makes this feature unusable for partitions populated mainly by files.
+
+Add calculation of file size to the size estimation before applying the
+percentage.
+
+Fixes: : #227 ("Image size in % does not work")
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
+ genimage.c |  5 ++++-
+ genimage.h |  1 +
+ util.c     | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/genimage.c b/genimage.c
+index 770a8c4..93f2817 100644
+--- a/genimage.c
++++ b/genimage.c
+@@ -177,7 +177,10 @@ static int image_setup(struct image *image)
+ 	image->seen = -1;
+ 
+ 	if (image->size_is_percent) {
+-		image->size = image_dir_size(image) * image->size / 100;
++		unsigned long long alignment = 1024ULL * 1024ULL;	// align to the next MiB
++		unsigned long long size = image_dir_size(image) + image_file_size(image);
++		size = size * image->size / 100ULL;
++		image->size = ((size + alignment) / alignment) * alignment;
+ 		image->size_is_percent = cfg_false;
+ 	}
+ 
+diff --git a/genimage.h b/genimage.h
+index 2587bc6..a2eea75 100644
+--- a/genimage.h
++++ b/genimage.h
+@@ -219,6 +219,7 @@ void uuid_parse(const char *str, unsigned char *uuid);
+ char *uuid_random(void);
+ 
+ unsigned long long image_dir_size(struct image *image);
++unsigned long long image_file_size(struct image *image);
+ 
+ uint32_t crc32(const void *data, size_t len);
+ uint32_t crc32_next(const void *data, size_t len, uint32_t last_crc);
+diff --git a/util.c b/util.c
+index d1375dd..b72fae9 100644
+--- a/util.c
++++ b/util.c
+@@ -938,6 +938,40 @@ unsigned long long image_dir_size(struct image *image)
+ 	return dir_size(image, AT_FDCWD, mountpath(image), 4096);
+ }
+ 
++unsigned long long image_file_size(struct image *image)
++{
++	long long size = 0;
++	size_t blocksize = 4096;
++	struct partition *part;
++
++	int fd = open(inputpath(), O_RDONLY);
++	list_for_each_entry(part, &image->partitions, list) {
++		struct image *child;
++		if (part->image) {
++			child = image_get(part->image);
++			if (child && child->file) {
++				int fd_child = openat(fd, child->file, O_RDONLY);
++				if (fd_child != -1) {
++					struct stat st;
++					if (fstat(fd_child, &st) != -1) {
++						size_t sz = 0;
++						if S_ISREG(st.st_mode)
++							sz = ROUND_UP(st.st_size, blocksize);
++						else if S_ISDIR(st.st_mode)
++							sz = dir_size(image, fd, child->file, blocksize);
++						else
++							image_info(image, "non-regular file: %s: size not calculated\n", child->file);
++						size += sz;
++					}
++				}
++			}
++		}
++	}
++	close(fd);
++
++	return size;
++}
++
+ int parse_holes(struct image *image, cfg_t *cfg)
+ {
+ 	int i;

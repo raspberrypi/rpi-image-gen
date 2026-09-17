@@ -1,0 +1,62 @@
+#!/bin/sh
+#
+# Start the network....
+#
+
+mkdir -p /run/network
+
+PATH=/usr/sbin:/sbin:/usr/bin:/bin
+DAEMON=/usr/sbin/netplugd
+NAME=netplugd
+PIDFILE=/var/run/$NAME.pid
+
+test -x "$DAEMON" || exit 0
+
+do_start () {
+   # Return
+   #   0 if daemon has been started
+   #   1 if daemon was already running
+   #   2 if daemon could not be started
+   start-stop-daemon --start --quiet --pidfile "$PIDFILE" \
+      --exec "$DAEMON" --test >/dev/null || return 1
+   start-stop-daemon --start --quiet --pidfile "$PIDFILE" \
+      --exec "$DAEMON" -- -p "$PIDFILE" >/dev/null || return 2
+}
+
+do_stop () {
+   # Return
+   #   0 if daemon has been stopped
+   #   1 if daemon was already stopped
+   #   2 if daemon could not be stopped
+   #   other if a failure occurred
+   local RETVAL
+   start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile "$PIDFILE" --name "$NAME"
+   RETVAL="$?"
+   [ "$RETVAL" = 2 ] && return 2
+   start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec "$DAEMON"
+   [ "$?" = 2 ] && return 2
+   return "$RETVAL"
+}
+
+
+case "$1" in
+   start)
+   printf "Starting network: "
+   do_start
+   [ $? = 0 ] && echo "OK" || echo "FAIL"
+   ;;
+   stop)
+   printf "Stopping network: "
+   do_stop
+   [ $? = 0 ] && echo "OK" || echo "FAIL"
+   ;;
+   restart|reload)
+   do_stop
+   do_start
+   ;;
+   *)
+   echo "Usage: $0 {start|stop|restart}"
+   exit 1
+esac
+
+exit $?

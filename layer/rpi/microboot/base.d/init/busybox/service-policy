@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -u
+
+staging=$1
+want=$2
+
+# name:path pairs
+SERVICES="
+network:etc/init.d/S40network
+"
+
+# rcS runs every executable /etc/init.d/S*, so the exec bit is the switch
+for entry in $SERVICES; do
+   name=${entry%%:*}
+   path=${entry#*:}
+
+   case ",$want," in
+      *",$name,"*) continue ;;
+   esac
+
+   [ -e "$staging/$path" ] || die "microboot: service $name missing from staging"
+   msg "microboot: service $name disabled"
+   chmod -x "$staging/$path"
+done

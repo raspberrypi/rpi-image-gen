@@ -1164,11 +1164,14 @@ class MetadataContainer:
         # self.layer isn't built yet at this point, so read raw_metadata directly.
         layer_name = self.raw_metadata.get(XEnv.layer_name(), "")
         layer_version = self.raw_metadata.get(XEnv.layer_version(), "1.0.0")
+        directory = os.path.dirname(abs_path)
+        stem = os.path.splitext(os.path.basename(abs_path))[0]
         return {
             "FILENAME": os.path.basename(abs_path),
-            "DIRECTORY": os.path.dirname(abs_path),
+            "DIRECTORY": directory,
             "FILEPATH": abs_path,
-            "STEM": os.path.splitext(os.path.basename(abs_path))[0],
+            "STEM": stem,
+            "DOTD": os.path.join(directory, stem + ".d"),
             "NAME": layer_name,
             "VERSION": layer_version,
             "UUID": _layer_uuid(layer_name, layer_version),
