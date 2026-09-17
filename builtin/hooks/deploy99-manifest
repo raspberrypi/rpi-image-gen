@@ -6,12 +6,14 @@ set -eu
 
 deploy_dir=$1
 
+sde=$(< "${IGconf_target_dir}/SOURCE_DATE_EPOCH")
+
 echo "Creating manifest..."
 {
   echo "{"
   echo "  \"deployment_info\": {"
   echo "    \"version\": \"${IGconf_artefact_version:-}\","
-  echo "    \"date\": \"$(date -Iseconds)\""
+  echo "    \"SOURCE_DATE_EPOCH\": $sde"
   echo "  },"
   echo "  \"files\": ["
 
@@ -30,8 +32,9 @@ echo "Creating manifest..."
     echo "      \"size\": $size,"
     echo "      \"mime_type\": \"$mime_type\","
     echo "      \"sha1\": \"$(sha1sum "$f" | cut -d' ' -f1)\""
-    echo "    }"
+    printf "    }"
   done
+  [[ "$first" == true ]] || echo
 
   echo "  ]"
   echo "}"

@@ -15,8 +15,18 @@ GH=$(git describe --dirty 2> /dev/null || \
    git rev-parse HEAD 2> /dev/null || \
    echo "999-unknown")
 
-mkdir -p $1/etc
-echo "Generated using rpi-image-gen ${GH} on $(date +%Y-%m-%d)" > $1/etc/rpi-issue
-echo "Artefact version: $IGconf_artefact_version" >> $1/etc/rpi-issue
+mkdir -p "$1/etc"
+echo "Generated using rpi-image-gen ${GH} on $(date -u -d "@${SOURCE_DATE_EPOCH}" +%Y-%m-%d)" > "$1/etc/rpi-issue"
+echo "Artefact version: $IGconf_artefact_version" >> "$1/etc/rpi-issue"
 
-echo $SOURCE_DATE_EPOCH > ${IGconf_target_dir}/SOURCE_DATE_EPOCH
+# See os-release(5)
+if [ -e "$1/etc/os-release" ]; then
+   {
+      [ -z "${IGconf_image_name:-}" ] || echo "IMAGE_ID=\"$IGconf_image_name\""
+      echo "BUILD_ID=\"$GH\""
+      echo "IMAGE_VERSION=\"$IGconf_artefact_version\""
+      echo "IG_SOURCE_DATE_EPOCH=\"${SOURCE_DATE_EPOCH}\""
+   } | tee -a "$1/etc/os-release"
+fi
+
+echo "${SOURCE_DATE_EPOCH:?}" > "${IGconf_target_dir}/SOURCE_DATE_EPOCH"
