@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: image-base
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Default image settings and build attributes.
-# X-Env-Layer-Version: 2.3.3
+# X-Env-Layer-Version: 2.4.0
 # X-Env-Layer-Requires: sys-build-base,sbom-base,target-config,artefact-base,deploy-base,fs-base
 # X-Env-Layer-RequiresProvider: device
 #
@@ -89,6 +89,13 @@
 # X-Env-Var-assetdir-Required: n
 # X-Env-Var-assetdir-Valid: string
 # X-Env-Var-assetdir-Set: lazy
+#
+# X-Env-Var-bootsign_cmd:
+# X-Env-Var-bootsign_cmd-Desc: Command producing a detached signature for a boot
+#  image. Unset leaves images unsigned.
+# X-Env-Var-bootsign_cmd-Required: n
+# X-Env-Var-bootsign_cmd-Valid: string
+# X-Env-Var-bootsign_cmd-Set: n
 #
 # X-Env-Var-rootfs_type: none
 # X-Env-Var-rootfs_type-Desc: Root filesystem type. Implementation-dependent. May
