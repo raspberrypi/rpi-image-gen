@@ -165,11 +165,16 @@ run_test "dryconfig13 - by-slot w/crypt pmap" \
     0 \
     "Configuration should parse successfully"
 
-run_test "dryconfig14 - partuuid w/zero disksig" \
-    'out=$(printf "n\n" | $IG build -c trixie-minbase.yaml -I -- IGconf_image_rootdev_scheme=partuuid IGconf_image_disksig=0x00000000 2>&1); \
-     test $? -ne 0 && echo "$out" | grep -q "Conflict:.*disksig"' \
+run_test "dryconfig14 - zero disksig" \
+    'out=$(printf "n\n" | $IG build -c trixie-minbase.yaml -I -- IGconf_image_disksig=0x00000000 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "does not match pattern"' \
     0 \
-    "Configuration should reject partuuid with an all-zero disk signature"
+    "Configuration should reject an all-zero disk signature"
+
+run_test "dryconfig15 - explicit disksig" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_disksig=0x0000000a" \
+    0 \
+    "Configuration should accept a non-zero disk signature"
 
 print_summary
 exit 0

@@ -37,9 +37,9 @@
 # X-Env-Var-assetdir-Set: y
 #
 # X-Env-Var-disksig: random
-# X-Env-Var-disksig-Desc: MBR disk signature supplied as a 32-bit hexadecimal number, or 'random'
+# X-Env-Var-disksig-Desc: MBR disk signature supplied as a non-zero 32-bit hexadecimal number, or 'random'
 # X-Env-Var-disksig-Required: n
-# X-Env-Var-disksig-Valid: regex:^(random|0x[0-9a-fA-F]{8})$
+# X-Env-Var-disksig-Valid: regex:^(random|0x(?!0{8})[0-9a-fA-F]{8})$
 # X-Env-Var-disksig-Set: lazy
 #
 # X-Env-Var-rootdev_scheme: by-slot
@@ -54,7 +54,6 @@
 # X-Env-Var-rootdev_scheme-Set: y
 # X-Env-Var-rootdev_scheme-Conflicts:
 #  IGconf_image_rootdev_scheme == 'partuuid' and IGconf_image_pmap == 'crypt'
-#  IGconf_image_rootdev_scheme == 'partuuid' and IGconf_image_disksig == '0x00000000'
 #
 # X-Env-Var-pmap: clear
 # X-Env-Var-pmap-Desc: Provisioning Map identifier for this image layout.
