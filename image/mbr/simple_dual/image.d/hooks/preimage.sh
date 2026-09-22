@@ -10,30 +10,21 @@ genimg_in=$2
 source "${IGconf_image_outputdir}/img_uuids"
 
 
-# Settle the disk signature for PARTUUID derivation
-# genimage resolves 'random' internally and never reports the value, so it must
-# be concrete before genimage runs. Done here and not in customize because a
-# first --image-only rebuild never runs customize at all. Reuse a signature an
-# earlier run settled, so such a rebuild keeps the same PARTUUIDs.
-SETTLED=${DISKSIG:-}
+# Resolve the disk signature
+# genimage resolves 'random' internally and never reports the value, so pick
+# one here and hand genimage a concrete signature. DISKSIG is recorded with
+# the other identifiers so setup.sh can derive PARTUUIDs from it.
 DISKSIG=$IGconf_image_disksig
-if [[ $DISKSIG == random && $IGconf_image_rootdev_scheme == partuuid ]]; then
-   if [[ $SETTLED =~ ^0x[0-9a-fA-F]{8}$ ]]; then
-      DISKSIG=$SETTLED
-   else
-      # An all-zero signature yields PARTUUID=00000000-0N, which blkid does
-      # not index
-      DISKSIG=0x00000000
-      while [[ $DISKSIG == 0x00000000 ]]; do
-         DISKSIG="0x$(od -An -tx4 -N4 /dev/urandom | tr -d ' \n')"
-      done
-   fi
-   # Only a signature settled here is recorded. A configured one is read from
-   # the config every run, so recording it would let it outlive the config and
-   # be reused by a later run that asked for random.
-   sed -i '/^DISKSIG=/d' "${IGconf_image_outputdir}/img_uuids"
-   echo "DISKSIG=$DISKSIG" >> "${IGconf_image_outputdir}/img_uuids"
+if [[ $DISKSIG == random ]]; then
+   # An all-zero signature yields PARTUUID=00000000-0N, which blkid does
+   # not index
+   DISKSIG=0x00000000
+   while [[ $DISKSIG == 0x00000000 ]]; do
+      DISKSIG="0x$(od -An -tx4 -N4 /dev/urandom | tr -d ' \n')"
+   done
 fi
+sed -i '/^DISKSIG=/d' "${IGconf_image_outputdir}/img_uuids"
+echo "DISKSIG=$DISKSIG" >> "${IGconf_image_outputdir}/img_uuids"
 
 
 MKE2FS_ARGS_STR="-U $ROOT_UUID ${IGconf_fs_ext4_mkfs_args:-}"

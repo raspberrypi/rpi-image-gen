@@ -6,12 +6,8 @@ LABEL="$1"
 
 case $IGconf_image_rootdev_scheme in
    partuuid)
-      # A configured signature is authoritative; only a settled one is recorded
-      # by preimage.sh - see the note there
-      DISKSIG=$IGconf_image_disksig
-      if [[ $DISKSIG == random ]]; then
-         source "${IGconf_image_outputdir}/img_uuids"
-      fi
+      # Recorded by preimage.sh
+      source "${IGconf_image_outputdir}/img_uuids"
       [[ ${DISKSIG:-} =~ ^0x[0-9a-fA-F]{8}$ ]] || { echo "setup: unresolved disk signature '${DISKSIG:-unset}'" >&2; exit 1; }
       SIG=${DISKSIG#0x}
       SIG=${SIG,,}

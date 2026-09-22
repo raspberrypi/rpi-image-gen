@@ -99,9 +99,8 @@ export IGconf_device_sector_size=512
 export IGconf_fs_ext4_mkfs_args= IGconf_fs_btrfs_mkfs_args= IGconf_fs_vfat_mkfs_args=
 
 # Stage a filesystem and output dir for setup.sh. $1 is the disk signature
-# recorded in img_uuids. Tests that configure a signature record a different
-# one, so setup.sh consulting the file when it should not shows up as a
-# wrong PARTUUID. Echoes the directory.
+# recorded in img_uuids, as preimage.sh would have left it. Echoes the
+# directory.
 stage_setup() {
     local d
     d=$(mktemp -d -p "$WORKDIR")
@@ -112,13 +111,14 @@ stage_setup() {
     echo "$d"
 }
 
-# Run setup.sh against a staged dir. $1 dir, $2 scheme, $3 disk signature,
-# $4 rootfs type, $5 label (ROOT or BOOT).
+# Run setup.sh against a staged dir. $1 dir, $2 scheme, $3 rootfs type,
+# $4 label (ROOT or BOOT). The configured disk signature is always 'random':
+# setup.sh must take the recorded value, never the configured one.
 run_setup() {
     IMAGEMOUNTPATH="$1" IGconf_image_outputdir="$1" \
-    IGconf_image_rootdev_scheme="$2" IGconf_image_disksig="$3" \
-    IGconf_image_rootfs_type="$4" \
-        "$LAYER/setup.sh" "$5"
+    IGconf_image_rootdev_scheme="$2" IGconf_image_disksig=random \
+    IGconf_image_rootfs_type="$3" \
+        "$LAYER/setup.sh" "$4"
 }
 
 # Run preimage.sh. $1 outputdir, $2 genimage dir, $3 scheme, $4 disk signature.
@@ -142,20 +142,20 @@ stage_preimage() {
 
 print_header "ROOTDEV SCHEME TESTS"
 
-d=$(stage_setup random)
+d=$(stage_setup 0xaabbccdd)
 run_test "rootdev-by-slot" \
-    'run_setup "$d" by-slot random ext4 ROOT && \
-     run_setup "$d" by-slot random ext4 BOOT && \
+    'run_setup "$d" by-slot ext4 ROOT && \
+     run_setup "$d" by-slot ext4 BOOT && \
      grep -qx "/dev/disk/by-slot/system  /  ext4 rw,relatime,errors=remount-ro,commit=30 0 1" "$d/etc/fstab" && \
      grep -q "^/dev/disk/by-slot/boot  /boot/firmware  vfat" "$d/etc/fstab" && \
      grep -q "root=/dev/disk/by-slot/system " "$d/cmdline.txt"' \
     0 \
     "By-slot should keep the slot symlinks"
 
-d=$(stage_setup 0x99999999)
+d=$(stage_setup 0xaabbccdd)
 run_test "rootdev-partuuid" \
-    'run_setup "$d" partuuid 0xaabbccdd ext4 ROOT && \
-     run_setup "$d" partuuid 0xaabbccdd ext4 BOOT && \
+    'run_setup "$d" partuuid ext4 ROOT && \
+     run_setup "$d" partuuid ext4 BOOT && \
      grep -q "^PARTUUID=aabbccdd-02  /  ext4 " "$d/etc/fstab" && \
      grep -q "^PARTUUID=aabbccdd-01  /boot/firmware  vfat" "$d/etc/fstab" && \
      grep -q "root=PARTUUID=aabbccdd-02 " "$d/cmdline.txt" && \
@@ -163,35 +163,34 @@ run_test "rootdev-partuuid" \
     0 \
     "Partuuid should reference boot as partition 1 and root as partition 2"
 
-d=$(stage_setup 0x99999999)
+d=$(stage_setup 0xAABBCCDD)
 run_test "rootdev-partuuid-case" \
-    'run_setup "$d" partuuid 0xAABBCCDD ext4 ROOT && \
+    'run_setup "$d" partuuid ext4 ROOT && \
      grep -q "PARTUUID=aabbccdd-02" "$d/etc/fstab"' \
     0 \
     "An upper case disk signature should be lower cased"
 
-d=$(stage_setup 0x99999999)
+d=$(stage_setup 0x12345678)
 run_test "rootdev-partuuid-btrfs" \
-    'run_setup "$d" partuuid 0x12345678 btrfs ROOT && \
+    'run_setup "$d" partuuid btrfs ROOT && \
      grep -qx "PARTUUID=12345678-02  /  btrfs defaults 0 0" "$d/etc/fstab"' \
     0 \
     "Btrfs roots should use the same scheme"
 
-print_header "STALE DISK SIGNATURE TESTS"
+print_header "UNRESOLVED DISK SIGNATURE TESTS"
 
 # A recorded value that is not a signature must not be used
 d=$(stage_setup random)
 run_test "rootdev-signature-unresolved" \
-    'run_setup "$d" partuuid random ext4 ROOT > "$WORKDIR/err" 2>&1; \
+    'run_setup "$d" partuuid ext4 ROOT > "$WORKDIR/err" 2>&1; \
      test $? -ne 0 && grep -q "unresolved disk signature" "$WORKDIR/err"' \
     0 \
     "An unresolved signature should abort with a clear message"
 
-# An --image-only rebuild skips customize, so img_uuids can predate this
-# scheme and hold no signature at all. Deriving PARTUUIDs must not proceed.
+# img_uuids can predate preimage.sh recording a signature
 d=$(mktemp -d -p "$WORKDIR"); mkdir -p "$d/etc"; echo 'BOOT_LABEL=ABCD1234' > "$d/img_uuids"
 run_test "rootdev-signature-absent" \
-    'run_setup "$d" partuuid random ext4 ROOT > "$WORKDIR/err" 2>&1; \
+    'run_setup "$d" partuuid ext4 ROOT > "$WORKDIR/err" 2>&1; \
      test $? -ne 0 && grep -q "unresolved disk signature" "$WORKDIR/err"' \
     0 \
     "An absent signature should abort with a clear message"
@@ -205,48 +204,45 @@ run_test "rootdev-signature-to-genimage" \
      echo "$sig" | grep -qE "^0x[0-9a-f]{8}$" && \
      grep -q "disk-signature = \"$sig\"" "$g/genimage.cfg"' \
     0 \
-    "A settled signature should be the one written to genimage.cfg"
+    "A generated signature should be the one written to genimage.cfg"
 
+# 'random' is never left for genimage to resolve, whatever the scheme
 read -r d g <<<"$(stage_preimage by-slot random)"
 run_test "rootdev-signature-by-slot" \
-    'grep -q "disk-signature = \"random\"" "$g/genimage.cfg"' \
+    'sig=$(sed -n "s/^DISKSIG=//p" "$d/img_uuids") && \
+     echo "$sig" | grep -qE "^0x[0-9a-f]{8}$" && \
+     grep -q "disk-signature = \"$sig\"" "$g/genimage.cfg"' \
     0 \
-    "By-slot should leave the signature for genimage to resolve"
+    "By-slot should also resolve and record the signature"
 
 read -r d g <<<"$(stage_preimage partuuid 0xDEADBEEF)"
 run_test "rootdev-signature-explicit" \
     'grep -q "disk-signature = \"0xDEADBEEF\"" "$g/genimage.cfg" && \
-     ! grep -q "^DISKSIG=" "$d/img_uuids"' \
+     grep -qx "DISKSIG=0xDEADBEEF" "$d/img_uuids"' \
     0 \
-    "An explicit signature should reach genimage without being recorded"
+    "A configured signature should reach genimage unchanged and be recorded"
 
 # The value genimage stamps and the value fstab references must agree
 read -r d g <<<"$(stage_preimage partuuid random)"
 mkdir -p "$d/etc"
 echo 'console=tty1 root=ROOTDEV rootwait' > "$d/cmdline.txt"
 run_test "rootdev-signature-matches-fstab" \
-    'run_setup "$d" partuuid random ext4 ROOT && \
+    'run_setup "$d" partuuid ext4 ROOT && \
      sig=$(sed -n "s/^DISKSIG=0x//p" "$d/img_uuids" | tr "A-F" "a-f") && \
      grep -q "^PARTUUID=$sig-02  /  ext4 " "$d/etc/fstab" && \
      grep -q "disk-signature = \"0x$sig\"" "$g/genimage.cfg"' \
     0 \
-    "The settled signature should appear in both genimage.cfg and fstab"
+    "The generated signature should appear in both genimage.cfg and fstab"
 
-# An explicit signature must win over one an earlier run settled
+# Each run records exactly one signature, replacing the previous one
 read -r d g <<<"$(stage_preimage partuuid random)"
-run_test "rootdev-signature-explicit-wins" \
+run_test "rootdev-signature-replaced" \
     'run_preimage "$d" "$g" partuuid 0x11223344 && \
-     grep -q "disk-signature = \"0x11223344\"" "$g/genimage.cfg"' \
+     grep -q "disk-signature = \"0x11223344\"" "$g/genimage.cfg" && \
+     test "$(grep -c "^DISKSIG=" "$d/img_uuids")" -eq 1 && \
+     grep -qx "DISKSIG=0x11223344" "$d/img_uuids" && \
+     grep -qx "BOOT_UUID=ABCD-1234" "$d/img_uuids"' \
     0 \
-    "A configured signature should override one settled earlier"
-
-# A by-slot run in between must not destroy a settled signature
-read -r d g <<<"$(stage_preimage partuuid random)"
-settled=$(sed -n 's/^DISKSIG=//p' "$d/img_uuids")
-run_test "rootdev-signature-survives-by-slot" \
-    'run_preimage "$d" "$g" by-slot random && \
-     grep -qx "DISKSIG=$settled" "$d/img_uuids"' \
-    0 \
-    "A by-slot rebuild should leave a settled signature alone"
+    "A rerun should replace the recorded signature and keep the other identifiers"
 
 print_summary
