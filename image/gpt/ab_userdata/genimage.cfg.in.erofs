@@ -87,7 +87,7 @@ image bootconfig.vfat {
 image boot.img {
    vfat {
       label = "BOOTRD"
-      extraargs = "-S <SECTOR_SIZE>"
+      extraargs = "-S <SECTOR_SIZE> --invariant"
    }
    size = 100%
    mountpoint = "/boot/firmware"

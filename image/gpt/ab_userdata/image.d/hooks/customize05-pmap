@@ -2,12 +2,19 @@
 
 set -eu
 
+# LAYER_UUID comes from the engine's build plan and is reproducible across
+# builds. This gives uniqueness across layers. IDs derived from it need to
+# be unique and reproducible, so need seeding.
+seed="${IGconf_image_name}:${IGconf_image_version}"
+uuid5() { uuidgen --sha1 --namespace "${LAYER_UUID:?}" --name "$seed:$1"; }
+
+
 # Generate pre-defined UUIDs
-BOOT_LABEL=$(uuidgen | sed 's/-.*//' | tr 'a-f' 'A-F')
+BOOT_LABEL=$(uuid5 boot | sed 's/-.*//' | tr 'a-f' 'A-F')
 BOOT_UUID=$(echo "$BOOT_LABEL" | sed 's/^\(....\)\(....\)$/\1-\2/')
-SYSTEM_UUID=$(uuidgen)
-CRYPT_UUID=$(uuidgen)
-VERITY_UUID=$(uuidgen)
+SYSTEM_UUID=$(uuid5 system)
+CRYPT_UUID=$(uuid5 crypt)
+VERITY_UUID=$(uuid5 verity)
 
 
 rm -f ${IGconf_image_outputdir}/img_uuids
