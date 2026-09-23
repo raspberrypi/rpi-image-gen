@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# Generate a detached signature over a boot image
+#
+# $1  image to sign   $2  its size in bytes   $3  signature to write
+#
+# rpi-eeprom-digest reads the image and honours SOURCE_DATE_EPOCH for the
+# timestamp, which rpi-image-gen makes available in the environment for the
+# signing command.
+#
+# Where the key comes from is this example command's business.
+#
+# Always treat key material with great care.
+
+set -eu
+
+KEY="$(dirname "$0")/keys/private.pem"
+
+[ -r "$KEY" ] || { echo "sign: no key at $KEY" >&2; exit 1; }
+
+exec rpi-eeprom-digest -k "$KEY" -i "$1" -o "$3"
