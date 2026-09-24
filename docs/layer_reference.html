@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rpi-image-gen Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .content { margin-bottom: 40px; }
+        .layer-list { margin-bottom: 30px; }
+        .layer-item { margin-bottom: 8px; }
+        .layer-item a { text-decoration: none; color: #007acc; font-weight: 500; }
+        .layer-item a:hover { text-decoration: underline; }
+        .layer-desc { color: #666; margin-left: 10px; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
+        h3 { color: #000; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px; }
+        /* AsciiDoc table styling */
+        .tableblock { border-collapse: collapse; margin: 1.25em 0; table-layout: fixed !important; }
+        .tableblock.frame-all { border: 1px solid #dedede; }
+        .tableblock.grid-all th, .tableblock.grid-all td { border: 1px solid #dedede; }
+        .tableblock.stretch { table-layout: fixed !important; }
+        .tableblock.frame-all.grid-all.stretch { table-layout: fixed !important; }
+        .tableblock th, .tableblock td { padding: 0.5625em 0.625em; text-align: left; vertical-align: top; }
+        .tableblock th { background: #f8f9fa; font-weight: 600; color: rgba(0,0,0,.8); }
+        .tableblock tbody tr:nth-child(even) { background: #f8f8f7; }
+        .tableblock p { margin: 0; line-height: 1.6; }
+        .tableblock .halign-left { text-align: left; }
+        .tableblock .halign-center { text-align: center; }
+        .tableblock .halign-right { text-align: right; }
+        .tableblock .valign-top { vertical-align: top; }
+        .tableblock .valign-middle { vertical-align: middle; }
+        .tableblock .valign-bottom { vertical-align: bottom; }
+
+        /* Simple code block styling */
+        .listingblock pre {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .listingblock pre code {
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_layer_library">Layer Library</a></li>
+</ul>
+</div>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="./index.html">← Back to Main Documentation</a></p>
+</div>
+<div class="paragraph">
+<p>An index of every layer shipped with rpi-image-gen, grouped by category. Select a layer to see its
+attributes, variables, dependencies, hooks and overlays.</p>
+</div>
+<div class="paragraph">
+<p>For an explanation of what layers are, how they are composed and the metadata they declare, see
+<a href="./layer/index.html">Layer Documentation</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_library"><a class="anchor" href="#_layer_library"></a><a class="link" href="#_layer_library">Layer Library</a></h2>
+<div class="sectionbody">
+
+</div>
+</div>
+
+    </div>
+
+    
+    
+    
+    <h3>audit</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/sbom-base.html">sbom-base</a><span class="layer-desc" title="SBOM provider and settings.">- SBOM provider and settings.</span>
+        </div>
+        
+    </div>
+    
+    <h3>base</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/embedded-svelte.html">embedded-svelte</a><span class="layer-desc" title="Excludes manpages, locales, and docs to minimise image size.">- Excludes manpages, locales, and docs to minimise image size.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/embedded-svelte-static.html">embedded-svelte-static</a><span class="layer-desc" title="Extends embedded-svelte by removing apt directories, for
+ images that will never run apt in the field.">- Extends embedded-svelte by removing apt directories, for
+ images that will never run apt in the field.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/fs-base.html">fs-base</a><span class="layer-desc" title="Filesystem base properties and tunables. Provides
+ per-filesystem-type configuration consumed by image layers, including
+ mkfs arguments and other fs-level settings. Downstream layers may
+ ignore, override, prepend or append additional arguments as required.">- Filesystem base properties and tunables. Provides
+ per-filesystem-type configuration consumed by…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/linux-base.html">linux-base</a><span class="layer-desc" title="Linux kernel base properties. Provides kernel level
+ attributes that may influence downstream image creation in order to
+ optimise for the target system.">- Linux kernel base properties. Provides kernel level
+ attributes that may influence downstream…</span>
+        </div>
+        
+    </div>
+    
+    <h3>build</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/artefact-base.html">artefact-base</a><span class="layer-desc" title="Base artefact naming, versioning and organisation for
+ filesystem builds.">- Base artefact naming, versioning and organisation for
+ filesystem builds.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/deploy-base.html">deploy-base</a><span class="layer-desc" title="Deployment and organisation for build output artefacts">- Deployment and organisation for build output artefacts</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/sys-build-base.html">sys-build-base</a><span class="layer-desc" title="Build environment configuration including workspace, apt
+ settings, and system foundation defaults.">- Build environment configuration including workspace, apt
+ settings, and system foundation defaults.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/target-config.html">target-config</a><span class="layer-desc" title="bdebstrap output target configuration.">- bdebstrap output target configuration.</span>
+        </div>
+        
+    </div>
+    
+    <h3>ci</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/rpios-ci-container-policy.html">rpios-ci-container-policy</a><span class="layer-desc" title="Apt and dpkg policy for container images used to build
+ and test Debian packages for Raspberry Pi OS.
+ Intended for use with a container base layer.
+ Derived from https://github.com/debuerreotype/debuerreotype">- Apt and dpkg policy for container images used to build
+ and test Debian packages for Raspberry Pi…</span>
+        </div>
+        
+    </div>
+    
+    <h3>connectivity</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/bluez.html">bluez</a><span class="layer-desc" title="BlueZ Bluetooth stack">- BlueZ Bluetooth stack</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/bluez-obex.html">bluez-obex</a><span class="layer-desc" title="BlueZ OBEX daemon for Bluetooth file transfer">- BlueZ OBEX daemon for Bluetooth file transfer</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/iwd.html">iwd</a><span class="layer-desc" title="iNet wireless daemon for wifi management">- iNet wireless daemon for wifi management</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/network-manager.html">network-manager</a><span class="layer-desc" title="NetworkManager for wired and wireless network management">- NetworkManager for wired and wireless network management</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/network-manager-iwd.html">network-manager-iwd</a><span class="layer-desc" title="NetworkManager with iwd as the wifi backend, NM managing
+ connections and auto-connect">- NetworkManager with iwd as the wifi backend, NM managing
+ connections and auto-connect</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/wireless-debug.html">wireless-debug</a><span class="layer-desc" title="Wireless diagnostic tools">- Wireless diagnostic tools</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/wireless-regulatory.html">wireless-regulatory</a><span class="layer-desc" title="Wireless regulatory database">- Wireless regulatory database</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/wireless-utils.html">wireless-utils</a><span class="layer-desc" title="Production wireless utilities">- Production wireless utilities</span>
+        </div>
+        
+    </div>
+    
+    <h3>container</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/docker-debian-bookworm.html">docker-debian-bookworm</a><span class="layer-desc" title="Docker engine and framework for Debian Bookworm">- Docker engine and framework for Debian Bookworm</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/docker-debian-trixie.html">docker-debian-trixie</a><span class="layer-desc" title="Docker engine and framework for Debian Trixie">- Docker engine and framework for Debian Trixie</span>
+        </div>
+        
+    </div>
+    
+    <h3>device</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/device-base.html">device-base</a><span class="layer-desc" title="Device base layer and defaults">- Device base layer and defaults</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/device-user-admin.html">device-user-admin</a><span class="layer-desc" title="Base layer for local user account provisioning.
+ Creates user accounts, sets credentials, group membership and sudo access.">- Base layer for local user account provisioning.
+ Creates user accounts, sets credentials, group…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/device-user-credentials.html">device-user-credentials</a><span class="layer-desc" title="Variable definitions for device user account configuration.
+ Declares user account settings: username, password, UID, GID, sudo access,
+ and supplementary group membership.">- Variable definitions for device user account configuration.
+ Declares user account settings:…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-ab-slot-mapper.html">rpi-ab-slot-mapper</a><span class="layer-desc" title="Dynamic slot device management for A/B boot: udev rules and
+ helpers that create stable by-slot symlinks from GPT PARTLABELs (preferred)
+ or a static slot map (fallback), with device-mapper and initramfs support.">- Dynamic slot device management for A/B boot: udev rules and
+ helpers that create stable by-slot…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-cm4.html">rpi-cm4</a><span class="layer-desc" title="Raspberry Pi CM4 specific device layer">- Raspberry Pi CM4 specific device layer</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-cm5.html">rpi-cm5</a><span class="layer-desc" title="Raspberry Pi CM5 specific device layer">- Raspberry Pi CM5 specific device layer</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-device-base.html">rpi-device-base</a><span class="layer-desc" title="Raspberry Pi device base layer and defaults">- Raspberry Pi device base layer and defaults</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-generic64.html">rpi-generic64</a><span class="layer-desc" title="Generic Raspberry Pi device common with v8 kernel, boot
+ firmware supporting all devices, and wlan/BT firmware.">- Generic Raspberry Pi device common with v8 kernel, boot
+ firmware supporting all devices, and…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-idp.html">rpi-idp</a><span class="layer-desc" title="Image Description Provisioning (IDP) configuration
+ for Raspberry Pi devices.">- Image Description Provisioning (IDP) configuration
+ for Raspberry Pi devices.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-idp-luks2.html">rpi-idp-luks2</a><span class="layer-desc" title="Device specific LUKS2 provisioning attributes for IDP.
+ A device layer may use these to describe preferences for its LUKS2
+ encrypted volumes. Values are passed through to libcryptsetup.
+ See https://gitlab.com/cryptsetup/cryptsetup and cryptsetup(8).
+ Downstream layer implementation-dependent.">- Device specific LUKS2 provisioning attributes for IDP.
+ A device layer may use these to describe…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-splash-screen.html">rpi-splash-screen</a><span class="layer-desc" title="Raspberry Pi fullscreen splash screen support with custom image configuration.">- Raspberry Pi fullscreen splash screen support with custom image configuration.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-storage-binder.html">rpi-storage-binder</a><span class="layer-desc" title="Boot-device membership tagging for partitions and
+ DM devices backed by the boot storage device, with initramfs support.">- Boot-device membership tagging for partitions and
+ DM devices backed by the boot storage device,…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi3.html">rpi3</a><span class="layer-desc" title="Raspberry Pi 3 specific device layer">- Raspberry Pi 3 specific device layer</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi4.html">rpi4</a><span class="layer-desc" title="Raspberry Pi 4 specific device layer">- Raspberry Pi 4 specific device layer</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi5.html">rpi5</a><span class="layer-desc" title="Raspberry Pi 5 specific device layer">- Raspberry Pi 5 specific device layer</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpizero2w.html">rpizero2w</a><span class="layer-desc" title="Raspberry Pi Zero 2 W specific device layer">- Raspberry Pi Zero 2 W specific device layer</span>
+        </div>
+        
+    </div>
+    
+    <h3>distribution</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/debian-bookworm-arm64.html">debian-bookworm-arm64</a><span class="layer-desc" title="Debian Bookworm apt base for arm64">- Debian Bookworm apt base for arm64</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-bookworm-arm64-multi.html">debian-bookworm-arm64-multi</a><span class="layer-desc" title="Debian Bookworm apt base for arm64 and armhf.">- Debian Bookworm apt base for arm64 and armhf.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-bookworm-arm64-slim.html">debian-bookworm-arm64-slim</a><span class="layer-desc" title="Debian Bookworm custom layer for arm64 providing
+ a usable and practical base.">- Debian Bookworm custom layer for arm64 providing
+ a usable and practical base.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-bookworm-buildd.html">debian-bookworm-buildd</a><span class="layer-desc" title="Architecture agnostic Debian Bookworm buildd base.
+ This provides a base layer specifically designed for automated package
+ building and software compilation.">- Architecture agnostic Debian Bookworm buildd base.
+ This provides a base layer specifically…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-trixie-arm64.html">debian-trixie-arm64</a><span class="layer-desc" title="Debian Trixie apt base for arm64.">- Debian Trixie apt base for arm64.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-trixie-arm64-minbase-rolling.html">debian-trixie-arm64-minbase-rolling</a><span class="layer-desc" title="Switches the Debian Trixie minbase snapshot to rolling repositories.">- Switches the Debian Trixie minbase snapshot to rolling repositories.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-trixie-arm64-minbase-snapshot.html">debian-trixie-arm64-minbase-snapshot</a><span class="layer-desc" title="Debian Trixie minbase for arm64 using a snapshot mirror.">- Debian Trixie minbase for arm64 using a snapshot mirror.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-trixie-arm64-multi.html">debian-trixie-arm64-multi</a><span class="layer-desc" title="Debian Trixie apt base for arm64 and armhf.">- Debian Trixie apt base for arm64 and armhf.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-trixie-arm64-multi-minbase.html">debian-trixie-arm64-multi-minbase</a><span class="layer-desc" title="Debian Trixie multi-arch base for interactive systems.
+ No apt or dpkg restrictions - recommended packages are preserved, locale
+ generated.">- Debian Trixie multi-arch base for interactive systems.
+ No apt or dpkg restrictions - recommended…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-trixie-arm64-slim.html">debian-trixie-arm64-slim</a><span class="layer-desc" title="Debian Trixie custom layer for arm64 providing
+ a usable and practical base.">- Debian Trixie custom layer for arm64 providing
+ a usable and practical base.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-trixie-buildd.html">debian-trixie-buildd</a><span class="layer-desc" title="Architecture agnostic Debian Trixie buildd base.
+ This provides a base layer specifically designed for automated package
+ building and software compilation.">- Architecture agnostic Debian Trixie buildd base.
+ This provides a base layer specifically designed…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/raspbian-bookworm-armhf.html">raspbian-bookworm-armhf</a><span class="layer-desc" title="Raspbian Bookworm apt base for armhf.">- Raspbian Bookworm apt base for armhf.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/raspbian-trixie-armhf.html">raspbian-trixie-armhf</a><span class="layer-desc" title="Raspbian Trixie apt base for armhf.">- Raspbian Trixie apt base for armhf.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-microboot-base.html">rpi-microboot-base</a><span class="layer-desc" title="Microboot filesystem base plus tooling hooks to pack a
+ minimal filesystem into a single directory suitable for post-processing
+ to create bootable media.">- Microboot filesystem base plus tooling hooks to pack a
+ minimal filesystem into a single directory…</span>
+        </div>
+        
+    </div>
+    
+    <h3>firmware</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/rpi-boot-firmware.html">rpi-boot-firmware</a><span class="layer-desc" title="Raspberry Pi boot firmware for all devices">- Raspberry Pi boot firmware for all devices</span>
+        </div>
+        
+    </div>
+    
+    <h3>foundation</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/essential.html">essential</a><span class="layer-desc" title="Serves as the mandatory foundation for all rpi-image-gen
+ builds, and is automatically included in every configuration to provide
+ essential build infrastructure.">- Serves as the mandatory foundation for all rpi-image-gen
+ builds, and is automatically included in…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/locale-config.html">locale-config</a><span class="layer-desc" title="Localisation and Internationalisation config settings">- Localisation and Internationalisation config settings</span>
+        </div>
+        
+    </div>
+    
+    <h3>general</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/ca-certificates.html">ca-certificates</a><span class="layer-desc" title="Common CA Certificate PEM files">- Common CA Certificate PEM files</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/chrony.html">chrony</a><span class="layer-desc" title="Chrony NTP client and server
+ https://chrony-project.org">- Chrony NTP client and server
+ https://chrony-project.org</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/fake-hwclock.html">fake-hwclock</a><span class="layer-desc" title="Persistent time management for non-RTC systems.">- Persistent time management for non-RTC systems.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/openssh-server.html">openssh-server</a><span class="layer-desc" title="OpenSSH server daemon and local user SSH key setup. No SSH
+ keys are installed by default. A unique host identity is generated on first
+ boot (see host_keydir to pre-seed one instead).">- OpenSSH server daemon and local user SSH key setup. No SSH
+ keys are installed by default. A…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-debian-bookworm.html">rpi-debian-bookworm</a><span class="layer-desc" title="Raspberry Pi Debian Bookworm APT repository">- Raspberry Pi Debian Bookworm APT repository</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-debian-trixie.html">rpi-debian-trixie</a><span class="layer-desc" title="Raspberry Pi Debian Trixie APT repository">- Raspberry Pi Debian Trixie APT repository</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-essential-base.html">rpi-essential-base</a><span class="layer-desc" title="Raspberry Pi essential basic system packages">- Raspberry Pi essential basic system packages</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-misc-skel.html">rpi-misc-skel</a><span class="layer-desc" title="Raspberry Pi miscellaneous filesystem directory
+ skeleton.">- Raspberry Pi miscellaneous filesystem directory
+ skeleton.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-misc-utils.html">rpi-misc-utils</a><span class="layer-desc" title="Raspberry Pi system utilities">- Raspberry Pi system utilities</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/systemd-min.html">systemd-min</a><span class="layer-desc" title="Core systemd components for init and SysV compatibility,
+ without additional services">- Core systemd components for init and SysV compatibility,
+ without additional services</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/systemd-net-min.html">systemd-net-min</a><span class="layer-desc" title="Systemd networking via networkd and resolved services">- Systemd networking via networkd and resolved services</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/systemd-resolved.html">systemd-resolved</a><span class="layer-desc" title="systemd&#39;s built-in DNS client">- systemd&#39;s built-in DNS client</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/systemd-timesyncd.html">systemd-timesyncd</a><span class="layer-desc" title="systemd&#39;s built-in NTP client">- systemd&#39;s built-in NTP client</span>
+        </div>
+        
+    </div>
+    
+    <h3>i18n</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/locale-base.html">locale-base</a><span class="layer-desc" title="Pre-seeded locale and internationalisation settings">- Pre-seeded locale and internationalisation settings</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/locale-gen.html">locale-gen</a><span class="layer-desc" title="Installs and generates locales at build time">- Installs and generates locales at build time</span>
+        </div>
+        
+    </div>
+    
+    <h3>image</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/image-base.html">image-base</a><span class="layer-desc" title="Default image settings and build attributes.">- Default image settings and build attributes.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/image-bootfs.html">image-bootfs</a><span class="layer-desc" title="Packs /bootfs directly into a FAT filesystem image. No
+ partition table. For boot media that&#39;s consumed as a raw filesystem
+ rather than a partitioned disk, eg loaded directly into RAM via rpiboot.">- Packs /bootfs directly into a FAT filesystem image. No
+ partition table. For boot media that&#39;s…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/image-rota.html">image-rota</a><span class="layer-desc" title="Immutable GPT A/B layout for rotational OTA updates,
+ boot/system redundancy, and a shared persistent data partition.">- Immutable GPT A/B layout for rotational OTA updates,
+ boot/system redundancy, and a shared…</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/image-rpios.html">image-rpios</a><span class="layer-desc" title="Raspberry Pi OS style image layout with MBR, vfat
+ boot partition, and a root partition that can be ext4 or btrfs.">- Raspberry Pi OS style image layout with MBR, vfat
+ boot partition, and a root partition that can…</span>
+        </div>
+        
+    </div>
+    
+    <h3>kernel</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/rpi-linux-2712.html">rpi-linux-2712</a><span class="layer-desc" title="Raspberry Pi 2712 kernel">- Raspberry Pi 2712 kernel</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-linux-v7.html">rpi-linux-v7</a><span class="layer-desc" title="Raspberry Pi v7 kernel">- Raspberry Pi v7 kernel</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-linux-v7l.html">rpi-linux-v7l</a><span class="layer-desc" title="Raspberry Pi v7l kernel">- Raspberry Pi v7l kernel</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-linux-v8.html">rpi-linux-v8</a><span class="layer-desc" title="Raspberry Pi v8 kernel">- Raspberry Pi v8 kernel</span>
+        </div>
+        
+    </div>
+    
+    <h3>security</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/rpi-device-secpolicy.html">rpi-device-secpolicy</a><span class="layer-desc" title="Raspberry Pi device family security policy baseline">- Raspberry Pi device family security policy baseline</span>
+        </div>
+        
+    </div>
+    
+    <h3>service</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/rpi-connect.html">rpi-connect</a><span class="layer-desc" title="Raspberry Pi Connect client with screen-sharing support and
+ remote shell access">- Raspberry Pi Connect client with screen-sharing support and
+ remote shell access</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-connect-lite.html">rpi-connect-lite</a><span class="layer-desc" title="Raspberry Pi Connect client with remote shell access">- Raspberry Pi Connect client with remote shell access</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-connect-ota.html">rpi-connect-ota</a><span class="layer-desc" title="Configures Raspberry Pi Connect&#39;s experimental remote update capability">- Configures Raspberry Pi Connect&#39;s experimental remote update capability</span>
+        </div>
+        
+    </div>
+    
+    <h3>suite</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/bookworm-minbase.html">bookworm-minbase</a><span class="layer-desc" title="Debian Bookworm with apt, utils, wired networking, ssh.">- Debian Bookworm with apt, utils, wired networking, ssh.</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/trixie-minbase.html">trixie-minbase</a><span class="layer-desc" title="Debian Trixie with apt, utils, wired and wifi networking, ssh.">- Debian Trixie with apt, utils, wired and wifi networking, ssh.</span>
+        </div>
+        
+    </div>
+    
+    <h3>toolchain</h3>
+    <div class="layer-list">
+        
+        <div class="layer-item">
+            <a href="layer/arm64-toolchain-cross.html">arm64-toolchain-cross</a><span class="layer-desc" title="ARM64 cross-compilation toolchain">- ARM64 cross-compilation toolchain</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/arm64-toolchain-native.html">arm64-toolchain-native</a><span class="layer-desc" title="ARM64 native compilation toolchain">- ARM64 native compilation toolchain</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/autotools-base.html">autotools-base</a><span class="layer-desc" title="Autotools build environment">- Autotools build environment</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/build-user.html">build-user</a><span class="layer-desc" title="Environmental setup for dedicated build user">- Environmental setup for dedicated build user</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/debian-dev-tools.html">debian-dev-tools</a><span class="layer-desc" title="Debian package development and maintenance tools">- Debian package development and maintenance tools</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/gnu-common.html">gnu-common</a><span class="layer-desc" title="Common GNU toolchain setup with ccache and environment">- Common GNU toolchain setup with ccache and environment</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/kbuild-base.html">kbuild-base</a><span class="layer-desc" title="Linux kernel build environment with Debian packaging
+ support.">- Linux kernel build environment with Debian packaging
+ support.</span>
+        </div>
+        
+    </div>
+    
+    
+</body>
+</html>

@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -123,14 +124,14 @@
     <div class="header">
         <h1>image-base</h1>
         <span class="badge">image</span>
-        <span class="badge">v2.2.3</span>
+        <span class="badge">v2.4.0</span>
         <p>Default image settings and build attributes.</p>
     </div>
     <div class="section">
         <h2>Additional Documentation</h2>
         <div class="companion-content">
             <div class="sect1">
-<h2 id="_common_attributes">Common Attributes</h2>
+<h2 id="_common_attributes"><a class="anchor" href="#_common_attributes"></a><a class="link" href="#_common_attributes">Common Attributes</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Different image layers are provided to support image generation with a specific footprint while allowing for customisation.
@@ -159,6 +160,84 @@ Unless otherwise stated, the following apply to all image layers:</p>
 </div>
 <div class="paragraph">
 <p>When creating FAT filesystems, different options may be passed to <code>mkdosfs(8)</code> by <code>genimage</code> depending on needs.</p>
+</div>
+<div class="paragraph">
+<p><strong>Ramdisk Boot</strong></p>
+</div>
+<div class="paragraph">
+<p>The Raspberry Pi device boot flow supports loading a FAT image named <code>boot.img</code> and using it as the boot filesystem. This is selected by <code>boot_ramdisk=1</code> in <code>config.txt</code>. When secure boot is enabled, the device only boots this way and verifies <code>boot.img</code> against a detached <code>boot.sig</code> alongside it.</p>
+</div>
+<div class="paragraph">
+<p>An image layer builds the boot filesystem and declares an 'outer' partition image to carry it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>image bootpartition.vfat {
+   vfat {
+      label = "BOOT"
+      file boot.img { image = "bootfiles.img" }
+   }
+   size = &lt;BOOT_SIZE&gt;
+   exec-post = "bootimg ramdisk bootfiles.img"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>bootimg</code> is a thin utility shipped by rpi-image-gen which provides an abstraction for boot image file generation. It can be used with <code>genimage</code> templates and provides a documented interface to support custom signing commands, for example to support an HSM flow.</p>
+</div>
+<div class="paragraph">
+<p><code>bootimg ramdisk</code> writes the <code>config.txt</code> setting <code>boot_ramdisk=1</code> and adds it, together with the signature file, into the outer image. Where the image containing the bootfiles is served whole instead of carried in a partition (eg, <code>boot.img</code> over <code>rpiboot</code>), <code>bootimg sign</code> writes the signature alongside it.</p>
+</div>
+<div class="paragraph">
+<p>In the example fragment above, the already generated image <code>bootfiles.img</code> is added, under the name <code>boot.img</code>, to the partition image <code>bootpartition.vfat</code> being created. <code>boot.img</code> is the name the bootloader looks for. <code>bootimg ramdisk</code> is given the generated image&#8217;s name because that is the file it signs, and does not need a full path because it resolves one against <code>$OUTPUTPATH</code> which <code>genimage</code> supplies in the hook environment.</p>
+</div>
+<div class="paragraph">
+<p><strong>Signing</strong></p>
+</div>
+<div class="paragraph">
+<p><code>IGconf_image_bootsign_cmd</code> specifies the signing command that <code>bootimg</code> will execute to generate the signature file. It is invoked with three arguments:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Image to sign.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Size of the image in bytes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$3</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Path to write the signature to.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>A non-zero exit fails the build.</p>
+</div>
+<div class="paragraph">
+<p>No key is passed - the command determines that for itself. This keeps the interface indifferent to a local key, a PKCS#11 token, an HSM or a remote signing service. <a href="https://github.com/raspberrypi/rpi-eeprom/blob/master/rpi-eeprom-digest" target="_blank" rel="noopener">rpi-eeprom-digest</a> produces signatures in the form the bootloader expects, so a command can map <code>$1</code> and <code>$3</code> onto its <code>-i</code> and <code>-o</code> arguments and supply the key itself.</p>
+</div>
+<div class="paragraph">
+<p>The command runs with a defined set of environment variables including <code>USER</code>, <code>PATH</code>, <code>HOME</code>, <code>SHELL</code>, <code>SSH_AUTH_SOCK</code> and <code>SOURCE_DATE_EPOCH</code>. Image and device identity information is provided via <code>IGconf_</code> variables which enables a key/flow to be selected per product or device class.</p>
+</div>
+<div class="paragraph">
+<p>An example signing flow using SSH is shown below. The image goes up stdin and the signature comes back on stdout:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sh" data-lang="sh">#!/bin/sh
+set -eu
+ssh $USER@signer "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH sign-boot-image" &lt; "$1" &gt; "$3"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The path to this script would be set in <code>IGconf_image_bootsign_cmd</code>.</p>
 </div>
 <div class="paragraph">
 <p><strong>Sparse Images</strong></p>
@@ -198,6 +277,8 @@ Unless otherwise stated, the following apply to all image layers:</p>
         </div>
         <p><strong>Required by:</strong></p>
         <div class="deps">
+            
+            <a href="image-bootfs.html" class="dep-badge">image-bootfs</a>
             
             <a href="image-rota.html" class="dep-badge">image-rota</a>
             
@@ -271,10 +352,23 @@ Unless otherwise stated, the following apply to all image layers:</p>
                     </td>
                 </tr>
                 <tr>
+                    <td><code>IGconf_image_idp_enable</code></td>
+                    <td>Generate an Image Description Provisioning (IDP)
+ document for this image. Set automatically for Raspberry Pi devices.
+ See https://raspberrypi.github.io/rpi-image-gen/provisioning/index.html</td>
+                    <td>
+                           <code>n</code>
+                    </td>
+                    <td>Boolean value - accepts: true/false, 1/0, yes/no, y/n (case insensitive)</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
                     <td><code>IGconf_image_pmap</code></td>
                     <td>Set the identifier string for the image Provisioning
  Map (PMAP). The PMAP file defines how the image will be provisioned on the
- device for which it's intended. The PMAP is part of the Image Description
+ device for which it&#39;s intended. The PMAP is part of the Image Description
  JSON file generated by the build. Providing a PMAP is optional, but is
  mandatory for provisioning the image using Raspberry Pi tools.</td>
                     <td>
@@ -340,6 +434,18 @@ Unless otherwise stated, the following apply to all image layers:</p>
                     <td>Non-empty string value</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_bootsign_cmd</code></td>
+                    <td>Command producing a detached signature for a boot
+ image. Unset leaves images unsigned.</td>
+                    <td>
+                           <code>&lt;disabled&gt;</code>
+                    </td>
+                    <td>Non-empty string value</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-skip" title="Click for policy and validation help">skip</a>
                     </td>
                 </tr>
                 <tr>

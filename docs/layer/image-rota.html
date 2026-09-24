@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -123,7 +124,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v5.6.0</span>
+        <span class="badge">v6.0.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -131,7 +132,7 @@
         <h2>Additional Documentation</h2>
         <div class="companion-content">
             <div class="sect1">
-<h2 id="_immutable_root_and_mount_points">Immutable root and mount points</h2>
+<h2 id="_immutable_root_and_mount_points"><a class="anchor" href="#_immutable_root_and_mount_points"></a><a class="link" href="#_immutable_root_and_mount_points">Immutable root and mount points</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This system uses an A/B, read‑only root with all writable state on a single persistent partition.</p>
@@ -296,13 +297,13 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="slot-shared">Slot-shared application data</h2>
+<h2 id="slot-shared"><a class="anchor" href="#slot-shared"></a><a class="link" href="#slot-shared">Slot-shared application data</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.</p>
 </div>
 <div class="sect2">
-<h3 id="_why_var_is_slot_local_by_default">Why /var is slot-local by default</h3>
+<h3 id="_why_var_is_slot_local_by_default"><a class="anchor" href="#_why_var_is_slot_local_by_default"></a><a class="link" href="#_why_var_is_slot_local_by_default">Why /var is slot-local by default</a></h3>
 <div class="paragraph">
 <p>Read literally, FHS supports sharing most of <code>/var</code> across slots: <code>/var/lib</code> is explicitly persistent per-host application state (unlike <code>/run</code>, which FHS separates out precisely because it is <strong>not</strong> meant to survive), and <code>/var/log</code>, <code>/var/spool</code>, and most software that keeps working state under <code>/var/lib</code> (NetworkManager, databases, container runtimes) expect that state to survive an upgrade.</p>
 </div>
@@ -317,7 +318,7 @@
 </div>
 </div>
 <div class="sect2">
-<h3 id="_how_it_works">How it works</h3>
+<h3 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a><a class="link" href="#_how_it_works">How it works</a></h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -333,7 +334,7 @@
 </div>
 </div>
 <div class="sect2">
-<h3 id="_declaring_a_shared_path">Declaring a shared path</h3>
+<h3 id="_declaring_a_shared_path"><a class="anchor" href="#_declaring_a_shared_path"></a><a class="link" href="#_declaring_a_shared_path">Declaring a shared path</a></h3>
 <div class="paragraph">
 <p>Drop a <code>.conf</code> file into <code>/etc/rpi-image-gen/slot-shared.d/</code>, eg via the layer&#8217;s rootfs overlay or script:</p>
 </div>
@@ -363,7 +364,7 @@ The files are inert in non-AB configurations.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_persistent_partition_layout">Persistent partition layout</h3>
+<h3 id="_persistent_partition_layout"><a class="anchor" href="#_persistent_partition_layout"></a><a class="link" href="#_persistent_partition_layout">Persistent partition layout</a></h3>
 <div class="paragraph">
 <p>Shared data is stored under <code>/persistent/shared/</code>, mirroring the full path hierarchy:</p>
 </div>
@@ -383,7 +384,7 @@ The files are inert in non-AB configurations.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_slot_selection_run_time">Slot Selection (run-time)</h2>
+<h2 id="_slot_selection_run_time"><a class="anchor" href="#_slot_selection_run_time"></a><a class="link" href="#_slot_selection_run_time">Slot Selection (run-time)</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Handled entirely by layer <code>rpi-ab-slot-mapper</code>.</p>
@@ -391,10 +392,10 @@ The files are inert in non-AB configurations.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_slot_pairing_build_time">Slot Pairing (build-time)</h2>
+<h2 id="_slot_pairing_build_time"><a class="anchor" href="#_slot_pairing_build_time"></a><a class="link" href="#_slot_pairing_build_time">Slot Pairing (build-time)</a></h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_definition">Definition</h3>
+<h3 id="_definition"><a class="anchor" href="#_definition"></a><a class="link" href="#_definition">Definition</a></h3>
 <div class="paragraph">
 <p>This layer generates an image which has bit-for-bit identical A/B slot members:</p>
 </div>
@@ -419,7 +420,7 @@ The files are inert in non-AB configurations.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_rationale_and_benefits">Rationale and benefits</h3>
+<h3 id="_rationale_and_benefits"><a class="anchor" href="#_rationale_and_benefits"></a><a class="link" href="#_rationale_and_benefits">Rationale and benefits</a></h3>
 <div class="ulist">
 <ul>
 <li>
@@ -438,7 +439,7 @@ The files are inert in non-AB configurations.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_requirements_and_constraints">Requirements and constraints</h3>
+<h3 id="_requirements_and_constraints"><a class="anchor" href="#_requirements_and_constraints"></a><a class="link" href="#_requirements_and_constraints">Requirements and constraints</a></h3>
 <div class="ulist">
 <ul>
 <li>
@@ -451,7 +452,7 @@ The files are inert in non-AB configurations.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_encrypted_luks_provisioning_map_layouts">Encrypted (LUKS) Provisioning Map layouts</h3>
+<h3 id="_encrypted_luks_provisioning_map_layouts"><a class="anchor" href="#_encrypted_luks_provisioning_map_layouts"></a><a class="link" href="#_encrypted_luks_provisioning_map_layouts">Encrypted (LUKS) Provisioning Map layouts</a></h3>
 <div class="ulist">
 <ul>
 <li>
@@ -603,6 +604,52 @@ The files are inert in non-AB configurations.</p>
             <li><code>initramfs-tools</code></li>
             <li><code>rsync</code></li>
         </ul>
+    </div>
+    <div class="section">
+        <h2>Overlays</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Overlay</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>postbuild</code></td>
+                    <td><code>postbuild.overlay</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Hooks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>customize</code></td>
+                    <td>customize03-emmc-ops, customize05-pmap, customize10-kernel, customize15-cryptroot</td>
+                </tr>
+                <tr>
+                    <td><code>preimage</code></td>
+                    <td>preimage05-templates, preimage10-slots, preimage15-persistent-skel</td>
+                </tr>
+                <tr>
+                    <td><code>postimage</code></td>
+                    <td>postimage05-pack-update</td>
+                </tr>
+                <tr>
+                    <td><code>deploy</code></td>
+                    <td>deploy05-update</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="section">

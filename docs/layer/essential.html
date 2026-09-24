@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -123,7 +124,7 @@
     <div class="header">
         <h1>essential</h1>
         <span class="badge">foundation</span>
-        <span class="badge">v2.0.0</span>
+        <span class="badge">v2.1.0</span>
         <p>Serves as the mandatory foundation for all rpi-image-gen
  builds, and is automatically included in every configuration to provide
  essential build infrastructure.</p>
@@ -132,7 +133,7 @@
         <h2>Additional Documentation</h2>
         <div class="companion-content">
             <div class="sect1">
-<h2 id="_what_it_provides">What it provides</h2>
+<h2 id="_what_it_provides"><a class="anchor" href="#_what_it_provides"></a><a class="link" href="#_what_it_provides">What it provides</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The essential layer doesn&#8217;t define variables itself but ensures that every build has access to:</p>
@@ -156,7 +157,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_architecture_role">Architecture Role</h2>
+<h2 id="_architecture_role"><a class="anchor" href="#_architecture_role"></a><a class="link" href="#_architecture_role">Architecture Role</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
@@ -177,7 +178,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_benefits">Benefits</h2>
+<h2 id="_benefits"><a class="anchor" href="#_benefits"></a><a class="link" href="#_benefits">Benefits</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
@@ -195,7 +196,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_usage">Usage</h2>
+<h2 id="_usage"><a class="anchor" href="#_usage"></a><a class="link" href="#_usage">Usage</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Users don&#8217;t need to explicitly include this layer - it&#8217;s automatically included by the build system. All other layers can depend on essential to ensure they have access to the core build infrastructure. This ensures that every rpi-image-gen build, whether filesystem-only or full image, has access to the fundamental build tools and configuration needed for successful execution.</p>
@@ -212,6 +213,7 @@
             <a href="artefact-base.html" class="dep-badge">artefact-base</a>
             <a href="sys-build-base.html" class="dep-badge">sys-build-base</a>
             <a href="target-config.html" class="dep-badge">target-config</a>
+            <a href="deploy-base.html" class="dep-badge">deploy-base</a>
         </div>
     </div>
 

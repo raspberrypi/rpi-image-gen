@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -130,7 +131,7 @@
         <h2>Additional Documentation</h2>
         <div class="companion-content">
             <div class="sect1">
-<h2 id="_build_time_network_profiles">Build-time Network Profiles</h2>
+<h2 id="_build_time_network_profiles"><a class="anchor" href="#_build_time_network_profiles"></a><a class="link" href="#_build_time_network_profiles">Build-time Network Profiles</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p><code>IGconf_nm_cmds</code> accepts a path to a file containing <code>nmcli</code> commands to run inside the chroot at build time, with each line passed to the shell via <code>eval</code> with <code>nmcli</code> prepended. Refer to <a href="https://networkmanager.dev/docs/api/latest/nmcli.html" target="_blank" rel="noopener">nmcli</a> for the upstream documentation reference.</p>
@@ -163,7 +164,7 @@ It&#8217;s possible to incorporate a <code>| grep -v '^Warning'</code> filter be
 <p>The commands file can be supplied via different mechanisms.</p>
 </div>
 <div class="sect2">
-<h3 id="_config_yaml_absolute_path">Config YAML (absolute path)</h3>
+<h3 id="_config_yaml_absolute_path"><a class="anchor" href="#_config_yaml_absolute_path"></a><a class="link" href="#_config_yaml_absolute_path">Config YAML (absolute path)</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">nm:
@@ -172,7 +173,7 @@ It&#8217;s possible to incorporate a <code>| grep -v '^Warning'</code> filter be
 </div>
 </div>
 <div class="sect2">
-<h3 id="_config_yaml_source_relative_path">Config YAML (source-relative path)</h3>
+<h3 id="_config_yaml_source_relative_path"><a class="anchor" href="#_config_yaml_source_relative_path"></a><a class="link" href="#_config_yaml_source_relative_path">Config YAML (source-relative path)</a></h3>
 <div class="paragraph">
 <p>Use the <code>${@SRCROOT}</code> <a href="https://raspberrypi.github.io/rpi-image-gen/config/index.html#_anchors" target="_blank" rel="noopener">anchor</a> to express the path relative to the source root (the directory passed via <code>rpi-image-gen -S</code>):</p>
 </div>
@@ -184,7 +185,7 @@ It&#8217;s possible to incorporate a <code>| grep -v '^Warning'</code> filter be
 </div>
 </div>
 <div class="sect2">
-<h3 id="_command_line">Command line</h3>
+<h3 id="_command_line"><a class="anchor" href="#_command_line"></a><a class="link" href="#_command_line">Command line</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">$ rpi-image-gen build -S ./examples/myimage/ -c myimage.yaml -- IGconf_nm_cmds=/path/to/nm.cmds</code></pre>
@@ -224,16 +225,16 @@ It&#8217;s possible to incorporate a <code>| grep -v '^Warning'</code> filter be
                 <tr>
                     <td><code>IGconf_nm_cmds</code></td>
                     <td>Path to a file containing nmcli commands to run inside
- the chroot at build time, one per line without the leading 'nmcli'. Each
+ the chroot at build time, one per line without the leading &#39;nmcli&#39;. Each
  line is evaluated by the shell, so pipes and redirections are supported.
  This may be useful for installing specific network configurations. Use
  standard shell quoting for values containing spaces. Lines beginning with
  # are ignored.
  Example:
- --offline connection add type wifi ifname wlan0 con-name '$SSID' ssid '$SSID' \
-  wifi-sec.auth-alg open wifi-sec.key-mgmt wpa-psk wifi-sec.psk '$PSK' \
-  connection.autoconnect-retries 0 | grep -v '^Warning' \
-  > /etc/NetworkManager/system-connections/'$SSID'.nmconnection
+ --offline connection add type wifi ifname wlan0 con-name &#39;$SSID&#39; ssid &#39;$SSID&#39; \
+  wifi-sec.auth-alg open wifi-sec.key-mgmt wpa-psk wifi-sec.psk &#39;$PSK&#39; \
+  connection.autoconnect-retries 0 | grep -v &#39;^Warning&#39; \
+  &gt; /etc/NetworkManager/system-connections/&#39;$SSID&#39;.nmconnection
  See nmcli(1).</td>
                     <td>
                            <code>&lt;empty&gt;</code>
@@ -255,12 +256,28 @@ It&#8217;s possible to incorporate a <code>| grep -v '^Warning'</code> filter be
             <li><code>network-manager</code></li>
         </ul>
     </div>
+    <div class="section">
+        <h2>Overlays</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Overlay</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>customize</code></td>
+                    <td><code>customize.overlay</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
     <div class="section">
         <h2>Attributes</h2>
         <p><strong>File:</strong> <code>net-misc/network-manager.yaml</code></p>
         <p><strong>Type:</strong> <code>static</code></p>
-        <p><strong>Overlay:</strong> base</p>
     </div>
 </body>
 </html>

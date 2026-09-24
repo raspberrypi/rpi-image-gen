@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -162,8 +163,8 @@
                     <td><code>IGconf_artefact_target_name</code></td>
                     <td>Base name for the bdebstrap target (directory or
  file). This defines what the bdebstrap target will be called. Can be a
- directory name (eg, 'rootfs', 'chroot') for directory targets, or a filename
- (eg, 'filesystem.tar.gz', 'base-system.tgz') for archive targets. The target
+ directory name (eg, &#39;rootfs&#39;, &#39;chroot&#39;) for directory targets, or a filename
+ (eg, &#39;filesystem.tar.gz&#39;, &#39;base-system.tgz&#39;) for archive targets. The target
  type affects post-build processing - hooks should handle both directory and
  file targets appropriately.</td>
                     <td>
@@ -182,7 +183,7 @@
  is used both in the default context name and can be referenced by
  other layers for consistent versioning across artefacts.</td>
                     <td>
-                           <code class="long-default">$(git describe --tags --always --dirty 2>/dev/null || date +%Y-%m-%d)</code>
+                           <code class="long-default">$(git describe --tags --always --dirty 2&gt;/dev/null || date +%Y-%m-%d)</code>
                     </td>
                     <td>Non-empty string value</td>
                     <td>
