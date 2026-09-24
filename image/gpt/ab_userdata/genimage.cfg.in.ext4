@@ -84,14 +84,24 @@ image bootconfig.vfat {
    mountpoint = "/bootfs"
 }
 
+image boot.img {
+   vfat {
+      label = "BOOTRD"
+      extraargs = "-S <SECTOR_SIZE> --invariant"
+   }
+   size = 100%
+   mountpoint = "/boot/firmware"
+   exec-pre = "<SLOTP> BOOT"
+}
+
 image boot.vfat {
    vfat {
       label = "BOOT"
       extraargs = "-S <SECTOR_SIZE> -i <BOOT_LABEL>"
+      file boot.img { image = "boot.img" }
    }
    size = <BOOT_SIZE>
-   mountpoint = "/boot/firmware"
-   exec-pre = "<SLOTP> BOOT"
+   exec-post = "bootimg ramdisk boot.img"
 }
 
 image system.ext4 {

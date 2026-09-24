@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Boot image (ramdisk) helper for genimage templates
+#
+# Refs:
+# https://www.raspberrypi.com/documentation/computers/config_txt.html#boot_ramdisk
+# https://github.com/raspberrypi/usbboot/blob/master/docs/secure-boot.md#bootimg-files
+#
+# Options:
+#
+# ramdisk <payload>  Prepare the partition image carrying <payload>, where
+#                    <payload> is the generated image in $OUTPUTPATH. Writes
+#                    config.txt, adds boot.sig.
+# sign               Sign the image the hook is attached to ($IMAGEOUTFILE),
+#                    writing <stem>.sig beside it. For images served whole,
+#                    eg boot.img over rpiboot.
+
+set -u
+
+warn() { echo "BOOTSIGN: $*" >&2; }
+die() { warn "$*"; exit 1; }
+msg() { echo "BOOTSIGN: $*"; }
+usage() { die "usage: bootimg ramdisk <payload> | bootimg sign"; }
+
+
+# Add a file to a FAT image
+add() {
+   MTOOLS_SKIP_CHECK=1 mcopy -o -i "${IMAGEOUTFILE:?}" "$1" "::${1##*/}" ||
+      die "could not add ${1##*/} to $IMAGEOUTFILE"
+}
+
+
+# Signing command interface:
+# <image> <image size in bytes> <output signature path>
+sign_payload() {
+   local payload=$1 sig=$2
+
+   if [ -z "${IGconf_image_bootsign_cmd:-}" ]; then
+      warn "no bootsign cmd, ${payload##*/} unsigned"
+      return 1
+   fi
+
+   # Mandatory
+   local sde="${IGconf_target_dir:?}/SOURCE_DATE_EPOCH"
+   [[ -s $sde ]] || die "$sde missing"
+
+   rm -f "$sig"
+
+   # Clean room env - the command is a published interface
+   env -i \
+      PATH="${PATH:-}" \
+      HOME="${HOME:-}" \
+      SHELL="${SHELL:-}" \
+      ${USER:+USER="$USER"} \
+      ${TERM:+TERM="$TERM"} \
+      ${SSH_AUTH_SOCK:+SSH_AUTH_SOCK="$SSH_AUTH_SOCK"} \
+      LC_ALL=C \
+      SOURCE_DATE_EPOCH="$(< "$sde")" \
+      ${IGconf_image_name:+IGconf_image_name="$IGconf_image_name"} \
+      ${IGconf_image_version:+IGconf_image_version="$IGconf_image_version"} \
+      ${IGconf_device_vendor:+IGconf_device_vendor="$IGconf_device_vendor"} \
+      ${IGconf_device_class:+IGconf_device_class="$IGconf_device_class"} \
+      ${IGconf_device_variant:+IGconf_device_variant="$IGconf_device_variant"} \
+      ${IGconf_device_storage_type:+IGconf_device_storage_type="$IGconf_device_storage_type"} \
+      "$IGconf_image_bootsign_cmd" "$payload" "$(stat -c %s "$payload")" "$sig" ||
+      die "$IGconf_image_bootsign_cmd failed"
+
+   [[ -s $sig ]] || die "$IGconf_image_bootsign_cmd produced no $sig"
+   msg "signed ${payload##*/} -> ${sig##*/}"
+}
+
+
+cmd_ramdisk() {
+   local name=${1:-}
+   [[ -n $name ]] || usage
+
+   local payload="${OUTPUTPATH:?}/${name}"
+
+   [[ -f $payload ]] || die "$payload does not exist"
+
+   printf 'boot_ramdisk=1\n' > "${OUTPUTPATH}/config.txt" ||
+      die "could not write ${OUTPUTPATH}/config.txt"
+   add "${OUTPUTPATH}/config.txt"
+
+   local sig="${OUTPUTPATH}/boot.sig"
+   if sign_payload "$payload" "$sig"; then
+      add "$sig"
+   fi
+}
+
+
+cmd_sign() {
+   (( $# == 0 )) || usage
+
+   local payload="${IMAGEOUTFILE:?}"
+   [[ -f $payload ]] || die "$payload does not exist"
+
+   sign_payload "$payload" "${payload%.*}.sig" || true
+}
+
+
+case ${1:-} in
+   ramdisk) shift; cmd_ramdisk "$@" ;;
+   sign)    shift; cmd_sign    "$@" ;;
+   "")      usage ;;
+   *)       die "unknown operation '$1'" ;;
+esac

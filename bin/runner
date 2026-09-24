@@ -125,7 +125,7 @@ run_dir_hooks() {
 
 # Per-layer phased execution
 run_layer_step() {
-   local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5 phase=$6; shift 6
+   local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5 uuid=$6 phase=$7; shift 7
    local dest=${1:-}
    local ldir vmajor vminor vpatch
 
@@ -149,6 +149,7 @@ run_layer_step() {
       "LAYER_DIR=$ldir"
       "LAYER_FILE=$resolved"
       "LAYER_WORKDIR=$workdir"
+      "LAYER_UUID=$uuid"
    )
    [[ -d ${stempath}.d ]] && lvars+=( "LAYER_DOTD=${stempath}.d" )
 

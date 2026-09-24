@@ -206,7 +206,8 @@ def _write_layer_plan(path: str, build_order: List[str], manager: LayerManager) 
                 static = manager.layer_source_files.get(manager._resolve_key(layer), "")
                 resolved = manager.layer_files.get(manager._resolve_key(layer), "")
                 workdir = f"WORKROOT:{info.get('workdir_suffix', '')}"
-                handle.write(f'{layer}:{version}:{static}:{resolved}:{workdir}\n')
+                uuid = info.get('uuid', '')
+                handle.write(f'{layer}:{version}:{static}:{resolved}:{uuid}:{workdir}\n')
         print(f"Layer plan written to: {path}")
     except Exception as exc:
         print(f"Error writing layer plan to {path}: {exc}")

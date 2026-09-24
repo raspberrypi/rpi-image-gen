@@ -6,7 +6,7 @@ set -euo pipefail
 # fragments beside its own. Microboot sweeps all layers in the plan to find
 # these fragments.
 sweep_list() {
-   local layer=$1 version=$2 stempath=$3 _=$4 _=$5 name=$6 base=$7 dest=$8
+   local layer=$1 version=$2 stempath=$3 _=$4 _=$5 _=$6 name=$7 base=$8 dest=$9
    local frag="${stempath}.d/${name}"
 
    [[ -f $frag ]] || return 0

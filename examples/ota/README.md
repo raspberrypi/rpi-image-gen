@@ -26,6 +26,10 @@ If an auth key is embedded on a device that is also registered with an organisat
 
 For further details, see the [Raspberry Pi Connect documentation][connect-docs].
 
+## Secure Boot
+
+See `examples/signed_ota` which demonstrates how to specify a custom signing command so that the `boot.img` in the OTA update is authenticated on-device.
+
 ## Wireless Networking
 
 The minimal base Trixie OS enables wired and wireless networking by default. To have the device associate to a wireless AP automatically on boot using WPA2, pre-seed an iwd profile by adding the following to `examples/ota/config/ota.yaml`:

@@ -1,0 +1,18 @@
+# Default A/B configuration with an encrypted volume plus:
+#  rpi-connect for OTA delivery
+#  rpi-connect-lite for headless Connect support
+#  custom signing command
+include:
+  file: trixie-minbase-ab.yaml
+
+artefact:
+  version: 1.0.0
+
+layer:
+  - rpi-connect-ota
+  - rpi-connect-lite
+
+image:
+  name: signed-ota
+  pmap: crypt
+  bootsign_cmd: ${@SRCROOT}/sign

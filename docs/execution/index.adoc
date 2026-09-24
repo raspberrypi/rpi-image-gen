@@ -200,6 +200,7 @@ A per-layer hook runs from its own directory, so anything else the layer ships m
 | `LAYER_DOTD`            | The layer's companion directory `<layer-stem>.d`. Only set when the layer ships one
 | `LAYER_FILE`            | The resolved layer's filename (full path)
 | `LAYER_WORKDIR`         | The layer's work directory (created automatically)
+| `LAYER_UUID`            | UUID derived from `LAYER_NAME` and `LAYER_VERSION`. Identical on any host for a given pair.
 |===
 
 A hook reading a template the layer ships alongside its YAML therefore writes `"$LAYER_DIR/genimage.cfg.in"` rather than relying on the working directory.

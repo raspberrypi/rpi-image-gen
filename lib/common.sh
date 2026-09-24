@@ -331,10 +331,10 @@ import sys, pathlib, yaml
 for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
     if not raw or raw.startswith("#"):
         continue
-    parts = raw.split(":", 4)
-    if len(parts) != 5 or not parts[0] or not parts[3]:
+    parts = raw.split(":", 5)
+    if len(parts) != 6 or not parts[0] or not parts[3]:
         continue
-    layer, version, static, resolved, workdir = parts
+    layer, version, static, resolved, uuid, workdir = parts
     try:
         data = yaml.safe_load(open(resolved, "rb"))
     except Exception as e:
@@ -348,7 +348,7 @@ export -f mmdebstrap_layer_paths
 
 
 # foreach_layer_in_plan: calls callback once per layer in plan order:
-# Expects: callback layer version stempath resolved workdir [extra args]
+# Expects: callback layer version stempath resolved workdir uuid [extra args]
 # stempath and workdir are already resolved (map_path) to real paths -
 # callbacks never need to know either can be a tagged spec. resolved is
 # passed as-is, matching mmdebstrap_layer_paths's own output, for callers
@@ -358,7 +358,7 @@ export -f mmdebstrap_layer_paths
 foreach_layer_in_plan() {
    local callback=${1:?"foreach_layer_in_plan: callback required"}; shift
    local plan=${PLAN:-${IGconf_sys_bootstrapdir:?"foreach_layer_in_plan: IGconf_sys_bootstrapdir not set"}/layer.plan}
-   local layer version static resolved workdir stempath
+   local layer version static resolved workdir uuid stempath
 
    [[ -f $plan ]] || return 0
    local -a lines
@@ -366,10 +366,11 @@ foreach_layer_in_plan() {
 
    local line
    for line in "${lines[@]}"; do
-      IFS=: read -r layer version static resolved workdir <<< "$line"
+      IFS=: read -r layer version static resolved uuid workdir <<< "$line"
       [[ -n $layer && $layer != \#* ]] || continue
       stempath="$(map_path "${static%.yaml}")"
-      "$callback" "$layer" "$version" "$stempath" "$resolved" "$(map_path "$workdir")" "$@"
+      "$callback" "$layer" "$version" "$stempath" "$resolved" "$(map_path "$workdir")" \
+         "$uuid" "$@"
    done
 }
 export -f foreach_layer_in_plan
