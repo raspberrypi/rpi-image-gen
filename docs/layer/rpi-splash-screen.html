@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -177,7 +178,7 @@
 </ul>
 </div>
 <div class="sect1">
-<h2 id="_overview">Overview</h2>
+<h2 id="_overview"><a class="anchor" href="#_overview"></a><a class="link" href="#_overview">Overview</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The <code>rpi-splash-screen</code> layer provides fullscreen splash screen support for Raspberry Pi devices. It configures the kernel and initramfs to display a custom image during boot, hiding kernel messages and providing a cleaner boot experience.</p>
@@ -185,7 +186,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_features">Features</h2>
+<h2 id="_features"><a class="anchor" href="#_features"></a><a class="link" href="#_features">Features</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
@@ -209,7 +210,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_how_it_works">How It Works</h2>
+<h2 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a><a class="link" href="#_how_it_works">How It Works</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The splash screen layer:</p>
@@ -242,10 +243,10 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_technical_requirements">Technical Requirements</h2>
+<h2 id="_technical_requirements"><a class="anchor" href="#_technical_requirements"></a><a class="link" href="#_technical_requirements">Technical Requirements</a></h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_image_specifications">Image Specifications</h3>
+<h3 id="_image_specifications"><a class="anchor" href="#_image_specifications"></a><a class="link" href="#_image_specifications">Image Specifications</a></h3>
 <div class="ulist">
 <ul>
 <li>
@@ -267,7 +268,7 @@
 </div>
 </div>
 <div class="sect2">
-<h3 id="_kernel_parameters">Kernel Parameters</h3>
+<h3 id="_kernel_parameters"><a class="anchor" href="#_kernel_parameters"></a><a class="link" href="#_kernel_parameters">Kernel Parameters</a></h3>
 <div class="paragraph">
 <p>The layer configures the following kernel command line parameters:</p>
 </div>
@@ -288,13 +289,13 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuration_variables">Configuration Variables</h2>
+<h2 id="_configuration_variables"><a class="anchor" href="#_configuration_variables"></a><a class="link" href="#_configuration_variables">Configuration Variables</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The layer declares the following configuration variables with prefix <code>splash</code>:</p>
 </div>
 <div class="sect2">
-<h3 id="_image_path"><code>image_path</code></h3>
+<h3 id="_image_path"><a class="anchor" href="#_image_path"></a><a class="link" href="#_image_path"><code>image_path</code></a></h3>
 <div class="ulist">
 <ul>
 <li>
@@ -313,7 +314,7 @@
 </div>
 </div>
 <div class="sect2">
-<h3 id="_skip_image_checks"><code>skip_image_checks</code></h3>
+<h3 id="_skip_image_checks"><a class="anchor" href="#_skip_image_checks"></a><a class="link" href="#_skip_image_checks"><code>skip_image_checks</code></a></h3>
 <div class="ulist">
 <ul>
 <li>
@@ -332,7 +333,7 @@
 </div>
 </div>
 <div class="sect2">
-<h3 id="_update_cmdline"><code>update_cmdline</code></h3>
+<h3 id="_update_cmdline"><a class="anchor" href="#_update_cmdline"></a><a class="link" href="#_update_cmdline"><code>update_cmdline</code></a></h3>
 <div class="ulist">
 <ul>
 <li>
@@ -353,10 +354,10 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_usage_examples">Usage Examples</h2>
+<h2 id="_usage_examples"><a class="anchor" href="#_usage_examples"></a><a class="link" href="#_usage_examples">Usage Examples</a></h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_basic_configuration">Basic Configuration</h3>
+<h3 id="_basic_configuration"><a class="anchor" href="#_basic_configuration"></a><a class="link" href="#_basic_configuration">Basic Configuration</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
@@ -369,7 +370,7 @@ splash:
 </div>
 </div>
 <div class="sect2">
-<h3 id="_skip_splash_installation">Skip Splash Installation</h3>
+<h3 id="_skip_splash_installation"><a class="anchor" href="#_skip_splash_installation"></a><a class="link" href="#_skip_splash_installation">Skip Splash Installation</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
@@ -382,7 +383,7 @@ splash:
 </div>
 </div>
 <div class="sect2">
-<h3 id="_custom_boot_configuration">Custom Boot Configuration</h3>
+<h3 id="_custom_boot_configuration"><a class="anchor" href="#_custom_boot_configuration"></a><a class="link" href="#_custom_boot_configuration">Custom Boot Configuration</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
@@ -396,7 +397,7 @@ splash:
 </div>
 </div>
 <div class="sect2">
-<h3 id="_testing_with_lenient_validation">Testing with Lenient Validation</h3>
+<h3 id="_testing_with_lenient_validation"><a class="anchor" href="#_testing_with_lenient_validation"></a><a class="link" href="#_testing_with_lenient_validation">Testing with Lenient Validation</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">layer:
@@ -412,10 +413,10 @@ splash:
 </div>
 </div>
 <div class="sect1">
-<h2 id="_creating_splash_images">Creating Splash Images</h2>
+<h2 id="_creating_splash_images"><a class="anchor" href="#_creating_splash_images"></a><a class="link" href="#_creating_splash_images">Creating Splash Images</a></h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_using_the_example_script_quickest_method">Using the Example Script (Quickest Method)</h3>
+<h3 id="_using_the_example_script_quickest_method"><a class="anchor" href="#_using_the_example_script_quickest_method"></a><a class="link" href="#_using_the_example_script_quickest_method">Using the Example Script (Quickest Method)</a></h3>
 <div class="paragraph">
 <p>The layer includes a helper script for quick testing:</p>
 </div>
@@ -433,7 +434,7 @@ splash:
 </div>
 </div>
 <div class="sect2">
-<h3 id="_using_imagemagick">Using ImageMagick</h3>
+<h3 id="_using_imagemagick"><a class="anchor" href="#_using_imagemagick"></a><a class="link" href="#_using_imagemagick">Using ImageMagick</a></h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash"># Convert and optimise an existing image
@@ -450,7 +451,7 @@ convert input.png \
 </div>
 </div>
 <div class="sect2">
-<h3 id="_using_gimp">Using GIMP</h3>
+<h3 id="_using_gimp"><a class="anchor" href="#_using_gimp"></a><a class="link" href="#_using_gimp">Using GIMP</a></h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -480,7 +481,7 @@ convert input.png \
 </div>
 </div>
 <div class="sect1">
-<h2 id="_dependencies">Dependencies</h2>
+<h2 id="_dependencies"><a class="anchor" href="#_dependencies"></a><a class="link" href="#_dependencies">Dependencies</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The layer requires:</p>
@@ -501,7 +502,7 @@ convert input.png \
 </div>
 </div>
 <div class="sect1">
-<h2 id="_files_modified">Files Modified</h2>
+<h2 id="_files_modified"><a class="anchor" href="#_files_modified"></a><a class="link" href="#_files_modified">Files Modified</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The layer modifies the following files in the target system:</p>
@@ -525,10 +526,10 @@ convert input.png \
 </div>
 </div>
 <div class="sect1">
-<h2 id="_troubleshooting">Troubleshooting</h2>
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a><a class="link" href="#_troubleshooting">Troubleshooting</a></h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_splash_screen_doesnt_appear">Splash Screen Doesn&#8217;t Appear</h3>
+<h3 id="_splash_screen_doesnt_appear"><a class="anchor" href="#_splash_screen_doesnt_appear"></a><a class="link" href="#_splash_screen_doesnt_appear">Splash Screen Doesn&#8217;t Appear</a></h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -547,7 +548,7 @@ convert input.png \
 </div>
 </div>
 <div class="sect2">
-<h3 id="_image_validation_fails">Image Validation Fails</h3>
+<h3 id="_image_validation_fails"><a class="anchor" href="#_image_validation_fails"></a><a class="link" href="#_image_validation_fails">Image Validation Fails</a></h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -566,7 +567,7 @@ convert input.png \
 </div>
 </div>
 <div class="sect2">
-<h3 id="_boot_fails_after_configuration">Boot Fails After Configuration</h3>
+<h3 id="_boot_fails_after_configuration"><a class="anchor" href="#_boot_fails_after_configuration"></a><a class="link" href="#_boot_fails_after_configuration">Boot Fails After Configuration</a></h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -584,7 +585,7 @@ convert input.png \
 </div>
 </div>
 <div class="sect1">
-<h2 id="_references">References</h2>
+<h2 id="_references"><a class="anchor" href="#_references"></a><a class="link" href="#_references">References</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
@@ -599,7 +600,7 @@ convert input.png \
 </div>
 </div>
 <div class="sect1">
-<h2 id="_see_also">See Also</h2>
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a><a class="link" href="#_see_also">See Also</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
@@ -635,7 +636,7 @@ convert input.png \
                     <td>Path to the splash screen image file. Must be a 24-bit
  TGA file, smaller than 1920x1080px with fewer than 224 colours. The image will
  be copied to /lib/firmware/logo.tga and configured in the initramfs and kernel
- command line. If the path is relative, it's resolved relative to the layer
+ command line. If the path is relative, it&#39;s resolved relative to the layer
  directory. Set to an empty string to skip splash screen installation.</td>
                     <td>
                            <code class="long-default">${DIRECTORY}/default-splash.tga</code>

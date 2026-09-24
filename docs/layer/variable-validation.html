@@ -158,7 +158,7 @@
         <div class="example">
             <strong>value1,value2,value3  - Must be one of the listed values</strong>
             <br>  (Tip: For a single allowed value, either add a trailing comma
-            <br>        e.g. "syft," or use the keywords: prefix as shown below.)
+            <br>        e.g. &#34;syft,&#34; or use the keywords: prefix as shown below.)
             <br>  Examples:
             <br>    development,staging,production    - Environment names
             <br>    small,medium,large               - Size options
@@ -225,9 +225,15 @@
         <h2>Placeholders</h2>
         <p>Auto-substituted in variable values:</p>
         <div class="example">
-            <strong><code>${FILENAME}</code></strong> - layer metadata file name<br>
+            <strong><code>${FILENAME}</code></strong> - layer metadata file name, including extension<br>
+            <strong><code>${STEM}</code></strong> - layer metadata file name, without extension<br>
             <strong><code>${DIRECTORY}</code></strong> - directory containing the file<br>
+            <strong><code>${DOTD}</code></strong> - the layer&#39;s companion directory, ie ${DIRECTORY}/${STEM}.d<br>
             <strong><code>${FILEPATH}</code></strong> - absolute path to the file<br>
+            <strong><code>${NAME}</code></strong> - the layer&#39;s X-Env-Layer-Name<br>
+            <strong><code>${VERSION}</code></strong> - the layer&#39;s X-Env-Layer-Version<br>
+            <strong><code>${UUID}</code></strong> - UUID derived from the layer&#39;s name and version, stable across builds<br>
+            <strong><code>${WORKDIR}</code></strong> - the layer&#39;s own persistent, uniquely namespaced work directory for per-layer build operations<br>
             <em>Escape with <code>\${NAME}</code> to keep the literal text.</em>
         </div>
     </div>

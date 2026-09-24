@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -123,7 +124,7 @@
     <div class="header">
         <h1>deploy-base</h1>
         <span class="badge">build</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v2.1.0</span>
         <p>Deployment and organisation for build output artefacts</p>
     </div>
     <div class="section">
@@ -136,16 +137,14 @@
         <p><strong>Required by:</strong></p>
         <div class="deps">
             
+            <a href="essential.html" class="dep-badge">essential</a>
+            
             <a href="image-base.html" class="dep-badge">image-base</a>
             
         </div>
     </div>
     <div class="section">
         <h2>Configuration Variables</h2>
-        <p><strong>References:</strong>
-        <code>IGconf_sys_workroot</code>, 
-        <code>IGconf_artefact_version</code>
-        </p>
         <p><strong>Declares</strong> (prefix: <code>deploy</code>):</p>
         <table>
             <thead>
@@ -187,17 +186,22 @@
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
                 </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Hooks</h2>
+        <table>
+            <thead>
                 <tr>
-                    <td><code>IGconf_deploy_hook</code></td>
-                    <td>Hook to deploy all assets. This hook will install
- final assets to $IGconf_deploy_dir.</td>
-                    <td>
-                           <code>${DIRECTORY}/deploy.sh</code>
-                    </td>
-                    <td>Non-empty string value</td>
-                    <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
-                    </td>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>deploy</code></td>
+                    <td>deploy01-provenance, deploy05-raw, deploy10-idp</td>
                 </tr>
             </tbody>
         </table>

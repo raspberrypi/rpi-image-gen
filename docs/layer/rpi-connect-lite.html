@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -130,7 +131,7 @@
         <h2>Additional Documentation</h2>
         <div class="companion-content">
             <div class="sect1">
-<h2 id="_installation">Installation</h2>
+<h2 id="_installation"><a class="anchor" href="#_installation"></a><a class="link" href="#_installation">Installation</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Configuration variable <code>IGconf_connect_on</code> provided by this layer dictates whether Raspberry Pi Connect is enabled at system start up. This is equivalent to running <code>rpi-connect on</code> from the device command line.</p>
@@ -138,7 +139,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_authentication_key">Authentication Key</h2>
+<h2 id="_authentication_key"><a class="anchor" href="#_authentication_key"></a><a class="link" href="#_authentication_key">Authentication Key</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>To link your device to your Raspberry Pi Connect account automatically, generate an Auth key in your account Settings and set <code>IGconf_connect_authkey</code> to either:</p>
@@ -176,7 +177,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_systemd">systemd</h2>
+<h2 id="_systemd"><a class="anchor" href="#_systemd"></a><a class="link" href="#_systemd">systemd</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This layer enables user lingering for <code>IGconf_device_user1</code> so that Connect runs even if the user is not logged in. See <a href="https://www.freedesktop.org/software/systemd/man/latest/loginctl.html" target="_blank" rel="noopener">systemd loginctl</a>.</p>
@@ -184,7 +185,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_suitability">Suitability</h2>
+<h2 id="_suitability"><a class="anchor" href="#_suitability"></a><a class="link" href="#_suitability">Suitability</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Choose the layer that matches your deployment and needs:</p>

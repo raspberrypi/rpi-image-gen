@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rpi-microboot-base - Layer Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .badge { display: inline-block; background: #007acc; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-right: 10px; }
+        .policy-immediate { background: #28a745; color: white; text-decoration: none; }
+        .policy-lazy { background: #ffc107; color: #212529; text-decoration: none; }
+        .policy-force { background: #dc3545; color: white; text-decoration: none; }
+        .policy-skip { background: #6c757d; color: white; text-decoration: none; }
+        .policy-immediate:hover { background: #1e7e34; }
+        .policy-lazy:hover { background: #e0a800; }
+        .policy-force:hover { background: #c82333; }
+        .policy-skip:hover { background: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+        td:nth-child(3) {
+            width: auto;
+        }
+        code { background: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: 'Monaco', monospace; font-size: 14px; }
+        code.long-default { word-break: break-all; white-space: pre-wrap; display: block; min-width: 30ch; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { text-decoration: none; color: #007acc; }
+        .deps { display: flex; flex-wrap: wrap; gap: 5px; }
+        .dep-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; text-decoration: none; }
+        .dep-badge:hover { background: #1e7e34; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
+        /* Companion documentation content styling */
+        .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        .companion-content p { margin: 10px 0; }
+        .companion-content ul, .companion-content ol { margin: 10px 0; padding-left: 30px; }
+        .companion-content blockquote { border-left: 4px solid #007acc; padding-left: 15px; margin: 15px 0; color: #666; background: #f8f9fa; padding: 10px 15px; }
+        .companion-content pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #007acc; }
+        .companion-content table { border: 1px solid #ddd; }
+        .companion-content th, .companion-content td { border: 1px solid #ddd; }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="index.html">← Back to Layer Index</a>
+    </div>
+
+    <div class="header">
+        <h1>rpi-microboot-base</h1>
+        <span class="badge">distribution</span>
+        <span class="badge">v1.0.0</span>
+        <p>Microboot filesystem base plus tooling hooks to pack a
+ minimal filesystem into a single directory suitable for post-processing
+ to create bootable media.</p>
+    </div>
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This layer builds a minimal, bootable filesystem packed as a compressed initramfs. It is intended to be built on by downstream layers.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_build_model"><a class="anchor" href="#_build_model"></a><a class="link" href="#_build_model">Build model</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Unlike conventional layers, this layer bootstraps with <code>variant: extract</code> meaning that packages are unpacked into the chroot but never configured. No maintainer scripts run, so files that might otherwise be expected to exist may not. This 'donor' chroot serves as a 'parts bin' rather than the final target destination. Nothing in it ships in the final image unless something copies it out.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because the variant is <code>extract</code>, mmdebstrap <strong>only</strong> runs setup and extract hooks. A downstream/consumer layer that integrates with it must do so from a setup or extract hook.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Four directories matter, all beneath the chroot passed to every hook as <code>$1</code>:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Path</th>
+<th class="tableblock halign-left valign-top">Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The donor chroot. Unpacked packages only, curated out.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$1/staging</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The microboot filesystem as it is being assembled. Overlay content, busybox applet links, account files, etc.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$1/initramfs-root</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">What actually becomes the initramfs. Staging is synced here, then dracut-install adds binaries, libraries and modules from the donor chroot.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$1/bootfs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The boot filesystem contents, eg kernel, DTBs, firmware, <code>config.txt</code>, <code>cmdline.txt</code> and the packed initramfs.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_integration_points"><a class="anchor" href="#_integration_points"></a><a class="link" href="#_integration_points">Integration points</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_boot_files"><a class="anchor" href="#_boot_files"></a><a class="link" href="#_boot_files">Boot files</a></h3>
+<div class="paragraph">
+<p><code>config.txt</code> and <code>cmdline.txt</code> are written as defaults. To replace either, copy your own into <code>$1/bootfs</code> from a standalone hook:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">#!/bin/bash
+set -euo pipefail
+cp "$LAYER_DOTD/config.txt" "$1/bootfs/config.txt"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_initramfs_content"><a class="anchor" href="#_initramfs_content"></a><a class="link" href="#_initramfs_content">Initramfs content</a></h3>
+<div class="paragraph">
+<p>Two lists drive what is curated out of the donor chroot using <code>dracut-install</code> which pulls in dependencies automatically. Both lists swept across the build plan, so any layer extends them by shipping fragments in its own companion directory:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>&lt;stem&gt;.d/initramfs.list.&lt;initsys&gt;</code></dt>
+<dd>
+<p>Files and directories to install.</p>
+</dd>
+<dt class="hdlist1"><code>&lt;stem&gt;.d/modules.list</code></dt>
+<dd>
+<p>Kernel modules to install.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Fragments are appended to the base lists, which are held by <code>IGconf_u_initramfs_list</code> and <code>IGconf_u_modules_list</code>. Comments and blank lines are ignored.</p>
+</div>
+<div class="paragraph">
+<p>For content that is not a file to curate, write directly into <code>$1/staging</code> or <code>$1/initramfs-root</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_console_and_credentials"><a class="anchor" href="#_console_and_credentials"></a><a class="link" href="#_console_and_credentials">Console and credentials</a></h3>
+<div class="paragraph">
+<p>The console policy is a variable naming both a device and an authentication mode for the console exposed by the system.</p>
+</div>
+<div class="paragraph">
+<p><code>usb-login</code> and <code>usb-autologin</code> are schemes that only apply to <code>/dev/ttyGS0</code>, the gadget serial port. This may be useful for an image reached over a USB cable rather than a UART. This layer does not build a USB gadget: something else must create one with a CDC-ACM function.</p>
+</div>
+<div class="paragraph">
+<p>The non-root account exists so that a service need not run as uid 0.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The busybox initramfs verifies passwords using busybox&#8217;s own crypt implementation. The pre-built Debian busybox does not support yescrypt. Generate a hashed password using <code>bin/genpasswd &lt;chroot&gt;/staging</code>, which detects this correctly.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_services"><a class="anchor" href="#_services"></a><a class="link" href="#_services">Services</a></h3>
+<div class="paragraph">
+<p><code>IGconf_u_services</code> selects which of the layer&#8217;s own services start. <code>none</code> starts none. A service left out stays in the image, switched off.</p>
+</div>
+<div class="paragraph">
+<p>Supported service names map to underlying units via a <code>service-policy</code> list which is particular to the init system.</p>
+</div>
+<div class="paragraph">
+<p>Services from other layers are not governed by this mechanism.</p>
+</div>
+</div>
+</div>
+</div>
+
+        </div>
+    </div>
+    <div class="section">
+        <h2>Relationships</h2>
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="device-base.html" class="dep-badge">device-base</a>
+            <a href="device-user-credentials.html" class="dep-badge">device-user-credentials</a>
+        </div>
+        <p><strong>Provides:</strong> debian-base</p>
+    </div>
+    <div class="section">
+        <h2>Configuration Variables</h2>
+        <p><strong>Declares</strong> (prefix: <code>u</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>IGconf_u_initsys</code></td>
+                    <td>The init system of choice for the initramfs</td>
+                    <td>
+                           <code>busybox</code>
+                    </td>
+                    <td>Must be one of: busybox, systemd</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-force" title="Click for policy and validation help">force</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_console</code></td>
+                    <td>Console policy for the microboot base filesystem.
+ &#39;none&#39; runs no getty, leaving no interactive console.
+ &#39;login&#39; runs a getty with a login prompt.
+ &#39;autologin&#39; runs a getty that execs a root shell without authenticating.
+ Both login types run on the first serial console the kernel reports.
+ &#39;usb-&#39; forms are equivalent policies on /dev/ttyGS0 (gadget serial port)
+ for an image attached over USB (needs a gadget with CDC-ACM support).</td>
+                    <td>
+                           <code>none</code>
+                    </td>
+                    <td>Must be one of: none, login, autologin, usb-login, usb-autologin</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_services</code></td>
+                    <td>Which of this layer&#39;s own boot services start.
+ Services shipped by other layers are not governed here.</td>
+                    <td>
+                           <code>network</code>
+                    </td>
+                    <td>Comma-separated subset of: none, network</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_initramfs_list</code></td>
+                    <td>Path to a file listing files/directories to
+ include in the microboot initramfs from the donor chroot. Resolved via
+ dracut-install, pulling in shared library dependencies automatically.
+ List only what you want. Not transitive dependencies.</td>
+                    <td>
+                           <code class="long-default">${DOTD}/initramfs.list.${IGconf_u_initsys}</code>
+                    </td>
+                    <td>Path to an existing non-empty regular file</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_modules_list</code></td>
+                    <td>Path to a file listing kernel modules to
+ include in the microboot initramfs from the donor chroot. Resolved via
+ dracut-install. List only what you actually want. Not transitive dependencies.</td>
+                    <td>
+                           <code>${DOTD}/modules.list</code>
+                    </td>
+                    <td>Path to an existing non-empty regular file</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_init_overlay</code></td>
+                    <td>Filesystem overlay used to seed the microboot
+ initramfs.</td>
+                    <td>
+                           <code class="long-default">${DOTD}/init/${IGconf_u_initsys}/overlay</code>
+                    </td>
+                    <td>Path to an existing directory</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_service_policy</code></td>
+                    <td>Applies init service policy to staging</td>
+                    <td>
+                           <code class="long-default">${DOTD}/init/${IGconf_u_initsys}/service-policy</code>
+                    </td>
+                    <td>Path to an existing non-empty regular file</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_dracut_install_opts</code></td>
+                    <td>Extra command-line flags passed to
+ every dracut-install invocation. See man(8) dracut.</td>
+                    <td>
+                           <code>-v</code>
+                    </td>
+                    <td>String value (may be empty)</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_u_dracut_install_env</code></td>
+                    <td>Extra environment variables applied
+ to every dracut-install invocation, as a space-separated KEY=value list
+ (eg &#34;DRACUT_LDD=/some/other/ldd DRACUT_NO_XATTR=1&#34;). See man(8) dracut.</td>
+                    <td>
+                           <code>&lt;empty&gt;</code>
+                    </td>
+                    <td>String value (may be empty)</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>mmdebstrap</h2>
+        
+        <h3>Suite</h3>
+        <ul>
+            <li><code>trixie</code></li>
+        </ul>
+        
+        <h3>Variant</h3>
+        <p>Installs package set:</p>
+        <ul>
+            <li><code>extract</code></li>
+        </ul>
+        
+        <h3>Architectures</h3>
+        <ul>
+            <li><code>arm64</code></li>
+        </ul>
+        
+        <h3>Packages</h3>
+        <p>Installs:</p>
+        <ul>
+            <li><code>libc6-udeb</code></li>
+            <li><code>bash</code></li>
+            <li><code>mount</code></li>
+            <li><code>base-files</code></li>
+            <li><code>base-passwd</code></li>
+            <li><code>busybox</code></li>
+            <li><code>dracut-install</code></li>
+            <li><code>kmod</code></li>
+            <li><code>liblzma5</code></li>
+            <li><code>libzstd1</code></li>
+            <li><code>coreutils</code></li>
+            <li><code>libc-bin</code></li>
+            <li><code>openntpd</code></li>
+            <li><code>netplug</code></li>
+        </ul>
+        
+        <h3>Mirrors</h3>
+        <ul>
+            <li><code>${IGTOP}/templates/debian/apt/trixie-recovery.sources</code></li>
+        </ul>
+        
+        <h3>dpkgopts</h3>
+        <ul>
+            <li><code>path-exclude=/usr/share/doc/*</code></li>
+            <li><code>path-exclude=/usr/share/man/*</code></li>
+            <li><code>path-exclude=/usr/share/locale/*</code></li>
+        </ul>
+        
+        <h3>aptopts</h3>
+        <ul>
+            <li><code>APT::Install-Suggests &#34;false&#34;</code></li>
+            <li><code>APT::Install-Recommends &#34;false&#34;</code></li>
+        </ul>
+    </div>
+    <div class="section">
+        <h2>Hooks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>extract</code></td>
+                    <td>extract05-console-policy, extract06-service-policy, extract10-sync-staging, extract15-collect-lists, extract20-dracut-install, extract99-pack-initramfs</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Attributes</h2>
+        <p><strong>File:</strong> <code>rpi/microboot/base.yaml</code></p>
+        <p><strong>Type:</strong> <code>static</code></p>
+    </div>
+</body>
+</html>

@@ -170,13 +170,12 @@
 <li><a href="#_activities_6">Activities</a></li>
 </ul>
 </li>
-<li><a href="#_hooks">Hooks</a>
+<li><a href="#hooks">Hooks</a>
 <ul class="sectlevel2">
 <li><a href="#_overview_2">Overview</a></li>
 <li><a href="#_phases">Phases</a></li>
-<li><a href="#_hook_classification_bundle">Hook Classification: bundle</a></li>
-<li><a href="#_hook_classification_single">Hook Classification: single</a></li>
-<li><a href="#_overlays">Overlays</a></li>
+<li><a href="#_hook_discovery">Hook Discovery</a></li>
+<li><a href="#overlays">Overlays</a></li>
 <li><a href="#_core">Core</a></li>
 <li><a href="#_device_and_image_asset_directory">Device and Image Asset Directory</a></li>
 <li><a href="#_initramfs">initramfs</a></li>
@@ -366,6 +365,20 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 </li>
 </ul>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Stages 4-6 below name several hook points (eg <code>prebuild</code>). Each is a point where any number of custom scripts can run, not a single fixed filename - see <a href="#hooks">Hooks</a> for the full mechanism, and <a href="#overlays">Overlays</a> for how filesystem overlays fit alongside them.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>
@@ -383,7 +396,7 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Hook</strong><code>[pre-build.sh]</code></p>
+<p>Hook point <a href="#hooks"><code>prebuild</code></a></p>
 <div class="ulist">
 <ul>
 <li>
@@ -393,13 +406,10 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 </div>
 </li>
 <li>
-<p><strong>Filesystem Generation</strong>: Execute bdebstrap</p>
+<p><strong>Filesystem Generation</strong>: Execute bdebstrap, including its own <code>setup</code>/<code>extract</code>/<code>essential</code>/<code>customize</code>/<code>cleanup</code> hook points and <a href="#overlays">overlays</a></p>
 </li>
 <li>
-<p><strong>Overlays</strong>: Apply static filesystem overlays</p>
-</li>
-<li>
-<p><strong>Hook</strong><code>[post-build.sh]</code></p>
+<p>Hook point <a href="#hooks"><code>postbuild</code></a></p>
 <div class="ulist">
 <ul>
 <li>
@@ -430,7 +440,7 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Hook</strong><code>[pre-image.sh]</code></p>
+<p>Hook point <a href="#hooks"><code>preimage</code></a></p>
 <div class="ulist">
 <ul>
 <li>
@@ -443,7 +453,7 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <p><strong>Image Generation</strong>: Execute the image provider to create images.</p>
 </li>
 <li>
-<p><strong>Hook</strong><code>[post-image.sh]</code></p>
+<p>Hook point <a href="#hooks"><code>postimage</code></a></p>
 <div class="ulist">
 <ul>
 <li>
@@ -485,8 +495,51 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_hooks"><a class="anchor" href="#_hooks"></a><a class="link" href="#_hooks">Hooks</a></h2>
+<h2 id="hooks"><a class="anchor" href="#hooks"></a><a class="link" href="#hooks">Hooks</a></h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_overview_2"><a class="anchor" href="#_overview_2"></a><a class="link" href="#_overview_2">Overview</a></h3>
+<div class="paragraph">
+<p>Two distinct kinds of hook exist. A layer may declare hooks natively inline in its own YAML (eg <code>mmdebstrap: customize-hooks:</code>) - these run as bdebstrap merges and executes each phase&#8217;s hook list, and are documented alongside the rest of a layer&#8217;s YAML, not here.</p>
+</div>
+<div class="paragraph">
+<p><code>rpi-image-gen</code> runs the other kind - standalone hook <strong>files</strong> - in <em>phases</em> via script <code>bin/runner</code>. Runner is the single entry point every standalone hook runs through. <code>bdebstrap</code> invokes it for each lifecycle phase (setup, customize, etc.), wired in as the <strong>last</strong> hook bdebstrap runs for that phase - so every standalone hook runner finds (per-layer, source tree, or built-in) always runs after every layer&#8217;s own inline YAML hooks for the same phase. The main script calls runner directly for image, SBOM, and deploy phases, which have no YAML-native hook equivalent since they run outside bdebstrap entirely. Runner:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Resolves hook locations from tagged specs (<code>SRCROOT:*</code>, <code>IGROOT:*</code>) so the same path resolves regardless of environment (e.g. host vs container).</p>
+</li>
+<li>
+<p>Executes phase-specific hooks in a deterministic order.</p>
+</li>
+<li>
+<p>Applies filesystem overlays named after the phase that applies them (see <a href="#overlays">Overlays</a>).</p>
+</li>
+<li>
+<p>Orchestrates deterministic hook execution with the correct environment and arguments, regardless of where the build runs.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The phase name is the only key runner works from - it is the prefix every hook and overlay is discovered by, and every phase takes the same path through runner. Within a phase, work happens in a fixed order, and any step with nothing to do is simply skipped:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Per-layer</strong>, in build plan order - each layer&#8217;s overlay for this phase, then that layer&#8217;s own <code>&lt;phase&gt;*</code> hooks</p>
+</li>
+<li>
+<p><strong>Source tree overlays</strong> for this phase</p>
+</li>
+<li>
+<p><strong>Source tree and built-in hooks</strong> for this phase</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Consequently a phase needs no special-casing to gain a hook or an overlay: shipping a file whose name starts with the phase, in the right place, is the whole of it.</p>
+</div>
 <div class="admonitionblock important">
 <table>
 <tr>
@@ -497,206 +550,250 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="paragraph">
 <p>Hooks are optional but if a hook is to be executed, it must have executable permissions for the user performing the build.</p>
 </div>
+<div class="paragraph">
+<p>A hook must not read from standard input. Runner passes the build&#8217;s stdin through to hooks unchanged, so a hook that reads it will block waiting for terminal input on an interactive build. Where a hook needs data, it should take it from the environment runner provides or a file the layer ships.</p>
+</div>
 </td>
 </tr>
 </table>
-</div>
-<div class="sect2">
-<h3 id="_overview_2"><a class="anchor" href="#_overview_2"></a><a class="link" href="#_overview_2">Overview</a></h3>
-<div class="paragraph">
-<p><code>rpi-image-gen</code> supports different classifications of hook, and runs all hooks in <em>phases</em> via script <code>bin/runner</code>. Runner is responsible for invoking all hook scripts outside of layer declarations and is the single entry point every hook runs through. <code>bdebstrap</code> invokes it for each lifecycle phase (setup, customize, etc.) and the main script calls it for image, SBOM, and deploy phases. Runner:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Resolves hook locations from tagged specs (<code>IGROOT:*</code>, <code>DEVICE_ASSET:*</code>, <code>VAR:IGconf_*</code>) so the same path resolves regardless of environment (e.g. host vs container).</p>
-</li>
-<li>
-<p>Executes phase-specific hooks in a deterministic order.</p>
-</li>
-<li>
-<p>Applies optional filesystem overlays during <code>customize</code> (see Overlays below).</p>
-</li>
-<li>
-<p>Supports fallback hook groups (A|B) so that built-in hooks run when no custom is provided.</p>
-</li>
-<li>
-<p>Orchestrates deterministic hook execution with the correct environment and arguments, regardless of where the build runs.</p>
-</li>
-</ul>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_phases"><a class="anchor" href="#_phases"></a><a class="link" href="#_phases">Phases</a></h3>
 <table class="tableblock frame-all grid-all stripes-even stretch">
 <colgroup>
-<col style="width: 14.2857%;">
-<col style="width: 14.2857%;">
-<col style="width: 14.2857%;">
-<col style="width: 57.1429%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 66.6668%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Phase</th>
 <th class="tableblock halign-left valign-top">Context</th>
-<th class="tableblock halign-left valign-top">Classification</th>
 <th class="tableblock halign-left valign-top">Execution</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bdebstrap</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bundle</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">After build output directory creation, before any packages are downloaded or installed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">prebuild</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Before bdebstrap runs</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">pre-build</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bdebstrap</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">single</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Within setup phase</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">After build output directory creation, before any packages are downloaded or installed</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">extract</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bdebstrap</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bundle</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After <code>Essential:yes</code> packages have been extracted, before installing them</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">essential</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bdebstrap</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bundle</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After <code>Essential:yes</code> packages have been installed, before installing remaining packages</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">customize</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bdebstrap</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bundle</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After all packages are installed, before cleanup commences</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">cleanup</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bdebstrap</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bundle</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After customize</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">post-build</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">postbuild</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">single</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After bdebstrap, before sbom</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">sbom</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">single</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">After post-build</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">After postbuild</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">pre-image</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">preimage</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">single</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After sbom, before image generation</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">post-image</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">postimage</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">single</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After image generation</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">finalize</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">single</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">After sbom and image generation, before deploy</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">deploy</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">single</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Final stage</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="sect2">
-<h3 id="_hook_classification_bundle"><a class="anchor" href="#_hook_classification_bundle"></a><a class="link" href="#_hook_classification_bundle">Hook Classification: bundle</a></h3>
+<h3 id="_hook_discovery"><a class="anchor" href="#_hook_discovery"></a><a class="link" href="#_hook_discovery">Hook Discovery</a></h3>
 <div class="paragraph">
-<p>Runner scans for <code>setup*</code>, <code>extract*</code>, <code>essential*</code>, <code>customize*</code>, and <code>cleanup*</code> hooks inside <code>bdebstrap/</code> subdirectories of the following in order:</p>
+<p>For every phase, runner scans two kinds of location, always in this order:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Device asset directory (<code>DEVICE_ASSET</code>)</p>
+<p><strong>Per-layer</strong> - each layer&#8217;s own <code>&lt;layer-stem&gt;.d/hooks/</code>, if present, in build-plan order. Where the layer also ships an overlay for this phase, that overlay is applied immediately before the layer&#8217;s own hooks for it.</p>
 </li>
 <li>
-<p>Image asset directory (<code>IMAGE_ASSET</code>)</p>
+<p><strong>Tree/built-in</strong>, unconditionally after every layer&#8217;s per-layer hooks for this phase:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Source tree (<code>SRCROOT/hooks</code>)</p>
 </li>
 <li>
-<p>Source tree (<code>SRCROOT/bdebstrap</code>)</p>
+<p>Built-in (<code>IGROOT/builtin/hooks</code>)</p>
 </li>
-<li>
-<p>Built-in (<code>IGROOT/scripts/bdebstrap</code>)</p>
+</ol>
+</div>
 </li>
 </ol>
 </div>
 <div class="paragraph">
-<p>It executes matching hooks (alphanumeric basename) in that order for each phase. Subdirectories aren’t traversed; the file extension is ignored.</p>
+<p>Runner scans for <code>&lt;phase&gt;*</code> hooks (eg <code>customize*</code>, <code>preimage05-do-something</code>) inside <code>hooks/</code> subdirectories at each location, executing matching hooks (alphanumeric basename) in lexicographic order - hence the numbered-prefix convention used throughout (<code>customize01-</code>, <code>essential01</code>, <code>cleanup50-apt-cache</code>, etc), which controls run order for multiple hooks at the same location and phase. Subdirectories aren&#8217;t traversed; the file extension is ignored.</p>
+</div>
+<div class="paragraph">
+<p>A per-layer hook runs from its own directory, so anything else the layer ships must be reached through the environment runner provides it:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Variable</th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_NAME</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The layer&#8217;s declared <code>X-Env-Layer-Name</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_VERSION</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The layer&#8217;s declared <code>X-Env-Layer-Version</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_VERSION_MAJOR</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Major component of the version</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_VERSION_MINOR</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minor component of the version</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_VERSION_PATCH</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Patch component of the version</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_DIR</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Directory containing the layer file, ie the parent of <code>&lt;layer-stem&gt;.d</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_DOTD</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The layer&#8217;s companion directory <code>&lt;layer-stem&gt;.d</code>. Only set when the layer ships one</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_FILE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The resolved layer&#8217;s filename (full path)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_WORKDIR</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The layer&#8217;s work directory (created automatically)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LAYER_UUID</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UUID derived from <code>LAYER_NAME</code> and <code>LAYER_VERSION</code>. Identical on any host for a given pair.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>A hook reading a template the layer ships alongside its YAML therefore writes <code>"$LAYER_DIR/genimage.cfg.in"</code> rather than relying on the working directory.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_hook_classification_single"><a class="anchor" href="#_hook_classification_single"></a><a class="link" href="#_hook_classification_single">Hook Classification: single</a></h3>
-<div class="paragraph">
-<p>Runner looks for <code>&lt;phase&gt;.sh</code> at each of the following locations in order:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Built-in root (<code>IGROOT</code>)</p>
-</li>
-<li>
-<p>Built-in device subdir (<code>IGROOT/device</code>)</p>
-</li>
-<li>
-<p>Built-in image subdir (<code>IGROOT/image</code>)</p>
-</li>
-<li>
-<p>Device asset directory - <code>DEVICE_ASSET</code></p>
-</li>
-<li>
-<p>Image asset directory - <code>IMAGE_ASSET</code></p>
-</li>
-<li>
-<p>Source tree - <code>SRCROOT</code></p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>Each location is independent: all present hooks run. Execution takes place from the parent directory of the hook.</p>
-</div>
-<div class="paragraph">
-<p><code>sbom</code> and <code>deploy</code> are resolved differently - via config variables, which may point to any path.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_overlays"><a class="anchor" href="#_overlays"></a><a class="link" href="#_overlays">Overlays</a></h3>
+<h3 id="overlays"><a class="anchor" href="#overlays"></a><a class="link" href="#overlays">Overlays</a></h3>
 <div class="paragraph">
 <p>Two independent overlay mechanisms exist, applied at different times for different reasons.</p>
 </div>
 <div class="paragraph">
-<p><strong>Per-layer overlays</strong> are resolved before <code>bdebstrap</code> runs, while the build config is being assembled. For each mmdebstrap-keyed layer in build-plan order, if a directory named <code>&lt;layer-stem&gt;.rootfs-overlay</code> exists (eg <code>my-layer.yaml</code> has <code>my-layer.rootfs-overlay/</code>), its contents are automatically applied during <code>customize</code> but <strong>ahead</strong> of that layer&#8217;s own <code>customize-hooks</code> block. This enables a layer&#8217;s own hooks (eg, an <code>enable-units</code> call) to safely depend on files shipped by the layer&#8217;s own overlay.</p>
+<p><strong>Per-layer overlays</strong> are named after the phase that applies them. A layer ships <code>&lt;layer-stem&gt;.d/&lt;phase&gt;.overlay</code> (eg <code>my-layer.yaml</code> has <code>my-layer.d/customize.overlay/</code>) and it is applied when that phase runs, immediately before that layer&#8217;s own hooks for the same phase. Any phase will do - no table lists them - though in practice three are useful:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Overlay</th>
+<th class="tableblock halign-left valign-top">Applied</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>customize.overlay</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">During bdebstrap&#8217;s <code>customize</code> phase, immediately ahead of that layer&#8217;s own <code>customize-hooks</code>, so a layer&#8217;s own hooks (eg an <code>enable-units</code> call) can depend on its own overlay content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>postbuild.overlay</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">By <code>bin/runner</code> during <code>postbuild</code>, so the content is present in the tree when the SBOM is generated</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>preimage.overlay</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">By <code>bin/runner</code> during <code>preimage</code>, after the SBOM and before image generation</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>No metadata declares the timing - the directory name is the whole declaration, so deferring content until after filesystem construction is a matter of naming the directory <code>preimage.overlay</code> rather than <code>customize.overlay</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong>Device/image/source-tree overlays</strong> are applied during the <code>customize</code> phase by <code>bin/runner</code>, in the following order (later entries take precedence):</p>
+<p><code>customize.overlay</code> is the one runner does not apply itself; it is applied by the layer&#8217;s synthesised pre-config, which is what buys it the position ahead of that layer&#8217;s own <code>customize-hooks</code>.</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Prefer <code>customize.overlay</code> for anything landing in the filesystem. An overlay applied during <code>essential</code> writes files before the packages owning them are installed, which breaks <code>dpkg</code> conffile handling.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Overlays are applied with <code>rsync</code> and include <code>--chmod=go-w</code>, so a file keeps whatever mode it declares except that the transfer cannot make it group or world writable. Anything needing to be widely writable in the built filesystem must be made so by a hook rather than by shipping it that way.</p>
+</div>
+<div class="paragraph">
+<p><code>&lt;layer-stem&gt;.d/rootfs-overlay</code> and <code>&lt;layer-stem&gt;.d/overlay</code> are both accepted as compat spellings of <code>customize.overlay</code>, offering perhaps a more intuitive or human-readable name for an overlay directory. It&#8217;s not recommended to mix more than one of these.</p>
+</div>
+<div class="paragraph">
+<p>A layer needs no <code>mmdebstrap:</code> mapping of its own to ship an overlay - every layer in the plan is offered pre/post synthesis.</p>
+</div>
+<div class="paragraph">
+<p><strong>Source-tree overlays</strong> are applied during the <code>customize</code> phase by <code>bin/runner</code>:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
-<li>
-<p><strong>Device asset overlay</strong> - <code>DEVICE_ASSET/device/rootfs-overlay</code></p>
-</li>
-<li>
-<p><strong>Image asset overlay</strong> - <code>IMAGE_ASSET/device/rootfs-overlay</code></p>
-</li>
 <li>
 <p><strong>Source tree overlay</strong> - <code>SRCROOT:rootfs-overlay</code></p>
 </li>
@@ -709,27 +806,48 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="sect2">
 <h3 id="_core"><a class="anchor" href="#_core"></a><a class="link" href="#_core">Core</a></h3>
 <div class="paragraph">
-<p>rpi-image-gen ships its own hooks to perform generic tasks. Depending on requirements, there may not be a need to add custom hooks at these stages as the generic hooks execute before SRCROOT hooks.</p>
+<p>rpi-image-gen ships its own hooks to perform generic tasks. Depending on requirements, there may not be a need to add custom hooks at these stages as the generic hooks execute after SRCROOT hooks.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_device_and_image_asset_directory"><a class="anchor" href="#_device_and_image_asset_directory"></a><a class="link" href="#_device_and_image_asset_directory">Device and Image Asset Directory</a></h3>
 <div class="paragraph">
-<p>If a layer sets <code>IGconf_device_assetdir</code> (<code>DEVICE_ASSET</code>) or <code>IGconf_image_assetdir</code> (<code>IMAGE_ASSET</code>), Runner automatically looks for optional hooks inside those directories:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">&lt;assetdir&gt;/&lt;phase&gt;.sh</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If the asset directory isn’t defined, its hooks are skipped.</p>
+<p><code>IGconf_device_assetdir</code> and <code>IGconf_image_assetdir</code> no longer resolve hooks or initramfs content on their own - a device or image layer&#8217;s hooks belong in its own <code>&lt;layer-stem&gt;.d/hooks/</code>, found through the build plan like any other layer&#8217;s, and initramfs content follows the same pattern, described below. The variables themselves are still ordinary config values a layer&#8217;s own hooks can read directly for whatever they need - eg installing a file that lives in the asset directory, or locating a template by a naming convention of the layer&#8217;s own choosing.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_initramfs"><a class="anchor" href="#_initramfs"></a><a class="link" href="#_initramfs">initramfs</a></h3>
 <div class="paragraph">
-<p>If <code>initramfs-tools(7)</code> is installed in the chroot, rpi-image-gen extends the support of <code>initramfs-tools</code> compatible scripts and hooks to image and device directories via their sub-directory <code>device/initramfs-tools</code>. If present, the entire contents of this directory is recursively copied into the chroot. Mode and ownership attributes are preserved. Destination files will not be overwritten. This takes place during the <code>customize</code> stage of chroot creation and after execution of <code>DEVICE_ASSET</code> and <code>IMAGE_ASSET</code> hook bundles.</p>
+<p><code>dracut</code> and <code>initramfs-tools</code> are mutually exclusive initramfs generators, so a layer contributing to either ships its content under its own <code>&lt;layer-stem&gt;.d/device/</code>, in the directory matching the generator it targets:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Directory</th>
+<th class="tableblock halign-left valign-top">Copied to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>device/dracut.conf.d/</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/etc/dracut.conf.d/</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>device/dracut.modules.d/</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/usr/lib/dracut/modules.d/</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>device/initramfs-tools/</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/etc/initramfs-tools/</code>, following that tool&#8217;s own layout (eg <code>hooks/</code>, <code>scripts/</code>)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Every layer that ships any of these has its content copied in, in build plan order, during <code>customize</code>, via a built-in hook - one for whichever of <code>dracut</code>/<code>initramfs-tools</code> is actually installed in the chroot, immediately before it (re)generates the initramfs.</p>
 </div>
 </div>
 </div>

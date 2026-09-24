@@ -32,6 +32,7 @@
         .dep-badge:hover { background: #1e7e34; }
         /* Main content headers styling */
         h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
         /* Companion documentation content styling */
         .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
         .companion-content p { margin: 10px 0; }
@@ -132,7 +133,7 @@
         <h2>Additional Documentation</h2>
         <div class="companion-content">
             <div class="sect1">
-<h2 id="_dynamic_slot_detection_ab_overview_and_integration">Dynamic Slot Detection (A/B) – Overview and Integration</h2>
+<h2 id="_dynamic_slot_detection_ab_overview_and_integration"><a class="anchor" href="#_dynamic_slot_detection_ab_overview_and_integration"></a><a class="link" href="#_dynamic_slot_detection_ab_overview_and_integration">Dynamic Slot Detection (A/B) – Overview and Integration</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This layer creates block device alias symlinks for A/B systems under /dev/disk/by-slot/{active,other}/{boot,system} using a combination of udev rules and dedicated script helpers. It prefers GPT labels (PARTLABELs) to classify partitions and falls back to a simple static map when labels aren’t available, working with both direct block devices and device‑mapper (DM) paths. The result is a consistent, boot‑agnostic way to reference the active and alternate partitions in a slot, suitable for both runtime and initramfs.</p>
@@ -140,7 +141,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_slotted_ab">Slotted A/B</h2>
+<h2 id="_slotted_ab"><a class="anchor" href="#_slotted_ab"></a><a class="link" href="#_slotted_ab">Slotted A/B</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>An A/B (slotted) system maintains two self-contained slots (A and B), each made up of a boot and system partition. One slot runs the device (“active”), while the other remains idle for staging updates or rollback. This built-in redundancy enables safe reversion (rollback) if boot validation fails, minimises downtime, and preserves a known‑good environment for recovery. It’s particularly crucial for in‑field and fleet devices where reliable, remote deployment of security fixes and critical updates can safely be applied without bricking devices. The trade‑off is modest extra storage, health checks and tryboot orchestration to decide when to promote the new slot.</p>
@@ -151,7 +152,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_supported_boot_devices">Supported Boot Devices</h2>
+<h2 id="_supported_boot_devices"><a class="anchor" href="#_supported_boot_devices"></a><a class="link" href="#_supported_boot_devices">Supported Boot Devices</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Devices booting from SD, eMMC and NVMe are supported.</p>
@@ -159,7 +160,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_supported_block_devices">Supported Block Devices</h2>
+<h2 id="_supported_block_devices"><a class="anchor" href="#_supported_block_devices"></a><a class="link" href="#_supported_block_devices">Supported Block Devices</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Only eligible block devices are considered for slot assignment. An eligible block device is one which is 'boot‑disk–backed'. A device is considered boot‑disk–backed if its block‑device lineage (sysfs slaves chain) ultimately resolves to the boot disk’s kernel device (<code>$BOOT_DEV</code>, e.g., <code>mmcblk0</code> or <code>nvme0n1</code>). For non‑DM devices, this means the device is a partition of the boot disk. For DM devices, this means the device has the boot disk as an ancestor.</p>
@@ -167,7 +168,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_why_two_schemes">Why two schemes?</h2>
+<h2 id="_why_two_schemes"><a class="anchor" href="#_why_two_schemes"></a><a class="link" href="#_why_two_schemes">Why two schemes?</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Hardware and images vary:</p>
@@ -188,7 +189,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_by_slot_links">by-slot links</h2>
+<h2 id="_by_slot_links"><a class="anchor" href="#_by_slot_links"></a><a class="link" href="#_by_slot_links">by-slot links</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The layer installs a set of udev rules so that upon events, installed helper scripts allow udev to create symlinks under:</p>
@@ -208,7 +209,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_scheme_1_gpt_labels_preferred">Scheme 1: GPT labels (preferred)</h2>
+<h2 id="_scheme_1_gpt_labels_preferred"><a class="anchor" href="#_scheme_1_gpt_labels_preferred"></a><a class="link" href="#_scheme_1_gpt_labels_preferred">Scheme 1: GPT labels (preferred)</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>When a partition has a GPT PARTLABEL (e.g., <code>boot_a</code>, <code>system_a</code>, <code>boot_b</code>, <code>system_b</code>), the label helper maps it to one of the by-slot links above. No probing beyond labels is required. The active/other determination is derived from the boot partition’s label. Labels must be consistent across slot members and lower case.</p>
@@ -216,7 +217,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_scheme_2_static_slot_map_fallback">Scheme 2: Static slot map (fallback)</h2>
+<h2 id="_scheme_2_static_slot_map_fallback"><a class="anchor" href="#_scheme_2_static_slot_map_fallback"></a><a class="link" href="#_scheme_2_static_slot_map_fallback">Scheme 2: Static slot map (fallback)</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>For unlabeled partitions, a static map provides exact device identities for each slot member. The map is evaluated against the current boot device to decide which pair is “active”.</p>
@@ -268,7 +269,7 @@ b.system=mapper:cryptroot:1</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_tryboot">tryboot</h2>
+<h2 id="_tryboot"><a class="anchor" href="#_tryboot"></a><a class="link" href="#_tryboot">tryboot</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The helper <code>rpi-slot-tryboot</code> prints a Raspberry Pi tryboot config fragment to stdout, derived from <code>/dev/disk/by-slot/{active,other}/boot</code>.</p>
@@ -276,7 +277,7 @@ b.system=mapper:cryptroot:1</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_initramfs">Initramfs</h2>
+<h2 id="_initramfs"><a class="anchor" href="#_initramfs"></a><a class="link" href="#_initramfs">Initramfs</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A script sets the root device to <code>/dev/disk/by-slot/active/system</code> at runtime. If this alias is not a block device, the system reboots immediately.</p>
@@ -284,7 +285,7 @@ b.system=mapper:cryptroot:1</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_notes">Notes</h2>
+<h2 id="_notes"><a class="anchor" href="#_notes"></a><a class="link" href="#_notes">Notes</a></h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
