@@ -1,0 +1,7 @@
+= Linux Base
+
+== Kernel Command Line
+
+Any layer may contribute kernel command line arguments as fragments. Static fragments are shipped in `<layer-stem>.d/cmdline.d/`. Dynamic fragments are written at build time to `$LAYER_WORKDIR/cmdline.d/`, no later than `preimage`.
+
+A fragment is a single line of whitespace separated arguments. `-glob` removes matching arguments contributed earlier (eg `-fsck*` removes `fsck.repair=yes`). `+arg` or `arg` appends an argument. Layers are applied in build plan order. A layer's static and dynamic fragments are applied together in lexicographic order, so numbered names (eg `50-slot`) control where each applies. A dynamic fragment replaces a static one of the same name, so an empty one disables it. The result is written to `/etc/kernel/cmdline`.

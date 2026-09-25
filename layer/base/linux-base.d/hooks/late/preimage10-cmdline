@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+# Assemble the kernel command line from every layer's cmdline.d fragments
+
+set -eu
+
+out="$1/etc/kernel/cmdline"
+tokens=()
+
+
+# -glob removes every earlier arg matching the glob
+# +arg or just arg, appends it unless already present
+apply_fragment() {
+   local frag=$1 tok pat t
+   local -a lines args keep
+
+   mapfile -t lines < "$frag"
+   (( ${#lines[@]} <= 1 )) || die "cmdline: $frag: fragment must be a single line"
+
+   read -ra args <<< "${lines[0]:-}"
+   for tok in "${args[@]}"; do
+      case $tok in
+         -*)
+            pat=${tok#-}
+            [[ -n $pat ]] || die "cmdline: $frag: '-' with nothing to remove"
+            keep=()
+            for t in "${tokens[@]}"; do
+               [[ $t == $pat ]] || keep+=("$t")
+            done
+            tokens=("${keep[@]}")
+            ;;
+         *)
+            tok=${tok#+}
+            [[ -n $tok ]] || die "cmdline: $frag: '+' with nothing to add"
+            for t in "${tokens[@]}"; do
+               [[ $t == "$tok" ]] && continue 2
+            done
+            tokens+=("$tok")
+            ;;
+      esac
+   done
+}
+
+
+sweep_cmdline() {
+   local layer=$1 version=$2 stempath=$3 _=$4 workdir=$5 _=$6
+   local -A frags=()
+   local dir f name
+
+   for dir in "${stempath}.d/cmdline.d" "${workdir}/cmdline.d"; do
+      [[ -d $dir ]] || continue
+      for f in "$dir"/*; do
+         [[ -f $f ]] || continue
+         name=${f##*/}
+         # A work dir fragment can replace a static one of the same name
+         [[ -z ${frags[$name]+x} ]] ||
+            msg "cmdline: $layer: $name replaced by its work directory fragment"
+         frags[$name]=$f
+      done
+   done
+
+   (( ${#frags[@]} )) || return 0
+
+   msg "cmdline: applying fragments for $layer $version"
+   while IFS= read -r name; do
+      apply_fragment "${frags[$name]}"
+   done < <(printf '%s\n' "${!frags[@]}" | LC_ALL=C sort)
+}
+foreach_layer_in_plan sweep_cmdline
+
+
+if (( ! ${#tokens[@]} )); then
+   exit 0
+fi
+
+
+mkdir -p "${out%/*}"
+printf '%s\n' "${tokens[*]}" > "$out"
+msg "cmdline: $(< "$out")"
