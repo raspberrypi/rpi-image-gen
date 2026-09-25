@@ -15,10 +15,11 @@ BOOT_UUID=$(echo "$BOOT_LABEL" | sed 's/^\(....\)\(....\)$/\1-\2/')
 SYSTEM_UUID=$(uuid5 system)
 CRYPT_UUID=$(uuid5 crypt)
 VERITY_UUID=$(uuid5 verity)
+VERITY_SALT=$(uuid5 verity-salt | tr -d '-')
 
 
 rm -f ${IGconf_image_outputdir}/img_uuids
-for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID VERITY_UUID; do
+for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID VERITY_UUID VERITY_SALT; do
     eval "val=\$$v"
     echo "$v=$val" >> "${IGconf_image_outputdir}/img_uuids"
 done

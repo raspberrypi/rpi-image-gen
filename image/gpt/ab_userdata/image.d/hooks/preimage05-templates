@@ -23,7 +23,7 @@ VERITY_ARGS_SYSTEM="\
  --hash-block-size ${IGconf_linux_page_size:-4096} \
  --hash sha256 \
  --uuid ${VERITY_UUID} \
- --salt $(uuidgen | tr -d '-') \
+ --salt ${VERITY_SALT} \
  --root-hash-file ${IGconf_image_outputdir}/system.roothash"
 
 
