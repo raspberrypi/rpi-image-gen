@@ -33,3 +33,15 @@ X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS: n
 X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Desc: Build and install erofs-utils.
 X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Valid: bool
 X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Set: y
+
+
+#
+# Global build time defaults
+#
+# linux-base
+X-Env-Var-IG_WORKDIR_PRUNE: cmdline.d
+X-Env-Var-IG_WORKDIR_PRUNE-Desc: Sub-directories removed from every layer's
+ work directory at the start of each build, so content generated there is
+ never retained across builds.
+X-Env-Var-IG_WORKDIR_PRUNE-Valid: list:cmdline.d
+X-Env-Var-IG_WORKDIR_PRUNE-Set: y

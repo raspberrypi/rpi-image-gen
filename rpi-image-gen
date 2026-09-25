@@ -395,12 +395,20 @@ prepare_build_config()
    # Every layer is offered pre/post synth, whether or not it has an mmdebstrap
    # mapping of its own, so that a config-only layer can still ship an overlay.
    # Use the per-layer workdir for pre/post synth, created but never wiped, so
-   # build artefacts survive across builds.
+   # build artefacts survive across builds. The exception is the registry's
+   # auto-pruned sub-directories, which are removed on every build.
+   local -a prune
+   IFS=',' read -ra prune <<< "$(get_var IG_WORKDIR_PRUNE "${ctx[FINALENV]}")"
+
    _build_layer_config() {
       local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5
-      local cfg=()
+      local cfg=() sub
 
       mkdir -p "$workdir"
+      for sub in "${prune[@]}"; do
+         sub=${sub// /}
+         rm -rf -- "${workdir:?}/${sub:?}"
+      done
 
       local prefile="${workdir}/pre.yaml" postfile="${workdir}/post.yaml"
 
