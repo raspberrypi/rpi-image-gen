@@ -5,8 +5,6 @@ set -eu
 rootfs=$1
 genimg_in=$2
 
-sed -i "s|root=\([^ ]*\)|root=\/dev\/disk\/by-label\/ROOT|" ${rootfs}/boot/firmware/cmdline.txt
-
 cat << EOF > ${rootfs}/etc/fstab
 /dev/disk/by-label/ROOT /               ext4 rw,relatime,errors=remount-ro 0 1
 /dev/disk/by-label/BOOT /boot/firmware  vfat rw,noatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,errors=remount-ro 0 2

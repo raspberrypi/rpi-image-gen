@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# configure-splash runs with --no-cmdline, so install the kernel command
+# line changes as a fragment.
+
+set -eu
+
+[ -n "${IGconf_splash_image_path:-}" ] || exit 0
+[ "${IGconf_splash_update_cmdline:-}" = y ] || exit 0
+
+mkdir -p "$LAYER_WORKDIR/cmdline.d"
+echo "-console=tty1 -plymouth.ignore-serial-consoles -quiet" \
+     "-fullscreen_logo=* -fullscreen_logo_name=* -vt.global_cursor_default=*" \
+     "fullscreen_logo=1 fullscreen_logo_name=logo.tga vt.global_cursor_default=0" \
+     > "$LAYER_WORKDIR/cmdline.d/50-splash"

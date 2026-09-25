@@ -3,8 +3,8 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
 #  boot/system redundancy, and a shared persistent data partition.
-# X-Env-Layer-Version: 6.0.0
-# X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
+# X-Env-Layer-Version: 6.1.0
+# X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min,rpi-image-base when=has('hw:device:rpi')
 # X-Env-Layer-Provides: image
 #
 # X-Env-VarRequires: IGconf_device_storage_type,IGconf_device_class

@@ -1,0 +1,10 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-image-base
+# X-Env-Layer-Category: image
+# X-Env-Layer-Desc: Raspberry Pi image base. Handles default image configuration
+#  for all supported devices.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: linux-base
+# X-Env-Layer-RequiresProvider: hw:device:rpi
+# METAEND
+---
