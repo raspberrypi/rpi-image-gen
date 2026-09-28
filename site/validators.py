@@ -205,7 +205,7 @@ class RegexValidator(BaseValidator):
 
 class SizeValidator(BaseValidator):
     def __init__(self):
-        self.size_re = re.compile(r"(?:[0-9]+(?:[kKmMgGsS])?|[1-9][0-9]*%)$")
+        self.size_re = re.compile(r"(?:[0-9]+(?:[kKMGs])?|[1-9][0-9]*%)$")
 
     def validate(self, value: Optional[str]) -> list[str]:
         if value is None:
@@ -215,18 +215,18 @@ class SizeValidator(BaseValidator):
         return []
 
     def describe(self) -> str:
-        return "Size value with optional unit (bytes, k/m/g/s) or percentage"
+        return "Size value with optional unit (bytes, k/K/M/G/s) or percentage"
 
     @classmethod
     def get_help_text(cls) -> str:
-        return """size                   - Size with optional unit (bytes, k/m/g/s) or percentage
+        return """size                   - Size with optional unit (bytes, k/K/M/G/s) or percentage
 
 SIZES:
   size can be specified in one of the following formats
     12345        (bytes)
     20k / 20K    (kilobytes, multiples of 1024)
-    128M / 128m  (megabytes)
-    1G / 4g      (gigabytes)
+    128M         (megabytes)
+    1G           (gigabytes)
     512s         (sectors, multiples of 512)
     50%          (percentage; any positive integer)"""
 
