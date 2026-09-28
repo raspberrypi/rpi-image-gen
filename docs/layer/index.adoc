@@ -43,6 +43,42 @@ Each layer is a YAML file containing:
 - **Dependencies**: Automatic resolution of layer prerequisites
 - **Customisation**: Override defaults through environment variables set via the config file
 
+=== Selecting a Custom Version of an Existing Layer
+
+More than one version of a layer with the same `X-Env-Layer-Name` may be
+available across the layer search paths. When a layer is requested by name,
+rpi-image-gen selects the highest available version.
+
+This provides a practical way to replace a built-in layer from a custom source
+tree without copying every layer that depends on it. Give the custom layer the
+same `X-Env-Layer-Name`, a higher `X-Env-Layer-Version`, and include its
+source tree with `-S`.
+
+For example, a custom source tree can provide a newer `systemd-min` and the
+existing dependency chain will resolve to that version:
+
+[source,bash]
+----
+rpi-image-gen layer -S ./my-project --describe systemd-min
+----
+
+Use `--describe` to verify the selected version and path before building.
+
+[IMPORTANT]
+====
+A duplicate with the same layer name *and* the same version is an error. The
+version must distinguish the custom implementation from the built-in one.
+====
+
+[WARNING]
+====
+This is whole-layer replacement, not an append operation. Replacing a complex
+layer means taking responsibility for its YAML, hooks, overlays, and any
+upstream fixes to those files. If the required change can be expressed by a
+separate dependent layer, hook, or overlay, prefer composition so upstream
+changes continue to flow through automatically.
+====
+
 == Hooks and Overlays
 
 Beyond its YAML, a layer may ship standalone hook scripts and filesystem overlays alongside it, under a `<layer-stem>.d/` directory next to `<layer-stem>.yaml`:
