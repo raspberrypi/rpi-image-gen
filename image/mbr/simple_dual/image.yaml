@@ -47,8 +47,9 @@
 #  and on the kernel command line.
 #  by-slot: /dev/disk/by-slot symlinks created by this layout's udev rule.
 #  partuuid: PARTUUID derived from the MBR disk signature, as Raspberry Pi OS
-#  tooling expects. Not available with pmap 'crypt', where partition 2 holds
-#  the LUKS2 container rather than the root filesystem.
+#  tooling expects. Not available with pmap 'crypt': partition 2 holds the
+#  LUKS2 container, and the unlocked root filesystem is a device-mapper
+#  device with no PARTUUID of its own.
 # X-Env-Var-rootdev_scheme-Required: n
 # X-Env-Var-rootdev_scheme-Valid: by-slot,partuuid
 # X-Env-Var-rootdev_scheme-Set: y
