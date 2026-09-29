@@ -45,7 +45,8 @@
 # X-Env-Var-rootdev_scheme: by-slot
 # X-Env-Var-rootdev_scheme-Desc: How root and boot are referenced in /etc/fstab
 #  and on the kernel command line.
-#  by-slot: /dev/disk/by-slot symlinks created by this layout's udev rule.
+#  by-slot: /dev/disk/by-slot symlinks. This layout's udev rule creates them
+#  for the boot-medium devices that rpi-storage-binder tags.
 #  partuuid: PARTUUID derived from the MBR disk signature, as Raspberry Pi OS
 #  tooling expects. Not available with pmap 'crypt': partition 2 holds the
 #  LUKS2 container, and the unlocked root filesystem is a device-mapper
