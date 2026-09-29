@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# Assemble the kernel command line from every layer's cmdline.d fragments
+# Assemble the kernel command line from the cmdline.d fragments every layer
+# provides for linux-base
 
 set -eu
 
@@ -42,31 +43,7 @@ apply_fragment() {
 }
 
 
-sweep_cmdline() {
-   local layer=$1 version=$2 stempath=$3 _=$4 workdir=$5 _=$6
-   local -A frags=()
-   local dir f name
-
-   for dir in "${stempath}.d/cmdline.d" "${workdir}/cmdline.d"; do
-      [[ -d $dir ]] || continue
-      for f in "$dir"/*; do
-         [[ -f $f ]] || continue
-         name=${f##*/}
-         # A work dir fragment can replace a static one of the same name
-         [[ -z ${frags[$name]+x} ]] ||
-            msg "cmdline: $layer: $name replaced by its work directory fragment"
-         frags[$name]=$f
-      done
-   done
-
-   (( ${#frags[@]} )) || return 0
-
-   msg "cmdline: applying fragments for $layer $version"
-   while IFS= read -r name; do
-      apply_fragment "${frags[$name]}"
-   done < <(printf '%s\n' "${!frags[@]}" | LC_ALL=C sort)
-}
-foreach_layer_in_plan sweep_cmdline
+foreach_dropin "$LAYER_NAME" "$LAYER_VERSION" cmdline.d apply_fragment
 
 
 if (( ! ${#tokens[@]} )); then

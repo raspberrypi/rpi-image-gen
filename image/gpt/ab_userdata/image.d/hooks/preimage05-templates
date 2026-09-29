@@ -29,8 +29,8 @@ VERITY_ARGS_SYSTEM="\
 
 # erofs is read-only: the kernel must not ask for an fsck
 if [[ $IGconf_image_rootfs_type == erofs ]]; then
-   mkdir -p "$LAYER_WORKDIR/cmdline.d"
-   echo '-fsck.repair=*' > "$LAYER_WORKDIR/cmdline.d/60-fsck"
+   mkdir -p "$LAYER_WORKDIR/for/linux-base/cmdline.d"
+   echo '-fsck.repair=*' > "$LAYER_WORKDIR/for/linux-base/cmdline.d/60-fsck"
 fi
 
 

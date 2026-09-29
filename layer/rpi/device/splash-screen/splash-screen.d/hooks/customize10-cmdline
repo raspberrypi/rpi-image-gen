@@ -8,8 +8,8 @@ set -eu
 [ -n "${IGconf_splash_image_path:-}" ] || exit 0
 [ "${IGconf_splash_update_cmdline:-}" = y ] || exit 0
 
-mkdir -p "$LAYER_WORKDIR/cmdline.d"
+mkdir -p "$LAYER_WORKDIR/for/linux-base/cmdline.d"
 echo "-console=tty1 -plymouth.ignore-serial-consoles -quiet" \
      "-fullscreen_logo=* -fullscreen_logo_name=* -vt.global_cursor_default=*" \
      "fullscreen_logo=1 fullscreen_logo_name=logo.tga vt.global_cursor_default=0" \
-     > "$LAYER_WORKDIR/cmdline.d/50-splash"
+     > "$LAYER_WORKDIR/for/linux-base/cmdline.d/50-splash"
