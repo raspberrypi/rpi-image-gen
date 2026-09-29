@@ -150,6 +150,12 @@ run_test "dryconfig10 - zero2w" \
     0 \
     "Configuration should parse correctly"
 
+run_test "dryconfig11 - cmdline extra" \
+    'out=$(printf "n\n" | $IG build -c trixie-minbase.yaml -I -- IGconf_image_cmdline_extra="quiet splash" 2>&1); \
+     test $? -eq 0 && echo "$out" | grep -q "IGconf_image_cmdline_extra : quiet splash"' \
+    0 \
+    "Configuration should resolve cmdline_extra"
+
 print_summary
 exit 0
 

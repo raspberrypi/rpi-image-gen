@@ -6,6 +6,8 @@
 *.json text eol=lf
 *.adoc text eol=lf
 *.cfg.in text eol=lf
+# Test fixture that must keep its CRLF ending
+test/image/cmdline-crlf.txt -text whitespace=cr-at-eol
 
 # GitHub Linguist overrides
 docs/** linguist-documentation=true

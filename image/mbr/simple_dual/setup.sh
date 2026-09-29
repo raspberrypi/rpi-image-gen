@@ -27,6 +27,12 @@ EOF
       ;;
    BOOT)
       sed -i "s|root=\([^ ]*\)|root=/dev/disk/by-slot/system|" $IMAGEMOUNTPATH/cmdline.txt
+
+      # firmware reads the first line only; strip a stray CR so appended
+      # parameters are not glued to it
+      cmdline=$(head -n1 $IMAGEMOUNTPATH/cmdline.txt | tr -d '\r')
+      printf '%s\n' "$cmdline${IGconf_image_cmdline_extra:+ $IGconf_image_cmdline_extra}" \
+         > $IMAGEMOUNTPATH/cmdline.txt
       ;;
    *)
       ;;

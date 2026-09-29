@@ -1,0 +1,1 @@
+console=tty1 root=ROOTDEV rootwait
