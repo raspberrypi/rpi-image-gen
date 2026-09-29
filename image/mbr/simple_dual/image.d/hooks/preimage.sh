@@ -16,12 +16,7 @@ source "${IGconf_image_outputdir}/img_uuids"
 # the other identifiers so setup.sh can derive PARTUUIDs from it.
 DISKSIG=$IGconf_image_disksig
 if [[ $DISKSIG == random ]]; then
-   # An all-zero signature yields PARTUUID=00000000-0N, which blkid does
-   # not index
-   DISKSIG=0x00000000
-   while [[ $DISKSIG == 0x00000000 ]]; do
-      DISKSIG="0x$(od -An -tx4 -N4 /dev/urandom | tr -d ' \n')"
-   done
+   DISKSIG=0x$(uuidgen | cut -c1-8)
 fi
 sed -i '/^DISKSIG=/d' "${IGconf_image_outputdir}/img_uuids"
 echo "DISKSIG=$DISKSIG" >> "${IGconf_image_outputdir}/img_uuids"
