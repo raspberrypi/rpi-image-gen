@@ -70,6 +70,16 @@ sudo ./install_deps.sh
 
 See the `depends` file for the complete list of required packages.
 
+[NOTE]
+====
+Python entrypoints use the `python3` selected from `PATH`. If a Python virtual
+environment is active, it must contain the Python modules required by
+rpi-image-gen (including PyYAML and python-debian), or the environment should
+be deactivated before running the tool. `install_deps.sh` installs the
+distribution packages for the system Python interpreter; those modules are not
+automatically visible inside an isolated virtual environment.
+====
+
 rpi-image-gen builds its own copies of critical host tools so it always has current, fully featured versions and supports architectures the workstation distribution might not package. Installing and running them from a private sysroot keeps the host system untouched. The trade-off is a small one-time build delay, plus additional native dependencies that most developer workstations already carry. The resulting tools live in a reusable sysroot that stays isolated from distribution packages and can be reused for every build.
 
 === Important
