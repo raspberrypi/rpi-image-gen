@@ -376,6 +376,72 @@ foreach_layer_in_plan() {
 export -f foreach_layer_in_plan
 
 
+# foreach_dropin: calls callback for each file the plan's layers provide for a
+# target layer's drop-in directory, in plan order, then by file name, from:
+#   <stempath>.d/for/<target>[@X]/<dir>/
+#   <workdir>/for/<target>[@X]/<dir>/
+# X is the target's major version. Of same-named files, @X beats unversioned
+# and workdir beats static. Dies if the target provides for itself.
+# $1 = target layer name
+# $2 = target layer version
+# $3 = drop-in directory name
+# $4 = callback, called as: callback file layer version [extra args]
+foreach_dropin() {
+   local target=${1:?"foreach_dropin: target required"}
+   local tversion=${2:?"foreach_dropin: target version required"}
+   local dir=${3:?"foreach_dropin: dir required"}
+   local callback=${4:?"foreach_dropin: callback required"}; shift 4
+   local major=${tversion%%.*}
+
+   foreach_layer_in_plan _foreach_dropin_layer \
+      "$target" "$major" "$dir" "$callback" "$@"
+}
+export -f foreach_dropin
+
+
+# One layer's part of foreach_dropin. Takes foreach_layer_in_plan's callback
+# args, then target major dir callback [extra args].
+_foreach_dropin_layer() {
+   local layer=$1 version=$2 stempath=$3 workdir=$5
+   local target=$7 major=$8 dir=$9 callback=${10}; shift 10
+   local -A files=()
+   local -a names
+   local sub base f name
+
+   for base in "${stempath}.d/for" "${workdir}/for"; do
+      for sub in "${base}/${target}" "${base}/${target}"@*; do
+         [[ -e $sub ]] || continue
+         [[ $layer != "$target" ]] ||
+            die "dropin: ${target}/${dir}: ${sub}: a layer can't provide for itself"
+         [[ $sub == "${base}/${target}" || ${sub##*@} =~ ^(0|[1-9][0-9]*)$ ]] ||
+            die "dropin: ${target}/${dir}: ${layer}: ${sub}: expected ${target}@<major>"
+      done
+   done
+
+   for sub in "${target}" "${target}@${major}"; do
+      for base in "${stempath}.d/for" "${workdir}/for"; do
+         [[ -d ${base}/${sub}/${dir} ]] || continue
+         msg "dropin: ${target}/${dir}: ${layer}: ${base}/${sub}/${dir}"
+         for f in "${base}/${sub}/${dir}"/*; do
+            [[ -f $f ]] || continue
+            name=${f##*/}
+            [[ -z ${files[$name]+x} ]] ||
+               msg "dropin: ${target}/${dir}: ${layer}: ${files[$name]} replaced by ${f}"
+            files[$name]=$f
+         done
+      done
+   done
+
+   (( ${#files[@]} )) || return 0
+
+   mapfile -t names < <(printf '%s\n' "${!files[@]}" | LC_ALL=C sort)
+   for name in "${names[@]}"; do
+      "$callback" "${files[$name]}" "$layer" "$version" "$@"
+   done
+}
+export -f _foreach_dropin_layer
+
+
 # General purpose key=value normaliser that escapes characters that would
 # break shell expansion.
 safe_kv() {
