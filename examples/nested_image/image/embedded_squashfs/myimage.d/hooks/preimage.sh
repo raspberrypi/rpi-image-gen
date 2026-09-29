@@ -17,7 +17,7 @@ cp "$LAYER_DIR/ro_assets.cfg.in" ${genimg_in}/genimage01.cfg
 FW_SIZE=150%
 ROOT_SIZE=200%
 
-WRITER=$(readlink -f writer.sh)
+WRITER=$(readlink -ef "$LAYER_DIR/writer.sh")
 
 cat "$LAYER_DIR/main.cfg.in" | sed \
    -e "s|<IMAGE_DIR>|$IGconf_image_outputdir|g" \
