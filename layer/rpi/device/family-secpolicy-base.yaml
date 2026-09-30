@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: rpi-device-secpolicy
 # X-Env-Layer-Category: security
 # X-Env-Layer-Desc: Raspberry Pi device family security policy baseline
-# X-Env-Layer-Version: 1.0.1
+# X-Env-Layer-Version: 1.0.2
 # X-Env-Layer-RequiresProvider: rpi-device,image,systemd
 #
 # X-Env-VarPrefix: rpisec
@@ -13,6 +13,8 @@
 # X-Env-Var-eepromupd-Required: n
 # X-Env-Var-eepromupd-Valid: bool
 # X-Env-Var-eepromupd-Set: y
+# X-Env-Var-eepromupd-Triggers:
+#  when=has('image-rota') set IGconf_rpisec_eepromupd=n policy=force
 #
 # METAEND
 ---
