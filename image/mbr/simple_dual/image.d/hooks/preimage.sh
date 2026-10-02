@@ -10,6 +10,18 @@ genimg_in=$2
 source "${IGconf_image_outputdir}/img_uuids"
 
 
+# Resolve the disk signature
+# genimage resolves 'random' internally and never reports the value, so pick
+# one here and hand genimage a concrete signature. DISKSIG is recorded with
+# the other identifiers so setup.sh can derive PARTUUIDs from it.
+DISKSIG=$IGconf_image_disksig
+if [[ $DISKSIG == random ]]; then
+   DISKSIG=0x$(uuidgen | cut -c1-8)
+fi
+sed -i '/^DISKSIG=/d' "${IGconf_image_outputdir}/img_uuids"
+echo "DISKSIG=$DISKSIG" >> "${IGconf_image_outputdir}/img_uuids"
+
+
 MKE2FS_ARGS_STR="-U $ROOT_UUID ${IGconf_fs_ext4_mkfs_args:-}"
 BTRFS_ARGS_STR="-U $ROOT_UUID ${IGconf_fs_btrfs_mkfs_args:-}"
 VFAT_ARGS_STR="-S $IGconf_device_sector_size -i $BOOT_LABEL ${IGconf_fs_vfat_mkfs_args:-}"
@@ -29,5 +41,5 @@ cat "$LAYER_DIR/genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
    -e "s|<VFAT_EXTRAARGS>|$VFAT_ARGS_STR|g" \
    -e "s|<BOOT_UUID>|$BOOT_UUID|g" \
    -e "s|<ROOT_UUID>|$ROOT_UUID|g" \
-   -e "s|<DISK_SIGNATURE>|$IGconf_image_disksig|g" \
+   -e "s|<DISK_SIGNATURE>|$DISKSIG|g" \
    > ${genimg_in}/genimage.cfg
