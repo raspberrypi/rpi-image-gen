@@ -40,7 +40,6 @@ X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Set: y
 #
 X-Env-Var-IG_WORKDIR_PRUNE: for
 X-Env-Var-IG_WORKDIR_PRUNE-Desc: Sub-directories removed from every layer's
- work directory at the start of each build, so content generated there is
- never retained across builds.
+ work directory each time the filesystem is built.
 X-Env-Var-IG_WORKDIR_PRUNE-Valid: list:for
 X-Env-Var-IG_WORKDIR_PRUNE-Set: y

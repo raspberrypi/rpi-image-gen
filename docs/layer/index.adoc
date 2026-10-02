@@ -61,7 +61,7 @@ A layer's generated documentation page lists any hooks, late hooks and overlays 
 A layer can offer 'drop-in' directories that other layers put files in, which it then processes itself, eg `linux-base` assembles the kernel command line from `cmdline.d` fragments. A layer provides files for a target layer's drop-in directory `<dir>` from:
 
 - **`<layer-stem>.d/for/<target>/<dir>/`**: Static files shipped with the layer.
-- **`$LAYER_WORKDIR/for/<target>/<dir>/`**: Files generated at build time by the layer's hooks. The whole of `$LAYER_WORKDIR/for/` is removed at the start of every build (see `IG_WORKDIR_PRUNE`), so a hook writes a file only when it applies and never has to remove a stale one.
+- **`$LAYER_WORKDIR/for/<target>/<dir>/`**: Files generated at build time by the layer's hooks. The whole of `$LAYER_WORKDIR/for/` is removed each time the filesystem is built.
 
 Either location may instead name a major version of the target: `<target>@X/` applies only when the target's major version is `X`. A layer that must work with more than one major version of a target ships a directory for each, and those that don't match are ignored. Minor versions can't be targeted: a minor version change must always be compatible.
 

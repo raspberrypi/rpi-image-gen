@@ -396,19 +396,12 @@ prepare_build_config()
    # mapping of its own, so that a config-only layer can still ship an overlay.
    # Use the per-layer workdir for pre/post synth, created but never wiped, so
    # build artefacts survive across builds. The exception is the registry's
-   # auto-pruned sub-directories, which are removed on every build.
-   local -a prune
-   IFS=',' read -ra prune <<< "$(get_var IG_WORKDIR_PRUNE "${ctx[FINALENV]}")"
-
+   # auto-pruned sub-directories.
    _build_layer_config() {
       local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5
-      local cfg=() sub
+      local cfg=()
 
       mkdir -p "$workdir"
-      for sub in "${prune[@]}"; do
-         sub=${sub// /}
-         rm -rf -- "${workdir:?}/${sub:?}"
-      done
 
       local prefile="${workdir}/pre.yaml" postfile="${workdir}/post.yaml"
 
@@ -452,6 +445,20 @@ generate_filesystem()
    [[ ${ctx[INTERACTIVE]}  == y ]] && { ask "Generate filesystem?" y || exit 0; }
 
    msg "\nFILESYSTEM"
+
+   # Auto-prune layer workdir sub-directories before building the filesystem
+   local -a prune
+   IFS=',' read -ra prune <<< "$(get_var IG_WORKDIR_PRUNE "${ctx[FINALENV]}")"
+
+   _prune_layer_workdir() {
+      local workdir=$5 sub
+      for sub in "${prune[@]}"; do
+         sub=${sub// /}
+         rm -rf -- "${workdir:?}/${sub:?}"
+      done
+   }
+   local PLAN="${ctx[LAYER_PLAN]}"
+   foreach_layer_in_plan _prune_layer_workdir
 
    local -n _benv="${ctx[ENV_BDEBSTRAP]}" # via nameref
 
