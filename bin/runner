@@ -20,7 +20,7 @@ shift 2
 # hook and overlay is discovered by. A layer's own are found by walking the
 # build plan and looking under that layer's <stem>.d. Hooks belonging to no
 # layer live in these directories, scanned in this order and executed after
-# all layers.
+# all layers' own hooks, but before any layer's late hooks.
 dirs=()
 add_dir 'SRCROOT:hooks'          # source tree hooks
 add_dir 'IGROOT:builtin/hooks'   # built-in hooks
@@ -123,37 +123,57 @@ run_dir_hooks() {
 }
 
 
+# The environment every per-layer hook is given. Hooks run from their own
+# directory, so hooks belonging to a layer must be told where the layer lives
+# in order to reach anything it ships. A companion directory is optional, so
+# it's only announced when the layer ships one.
+layer_vars() {
+   local -n _lvars=$1
+   local layer=$2 version=$3 stempath=$4 resolved=$5 workdir=$6 uuid=$7
+   local vmajor vminor vpatch
+
+   IFS='.' read -r vmajor vminor vpatch <<< "$version"
+
+   _lvars=(
+      "LAYER_NAME=$layer"
+      "LAYER_VERSION=$version"
+      "LAYER_VERSION_MAJOR=$vmajor"
+      "LAYER_VERSION_MINOR=$vminor"
+      "LAYER_VERSION_PATCH=$vpatch"
+      "LAYER_DIR=$(dirname "$stempath")"
+      "LAYER_FILE=$resolved"
+      "LAYER_WORKDIR=$workdir"
+      "LAYER_UUID=$uuid"
+   )
+   if [[ -d ${stempath}.d ]]; then
+      _lvars+=( "LAYER_DOTD=${stempath}.d" )
+   fi
+}
+
+
 # Per-layer phased execution
 run_layer_step() {
    local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5 uuid=$6 phase=$7; shift 7
    local dest=${1:-}
-   local ldir vmajor vminor vpatch
+   local -a lvars
 
    # customize is the only phase runner does not apply an overlay for: those
    # are applied by the layer's synthesised pre-config so that a layer's
    # overlay lands ahead of its own customize-hooks
    [[ $phase == customize ]] || apply_overlay "${stempath}.d/${phase}.overlay" "$dest"
 
-   # Hooks run from their own directory, so a layer's must be told where the
-   # layer lives in order to reach anything it ships. A companion directory
-   # is optional, so it is only announced when the layer ships one
-   ldir=$(dirname "$stempath")
-   IFS='.' read -r vmajor vminor vpatch <<< "$version"
-
-   local -a lvars=(
-      "LAYER_NAME=$layer"
-      "LAYER_VERSION=$version"
-      "LAYER_VERSION_MAJOR=$vmajor"
-      "LAYER_VERSION_MINOR=$vminor"
-      "LAYER_VERSION_PATCH=$vpatch"
-      "LAYER_DIR=$ldir"
-      "LAYER_FILE=$resolved"
-      "LAYER_WORKDIR=$workdir"
-      "LAYER_UUID=$uuid"
-   )
-   [[ -d ${stempath}.d ]] && lvars+=( "LAYER_DOTD=${stempath}.d" )
-
+   layer_vars lvars "$layer" "$version" "$stempath" "$resolved" "$workdir" "$uuid"
    run_dir_hooks "${stempath}.d/hooks" "$phase" "${stempath}.d/env" lvars "$@"
+}
+
+
+# A layer's late hooks for a phase. Same env and args as normal hooks, but no overlay.
+run_layer_late() {
+   local layer=$1 version=$2 stempath=$3 resolved=$4 workdir=$5 uuid=$6 phase=$7; shift 7
+   local -a lvars
+
+   layer_vars lvars "$layer" "$version" "$stempath" "$resolved" "$workdir" "$uuid"
+   run_dir_hooks "${stempath}.d/hooks/late" "$phase" "${stempath}.d/env" lvars "$@"
 }
 
 
@@ -181,6 +201,10 @@ run_phase() {
    for dir in "${dirs[@]}"; do
       run_dir_hooks "$dir" "$phase" "${dir}/env" novars "$@"
    done
+
+   # Late pass: every layer's late hooks, in build plan order, once everything
+   # above has completed for this phase
+   foreach_layer_in_plan run_layer_late "$phase" "$@"
 }
 
 

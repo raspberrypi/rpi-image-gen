@@ -27,6 +27,13 @@ VERITY_ARGS_SYSTEM="\
  --root-hash-file ${IGconf_image_outputdir}/system.roothash"
 
 
+# erofs is read-only: the kernel must not ask for an fsck
+if [[ $IGconf_image_rootfs_type == erofs ]]; then
+   mkdir -p "$LAYER_WORKDIR/for/linux-base/cmdline.d"
+   echo '-fsck.repair=*' > "$LAYER_WORKDIR/for/linux-base/cmdline.d/60-fsck"
+fi
+
+
 # Set up the partition layout for tryboot support. Partition numbering
 # relates directly to the layout in genimage.cfg.in
 

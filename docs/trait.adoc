@@ -309,7 +309,7 @@ Pull a layer into the build only when its required trait is present:
 
 [source]
 ----
-# X-Env-Layer-Requires: bt-firmware when=has('hw:bluetooth'),rpi-boot-firmware when=has('boot:rpi:vc-firmware')
+# X-Env-Layer-Requires: bt-firmware when=has('hw:bluetooth'),rpi-boot-bsp when=has('boot:rpi:vc-firmware')
 ----
 
 The condition is appended to the layer name with `when=`, separated by a space. Unconditional and conditional entries can be mixed freely in the same comma-separated field. See link:./layer/index.adoc#conditional-requires[Conditional Requires] in the layer metadata reference for the full syntax, the mixed-field form, and the single-pass/first-order evaluation limitation.

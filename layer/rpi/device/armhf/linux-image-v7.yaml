@@ -2,7 +2,8 @@
 # X-Env-Layer-Name: rpi-linux-v7
 # X-Env-Layer-Category: kernel
 # X-Env-Layer-Desc: Raspberry Pi v7 kernel
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Requires: rpi-linux-base
 # METAEND
 ---
 env:

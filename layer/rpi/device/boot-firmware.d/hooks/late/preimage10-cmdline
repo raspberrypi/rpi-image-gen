@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# Install the kernel command line assembled by linux-base
+
+set -eu
+
+src="$1/etc/kernel/cmdline"
+[[ -f $src ]] || exit 0
+
+install -m 644 "$src" "$1/boot/firmware/cmdline.txt"
+rm -f "$src"
