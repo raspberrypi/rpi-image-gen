@@ -28,10 +28,3 @@ if [ -e "$1/etc/os-release" ]; then
       echo "IG_SOURCE_DATE_EPOCH=\"${SOURCE_DATE_EPOCH}\""
    } | tee -a "$1/etc/os-release"
 fi
-
-echo "${SOURCE_DATE_EPOCH:?}" > "${IGconf_target_dir}/SOURCE_DATE_EPOCH"
-
-# Ensure epoch is always published to build env
-env="${IGconf_sys_bootstrapdir}/final.env"
-grep -q '^SOURCE_DATE_EPOCH=' "$env" || \
-   printf 'SOURCE_DATE_EPOCH="%s"\n' "$SOURCE_DATE_EPOCH" >> "$env"
