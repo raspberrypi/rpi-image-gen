@@ -98,7 +98,7 @@ run_test "dryconfig1 - docker" \
 run_test "dryconfig2 - splash" \
     'TMP_BUILD=$(mktemp -d) && printf "n\\n" | $IG build -S ${SRC} -c trixie-ab-min-splash.yaml -B "$TMP_BUILD" -I >/dev/null && grep -q "^IGconf_rpisec_eepromupd=\\\"n\\\"$" "$TMP_BUILD/bootstrap/final.env"; status=$?; rm -rf "$TMP_BUILD"; exit $status' \
     0 \
-    "AB configuration should disable the automatic EEPROM update service"
+    "Read-only firmware configuration should disable the automatic EEPROM update service"
 
 run_test "dryconfig3 - examples/slim" \
     "printf 'n\n' | $IG build -S ${IGTOP}/examples/slim -c pi5-slim.yaml -I" \
