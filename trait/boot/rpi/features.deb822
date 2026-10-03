@@ -3,3 +3,6 @@ X-Env-Trait-vc-firmware-Valid: bool
 
 X-Env-Trait-dtbootpartn-Desc: Bootloader propagates a valid (non-zero) boot partition number via Device Tree
 X-Env-Trait-dtbootpartn-Valid: bool
+
+X-Env-Trait-firmware-readonly-Desc: Raspberry Pi firmware filesystem is mounted read-only in the generated image
+X-Env-Trait-firmware-readonly-Valid: bool
