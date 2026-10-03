@@ -14,7 +14,7 @@
 # X-Env-Var-eepromupd-Valid: bool
 # X-Env-Var-eepromupd-Set: y
 # X-Env-Var-eepromupd-Triggers:
-#  when=has('image-rota') set IGconf_rpisec_eepromupd=n policy=force
+#  when=has('boot:rpi:firmware-readonly') set IGconf_rpisec_eepromupd=n policy=force
 #
 # METAEND
 ---
