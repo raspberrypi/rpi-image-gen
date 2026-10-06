@@ -25,9 +25,6 @@ EOF
 /dev/disk/by-slot/boot  /boot/firmware  vfat defaults,rw,noatime,errors=remount-ro 0 2
 EOF
       ;;
-   BOOT)
-      sed -i "s|root=\([^ ]*\)|root=/dev/disk/by-slot/system|" $IMAGEMOUNTPATH/cmdline.txt
-      ;;
    *)
       ;;
 esac

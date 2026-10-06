@@ -48,11 +48,24 @@ Each layer is a YAML file containing:
 Beyond its YAML, a layer may ship standalone hook scripts and filesystem overlays alongside it, under a `<layer-stem>.d/` directory next to `<layer-stem>.yaml`:
 
 - **`<layer-stem>.d/hooks/`**: Scripts named `<phase>*` (eg `customize05-enable-units`), run by `bin/runner` at the matching build phase, in lexicographic order.
+- **`<layer-stem>.d/hooks/late/`**: Scripts named as above, run by `bin/runner` at the matching phase only once every layer's normal hooks for it have completed.
 - **`<layer-stem>.d/<phase>.overlay/`**: A tree synchronised into the filesystem build in progress at the matching phase, eg `customize.overlay/`.
 
-See link:../execution/index.adoc#hooks[Hooks] and link:../execution/index.adoc#overlays[Overlays] in the execution documentation for the full mechanism, phase list, and environment variables a hook can rely on.
+See link:../execution/index.adoc#hooks[Hooks] and link:../execution/index.adoc#overlays[Overlays] (plus link:../execution/index.adoc#late-hooks[Late Hooks]) in the execution documentation for the full mechanism, phase list, and environment variables a hook can rely on.
 
-A layer's generated documentation page lists any hooks and overlays it actually ships, per phase.
+A layer's generated documentation page lists any hooks, late hooks and overlays it actually ships, per phase.
+
+[[for]]
+== Drop-ins for Other Layers
+
+A layer can offer 'drop-in' directories that other layers put files in, which it then processes itself, eg `linux-base` assembles the kernel command line from `cmdline.d` fragments. A layer provides files for a target layer's drop-in directory `<dir>` from:
+
+- **`<layer-stem>.d/for/<target>/<dir>/`**: Static files shipped with the layer.
+- **`$LAYER_WORKDIR/for/<target>/<dir>/`**: Files generated at build time by the layer's hooks. The whole of `$LAYER_WORKDIR/for/` is removed each time the filesystem is built.
+
+Either location may instead name a major version of the target: `<target>@X/` applies only when the target's major version is `X`. A layer that must work with more than one major version of a target ships a directory for each, and those that don't match are ignored. Minor versions can't be targeted: a minor version change must always be compatible.
+
+Of a layer's files with the same name, one in `<target>@X/` wins over one in `<target>/`, and at the same level a work directory file replaces a static one. An empty file therefore disables a static file of the same name. Each layer's files are processed in lexicographic order, so numbered names (eg `50-slot`) controls where each one applies. All layers are processed in build plan order.
 
 == X-Env Metadata
 Layers use a custom X-Env metadata schema that strictly follows the DEB822 format (https://repolib.readthedocs.io/en/latest/deb822-format.html) embedded within YAML comment blocks. The metadata is delimited by `# METABEGIN` and `# METAEND` markers and parsed using the standard `python3-debian` DEB822 parser. By using metadata fields a layer can define attributes, dependencies, and configuration variables. The metadata is parsed separately from the standard YAML content.

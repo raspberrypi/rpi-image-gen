@@ -67,7 +67,7 @@ The layer declares the following configuration variables with prefix `splash`:
 * **Type**: Boolean
 * **Default**: `y`
 * **Required**: No
-* **Description**: Automatically update `/boot/firmware/cmdline.txt` to enable the splash screen. Set to `n` if using custom boot configurations.
+* **Description**: Automatically add the kernel command line arguments that enable the splash screen, as a `cmdline.d` fragment (see the `linux-base` layer). Set to `n` if using custom boot configurations.
 
 == Usage Examples
 
@@ -178,7 +178,7 @@ The layer modifies the following files in the target system:
 
 * `/lib/firmware/logo.tga`: The splash screen image
 * `/etc/initramfs-tools/hooks/splash-screen-hook.sh`: Initramfs hook
-* `/boot/firmware/cmdline.txt`: Kernel command line (if `update_cmdline=y`)
+* Kernel command line (if `update_cmdline=y`)
 * Initramfs images in `/boot/firmware/`
 
 == Troubleshooting

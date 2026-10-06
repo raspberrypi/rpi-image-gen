@@ -2,7 +2,8 @@
 # X-Env-Layer-Name: rpi-splash-screen
 # X-Env-Layer-Category: device
 # X-Env-Layer-Desc: Raspberry Pi fullscreen splash screen support with custom image configuration.
-# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Requires: linux-base
 #
 # X-Env-VarPrefix: splash
 #
@@ -25,9 +26,9 @@
 # X-Env-Var-skip_image_checks-Set: y
 #
 # X-Env-Var-update_cmdline: y
-# X-Env-Var-update_cmdline-Desc: If y, automatically update /boot/firmware/cmdline.txt
-#  to enable the splash screen. If n, the splash screen will be installed but
-#  cmdline.txt must be manually configured. This is useful if using custom boot
+# X-Env-Var-update_cmdline-Desc: If y, automatically add the kernel command line
+#  arguments that enable the splash screen. If n, the splash screen will be
+#  installed but the kernel command line must be manually configured. This is useful if using custom boot
 #  configurations or alternative bootloaders.
 # X-Env-Var-update_cmdline-Required: n
 # X-Env-Var-update_cmdline-Valid: bool
@@ -63,15 +64,12 @@ mmdebstrap:
       # Run the configure-splash script inside the chroot
       echo "Configuring splash screen from $SPLASH_IMAGE" >&2
       
-      # Build command arguments based on boolean config values
-      if [ "$IGconf_splash_skip_image_checks" = "y" ] && [ "$IGconf_splash_update_cmdline" != "y" ]; then
+      # The kernel command line is contributed as a cmdline.d fragment by
+      # this layer's own hook, so configure-splash must not edit cmdline.txt
+      if [ "$IGconf_splash_skip_image_checks" = "y" ]; then
         chroot $1 /usr/bin/configure-splash $TEMP_IMAGE --skip-image-checks --no-cmdline
-      elif [ "$IGconf_splash_skip_image_checks" = "y" ]; then
-        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE --skip-image-checks
-      elif [ "$IGconf_splash_update_cmdline" != "y" ]; then
-        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE --no-cmdline
       else
-        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE
+        chroot $1 /usr/bin/configure-splash $TEMP_IMAGE --no-cmdline
       fi
       
       # Clean up temporary file

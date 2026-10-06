@@ -903,6 +903,7 @@ class LayerManager:
         if not assetdir:
             return []
         hooksdir = assetdir / 'hooks'
+        latedir = hooksdir / 'late'
         content = []
         for phase in self.PHASES:
             overlay = f'{phase}.overlay' if (assetdir / f'{phase}.overlay').is_dir() else None
@@ -910,8 +911,10 @@ class LayerManager:
                 overlay = next((n for n in self.CUSTOMIZE_OVERLAY_COMPAT
                                  if (assetdir / n).is_dir()), None)
             hooks = sorted(p.name for p in hooksdir.glob(f'{phase}*')) if hooksdir.is_dir() else []
-            if overlay or hooks:
-                content.append({'phase': phase, 'overlay': overlay, 'hooks': hooks})
+            late_hooks = sorted(p.name for p in latedir.glob(f'{phase}*')) if latedir.is_dir() else []
+            if overlay or hooks or late_hooks:
+                content.append({'phase': phase, 'overlay': overlay, 'hooks': hooks,
+                                'late_hooks': late_hooks})
         return content
 
     def get_layer_documentation_data(self, layer_name: str):
@@ -1321,6 +1324,12 @@ def _layer_main(args):
                 print("Hooks:")
                 for p in hook_phases:
                     print(f"  - {p['phase']}: {', '.join(p['hooks'])}")
+
+            late_phases = [p for p in phases if p['late_hooks']]
+            if late_phases:
+                print("Late Hooks:")
+                for p in late_phases:
+                    print(f"  - {p['phase']}: {', '.join(p['late_hooks'])}")
 
             mmdebstrap = manager._get_mmdebstrap_config(layer_name, key=lkey)
             if mmdebstrap:

@@ -35,12 +35,6 @@ EOF
 /persistent/log/journal  /var/log/journal  none  bind,x-systemd.requires-mounts-for=/persistent/log/journal,x-systemd.after=persistent.mount  0  0
 EOF
       ;;
-   BOOT)
-      sed -i "s|root=[^ ]*|root=/dev/disk/by-slot/active/system|" "$IMAGEMOUNTPATH/cmdline.txt"
-      case $IGconf_image_rootfs_type in
-         erofs) sed -i 's|fsck\.repair=yes||g' "$IMAGEMOUNTPATH/cmdline.txt" ;;
-      esac
-      ;;
    *)
       ;;
 esac

@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# Assemble the kernel command line from the cmdline.d fragments every layer
+# provides for linux-base
+
+set -eu
+
+out="$1/etc/kernel/cmdline"
+tokens=()
+
+
+# -glob removes every earlier arg matching the glob
+# +arg or just arg, appends it unless already present
+apply_fragment() {
+   local frag=$1 tok pat t
+   local -a lines args keep
+
+   mapfile -t lines < "$frag"
+   (( ${#lines[@]} <= 1 )) || die "cmdline: $frag: fragment must be a single line"
+
+   read -ra args <<< "${lines[0]:-}"
+   for tok in "${args[@]}"; do
+      case $tok in
+         -*)
+            pat=${tok#-}
+            [[ -n $pat ]] || die "cmdline: $frag: '-' with nothing to remove"
+            keep=()
+            for t in "${tokens[@]}"; do
+               [[ $t == $pat ]] || keep+=("$t")
+            done
+            tokens=("${keep[@]}")
+            ;;
+         *)
+            tok=${tok#+}
+            [[ -n $tok ]] || die "cmdline: $frag: '+' with nothing to add"
+            for t in "${tokens[@]}"; do
+               [[ $t == "$tok" ]] && continue 2
+            done
+            tokens+=("$tok")
+            ;;
+      esac
+   done
+}
+
+
+foreach_dropin "$LAYER_NAME" "$LAYER_VERSION" cmdline.d apply_fragment
+
+
+if (( ! ${#tokens[@]} )); then
+   exit 0
+fi
+
+
+mkdir -p "${out%/*}"
+printf '%s\n' "${tokens[*]}" > "$out"
+msg "cmdline: $(< "$out")"
