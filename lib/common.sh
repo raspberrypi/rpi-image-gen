@@ -110,8 +110,10 @@ runenv() {
     # convert to kv
     local -a env_args
     while IFS='=' read -r k v; do
+       v=${v#\"}
+       v=${v%\"}
        env_args+=("$k=$v")
-    done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;s/"//g' "$file")
+    done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "$file")
 
     if [[ $safe -eq 1 ]]; then
        runsafe "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
