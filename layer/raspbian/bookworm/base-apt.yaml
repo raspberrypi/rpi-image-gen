@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: raspbian-bookworm-armhf
 # X-Env-Layer-Category: distribution
 # X-Env-Layer-Desc: Raspbian Bookworm apt base for armhf.
-# X-Env-Layer-Version: 3.0.0
+# X-Env-Layer-Version: 3.0.1
 # X-Env-Layer-Requires: locale-base
 # X-Env-Layer-Provides: debian-base
 # METAEND
@@ -12,6 +12,7 @@ mmdebstrap:
     - armhf
   mode: auto
   variant: apt
+  suite: bookworm
   mirrors:
     - ${IGTOP}/templates/debian/apt/raspbian-bookworm.sources
   aptopts:
