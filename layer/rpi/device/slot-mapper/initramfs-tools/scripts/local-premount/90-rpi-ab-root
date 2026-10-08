@@ -7,10 +7,11 @@ case $1 in
 esac
 
 . /scripts/functions
+. /scripts/local
 
-# Set root on active slot
+# Wait for root on the active slot
 path=/dev/disk/by-slot/active/system
-if [ ! -b "$path" ]; then
+if ! local_device_setup "$path" "AB system slot" false; then
    msg="FATAL: AB missing $path - rebooting"
    if [ -w /dev/kmsg ]; then
       echo "$msg" > /dev/kmsg 2>/dev/null || :
@@ -20,4 +21,3 @@ if [ ! -b "$path" ]; then
 fi
 
 echo "ROOT=$path" >> /conf/param.conf
-log_success_msg "AB: delegated $path"
