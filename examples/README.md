@@ -17,11 +17,11 @@ device:
 
 # If the image supports SSH access, and a password has been specified, SSH login will be possible for that user.
 # To lock that down by enforcing SSH public key authentication with a known key only, and to prevent other login routes
-$ rpi-image-gen build <args> -- 'IGconf_ssh_pubkey_user1=$(< ~/.ssh/id_rsa.pub)' IGconf_ssh_pubkey_only=y
+$ rpi-image-gen build <args> -- "IGconf_ssh_pubkey_user1=$(< ~/.ssh/id_rsa.pub)" IGconf_ssh_pubkey_only=y
 
 # ..or via config file
 ssh:
-  pubkey_user1: $(< ${HOME}/.ssh/id_rsa.pub)
+  pubkey_user1: $(cat ${HOME}/.ssh/id_rsa.pub)
   pubkey_only: y
 ```
 Obviously, storing passwords in cleartext is incredibly bad practice. The above serves as demonstration only.
