@@ -176,6 +176,25 @@ run_test "dryconfig15 - explicit disksig" \
     0 \
     "Configuration should accept a non-zero disk signature"
 
+# Every demo value in $1 must reach runner hooks as configured
+check_hook_values() {
+    local cfg=$1 bdir name want
+    bdir=$(printf 'n\n' | $IG build -c "$cfg" -I 2>&1 |
+           sed -n 's/^IGconf_sys_bootstrapdir *: *//p' | head -n1)
+    test -n "$bdir" || return 1
+    while IFS= read -r -d '' name && IFS= read -r -d '' want; do
+        [ "$( . "${IGTOP}/lib/common.sh" && runenv "$bdir/final.env" printenv "IGconf_demo_${name}")" = "$want" ] ||
+            { echo "$name"; return 1; }
+    done < <(python3 -c 'import sys,yaml
+for k,v in yaml.safe_load(open(sys.argv[1]))["demo"].items():
+    sys.stdout.write(f"{k}\0{v}\0")' "$cfg")
+}
+
+run_test "dryconfig16 - quoted values" \
+    "check_hook_values ${SRC}/config/quoted-values.yaml" \
+    0 \
+    "Values containing quotes should reach runner hooks as configured"
+
 print_summary
 exit 0
 

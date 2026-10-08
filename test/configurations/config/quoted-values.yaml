@@ -1,0 +1,16 @@
+# Values runner hooks must receive as configured
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: quoted-values-test
+
+layer:
+  base: trixie-minbase
+
+demo:
+  json: '{"product":"kiosk","tags":["a b","c"]}'
+  setenv: 'systemd.setenv=X="a b"'
+  mixed: 'say "it''s fine"'
+  trailingeq: 'abc='
