@@ -1,0 +1,17 @@
+#!/bin/sh
+. /etc/default/kiosk
+
+# Throwaway profile. XDG_RUNTIME_DIR is a per-user tmpfs which logind removes
+# at logout, and mktemp gives each session a fresh profile even if the last
+# session's runtime directory hasn't been removed yet.
+profile=$(mktemp -d "${XDG_RUNTIME_DIR:?}/chromium.XXXXXX")
+
+exec /usr/bin/cage -- /usr/bin/chromium "$KIOSK_URL" \
+   --user-data-dir="$profile" \
+   --disk-cache-size=67108864 \
+   --kiosk \
+   --noerrdialogs \
+   --disable-infobars \
+   --no-first-run \
+   --start-maximized \
+   --password-store=basic
