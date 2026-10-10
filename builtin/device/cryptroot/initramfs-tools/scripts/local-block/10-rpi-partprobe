@@ -1,0 +1,26 @@
+#!/bin/sh
+
+PREREQ=""
+
+prereqs() {
+   echo "$PREREQ"
+}
+
+case $1 in
+   prereqs)
+      prereqs
+      exit 0
+      ;;
+esac
+
+. /scripts/functions
+
+. /conf/conf.d/rpi-cryptroot
+
+# Called repeatedly while waiting for a block device
+for dev in ${PARTPROBE_DEVICES-}; do
+   [ -e "/dev/mapper/${dev}" ] || continue
+   set -- /dev/mapper/${dev}p[0-9]*
+   [ -e "$1" ] && continue
+   kpartx -av -p p "/dev/mapper/${dev}" && udevadm settle
+done
