@@ -1,60 +1,99 @@
-# Debian systemd-networkd/systemd-resolved Network
+# Debian systemd-networkd / systemd-resolved Network (v3-net-config)
 
-This example demonstrates systemd-networkd policy files with resolver behavior from systemd-resolved.
+Static wired networking as a plain systemd-networkd unit, with DNS handled by
+systemd-resolved. In this directory it is example number 3 (v3).
 
-In this repository, it is referred to as version 3 (v3).
+## What the Layer Does
 
-## When to Use
+- Installs no packages. `trixie-minbase` already enables systemd-networkd and
+  systemd-resolved through the `systemd-net-min` and `systemd-resolved`
+  layers.
+- Overwrites `/etc/systemd/network/01-eth0.network`. `rpi-device-base`
+  installs that file with `DHCP=yes`; writing the same filename replaces it
+  with the static configuration. Keeping the `01-` prefix matters, because
+  networkd applies the first matching unit in filename order.
 
-1. Personal home: strong option for headless systems and low-overhead server nodes.
-2. Small business: good for standardized server and appliance profiles.
-3. Large enterprise: good when service-level control, deterministic unit files, and auditability are required.
+The layer runs after the device layer and after `systemd-net-min`
+(`X-Env-Layer-AfterProvider: device,network-activator`), so the overwrite is
+guaranteed to happen last.
 
-The .network file naming model uses priority ordering (for example, 01-eth0.network). Lower numbers are applied first.
+## Generated File (defaults)
 
-Choose one networking stack per image whenever possible.
+`/etc/systemd/network/01-eth0.network`:
+
+```ini
+[Match]
+Name=eth0
+
+[Link]
+RequiredForOnline=yes
+
+[Network]
+DHCP=no
+IPv6AcceptRA=no
+Address=192.168.0.72/24
+Gateway=192.168.0.1
+DNS=192.168.0.1
+```
+
+Setting `net.addr6` adds a second `Address=` line and, if `net.gw6` is set, a
+second `Gateway=`. Each entry in `net.dns` becomes its own `DNS=` line. The
+exact file for the defaults is checked in under
+[deb13-systemd-resolved/etc/](deb13-systemd-resolved/etc/).
+
+Notes on the keys:
+
+- `IPv6AcceptRA=no` stops the interface picking up a SLAAC address from
+  router advertisements, so addressing stays fully static. Remove it if you
+  want SLAAC alongside the static IPv4 address.
+- `RequiredForOnline=yes` is the default for managed links and is written out
+  only to make the intent explicit: `network-online.target` waits for this
+  interface.
 
 ## Resolver Model
 
-With systemd-resolved enabled, /etc/resolv.conf is typically managed as a symlink to a runtime or generated resolver path. Validate which mode is active in your built image.
+The `DNS=` servers are per-link settings consumed by systemd-resolved.
+`/etc/resolv.conf` in the image is the stub symlink to
+`/run/systemd/resolve/stub-resolv.conf`, so applications query resolved on
+`127.0.0.53` and resolved forwards to the servers listed here. Do not list
+`127.0.0.1` unless the image also runs a local resolver on port 53.
 
-## Configuration Example (mmdebstrap layer hook)
+## Variables
+
+See the table in [README.md](README.md#using-an-example). Example config:
 
 ```yaml
-customize-hooks:
-  - |
-    install -d "$1/etc/systemd/network"
-    cat > "$1/etc/systemd/network/01-eth0.network" <<-EOF
-    [Match]
-    Name=eth0
+layer:
+  base: trixie-minbase
+  network: v3-net-config
 
-    [Network]
-    DHCP=no
-    Address=192.168.0.72/24
-    Gateway=192.168.0.1
-    DNS=127.0.0.1
-    DNS=1.1.1.1
-    DNS=8.8.8.8
-    IPv6AcceptRA=no
-    LinkLocalAddressing=no
-    EOF
+net:
+  addr: 10.0.0.5/24
+  gw: 10.0.0.1
+  dns: 10.0.0.1 1.1.1.1
 ```
 
-## Validation and Operations
+## When to Use
 
-1. Verify unit file syntax with: systemd-analyze verify /etc/systemd/network/*.network
-2. Check link and route status with: networkctl status
-3. Check resolver state with: resolvectl status
-4. Confirm resolver symlink target with: ls -l /etc/resolv.conf
+- Headless hosts and appliances built on this base: it is the smallest change
+  from what `trixie-minbase` already does.
+- Environments that value deterministic unit files and `systemd-analyze`
+  verification.
+- Desktops usually run NetworkManager instead; see the built-in
+  `network-manager` layer.
 
-## Standards and References
+## Validate on the Device
 
-1. network unit file format: man 5 systemd.network
-2. resolver service behavior: man 8 systemd-resolved
-3. resolver file semantics: man 5 resolv.conf
-4. private IPv4 addressing guidance: RFC 1918
-5. IPv6 SLAAC behavior: RFC 4862
+```bash
+systemd-analyze verify /etc/systemd/network/*.network
+networkctl status eth0
+ip route
+resolvectl status eth0
+ls -l /etc/resolv.conf
+```
 
-## Notes
+## References
 
-Address, gateway, and DNS values must be adapted to your environment. Using 127.0.0.1 as the first DNS server is appropriate only when a local resolver is configured on the same host.
+- `systemd.network(5)`, `networkctl(1)`
+- `systemd-resolved(8)`, `resolvectl(1)`, `resolv.conf(5)`
+- RFC 1918 private IPv4 addressing

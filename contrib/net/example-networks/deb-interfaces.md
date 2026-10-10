@@ -1,51 +1,90 @@
-# Debian Interfaces Network
+# Debian Interfaces Network (v1-net-config)
 
-This example demonstrates ifupdown-style networking using /etc/network/interfaces.
+Static wired networking with ifupdown, the classic Debian stack driven by
+`/etc/network/interfaces`. In this directory it is example number 1 (v1).
 
-In this repository, it is referred to as version 1 (v1).
+## What the Layer Does
+
+- Installs the `ifupdown` package and enables `networking.service`.
+- Writes `/etc/network/interfaces` with a static stanza for `net.iface`.
+- Replaces `/etc/systemd/network/01-eth0.network`, which `rpi-device-base`
+  installs with `DHCP=yes`, with a unit that marks the interface
+  `Unmanaged=yes`. systemd-networkd stays running for other interfaces but
+  leaves this one to ifupdown.
+
+The layer runs after the device layer and after `systemd-net-min`
+(`X-Env-Layer-AfterProvider: device,network-activator`), which is what makes
+the replacement reliable.
+
+DNS still works through systemd-resolved: Debian's ifupdown ships
+`/etc/network/if-up.d/resolved`, which pushes `dns-nameservers` from the
+stanza to resolved when the interface comes up.
+
+## Generated File (defaults)
+
+`/etc/network/interfaces`:
+
+```text
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+    address 192.168.0.72/24
+    gateway 192.168.0.1
+    dns-nameservers 192.168.0.1
+```
+
+`/etc/systemd/network/01-eth0.network`:
+
+```ini
+[Match]
+Name=eth0
+
+[Link]
+Unmanaged=yes
+```
+
+Setting `net.addr6` adds an `iface eth0 inet6 static` stanza with that address
+and, if `net.gw6` is set, its gateway. The exact files for the defaults are
+checked in under [deb-interfaces/etc/](deb-interfaces/etc/).
+
+## Variables
+
+See the table in [README.md](README.md#using-an-example). Example config:
+
+```yaml
+layer:
+  base: trixie-minbase
+  network: v1-net-config
+
+net:
+  addr: 10.0.0.5/24
+  gw: 10.0.0.1
+  dns: 10.0.0.1 1.1.1.1
+```
 
 ## When to Use
 
-1. Personal home: good when you want a minimal, static configuration with low complexity.
-2. Small business: useful for fixed-role hosts (DNS, firewall, appliance-style nodes).
-3. Large enterprise: generally better for specific static-use systems than broad desktop fleets.
+- Headless and appliance-style hosts where a short, readable file is the goal.
+- Hosts administered by people who already know ifupdown.
+- Less suitable for desktops, which expect NetworkManager.
 
-Choose one networking stack per image. Avoid mixing stacks unless you have a clearly documented reason and test coverage.
+## Validate on the Device
 
-## Configuration Example (mmdebstrap layer hook)
-
-```yaml
-setup-hooks:
-  - |
-    # Default network parameters (can be overridden by caller environment)
-    NET_ADDR="192.168.0.72/24"
-    NET_GW="192.168.0.1"
-    NAMESERVER="127.0.0.1"
-    IPV6_ADDR="2001:678:e68:f000::72/64"
-
-    install -d "$1/etc/network"
-    cat > "$1/etc/network/interfaces" <<-EOF
-    auto eth0
-    iface eth0 inet static
-        address ${NET_ADDR}
-        gateway ${NET_GW}
-        dns-nameservers ${NAMESERVER}
-    EOF
+```bash
+ifquery --list
+ifquery eth0
+networkctl status eth0        # should report "unmanaged"
+ip addr show eth0
+ip route
+resolvectl status eth0
 ```
 
-## Validation and Operations
+## References
 
-1. Confirm syntax and interface declarations with: ifquery --list and ifquery eth0
-2. Confirm routing with: ip route
-3. Confirm resolver path with: resolvectl status or cat /etc/resolv.conf
-
-## Standards and References
-
-1. ifupdown file format: man 5 interfaces
-2. resolver file behavior: man 5 resolv.conf
-3. private IPv4 addressing guidance: RFC 1918
-4. IPv6 ULA guidance: RFC 4193
-
-## Notes
-
-Address, gateway, and DNS values must be adapted to your environment. Using 127.0.0.1 as the first DNS server is appropriate only if a local resolver is actually present on the host.
+- `interfaces(5)`, `ifup(8)`
+- `systemd.network(5)` for `Unmanaged=`
+- RFC 1918 private IPv4 addressing
