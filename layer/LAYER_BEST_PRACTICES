@@ -66,4 +66,22 @@ customize-hooks:
      Missing environment variables (that's runtime, not syntax)
      Invalid environment values (that's runtime validation)
 
-4.
+4. On merged-usr Debian systems, write dpkg path-exclude/path-include rules
+   against the canonical installed path rather than blindly copying the path
+   shown by `dpkg -c` for a package.
+
+   For example, firmware shipped in a .deb as /lib/firmware may be
+   canonicalised to /usr/lib/firmware before dpkg evaluates path filters.
+   A rule such as:
+
+     - path-exclude=/lib/firmware/*
+
+   can therefore match nothing on a merged-usr target. Verify the installed
+   path (for example with `dpkg -L <package>` in a representative build) and
+   use that path in the rule:
+
+     - path-exclude=/usr/lib/firmware/*
+
+   This is especially important for image-size trimming rules, because a
+   non-matching exclude is silent and can leave substantially more content in
+   the image than intended.
