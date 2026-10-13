@@ -1,0 +1,3 @@
+
+# Automatically load overlays for detected cameras
+camera_auto_detect=1
