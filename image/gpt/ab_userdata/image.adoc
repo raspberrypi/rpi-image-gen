@@ -102,7 +102,7 @@ Shared data is stored under `/persistent/shared/`, mirroring the full path hiera
             └── myapp/    <-- bind-mounted over /var/lib/myapp
 ----
 
-Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from or different to the destination. This means an OTA update can deliver new or updated shared application data simply by including it in the rootfs - no separate data partition update is required.
+Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.
 
 
 == Slot Selection (run-time)
