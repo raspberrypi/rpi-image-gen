@@ -649,8 +649,7 @@ class LayerManager:
         for layer_name in build_order:
             layer_info = self.get_layer_info(layer_name)
             if layer_info:
-                for required_provider in (layer_info.get('provider_requires', []) +
-                                          layer_info.get('after_provider', [])):
+                for required_provider in layer_info.get('provider_requires', []):
                     if required_provider not in self.provider_index:
                         raise ValueError(
                             f"Layer '{layer_name}' requires provider '{required_provider}' "
@@ -669,7 +668,7 @@ class LayerManager:
                     cap_to_layer[cap] = layer_name
 
         # Collect AfterProvider ordering, store the capability token for diagnostics.
-        # Missing providers are skipped - _validate_provider_requirements already checked
+        # A missing provider imposes no ordering - presence is RequiresProvider's job
         rp_edges: Dict[Tuple[str, str], str] = {}  # (provider, consumer) -> cap
         for layer_name in build_order:
             layer_info = self.get_layer_info(layer_name)
