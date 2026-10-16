@@ -144,7 +144,7 @@ Generators that use `argparse` or `getopt` should parse from `argv[3:]`, as `arg
 
 `X-Env-Layer-RequiresProvider`: Capabilities that must exist in the build (validation only, no ordering)
 
-`X-Env-Layer-AfterProvider`: Capabilities that must exist and must precede this layer in the build
+`X-Env-Layer-AfterProvider`: Capabilities that, if present, must precede this layer in the build (ordering only, no validation)
 
 `X-Env-Layer-Conflicts`: Layers that cannot be used together with this one
 
@@ -227,7 +227,7 @@ All fields share the same capability contract model:
 
 `X-Env-Layer-RequiresProvider` declares capabilities that must be present somewhere in the build. The engine validates their existence but imposes no ordering constraint - use this when a layer is semantically tied to a capability but its position in the build plan is already determined by its `Requires` relationships, when variable resolution handles the dependency lazily, or when position in the build plan is not important.
 
-`X-Env-Layer-AfterProvider` declares capabilities that must be present AND must precede this layer in the build plan. Use this when the provider's position has a structural effect on the build - for example, APT mirror ordering where a Debian distribution foundation layer must appear first in the build order so that mmdebstrap derives the correct native architecture when bdebstrap merges the YAML, or when hooks provided by one layer must execute before hooks from another.
+`X-Env-Layer-AfterProvider` declares capabilities whose provider, if present, must precede this layer in the build plan. A missing provider is not an error - the constraint is simply not applied. To require a provider and be ordered after it, declare it in both `RequiresProvider` and `AfterProvider`. Use this when the provider's position has a structural effect on the build.
 
 Both fields enforce uniqueness: only one layer in the build may provide a given capability token.
 
