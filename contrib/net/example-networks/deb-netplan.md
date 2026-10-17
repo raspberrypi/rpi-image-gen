@@ -15,7 +15,8 @@ systemd-networkd. In this directory it is example number 2 (v2).
   the first matching unit in filename order, so the base file would otherwise
   win.
 
-The layer runs after the device layer and after `systemd-net-min`
+The layer requires a device layer and a network activator to be in the build
+(`X-Env-Layer-RequiresProvider`) and runs after both
 (`X-Env-Layer-AfterProvider: device,network-activator`), so the deletion is
 guaranteed to happen after the file is created.
 

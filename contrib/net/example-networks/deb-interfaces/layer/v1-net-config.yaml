@@ -2,10 +2,10 @@
 # X-Env-Layer-Name: v1-net-config
 # X-Env-Layer-Desc: Example - static wired networking with ifupdown via
 #  /etc/network/interfaces. Takes the interface away from systemd-networkd.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Category: connectivity
 # X-Env-Layer-Provides: wired-static-config
-# X-Env-Layer-RequiresProvider: systemd
+# X-Env-Layer-RequiresProvider: systemd,device,network-activator
 # X-Env-Layer-AfterProvider: device,network-activator
 # X-Env-Layer-Conflicts: v2-net-config,v3-net-config
 #
