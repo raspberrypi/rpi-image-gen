@@ -12,7 +12,8 @@ Static wired networking with ifupdown, the classic Debian stack driven by
   `Unmanaged=yes`. systemd-networkd stays running for other interfaces but
   leaves this one to ifupdown.
 
-The layer runs after the device layer and after `systemd-net-min`
+The layer requires a device layer and a network activator to be in the build
+(`X-Env-Layer-RequiresProvider`) and runs after both
 (`X-Env-Layer-AfterProvider: device,network-activator`), which is what makes
 the replacement reliable.
 
