@@ -1,0 +1,6 @@
+#!/bin/sh
+# Kiosk users get Chromium in Cage, everyone else the Raspberry Pi desktop
+if id -nG | grep -qw kiosk; then
+   exec /usr/local/bin/kiosk-session
+fi
+exec /usr/bin/labwc-pi

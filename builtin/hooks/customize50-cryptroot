@@ -42,7 +42,7 @@ if [ -d "$1/etc/initramfs-tools" ]; then
    installer=install-initramfs-tools-debian.sh
 
 elif [ -d "$1/usr/lib/dracut" ]; then
-   pkgs+=(systemd-cryptsetup cryptsetup-passphrase-agent)
+   pkgs+=(systemd-cryptsetup cryptsetup-passphrase-agent rpifwcrypto)
    installer=install-dracut.sh
 
 else

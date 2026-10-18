@@ -150,6 +150,51 @@ run_test "dryconfig10 - zero2w" \
     0 \
     "Configuration should parse correctly"
 
+run_test "dryconfig11 - partuuid w/clear pmap" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_devid_scheme=partuuid IGconf_image_pmap=clear" \
+    0 \
+    "Configuration should parse successfully"
+
+run_test "dryconfig12 - partuuid w/crypt pmap" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_devid_scheme=partuuid IGconf_image_pmap=crypt" \
+    1 \
+    "Configuration should reject partuuid with an encrypted root"
+
+run_test "dryconfig13 - by-slot w/crypt pmap" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_devid_scheme=by-slot IGconf_image_pmap=crypt" \
+    0 \
+    "Configuration should parse successfully"
+
+run_test "dryconfig14 - zero disksig" \
+    'out=$(printf "n\n" | $IG build -c trixie-minbase.yaml -I -- IGconf_image_disksig=0x00000000 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "does not match pattern"' \
+    0 \
+    "Configuration should reject an all-zero disk signature"
+
+run_test "dryconfig15 - explicit disksig" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_disksig=0x0000000a" \
+    0 \
+    "Configuration should accept a non-zero disk signature"
+
+# Every demo value in $1 must reach runner hooks as configured
+check_hook_values() {
+    local cfg=$1 bdir name want
+    bdir=$(printf 'n\n' | $IG build -c "$cfg" -I 2>&1 |
+           sed -n 's/^IGconf_sys_bootstrapdir *: *//p' | head -n1)
+    test -n "$bdir" || return 1
+    while IFS= read -r -d '' name && IFS= read -r -d '' want; do
+        [ "$( . "${IGTOP}/lib/common.sh" && runenv "$bdir/final.env" printenv "IGconf_demo_${name}")" = "$want" ] ||
+            { echo "$name"; return 1; }
+    done < <(python3 -c 'import sys,yaml
+for k,v in yaml.safe_load(open(sys.argv[1]))["demo"].items():
+    sys.stdout.write(f"{k}\0{v}\0")' "$cfg")
+}
+
+run_test "dryconfig16 - quoted values" \
+    "check_hook_values ${SRC}/config/quoted-values.yaml" \
+    0 \
+    "Values containing quotes should reach runner hooks as configured"
+
 print_summary
 exit 0
 

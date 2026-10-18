@@ -1,0 +1,33 @@
+From cade811d8096621da5360921b04aa396272214e3 Mon Sep 17 00:00:00 2001
+From: Matthew Lear <matthew.lear@raspberrypi.com>
+Date: Tue, 17 Mar 2026 05:24:48 -0700
+Subject: [PATCH] erofs-utils: lib: guard gzran zlib.h inclusion
+
+gzran.c unconditionally includes zlib.h which doesn't compile on
+systems without zlib.
+
+Signed-off-by: Matthew Lear <matthew.lear@raspberrypi.com>
+Link: https://lore.kernel.org/r/CAPrOGNBjaSxMRnwpcear77Tk_6LnAhREA6aw-P1pAz4oMkdenA@mail.gmail.com
+Signed-off-by: Gao Xiang <hsiangkao@linux.alibaba.com>
+---
+ lib/gzran.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/gzran.c b/lib/gzran.c
+index dffb20a..bf99796 100644
+--- a/lib/gzran.c
++++ b/lib/gzran.c
+@@ -6,9 +6,9 @@
+ #include "erofs/err.h"
+ #include "liberofs_gzran.h"
+ #include <stdlib.h>
+-#include <zlib.h>
+ 
+ #ifdef HAVE_ZLIB
++#include <zlib.h>
+ struct erofs_gzran_cutpoint {
+ 	u8	window[EROFS_GZRAN_WINSIZE];	/* preceding 32K of uncompressed data */
+ 	u64	outpos;			/* corresponding offset in uncompressed data */
+-- 
+2.47.3
+

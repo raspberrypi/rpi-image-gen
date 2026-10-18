@@ -1,16 +1,16 @@
 # METABEGIN
 # X-Env-Layer-Name: rpi-boot-firmware
 # X-Env-Layer-Category: firmware
-# X-Env-Layer-Desc: Raspberry Pi boot firmware for all devices
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Desc: Raspberry Pi boot firmware support infrastructure and
+#  configuration for all devices
+# X-Env-Layer-Version: 1.1.0
+# X-Env-Layer-Requires: rpi-boot-bsp
 #
 # X-Env-VarRequires: RPI_TEMPLATES
 # X-Env-VarRequires-Valid: string
 # METAEND
 ---
 mmdebstrap:
-  packages:
-    - raspi-firmware
   customize-hooks:
     - mkdir -p $1/boot/firmware
     - ln -sf firmware/overlays $1/boot/overlays

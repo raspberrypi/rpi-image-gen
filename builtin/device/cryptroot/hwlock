@@ -1,0 +1,19 @@
+#!/bin/sh
+# Apply hw crypto locking that holds until reboot
+# Usage: hwlock <spec> ...
+#   <key-id>:<flag>[,<flag>...]   rpi-fw-crypto flags
+for spec in "$@"; do
+   id=${spec%%:*}
+
+   flags=
+   rest=${spec#*:},
+   while [ -n "$rest" ]; do
+      flags="${flags:+$flags }${rest%%,*}"
+      rest=${rest#*,}
+   done
+
+   rpi-fw-crypto set-key-status "$id" $flags > /dev/null ||
+      echo "hwlock: key $id: could not set: $flags" >&2
+done
+
+exit 0
