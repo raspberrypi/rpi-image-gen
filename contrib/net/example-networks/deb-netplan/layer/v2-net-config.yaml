@@ -2,10 +2,10 @@
 # X-Env-Layer-Name: v2-net-config
 # X-Env-Layer-Desc: Example - static wired networking with Netplan rendered
 #  by systemd-networkd via /etc/netplan/00-installer.yaml.
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Category: connectivity
 # X-Env-Layer-Provides: wired-static-config
-# X-Env-Layer-RequiresProvider: systemd-networkd
+# X-Env-Layer-RequiresProvider: systemd-networkd,device,network-activator
 # X-Env-Layer-AfterProvider: device,network-activator
 # X-Env-Layer-Conflicts: v1-net-config,v3-net-config
 #

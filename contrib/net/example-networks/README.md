@@ -41,10 +41,14 @@ that unit, not just drop a file into place:
 - `v3-net-config` overwrites `01-eth0.network` with the static configuration.
   Same filename, so it simply replaces the DHCP unit.
 
-All three declare `X-Env-Layer-AfterProvider: device,network-activator`, which
-makes rpi-image-gen order them after the device layer and after
-`systemd-net-min`, so the replacement is deterministic rather than a happy
-accident of plan order.
+All three declare `device,network-activator` in both
+`X-Env-Layer-RequiresProvider` and `X-Env-Layer-AfterProvider`.
+`RequiresProvider` makes the build fail unless a device layer and a network
+activator (here `systemd-net-min`) are present; `AfterProvider` orders the
+example after them, so the replacement is deterministic rather than a happy
+accident of plan order. `AfterProvider` alone is ordering-only — it no longer
+fails the build when the provider is missing — which is why both fields are
+needed.
 
 ## One Stack per Image
 

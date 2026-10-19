@@ -13,7 +13,8 @@ systemd-resolved. In this directory it is example number 3 (v3).
   with the static configuration. Keeping the `01-` prefix matters, because
   networkd applies the first matching unit in filename order.
 
-The layer runs after the device layer and after `systemd-net-min`
+The layer requires a device layer and a network activator to be in the build
+(`X-Env-Layer-RequiresProvider`) and runs after both
 (`X-Env-Layer-AfterProvider: device,network-activator`), so the overwrite is
 guaranteed to happen last.
 
