@@ -1,0 +1,4 @@
+
+[pi5]
+BOOT_UART=1
+uart_2ndstage=1
