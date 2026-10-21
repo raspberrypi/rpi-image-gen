@@ -1,5 +1,6 @@
 PKG_NAME := erofs-utils
-PKG_VER := 1.9
+EROFS_UTILS_VER ?= 1.9.4
+PKG_VER := $(EROFS_UTILS_VER)
 PKG_BUILD_SCHEME := autotools
 PKG_DEPS := zstd util-linux
 PKG_CONFIGURE_OPTS := \
