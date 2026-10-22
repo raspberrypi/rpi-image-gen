@@ -309,6 +309,10 @@ prepare_build_config()
    # Build required host tools
    bootstrap_build_tools
 
+   # Layers can ship host executables
+   PLAN="${ctx[LAYER_PLAN]}" foreach_layer_in_plan prepend_layer_paths
+   export PATH
+
    # Seed bdebstrap env with sane defaults
    _bdebstrap=()
    _bdebstrap+=( --force --env PATH="$PATH" )

@@ -379,6 +379,23 @@ foreach_layer_in_plan() {
 export -f foreach_layer_in_plan
 
 
+# prepend_layer_paths: foreach_layer_in_plan callback. Puts a layer's host
+# executables at the front of PATH:
+#   <stempath>.d/$DEB_BUILD_GNU_TYPE/bin   (built for this machine)
+#   <stempath>.d/host/bin                  (any machine)
+# in that order. Called in plan order, so a later layer's executables resolve
+# ahead of an earlier one, and every layer's before the system's.
+prepend_layer_paths() {
+   local _layer=$1 _stempath=$3 _dir
+   for _dir in "${_stempath}.d/host/bin" "${_stempath}.d/${DEB_BUILD_GNU_TYPE:?}/bin"; do
+      [[ -d $_dir ]] || continue
+      PATH="${_dir}:${PATH}"
+      msg "PATH: ${_layer} ${_dir}"
+   done
+}
+export -f prepend_layer_paths
+
+
 # foreach_dropin: calls callback for each file the plan's layers provide for a
 # target layer's drop-in directory, in plan order, then by file name, from:
 #   <stempath>.d/for/<target>[@X]/<dir>/
