@@ -66,22 +66,16 @@ customize-hooks:
      Missing environment variables (that's runtime, not syntax)
      Invalid environment values (that's runtime validation)
 
-4. On merged-usr Debian systems, write dpkg path-exclude/path-include rules
-   against the canonical installed path rather than blindly copying the path
-   shown by `dpkg -c` for a package.
+4. Match dpkgopts path-exclude/path-include rules to the paths recorded
+   in packages from the Debian suite used by the image. dpkg matches
+   package paths; merged-usr symlinks do not rewrite them.
 
-   For example, firmware shipped in a .deb as /lib/firmware may be
-   canonicalised to /usr/lib/firmware before dpkg evaluates path filters.
-   A rule such as:
+   For example, firmware-brcm80211 ships /lib/firmware/... in Bookworm
+   but /usr/lib/firmware/... in Trixie. A filter for /lib/firmware/*
+   matches the Bookworm package even on merged-usr systems, but cannot
+   match Trixie's /usr/lib/firmware/* entries.
 
-     - path-exclude=/lib/firmware/*
-
-   can therefore match nothing on a merged-usr target. Verify the installed
-   path (for example with `dpkg -L <package>` in a representative build) and
-   use that path in the rule:
-
-     - path-exclude=/usr/lib/firmware/*
-
-   This is especially important for image-size trimming rules, because a
-   non-matching exclude is silent and can leave substantially more content in
-   the image than intended.
+   Inspect the target suite's package file list (for example, with
+   `dpkg -L firmware-brcm80211` in a matching build environment) before
+   choosing filters. A non-matching path-exclude is silently ignored,
+   so check the built image to verify the intended files were removed.
