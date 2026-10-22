@@ -4,7 +4,7 @@
 # X-Env-Layer-Desc: Linux kernel base properties. Provides kernel level
 #  attributes that may influence downstream image creation in order to
 #  optimise for the target system.
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Version: 2.0.0
 #
 # X-Env-VarPrefix: linux
 #

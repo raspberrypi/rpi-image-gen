@@ -14,4 +14,9 @@ install() {
    inst "$systemdsystemunitdir/cryptsetup-passphrase-agent.path"
 
    $SYSTEMCTL -q --root "$initdir" add-wants sysinit.target cryptsetup-passphrase-agent.path
+
+   inst_multiple rpi-fw-crypto
+   inst_script /usr/libexec/rpi-cryptroot/hwlock
+   inst_simple "$moddir/rpi-hwlock.service" "$systemdsystemunitdir/rpi-hwlock.service"
+   $SYSTEMCTL -q --root "$initdir" add-wants initrd.target rpi-hwlock.service
 }

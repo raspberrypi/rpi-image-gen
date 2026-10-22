@@ -146,6 +146,7 @@ The phase name is the only key runner works from - it is the prefix every hook a
 . **Per-layer**, in build plan order - each layer's overlay for this phase, then that layer's own `<phase>*` hooks
 . **Source tree overlays** for this phase
 . **Source tree and built-in hooks** for this phase
+. **Per-layer late hooks**, in build plan order - each layer's own `late/<phase>*` hooks (see <<late-hooks>>)
 
 Consequently a phase needs no special-casing to gain a hook or an overlay: shipping a file whose name starts with the phase, in the right place, is the whole of it.
 
@@ -177,14 +178,15 @@ A hook must not read from standard input. Runner passes the build's stdin throug
 
 === Hook Discovery
 
-For every phase, runner scans two kinds of location, always in this order:
+For every phase, runner scans three kinds of location, always in this order:
 
 . **Per-layer** - each layer's own `<layer-stem>.d/hooks/`, if present, in build-plan order. Where the layer also ships an overlay for this phase, that overlay is applied immediately before the layer's own hooks for it.
 . **Tree/built-in**, unconditionally after every layer's per-layer hooks for this phase:
 .. Source tree (`SRCROOT/hooks`)
 .. Built-in (`IGROOT/builtin/hooks`)
+. **Per-layer late** - each layer's own `<layer-stem>.d/hooks/late/`, if present, in build-plan order, after everything above has completed for this phase. No overlay is applied.
 
-Runner scans for `<phase>*` hooks (eg `customize*`, `preimage05-do-something`) inside `hooks/` subdirectories at each location, executing matching hooks (alphanumeric basename) in lexicographic order - hence the numbered-prefix convention used throughout (`customize01-`, `essential01`, `cleanup50-apt-cache`, etc), which controls run order for multiple hooks at the same location and phase. Subdirectories aren't traversed; the file extension is ignored.
+Runner scans for `<phase>*` hooks (eg `customize*`, `preimage05-do-something`) inside `hooks/` subdirectories at each location, executing matching hooks (alphanumeric basename) in lexicographic order - hence the numbered-prefix convention used throughout (`customize01-`, `essential01`, `cleanup50-apt-cache`, etc), which controls run order for multiple hooks at the same location and phase. Subdirectories aren't traversed - `late/` is a location of its own. The file extension is ignored.
 
 A per-layer hook runs from its own directory, so anything else the layer ships must be reached through the environment runner provides it:
 
@@ -204,6 +206,26 @@ A per-layer hook runs from its own directory, so anything else the layer ships m
 |===
 
 A hook reading a template the layer ships alongside its YAML therefore writes `"$LAYER_DIR/genimage.cfg.in"` rather than relying on the working directory.
+
+[[late-hooks]]
+=== Late Hooks
+
+A layer's normal hooks for a phase run in build plan order, so a layer early in the plan cannot see what a later layer does in the same phase. Late hooks close that gap. A layer ships them in `<layer-stem>.d/hooks/late/`, named for the phase exactly as normal hooks are (eg `late/preimage10-assemble`).
+
+For a given phase, a late hook only runs after all of the following have completed for that phase:
+
+* every layer's overlay and normal hooks
+* the source tree overlays
+* the source tree and built-in hooks
+
+Late hooks then run layer by layer in build plan order, and in lexicographic order within a layer. They receive the same arguments and environment as the layer's normal hooks for the phase. There is no late equivalent for the source tree or built-in hook locations.
+
+This suits a layer that must collect something every layer may contribute to, such as a drop-in directory swept from each layer in the plan, and act on the complete set.
+
+A late hook sees everything produced before it runs: all of the above, plus the output of late hooks in layers earlier in the plan. It sees nothing from late hooks in layers after it. Therefore:
+
+* Anything meant for other layers to collect, such as a drop-in fragment, should be written by a normal hook, so that every late hook sees it.
+* A late hook that depends on another layer's late output should require that layer (`X-Env-Layer-Requires`), so that layer is guaranteed to come earlier in the plan.
 
 [[overlays]]
 === Overlays

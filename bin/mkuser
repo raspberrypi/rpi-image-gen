@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Provision local user account IGconf_device_user<n> in a chroot: account
+# creation, password, supplementary groups and, for user1 only, sudo access.
+# Settings are read from the IGconf_device_user<n>* variables declared by
+# device-user-credentials. Only user1 can ever be granted sudo.
+set -eu
+
+if [ $# -ne 2 ]; then
+   >&2 echo "mkuser <chroot_path> <n>"
+   exit 1
+fi
+
+root="$1"
+n="$2"
+
+if [ ! -d "$root" ]; then
+   >&2 echo "mkuser: dir '$root' is invalid"
+   exit 1
+fi
+
+case $n in
+   [1-9]) ;;
+   *) >&2 echo "mkuser: invalid user index '$n'"; exit 1 ;;
+esac
+
+eval "user=\${IGconf_device_user${n}}"
+eval "pass=\${IGconf_device_user${n}pass:-}"
+eval "passhash=\${IGconf_device_user${n}passhash:-}"
+eval "uid=\${IGconf_device_user${n}uid:-}"
+eval "gid=\${IGconf_device_user${n}gid:-}"
+eval "groups=\${IGconf_device_user${n}groups}"
+
+if [ "$n" = 1 ]; then
+   sudo="$IGconf_device_user1sudo"
+else
+   sudo=none
+fi
+
+
+# Account creation
+uid_arg=""
+gid_arg=""
+if [ -n "$uid" ]; then uid_arg="--uid $uid"; fi
+if [ -n "$gid" ]; then
+   gid_arg="--gid $gid"
+   if ! chroot "$root" getent group "$gid" >/dev/null 2>&1; then
+      chroot "$root" groupadd -g "$gid" "$user"
+   fi
+fi
+if ! chroot "$root" id -u "$user" >/dev/null 2>&1; then
+   chroot "$root" adduser --disabled-password --gecos "" $uid_arg $gid_arg "$user"
+fi
+
+
+# Password
+if [ -n "$passhash" ] ; then
+   printf '%s:%s\n' "$user" "$passhash" | chroot "$root" chpasswd -e
+elif [ -n "$pass" ] ; then
+   printf '%s:%s\n' "$user" "$pass" | chroot "$root" chpasswd
+fi
+
+
+# Group membership
+for grp in $(printf '%s' "$groups" | tr ',' ' '); do
+   chroot "$root" groupadd -f -r "$grp"
+   chroot "$root" adduser "$user" "$grp"
+done
+
+
+# sudo
+if [ "$sudo" = "nopasswd" ] &&
+   [ -z "$pass" ] &&
+   [ -z "$passhash" ]; then
+      >&2 echo "WARNING: user${n}sudo=nopasswd but no user${n} password is set."
+fi
+case "$sudo" in
+   nopasswd)
+      echo "$user ALL=(ALL) NOPASSWD: ALL" > "$root/etc/sudoers.d/010_rpi-nopasswd"
+      chroot "$root" adduser "$user" sudo
+      ;;
+   passwd)
+      echo "$user ALL=(ALL:ALL) ALL" > "$root/etc/sudoers.d/010_rpi-passwd"
+      chroot "$root" adduser "$user" sudo
+      ;;
+   none)
+      ;;
+esac

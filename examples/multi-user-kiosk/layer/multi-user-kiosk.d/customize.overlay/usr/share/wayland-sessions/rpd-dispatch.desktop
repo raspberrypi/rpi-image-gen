@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Raspberry Pi Desktop or Kiosk
+Comment=Chromium in cage for members of the kiosk group, otherwise the Raspberry Pi desktop
+Exec=/usr/local/bin/rpd-dispatch

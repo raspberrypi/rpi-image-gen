@@ -18,6 +18,8 @@ build:mke2fs:e2fsprogs
 build:grep
 build:rsync
 build:curl
+build::ca-certificates
+build:xz:xz-utils
 build:mtools
 build:pv
 build:mkfs.btrfs:btrfs-progs

@@ -1,0 +1,8 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-linux-base
+# X-Env-Layer-Category: kernel
+# X-Env-Layer-Desc: Raspberry Pi kernel base.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: linux-base
+# METAEND
+---

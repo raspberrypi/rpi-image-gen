@@ -1,0 +1,3 @@
+
+# Automatically load initramfs files, if found
+auto_initramfs=1

@@ -1,0 +1,3 @@
+
+# fw crypto lock permissions
+lock_device_private_key=1

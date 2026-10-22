@@ -1,0 +1,10 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-boot-bsp
+# X-Env-Layer-Category: firmware
+# X-Env-Layer-Desc: Raspberry Pi boot board support packages
+# X-Env-Layer-Version: 1.0.0
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - raspi-firmware
