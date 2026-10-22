@@ -55,6 +55,17 @@ See link:../execution/index.adoc#hooks[Hooks] and link:../execution/index.adoc#o
 
 A layer's generated documentation page lists any hooks, late hooks and overlays it actually ships, per phase.
 
+== Host Executables
+
+A layer may ship its own programs for use during the build, eg for its hooks:
+
+- **`<layer-stem>.d/host/bin/`**: Executables that run on any build machine, eg scripts.
+- **`<layer-stem>.d/<DEB_BUILD_GNU_TYPE>/bin/`**: Executables built for the build machine, eg `<layer-stem>.d/x86_64-linux-gnu/bin/`. These take precedence over `host/bin/`.
+
+Both are prepended to `PATH` for the whole build (ie global scope), with later layers in the build plan ahead of earlier ones.
+
+The same two directories under `<layer-stem>.d/self/` are prepended to `PATH` for the layer's own standalone hooks only. YAML hooks can't use them.
+
 [[for]]
 == Drop-ins for Other Layers
 

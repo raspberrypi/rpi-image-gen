@@ -148,6 +148,18 @@ layer_vars() {
    if [[ -d ${stempath}.d ]]; then
       _lvars+=( "LAYER_DOTD=${stempath}.d" )
    fi
+
+   # Private executables
+   local dir dirs=()
+   for dir in "${stempath}.d/self/${DEB_BUILD_GNU_TYPE:-}/bin" "${stempath}.d/self/host/bin"; do
+      [[ -d $dir ]] && dirs+=("$dir") || true
+   done
+   if (( ${#dirs[@]} )); then
+      local selfpath
+      selfpath=$(IFS=:; echo "${dirs[*]}")
+      _lvars+=( "PATH=${selfpath}:${PATH}" )
+      msg "runner: $layer [self PATH $selfpath]"
+   fi
 }
 
 
