@@ -7,12 +7,14 @@ set -eu
 deploy_dir=$1
 
 sde=$(< "${IGconf_target_dir}/SOURCE_DATE_EPOCH")
+build_id=$(< "${IGconf_target_dir}/BUILD_ID")
 
 echo "Creating manifest..."
 {
   echo "{"
   echo "  \"deployment_info\": {"
   echo "    \"version\": \"${IGconf_artefact_version:-}\","
+  echo "    \"BUILD_ID\": \"$build_id\","
   echo "    \"SOURCE_DATE_EPOCH\": $sde"
   echo "  },"
   echo "  \"files\": ["

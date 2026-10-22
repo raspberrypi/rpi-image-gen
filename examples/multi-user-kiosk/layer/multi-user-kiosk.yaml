@@ -1,0 +1,27 @@
+# METABEGIN
+# X-Env-Layer-Name: example-multi-user-kiosk
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: example
+# X-Env-Layer-Desc: Example two user desktop and kiosk layer. Installs the
+#  Raspberry Pi desktop, Chromium, cage and seatd. LightDM starts a session
+#  which dispatches on group membership: members of the kiosk group get
+#  Chromium running full screen in cage, everyone else gets the Raspberry Pi
+#  desktop.
+# X-Env-Layer-Requires: device-user-admin
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - rpd-wayland-core
+    - pixtrix-theme
+    - pixtrix-icons
+    - fonts-nunito-sans
+    - rpd-wallpaper-trixie
+    - chromium
+    - cage
+    - seatd
+  customize-hooks:
+    - $BDEBSTRAP_HOOKS/enable-units "$1" seatd
+    - echo "KIOSK_URL=$IGconf_kiosk_url" > $1/etc/default/kiosk
+    - chroot $1 systemctl set-default graphical.target
+    - sed -i '/^user-session=/d' $1/etc/lightdm/lightdm.conf

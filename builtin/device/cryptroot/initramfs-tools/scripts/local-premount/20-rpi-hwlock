@@ -1,0 +1,19 @@
+#!/bin/sh
+
+PREREQ=""
+
+prereqs() {
+   echo "$PREREQ"
+}
+
+case $1 in
+   prereqs)
+      prereqs
+      exit 0
+      ;;
+esac
+
+. /etc/rpi/cryptroot.conf
+# Apply key locks until reboot
+/usr/libexec/rpi-cryptroot/hwlock ${KEY_LOCKS-}
+exit 0

@@ -21,8 +21,9 @@ fi
 
 
 install -m 0755 -D hwkey "$1/lib/cryptsetup/keyscripts/hwkey"
+install -m 0755 -D hwlock "$1/usr/libexec/rpi-cryptroot/hwlock"
 rsync -av initramfs-tools/ "$1/etc/initramfs-tools/"
 
 
-echo "PARTPROBE_DEVICES=\"${PARTPROBE_DEVICES}\"" \
-   > "$1/etc/initramfs-tools/conf.d/rpi-cryptroot"
+install -m 0644 -D cryptroot.conf "$1/etc/rpi/cryptroot.conf"
+echo "PARTPROBE_DEVICES=\"${PARTPROBE_DEVICES}\"" >> "$1/etc/rpi/cryptroot.conf"

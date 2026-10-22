@@ -10,28 +10,21 @@ if [ -s $1/etc/apt/apt.conf.d/99mmdebstrap ] ; then
 fi
 
 # Write issue info
-GH=$(git describe --dirty 2> /dev/null || \
-   git describe --match=NeVeRmAtCh --always --abbrev=40 --dirty 2> /dev/null || \
-   git rev-parse HEAD 2> /dev/null || \
-   echo "999-unknown")
+build_id=$(< "${IGconf_target_dir}/BUILD_ID")
+ig_ver=$(cat "${IGTOP}/VERSION" 2> /dev/null || \
+   git -C "$IGTOP" describe --tags --always --dirty 2> /dev/null || \
+   echo "unknown")
 
 mkdir -p "$1/etc"
-echo "Generated using rpi-image-gen ${GH} on $(date -u -d "@${SOURCE_DATE_EPOCH}" +%Y-%m-%d)" > "$1/etc/rpi-issue"
+echo "Generated using rpi-image-gen ${ig_ver} on $(date -u -d "@${SOURCE_DATE_EPOCH}" +%Y-%m-%d)" > "$1/etc/rpi-issue"
 echo "Artefact version: $IGconf_artefact_version" >> "$1/etc/rpi-issue"
 
 # See os-release(5)
 if [ -e "$1/etc/os-release" ]; then
    {
       [ -z "${IGconf_image_name:-}" ] || echo "IMAGE_ID=\"$IGconf_image_name\""
-      echo "BUILD_ID=\"$GH\""
+      echo "BUILD_ID=\"$build_id\""
       echo "IMAGE_VERSION=\"$IGconf_artefact_version\""
       echo "IG_SOURCE_DATE_EPOCH=\"${SOURCE_DATE_EPOCH}\""
    } | tee -a "$1/etc/os-release"
 fi
-
-echo "${SOURCE_DATE_EPOCH:?}" > "${IGconf_target_dir}/SOURCE_DATE_EPOCH"
-
-# Ensure epoch is always published to build env
-env="${IGconf_sys_bootstrapdir}/final.env"
-grep -q '^SOURCE_DATE_EPOCH=' "$env" || \
-   printf 'SOURCE_DATE_EPOCH="%s"\n' "$SOURCE_DATE_EPOCH" >> "$env"

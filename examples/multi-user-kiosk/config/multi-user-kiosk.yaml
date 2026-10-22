@@ -1,0 +1,28 @@
+device:
+  layer: rpi5
+  user1: admin
+  user2: student
+  user2groups: users,video,render,audio,kiosk
+
+image:
+  layer: image-rpios
+  name: multi-user-kiosk
+  boot_part_size: 256M
+  root_part_size: 4G
+
+layer:
+  - debian-trixie-arm64-multi
+  - rpi-debian-trixie
+  - rpi-misc-utils
+  - rpi-essential-base
+  - rpi-misc-skel
+  - systemd-timesyncd
+  - network-manager
+  - wireless-regulatory
+  - openssh-server
+  - example-multi-user-kiosk
+  - rpi-connect
+  - rpi-connect-ota
+
+kiosk:
+  url: "https://raspberrypi.com"

@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# Assemble config.txt from the config.txt.d fragments every layer provides
+# for rpi-boot-firmware
+
+set -eu
+
+out="$1/boot/firmware/config.txt"
+names=()
+declare -A frags=()
+
+
+# A fragment replaces an earlier layer's fragment of the same name, in its
+# place. An empty fragment removes it.
+add_fragment() {
+   local frag=$1 layer=$2 name=${1##*/}
+
+   if [[ -n ${frags[$name]+x} ]]; then
+      msg "config.txt: ${name}: ${frags[$name]} replaced by ${frag} (${layer})"
+   else
+      names+=("$name")
+      if [[ ! -s $frag ]]; then
+         msg "config.txt: ${name}: ${frag} is empty but there is nothing to remove (${layer})"
+      fi
+   fi
+   frags[$name]=$frag
+}
+
+
+foreach_dropin "$LAYER_NAME" "$LAYER_VERSION" config.txt.d add_fragment
+
+keep=()
+for name in "${names[@]}"; do
+   if [[ -s ${frags[$name]} ]]; then
+      keep+=("${frags[$name]}")
+   fi
+done
+
+if (( ! ${#keep[@]} )); then
+   exit 0
+fi
+
+
+# Concatenate in order. After a fragment that leaves a filter set, [all]
+# resets it so the next fragment, or anything later appended to the file,
+# applies as written.
+{
+   echo "# Assembled by rpi-image-gen from layer fragments."
+   echo "# See http://rptl.io/configtxt"
+   for frag in "${keep[@]}"; do
+      cat "$frag"
+      [[ -z $(tail -c1 "$frag") ]] || echo
+      last=$(grep '^[[:space:]]*\[' "$frag" | tail -n1 | tr -d '[:space:]') || true
+      if [[ -n $last && $last != '[all]' ]]; then
+         echo '[all]'
+      fi
+   done
+} > "$out"
+
+msg "config.txt: assembled from ${#keep[@]} fragment(s)"
+cat "$out"

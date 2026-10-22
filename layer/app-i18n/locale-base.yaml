@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: locale-base
 # X-Env-Layer-Category: i18n
 # X-Env-Layer-Desc: Pre-seeded locale and internationalisation settings
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.0.1
 # X-Env-Layer-Requires: locale-config
 # X-Env-Layer-Provides: locale-configured
 #

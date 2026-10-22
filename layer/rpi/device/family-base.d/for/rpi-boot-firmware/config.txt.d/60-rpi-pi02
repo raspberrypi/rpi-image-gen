@@ -1,0 +1,7 @@
+
+[pi02]
+# If don't care about Bluetooth use the line below to get the pl011 instead of 8250 UART
+# and use console=ttyAMA0,115200
+# dtoverlay=disable-bt
+enable_uart=1
+uart_2ndstage=1

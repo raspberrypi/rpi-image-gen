@@ -1,0 +1,12 @@
+[Unit]
+Description=Apply firmware crypto key locks
+DefaultDependencies=no
+After=cryptsetup.target
+Before=initrd.target
+ConditionPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/rpi/cryptroot.conf
+ExecStart=/usr/libexec/rpi-cryptroot/hwlock $KEY_LOCKS

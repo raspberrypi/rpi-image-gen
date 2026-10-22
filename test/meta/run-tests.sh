@@ -468,6 +468,16 @@ run_test "layer-same-name-different-version" \
     0 \
     "Same layer name at different versions should both load without error"
 
+run_test "size-validator-genimage-suffixes" \
+    "python3 ${META}/test_size_validator.py" \
+    0 \
+    "Size validator should accept only suffixes understood by genimage"
+
+run_test "pathlist-validator" \
+    "python3 ${META}/test_pathlist_validator.py" \
+    0 \
+    "Path list validator should accept well-formed lists, and reject unset, empty, malformed or overlapping ones"
+
 # ---------------------------------------------------------------------------
 print_header "OTHER TESTS"
 

@@ -21,7 +21,7 @@ fi
 
 rsync -av dracut/dracut.modules.d/ "$1/usr/lib/dracut/modules.d/"
 rsync -av dracut/dracut.conf.d/ "$1/etc/dracut.conf.d/"
+install -m 0755 -D hwlock "$1/usr/libexec/rpi-cryptroot/hwlock"
 
-mkdir -p "$1/etc/rpi/"
-echo "PARTPROBE_DEVICES=\"${PARTPROBE_DEVICES}\"" \
-   > "$1/etc/rpi/cryptroot.conf"
+install -m 0644 -D cryptroot.conf "$1/etc/rpi/cryptroot.conf"
+echo "PARTPROBE_DEVICES=\"${PARTPROBE_DEVICES}\"" >> "$1/etc/rpi/cryptroot.conf"
