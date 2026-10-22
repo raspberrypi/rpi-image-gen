@@ -1,0 +1,46 @@
+= Raspberry Pi Boot Firmware
+
+== config.txt
+
+Any layer may contribute to `config.txt` using fragments in its `config.txt.d` drop-in directory for this layer, ie static fragments in `<layer-stem>.d/for/rpi-boot-firmware/config.txt.d/` and dynamic fragments written at build time to `$LAYER_WORKDIR/for/rpi-boot-firmware/config.txt.d/`, no later than `preimage`. See _Drop-ins for Other Layers_ in the layer documentation for version-specific directories, precedence and ordering. The result is written to `/boot/firmware/config.txt`.
+
+A fragment is written in ordinary `config.txt` syntax. Fragments are concatenated as they are, in layer order and then by file name. Nothing in them is interpreted, merged or checked. Where a fragment leaves a https://www.raspberrypi.com/documentation/computers/config_txt.html#conditional-filters[conditional filter] set, an `[all]` filter is automatically added after it, so each fragment applies exactly as written and the file ends with no filter set. This is particularly important for tools such as `raspi-config` which append to the file on the device.
+
+The number in a fragment's name only orders it lexicographically among that layer's other fragments. A layer's fragments follow those of the layers before it in the build, so layer order dictates where a fragment lands. To change a fragment that another layer provides, replace it by name.
+
+=== Replacing or removing a fragment
+
+A fragment replaces any earlier layer's fragment with the same file name, and takes its place in the file. An empty fragment removes it. Default configuration settings are provided by fragments from other layers, eg peripheral settings by purpose, model settings by model etc, so that each can be replaced or removed in isolation (ie overridden).
+
+Use a `[board-type=Type]` filter to target exactly one model. See https://www.raspberrypi.com/documentation/computers/config_txt.html#model-filters[model filters].
+
+For example, a layer for a headless device ships an empty `30-rpi-display`, and a layer for a Compute Module 5 with an attached DSI touchscreen replaces `71-rpi-cm5`:
+
+----
+[cm5]
+dtoverlay=dwc2,dr_mode=host
+# Attached 10" DSI touchscreen, rotated
+dtoverlay=vc4-kms-dsi-ili79600-10-1inch,swapxy,invx
+dtoverlay=
+----
+
+Equally, a layer could remove `71-rpi-cm5` with an empty file and supply the settings in an alternatively named fragment of its own. The difference is position: a replacement takes the place of the fragment it replaces, while a fragment of its own follows the layers before it.
+
+Fragments named `NN-rpi-*` are provided by Raspberry Pi specific layers. Their names are stable and therefore can be used by custom layers to deterministically replace or remove them.
+
+[TIP]
+====
+It's recommended that custom layers do not use the `NN-rpi-` prefix unless replacing or removing a default, since a fragment that shares another layer's drop-in name replaces it.
+====
+
+=== Overlay parameters
+
+`dtparam` settings apply to the most recent `dtoverlay`, and an `[all]` filter does not change that. A fragment that loads an overlay should end its parameters with `dtoverlay=`, so that `dtparam` settings in later fragments are not applied to it.
+
+For example, a layer for a Compute Module 5 that uses an external antenna adds its own fragment, `80-antenna`:
+
+----
+[cm5]
+# Use the external antenna connector
+dtparam=ant2
+----

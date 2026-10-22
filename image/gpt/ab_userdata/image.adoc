@@ -84,6 +84,17 @@ Path=/etc/myapp/state
 
 `Version=1`:: Required. A generator that does not recognise the version skips the file with a warning rather than misprocessing it.
 `Path=`:: One or more absolute paths to share. Multiple `Path=` entries are supported in a single file. A missing leading `/` is corrected automatically. Only directory paths are supported.
+`StaticPath=`:: Optional. A file or directory inside a shared path that the image owns rather than the device. The shared path may be declared by a `Path=` in any `.conf` file, not only this one. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. Multiple `StaticPath=` entries are supported.
+
+For example, the device's SSH host keys are shared across slots, while the SSH configuration follows the active slot:
+
+[source]
+----
+Version=1
+Path=/etc/ssh
+StaticPath=/etc/ssh/sshd_config
+StaticPath=/etc/ssh/sshd_config.d
+----
 
 Unknown keys are silently ignored, providing forward compatibility within version 1.
 A version increment signals a breaking change.
@@ -102,7 +113,7 @@ Shared data is stored under `/persistent/shared/`, mirroring the full path hiera
             └── myapp/    <-- bind-mounted over /var/lib/myapp
 ----
 
-Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from or different to the destination. This means an OTA update can deliver new or updated shared application data simply by including it in the rootfs - no separate data partition update is required.
+Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is `StaticPath=` entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.
 
 
 == Slot Selection (run-time)

@@ -19,6 +19,8 @@ copy_exec /usr/sbin/kpartx || true
 copy_exec /usr/sbin/cryptsetup
 copy_exec /usr/bin/rpi-fw-crypto
 copy_exec /usr/bin/block-device-id
+copy_file config /etc/rpi/cryptroot.conf
+copy_file script /usr/libexec/rpi-cryptroot/hwlock
 
 # https://bugs.launchpad.net/ubuntu/+source/initramfs-tools/+bug/1958594
 for so in $(ldconfig -p | sed -nr 's/^\s*libgcc_s\.so.*=>\s*//p'); do

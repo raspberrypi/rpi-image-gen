@@ -716,7 +716,20 @@ run_test "provider-ordering" \
      awk '"'"'/^test-provider-base:/{base=NR} /^test-provider-ordering-consumer:/{con=NR} END{exit !(base < con)}'"'"' "$TMP_ORDER" && \
      rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"' \
     0 \
-    "RequiresProvider should enforce provider before consumer in build order"
+    "AfterProvider should enforce provider before consumer in build order"
+
+cleanup_env
+run_test "provider-ordering-absent" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/provider-ordering-consumer.yaml "$TMP_DIR"/ && \
+     make_pipeline_env "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" \
+        --layers test-provider-ordering-consumer \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" >/dev/null; RESULT=$?; \
+     rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"; \
+     exit $RESULT' \
+    0 \
+    "AfterProvider should not fail when no layer provides the capability"
 
 cleanup_env
 run_test "provider-ordering-cycle" \
@@ -730,7 +743,7 @@ run_test "provider-ordering-cycle" \
      rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_DIR"; \
      exit $RESULT' \
     1 \
-    "Cycle between Requires and RequiresProvider should be detected"
+    "Cycle between Requires and AfterProvider should be detected"
 
 cleanup_env
 

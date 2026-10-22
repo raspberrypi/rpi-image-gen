@@ -45,7 +45,6 @@ image boot.vfat {
    }
    size = <FW_SIZE>
    mountpoint = "/boot/firmware"
-   exec-pre = "<SETUP> BOOT"
 }
 
 image root.btrfs {

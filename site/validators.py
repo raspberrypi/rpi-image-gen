@@ -205,7 +205,7 @@ class RegexValidator(BaseValidator):
 
 class SizeValidator(BaseValidator):
     def __init__(self):
-        self.size_re = re.compile(r"(?:[0-9]+(?:[kKmMgGsS])?|[1-9][0-9]*%)$")
+        self.size_re = re.compile(r"(?:[0-9]+(?:[kKMGs])?|[1-9][0-9]*%)$")
 
     def validate(self, value: Optional[str]) -> list[str]:
         if value is None:
@@ -215,18 +215,18 @@ class SizeValidator(BaseValidator):
         return []
 
     def describe(self) -> str:
-        return "Size value with optional unit (bytes, k/m/g/s) or percentage"
+        return "Size value with optional unit (bytes, k/K/M/G/s) or percentage"
 
     @classmethod
     def get_help_text(cls) -> str:
-        return """size                   - Size with optional unit (bytes, k/m/g/s) or percentage
+        return """size                   - Size with optional unit (bytes, k/K/M/G/s) or percentage
 
 SIZES:
   size can be specified in one of the following formats
     12345        (bytes)
     20k / 20K    (kilobytes, multiples of 1024)
-    128M / 128m  (megabytes)
-    1G / 4g      (gigabytes)
+    128M         (megabytes)
+    1G           (gigabytes)
     512s         (sectors, multiples of 512)
     50%          (percentage; any positive integer)"""
 
@@ -264,6 +264,71 @@ class PathValidator(BaseValidator):
         return ("file                  - Must be a path to an existing regular file (may be empty)\n"
                 "file-nzero            - Must be a path to an existing non-empty regular file\n"
                 "dir                   - Must be a path to an existing directory")
+
+
+class PathListValidator(BaseValidator):
+    # Paths are not checked for existence: they may name locations on the host
+    # or in the image being built, the latter don't exist at value validation.
+    # Characters are limited to those that are safe unquoted in a shell, a
+    # config file or a regex bracket expression.
+
+    def __init__(self):
+        self.chars_re = re.compile(r"[A-Za-z0-9._+@/-]+")
+
+    def validate(self, value: Optional[str]) -> list[str]:
+        if value is None:
+            return ["Value cannot be None"]
+        if value.strip() == "":
+            return ["Value cannot be empty"]
+        errors = []
+        seen = []
+        for item in (x.strip() for x in value.split(",")):
+            if not item:
+                errors.append("Value contains an empty entry")
+                continue
+            if not self.chars_re.fullmatch(item):
+                errors.append(f"'{item}' contains characters other than letters, digits and . _ + @ - /")
+                continue
+            # A leading / is optional: whether a path is absolute or relative
+            # depends on its use. Either way, it names the same location when
+            # entries are compared.
+            path = item[1:] if item.startswith("/") else item
+            if not path:
+                errors.append(f"'{item}' is the root, not a path below it")
+                continue
+            if path.endswith("/"):
+                errors.append(f"'{item}' ends with '/'")
+                continue
+            parts = path.split("/")
+            if "" in parts:
+                errors.append(f"'{item}' contains an empty path component")
+                continue
+            if "." in parts or ".." in parts:
+                errors.append(f"'{item}': '.' and '..' are not allowed")
+                continue
+            for other, other_item in seen:
+                if path == other:
+                    errors.append(f"'{item}' is listed more than once")
+                elif path.startswith(other + "/"):
+                    errors.append(f"'{item}' is inside '{other_item}'")
+                elif other.startswith(path + "/"):
+                    errors.append(f"'{other_item}' is inside '{item}'")
+            seen.append((path, item))
+        return errors
+
+    def describe(self) -> str:
+        return "Comma-separated list of paths"
+
+    @classmethod
+    def get_help_text(cls) -> str:
+        return """pathlist               - Comma-separated list of one or more paths
+  Paths may be absolute or relative, depending on their use, and are made
+  of letters, digits and . _ + @ - with / between components. Entries may
+  not end with /, have empty, '.' or '..' components, be listed twice, or
+  contain one another (paths with and without a leading / are compared as
+  the same). Paths are not checked for existence.
+  Examples:
+    pathlist            - usr/lib/modules,/usr/share/doc"""
 
 
 class CapacityValidator(BaseValidator):
@@ -382,6 +447,8 @@ def parse_validator(rule_str: str) -> BaseValidator:
         return PathValidator('file', nonzero=True)
     elif rule_str == "dir":
         return PathValidator('dir')
+    elif rule_str == "pathlist":
+        return PathListValidator()
     elif rule_str == "size":
         return SizeValidator()
     elif rule_str == "capacity":
@@ -392,7 +459,7 @@ def parse_validator(rule_str: str) -> BaseValidator:
         return EnumValidator(options)
     else:
         # Single value without comma - reject unless it's a known type
-        if rule_str in ["string", "string-or-empty", "string-or-unset", "bool", "int", "size", "capacity", "file", "file-nzero", "dir"]:
+        if rule_str in ["string", "string-or-empty", "string-or-unset", "bool", "int", "size", "capacity", "file", "file-nzero", "dir", "pathlist"]:
             raise ValueError(f"Unknown validation rule: {rule_str}")
         else:
             raise ValueError(f"Single value '{rule_str}' must use trailing comma ('{rule_str},') or keywords: prefix ('keywords:{rule_str}')")

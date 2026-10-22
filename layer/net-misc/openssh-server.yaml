@@ -3,7 +3,7 @@
 # X-Env-Layer-Desc: OpenSSH server daemon and local user SSH key setup. No SSH
 #  keys are installed by default. A unique host identity is generated on first
 #  boot (see host_keydir to pre-seed one instead).
-# X-Env-Layer-Version: 1.2.0
+# X-Env-Layer-Version: 1.3.0
 # X-Env-Layer-Requires: device-user-admin
 # X-Env-Layer-RequiresProvider: systemd
 #

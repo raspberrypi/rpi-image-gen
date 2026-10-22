@@ -55,6 +55,7 @@ runsafe()
       SHELL="${SHELL:-}" \
       HOME="${HOME:-}" \
       ${TERM:+TERM="$TERM"} \
+      ${XDG_RUNTIME_DIR:+XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR"} \
       ${PYTHONPATH:+PYTHONPATH="$PYTHONPATH"} \
       ${NS_SETUP:+NS_SETUP="$NS_SETUP"} \
       ${_NS_APT_ARCHIVES:+_NS_APT_ARCHIVES="$_NS_APT_ARCHIVES"} \
@@ -110,8 +111,10 @@ runenv() {
     # convert to kv
     local -a env_args
     while IFS='=' read -r k v; do
+       v=${v#\"}
+       v=${v%\"}
        env_args+=("$k=$v")
-    done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;s/"//g' "$file")
+    done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "$file")
 
     if [[ $safe -eq 1 ]]; then
        runsafe "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
@@ -356,24 +359,107 @@ export -f mmdebstrap_layer_paths
 # Uses the caller's own $PLAN when in scope (bin/runner's own calls), else
 # derives it.
 foreach_layer_in_plan() {
-   local callback=${1:?"foreach_layer_in_plan: callback required"}; shift
-   local plan=${PLAN:-${IGconf_sys_bootstrapdir:?"foreach_layer_in_plan: IGconf_sys_bootstrapdir not set"}/layer.plan}
-   local layer version static resolved workdir uuid stempath
+   local _callback=${1:?"foreach_layer_in_plan: callback required"}; shift
+   local _plan=${PLAN:-${IGconf_sys_bootstrapdir:?"foreach_layer_in_plan: IGconf_sys_bootstrapdir not set"}/layer.plan}
+   local _layer _version _static _resolved _workdir _uuid _stempath
 
-   [[ -f $plan ]] || return 0
-   local -a lines
-   mapfile -t lines < "$plan"
+   [[ -f $_plan ]] || return 0
+   local -a _lines
+   mapfile -t _lines < "$_plan"
 
-   local line
-   for line in "${lines[@]}"; do
-      IFS=: read -r layer version static resolved uuid workdir <<< "$line"
-      [[ -n $layer && $layer != \#* ]] || continue
-      stempath="$(map_path "${static%.yaml}")"
-      "$callback" "$layer" "$version" "$stempath" "$resolved" "$(map_path "$workdir")" \
-         "$uuid" "$@"
+   local _line
+   for _line in "${_lines[@]}"; do
+      IFS=: read -r _layer _version _static _resolved _uuid _workdir <<< "$_line"
+      [[ -n $_layer && $_layer != \#* ]] || continue
+      _stempath="$(map_path "${_static%.yaml}")"
+      "$_callback" "$_layer" "$_version" "$_stempath" "$_resolved" "$(map_path "$_workdir")" \
+         "$_uuid" "$@"
    done
 }
 export -f foreach_layer_in_plan
+
+
+# prepend_layer_paths: foreach_layer_in_plan callback. Puts a layer's host
+# executables at the front of PATH:
+#   <stempath>.d/$DEB_BUILD_GNU_TYPE/bin   (built for this machine)
+#   <stempath>.d/host/bin                  (any machine)
+# in that order. Called in plan order, so a later layer's executables resolve
+# ahead of an earlier one, and every layer's before the system's.
+prepend_layer_paths() {
+   local _layer=$1 _stempath=$3 _dir
+   for _dir in "${_stempath}.d/host/bin" "${_stempath}.d/${DEB_BUILD_GNU_TYPE:?}/bin"; do
+      [[ -d $_dir ]] || continue
+      PATH="${_dir}:${PATH}"
+      msg "PATH: ${_layer} ${_dir}"
+   done
+}
+export -f prepend_layer_paths
+
+
+# foreach_dropin: calls callback for each file the plan's layers provide for a
+# target layer's drop-in directory, in plan order, then by file name, from:
+#   <stempath>.d/for/<target>[@X]/<dir>/
+#   <workdir>/for/<target>[@X]/<dir>/
+# X is the target's major version. Of same-named files, @X beats unversioned
+# and workdir beats static. Dies if the target provides for itself.
+# $1 = target layer name
+# $2 = target layer version
+# $3 = drop-in directory name
+# $4 = callback, called as: callback file layer version [extra args]
+foreach_dropin() {
+   local _target=${1:?"foreach_dropin: target required"}
+   local _tversion=${2:?"foreach_dropin: target version required"}
+   local _dir=${3:?"foreach_dropin: dir required"}
+   local _callback=${4:?"foreach_dropin: callback required"}; shift 4
+   local _major=${_tversion%%.*}
+
+   foreach_layer_in_plan _foreach_dropin_layer \
+      "$_target" "$_major" "$_dir" "$_callback" "$@"
+}
+export -f foreach_dropin
+
+
+# One layer's part of foreach_dropin. Takes foreach_layer_in_plan's callback
+# args, then target major dir callback [extra args].
+_foreach_dropin_layer() {
+   local _layer=$1 _version=$2 _stempath=$3 _workdir=$5
+   local _target=$7 _major=$8 _dir=$9 _callback=${10}; shift 10
+   local -A _files=()
+   local -a _names
+   local _sub _base _f _name
+
+   for _base in "${_stempath}.d/for" "${_workdir}/for"; do
+      for _sub in "${_base}/${_target}" "${_base}/${_target}"@*; do
+         [[ -e $_sub ]] || continue
+         [[ $_layer != "$_target" ]] ||
+            die "dropin: ${_target}/${_dir}: ${_sub}: a layer can't provide for itself"
+         [[ $_sub == "${_base}/${_target}" || ${_sub##*@} =~ ^(0|[1-9][0-9]*)$ ]] ||
+            die "dropin: ${_target}/${_dir}: ${_layer}: ${_sub}: expected ${_target}@<major>"
+      done
+   done
+
+   for _sub in "${_target}" "${_target}@${_major}"; do
+      for _base in "${_stempath}.d/for" "${_workdir}/for"; do
+         [[ -d ${_base}/${_sub}/${_dir} ]] || continue
+         msg "dropin: ${_target}/${_dir}: ${_layer}: ${_base}/${_sub}/${_dir}"
+         for _f in "${_base}/${_sub}/${_dir}"/*; do
+            [[ -f $_f ]] || continue
+            _name=${_f##*/}
+            [[ -z ${_files[$_name]+x} ]] ||
+               msg "dropin: ${_target}/${_dir}: ${_layer}: ${_files[$_name]} replaced by ${_f}"
+            _files[$_name]=$_f
+         done
+      done
+   done
+
+   (( ${#_files[@]} )) || return 0
+
+   mapfile -t _names < <(printf '%s\n' "${!_files[@]}" | LC_ALL=C sort)
+   for _name in "${_names[@]}"; do
+      "$_callback" "${_files[$_name]}" "$_layer" "$_version" "$@"
+   done
+}
+export -f _foreach_dropin_layer
 
 
 # General purpose key=value normaliser that escapes characters that would

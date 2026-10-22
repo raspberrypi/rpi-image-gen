@@ -1,20 +1,33 @@
 #!/bin/sh
 
-# safe userspec chroot wrapper as local user IGconf_device_user1 with shell
-# command execution.
-# This user is created by rpi-user-credentials as a valid regular local user
+# safe userspec chroot wrapper as a local user with shell command execution.
+# The user defaults to IGconf_device_user1, or is chosen with -u.
+# This user is created by device-user-admin as a valid regular local user
 # with home dir. UID/GID are read from the chroot's own /etc/passwd and passed
 # to chroot --userspec as numeric +UID:+GID to avoid NSS name lookup (and any
 # cross-root library loading hazards).
 set -u
 
+usage() {
+   >&2 echo "uchroot [-u <user>] <chroot_path> [command...]"
+}
+
+user="${IGconf_device_user1:-}"
+while getopts u: opt; do
+   case $opt in
+      u) user="$OPTARG" ;;
+      *) usage; exit 1 ;;
+   esac
+done
+shift $((OPTIND - 1))
+
 if [ $# -eq 0 ]; then
-   >&2 echo "uchroot <chroot_path> [command...]"
+   usage
    exit 1
 fi
 
-if [ -z "${IGconf_device_user1:-}" ]; then
-   >&2 echo "uchroot: IGconf_device_user1 not set"
+if [ -z "$user" ]; then
+   >&2 echo "uchroot: no user given and IGconf_device_user1 not set"
    exit 1
 fi
 
@@ -27,7 +40,7 @@ dir="$1"
 shift
 
 if [ -r "${dir}/etc/passwd" ]; then
-   spec=$(grep "^$IGconf_device_user1:" "${dir}/etc/passwd" 2>/dev/null || true)
+   spec=$(grep "^${user}:" "${dir}/etc/passwd" 2>/dev/null || true)
    if [ -n "$spec" ]; then
       # home is 6th field
       home_dir=$(echo "$spec" | cut -d: -f6)
@@ -37,8 +50,8 @@ if [ -r "${dir}/etc/passwd" ]; then
          user_gid=$(echo "$spec" | cut -d: -f4)
          userspec="+${user_uid}:+${user_gid}"
 
-         USER="$IGconf_device_user1" \
-         LOGNAME="$IGconf_device_user1" \
+         USER="$user" \
+         LOGNAME="$user" \
          HOME="$home_dir" \
          chroot --userspec "$userspec" "$dir" /bin/sh -c "$*"
          exit $?
@@ -46,5 +59,5 @@ if [ -r "${dir}/etc/passwd" ]; then
    fi
 fi
 
->&2 echo "uchroot: User '$IGconf_device_user1' does not exist"
+>&2 echo "uchroot: User '$user' does not exist"
 exit 1
