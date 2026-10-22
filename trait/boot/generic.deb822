@@ -1,2 +1,5 @@
 X-Env-Trait-gpt-Desc: Bootloader has GPT support
 X-Env-Trait-gpt-Valid: bool
+
+X-Env-Trait-slotted-Desc: Device boots from one of several slots, eg A/B, and each boot may use a different slot
+X-Env-Trait-slotted-Valid: bool

@@ -2,7 +2,7 @@
 # X-Env-Layer-Name: rpi-device-secpolicy
 # X-Env-Layer-Category: security
 # X-Env-Layer-Desc: Raspberry Pi device family security policy baseline
-# X-Env-Layer-Version: 1.0.1
+# X-Env-Layer-Version: 1.1.0
 # X-Env-Layer-RequiresProvider: rpi-device,image,systemd
 #
 # X-Env-VarPrefix: rpisec
@@ -10,9 +10,13 @@
 # X-Env-Var-eepromupd: y
 # X-Env-Var-eepromupd-Desc: Enable automatic device EEPROM update service
 #  See https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#automaticupdates
+#  Off by default when the device boots from slots - updates are staged
+#  in the running slot's boot partition, which may not be the slot the
+#  bootloader boots next.
 # X-Env-Var-eepromupd-Required: n
 # X-Env-Var-eepromupd-Valid: bool
-# X-Env-Var-eepromupd-Set: y
+# X-Env-Var-eepromupd-Set: lazy
+# X-Env-Var-eepromupd-Triggers: when=has('boot:slotted') set IGconf_rpisec_eepromupd=n policy=lazy
 #
 # METAEND
 ---
