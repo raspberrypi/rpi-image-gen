@@ -66,4 +66,16 @@ customize-hooks:
      Missing environment variables (that's runtime, not syntax)
      Invalid environment values (that's runtime validation)
 
-4.
+4. Match dpkgopts path-exclude/path-include rules to the paths recorded
+   in packages from the Debian suite used by the image. dpkg matches
+   package paths; merged-usr symlinks do not rewrite them.
+
+   For example, firmware-brcm80211 ships /lib/firmware/... in Bookworm
+   but /usr/lib/firmware/... in Trixie. A filter for /lib/firmware/*
+   matches the Bookworm package even on merged-usr systems, but cannot
+   match Trixie's /usr/lib/firmware/* entries.
+
+   Inspect the target suite's package file list (for example, with
+   `dpkg -L firmware-brcm80211` in a matching build environment) before
+   choosing filters. A non-matching path-exclude is silently ignored,
+   so check the built image to verify the intended files were removed.
