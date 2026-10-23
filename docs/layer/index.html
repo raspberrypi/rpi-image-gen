@@ -143,6 +143,8 @@
 </ul>
 </li>
 <li><a href="#_hooks_and_overlays">Hooks and Overlays</a></li>
+<li><a href="#_host_executables">Host Executables</a></li>
+<li><a href="#for">Drop-ins for Other Layers</a></li>
 <li><a href="#_x_env_metadata">X-Env Metadata</a>
 <ul class="sectlevel2">
 <li><a href="#_metadata_structure">Metadata Structure</a></li>
@@ -308,15 +310,66 @@ For an index of every layer shipped with rpi-image-gen, see the
 <p><strong><code>&lt;layer-stem&gt;.d/hooks/</code></strong>: Scripts named <code>&lt;phase&gt;*</code> (eg <code>customize05-enable-units</code>), run by <code>bin/runner</code> at the matching build phase, in lexicographic order.</p>
 </li>
 <li>
+<p><strong><code>&lt;layer-stem&gt;.d/hooks/late/</code></strong>: Scripts named as above, run by <code>bin/runner</code> at the matching phase only once every layer&#8217;s normal hooks for it have completed.</p>
+</li>
+<li>
 <p><strong><code>&lt;layer-stem&gt;.d/&lt;phase&gt;.overlay/</code></strong>: A tree synchronised into the filesystem build in progress at the matching phase, eg <code>customize.overlay/</code>.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>See <a href="../execution/index.html#hooks">Hooks</a> and <a href="../execution/index.html#overlays">Overlays</a> in the execution documentation for the full mechanism, phase list, and environment variables a hook can rely on.</p>
+<p>See <a href="../execution/index.html#hooks">Hooks</a> and <a href="../execution/index.html#overlays">Overlays</a> (plus <a href="../execution/index.html#late-hooks">Late Hooks</a>) in the execution documentation for the full mechanism, phase list, and environment variables a hook can rely on.</p>
 </div>
 <div class="paragraph">
-<p>A layer&#8217;s generated documentation page lists any hooks and overlays it actually ships, per phase.</p>
+<p>A layer&#8217;s generated documentation page lists any hooks, late hooks and overlays it actually ships, per phase.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_host_executables"><a class="anchor" href="#_host_executables"></a><a class="link" href="#_host_executables">Host Executables</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A layer may ship its own programs for use during the build, eg for its hooks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>&lt;layer-stem&gt;.d/host/bin/</code></strong>: Executables that run on any build machine, eg scripts.</p>
+</li>
+<li>
+<p><strong><code>&lt;layer-stem&gt;.d/&lt;DEB_BUILD_GNU_TYPE&gt;/bin/</code></strong>: Executables built for the build machine, eg <code>&lt;layer-stem&gt;.d/x86_64-linux-gnu/bin/</code>. These take precedence over <code>host/bin/</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Both are prepended to <code>PATH</code> for the whole build (ie global scope), with later layers in the build plan ahead of earlier ones.</p>
+</div>
+<div class="paragraph">
+<p>The same two directories under <code>&lt;layer-stem&gt;.d/self/</code> are prepended to <code>PATH</code> for the layer&#8217;s own standalone hooks only. YAML hooks can&#8217;t use them.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="for"><a class="anchor" href="#for"></a><a class="link" href="#for">Drop-ins for Other Layers</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A layer can offer 'drop-in' directories that other layers put files in, which it then processes itself, eg <code>linux-base</code> assembles the kernel command line from <code>cmdline.d</code> fragments. A layer provides files for a target layer&#8217;s drop-in directory <code>&lt;dir&gt;</code> from:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>&lt;layer-stem&gt;.d/for/&lt;target&gt;/&lt;dir&gt;/</code></strong>: Static files shipped with the layer.</p>
+</li>
+<li>
+<p><strong><code>$LAYER_WORKDIR/for/&lt;target&gt;/&lt;dir&gt;/</code></strong>: Files generated at build time by the layer&#8217;s hooks. The whole of <code>$LAYER_WORKDIR/for/</code> is removed each time the filesystem is built.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Either location may instead name a major version of the target: <code>&lt;target&gt;@X/</code> applies only when the target&#8217;s major version is <code>X</code>. A layer that must work with more than one major version of a target ships a directory for each, and those that don&#8217;t match are ignored. Minor versions can&#8217;t be targeted: a minor version change must always be compatible.</p>
+</div>
+<div class="paragraph">
+<p>Of a layer&#8217;s files with the same name, one in <code>&lt;target&gt;@X/</code> wins over one in <code>&lt;target&gt;/</code>, and at the same level a work directory file replaces a static one. An empty file therefore disables a static file of the same name. Each layer&#8217;s files are processed in lexicographic order, so numbered names (eg <code>50-slot</code>) controls where each one applies. All layers are processed in build plan order.</p>
 </div>
 </div>
 </div>
@@ -449,7 +502,7 @@ mmdebstrap:
 <p><code>X-Env-Layer-RequiresProvider</code>: Capabilities that must exist in the build (validation only, no ordering)</p>
 </div>
 <div class="paragraph">
-<p><code>X-Env-Layer-AfterProvider</code>: Capabilities that must exist and must precede this layer in the build</p>
+<p><code>X-Env-Layer-AfterProvider</code>: Capabilities that, if present, must precede this layer in the build (ordering only, no validation)</p>
 </div>
 <div class="paragraph">
 <p><code>X-Env-Layer-Conflicts</code>: Layers that cannot be used together with this one</p>
@@ -607,7 +660,7 @@ mmdebstrap:
 <p><code>X-Env-Layer-RequiresProvider</code> declares capabilities that must be present somewhere in the build. The engine validates their existence but imposes no ordering constraint - use this when a layer is semantically tied to a capability but its position in the build plan is already determined by its <code>Requires</code> relationships, when variable resolution handles the dependency lazily, or when position in the build plan is not important.</p>
 </div>
 <div class="paragraph">
-<p><code>X-Env-Layer-AfterProvider</code> declares capabilities that must be present AND must precede this layer in the build plan. Use this when the provider&#8217;s position has a structural effect on the build - for example, APT mirror ordering where a Debian distribution foundation layer must appear first in the build order so that mmdebstrap derives the correct native architecture when bdebstrap merges the YAML, or when hooks provided by one layer must execute before hooks from another.</p>
+<p><code>X-Env-Layer-AfterProvider</code> declares capabilities whose provider, if present, must precede this layer in the build plan. A missing provider is not an error - the constraint is simply not applied. To require a provider and be ordered after it, declare it in both <code>RequiresProvider</code> and <code>AfterProvider</code>. Use this when the provider&#8217;s position has a structural effect on the build.</p>
 </div>
 <div class="paragraph">
 <p>Both fields enforce uniqueness: only one layer in the build may provide a given capability token.</p>

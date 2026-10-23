@@ -187,6 +187,17 @@
             <br>    list:rsa,ecdsa,ed25519          - One or more SSH host key types
             <br>    list:eth0,wlan0,usb0            - One or more network interfaces
         </div>
+        <h3>pathlist              </h3>
+        <div class="example">
+            <strong>pathlist               - Comma-separated list of one or more paths</strong>
+            <br>  Paths may be absolute or relative, depending on their use, and are made
+            <br>  of letters, digits and . _ + @ - with / between components. Entries may
+            <br>  not end with /, have empty, &#39;.&#39; or &#39;..&#39; components, be listed twice, or
+            <br>  contain one another (paths with and without a leading / are compared as
+            <br>  the same). Paths are not checked for existence.
+            <br>  Examples:
+            <br>    pathlist            - usr/lib/modules,/usr/share/doc
+        </div>
         <h3>file                 </h3>
         <div class="example">
             <strong>file                  - Must be a path to an existing regular file (may be empty)</strong>

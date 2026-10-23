@@ -124,7 +124,7 @@
     <div class="header">
         <h1>image-rpios</h1>
         <span class="badge">image</span>
-        <span class="badge">v2.3.0</span>
+        <span class="badge">v2.5.0</span>
         <p>Raspberry Pi OS style image layout with MBR, vfat
  boot partition, and a root partition that can be ext4 or btrfs.</p>
     </div>
@@ -168,7 +168,7 @@
                     <td>
                            <code>100%</code>
                     </td>
-                    <td>Size value with optional unit (bytes, k/m/g/s) or percentage</td>
+                    <td>Size value with optional unit (bytes, k/K/M/G/s) or percentage</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
@@ -179,7 +179,7 @@
                     <td>
                            <code>100%</code>
                     </td>
-                    <td>Size value with optional unit (bytes, k/m/g/s) or percentage</td>
+                    <td>Size value with optional unit (bytes, k/K/M/G/s) or percentage</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
@@ -197,13 +197,31 @@
                 </tr>
                 <tr>
                     <td><code>IGconf_image_disksig</code></td>
-                    <td>MBR disk signature supplied as a 32-bit hexadecimal number, or &#39;random&#39;</td>
+                    <td>MBR disk signature supplied as a non-zero 32-bit hexadecimal number, or &#39;random&#39;</td>
                     <td>
                            <code>random</code>
                     </td>
-                    <td>Must match regex pattern: ^(random|0x[0-9a-fA-F]{8})$</td>
+                    <td>Must match regex pattern: ^(random|0x(?!0{8})[0-9a-fA-F]{8})$</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_devid_scheme</code></td>
+                    <td>How root and boot are referenced in /etc/fstab
+ and on the kernel command line.
+ by-slot: /dev/disk/by-slot symlinks. This layout&#39;s udev rule creates them
+ for the boot-medium devices that rpi-storage-binder tags.
+ partuuid: PARTUUID derived from the MBR disk signature, as Raspberry Pi OS
+ tooling expects. Not available with pmap &#39;crypt&#39;: partition 2 holds the
+ LUKS2 container, and the unlocked root filesystem is a device-mapper
+ device with no PARTUUID of its own.</td>
+                    <td>
+                           <code>by-slot</code>
+                    </td>
+                    <td>Must be one of: by-slot, partuuid</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
                 </tr>
                 <tr>

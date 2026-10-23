@@ -124,7 +124,7 @@
     <div class="header">
         <h1>rpi-splash-screen</h1>
         <span class="badge">device</span>
-        <span class="badge">v1.1.0</span>
+        <span class="badge">v2.0.0</span>
         <p>Raspberry Pi fullscreen splash screen support with custom image configuration.</p>
     </div>
     <div class="section">
@@ -346,7 +346,7 @@
 <p><strong>Required</strong>: No</p>
 </li>
 <li>
-<p><strong>Description</strong>: Automatically update <code>/boot/firmware/cmdline.txt</code> to enable the splash screen. Set to <code>n</code> if using custom boot configurations.</p>
+<p><strong>Description</strong>: Automatically add the kernel command line arguments that enable the splash screen, as a <code>cmdline.d</code> fragment (see the <code>linux-base</code> layer). Set to <code>n</code> if using custom boot configurations.</p>
 </li>
 </ul>
 </div>
@@ -516,7 +516,7 @@ convert input.png \
 <p><code>/etc/initramfs-tools/hooks/splash-screen-hook.sh</code>: Initramfs hook</p>
 </li>
 <li>
-<p><code>/boot/firmware/cmdline.txt</code>: Kernel command line (if <code>update_cmdline=y</code>)</p>
+<p>Kernel command line (if <code>update_cmdline=y</code>)</p>
 </li>
 <li>
 <p>Initramfs images in <code>/boot/firmware/</code></p>
@@ -618,6 +618,13 @@ convert input.png \
         </div>
     </div>
     <div class="section">
+        <h2>Relationships</h2>
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="linux-base.html" class="dep-badge">linux-base</a>
+        </div>
+    </div>
+    <div class="section">
         <h2>Configuration Variables</h2>
         <p><strong>Declares</strong> (prefix: <code>splash</code>):</p>
         <table>
@@ -661,9 +668,9 @@ convert input.png \
                 </tr>
                 <tr>
                     <td><code>IGconf_splash_update_cmdline</code></td>
-                    <td>If y, automatically update /boot/firmware/cmdline.txt
- to enable the splash screen. If n, the splash screen will be installed but
- cmdline.txt must be manually configured. This is useful if using custom boot
+                    <td>If y, automatically add the kernel command line
+ arguments that enable the splash screen. If n, the splash screen will be
+ installed but the kernel command line must be manually configured. This is useful if using custom boot
  configurations or alternative bootloaders.</td>
                     <td>
                            <code>y</code>
@@ -686,6 +693,23 @@ convert input.png \
             <li><code>initramfs-tools</code></li>
             <li><code>file</code></li>
         </ul>
+    </div>
+    <div class="section">
+        <h2>Hooks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>customize</code></td>
+                    <td>customize10-cmdline</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="section">

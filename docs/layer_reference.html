@@ -296,15 +296,18 @@ attributes, variables, dependencies, hooks and overlays.</p>
         
         <div class="layer-item">
             <a href="layer/device-user-admin.html">device-user-admin</a><span class="layer-desc" title="Base layer for local user account provisioning.
- Creates user accounts, sets credentials, group membership and sudo access.">- Base layer for local user account provisioning.
+ Creates user accounts, sets credentials, group membership and sudo access.
+ user1 is always created. user2 is created only if set and is never
+ granted sudo access.">- Base layer for local user account provisioning.
  Creates user accounts, sets credentials, group…</span>
         </div>
         
         <div class="layer-item">
             <a href="layer/device-user-credentials.html">device-user-credentials</a><span class="layer-desc" title="Variable definitions for device user account configuration.
- Declares user account settings: username, password, UID, GID, sudo access,
- and supplementary group membership.">- Variable definitions for device user account configuration.
- Declares user account settings:…</span>
+ Declares user account settings for user1 and an optional user2: username,
+ password, UID, GID, sudo access (user1 only) and supplementary group
+ membership.">- Variable definitions for device user account configuration.
+ Declares user account settings for…</span>
         </div>
         
         <div class="layer-item">
@@ -456,7 +459,13 @@ attributes, variables, dependencies, hooks and overlays.</p>
     <div class="layer-list">
         
         <div class="layer-item">
-            <a href="layer/rpi-boot-firmware.html">rpi-boot-firmware</a><span class="layer-desc" title="Raspberry Pi boot firmware for all devices">- Raspberry Pi boot firmware for all devices</span>
+            <a href="layer/rpi-boot-bsp.html">rpi-boot-bsp</a><span class="layer-desc" title="Raspberry Pi boot board support packages">- Raspberry Pi boot board support packages</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-boot-firmware.html">rpi-boot-firmware</a><span class="layer-desc" title="Raspberry Pi boot firmware support infrastructure and
+ configuration for all devices">- Raspberry Pi boot firmware support infrastructure and
+ configuration for all devices</span>
         </div>
         
     </div>
@@ -589,6 +598,10 @@ attributes, variables, dependencies, hooks and overlays.</p>
         
         <div class="layer-item">
             <a href="layer/rpi-linux-2712.html">rpi-linux-2712</a><span class="layer-desc" title="Raspberry Pi 2712 kernel">- Raspberry Pi 2712 kernel</span>
+        </div>
+        
+        <div class="layer-item">
+            <a href="layer/rpi-linux-base.html">rpi-linux-base</a><span class="layer-desc" title="Raspberry Pi kernel base.">- Raspberry Pi kernel base.</span>
         </div>
         
         <div class="layer-item">

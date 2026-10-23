@@ -124,19 +124,36 @@
     <div class="header">
         <h1>linux-base</h1>
         <span class="badge">base</span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v2.0.0</span>
         <p>Linux kernel base properties. Provides kernel level
  attributes that may influence downstream image creation in order to
  optimise for the target system.</p>
+    </div>
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div class="sect1">
+<h2 id="_kernel_command_line"><a class="anchor" href="#_kernel_command_line"></a><a class="link" href="#_kernel_command_line">Kernel Command Line</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Any layer may contribute kernel command line arguments as fragments in its <code>cmdline.d</code> drop-in directory for this layer, ie static fragments in <code>&lt;layer-stem&gt;.d/for/linux-base/cmdline.d/</code> and dynamic fragments written at build time to <code>$LAYER_WORKDIR/for/linux-base/cmdline.d/</code>, no later than <code>preimage</code>. See <em>Drop-ins for Other Layers</em> in the layer documentation for version-specific directories, precedence and ordering.</p>
+</div>
+<div class="paragraph">
+<p>A fragment is a single line of whitespace separated arguments. <code>-glob</code> removes matching arguments contributed earlier (eg <code>-fsck*</code> removes <code>fsck.repair=yes</code>). <code>+arg</code> or <code>arg</code> appends an argument. The result is written to <code>/etc/kernel/cmdline</code>.</p>
+</div>
+</div>
+</div>
+
+        </div>
     </div>
     <div class="section">
         <h2>Relationships</h2>
         <p><strong>Required by:</strong></p>
         <div class="deps">
             
-            <a href="rpi-linux-2712.html" class="dep-badge">rpi-linux-2712</a>
+            <a href="rpi-linux-base.html" class="dep-badge">rpi-linux-base</a>
             
-            <a href="rpi-linux-v8.html" class="dep-badge">rpi-linux-v8</a>
+            <a href="rpi-splash-screen.html" class="dep-badge">rpi-splash-screen</a>
             
         </div>
     </div>
@@ -164,6 +181,23 @@
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Late Hooks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>preimage</code></td>
+                    <td>preimage10-cmdline</td>
                 </tr>
             </tbody>
         </table>
