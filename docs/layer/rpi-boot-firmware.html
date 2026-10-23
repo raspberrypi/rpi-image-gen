@@ -124,11 +124,93 @@
     <div class="header">
         <h1>rpi-boot-firmware</h1>
         <span class="badge">firmware</span>
-        <span class="badge">v1.0.0</span>
-        <p>Raspberry Pi boot firmware for all devices</p>
+        <span class="badge">v2.0.0</span>
+        <p>Raspberry Pi boot firmware support infrastructure and
+ configuration for all devices</p>
+    </div>
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div class="sect1">
+<h2 id="_config_txt"><a class="anchor" href="#_config_txt"></a><a class="link" href="#_config_txt">config.txt</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Any layer may contribute to <code>config.txt</code> using fragments in its <code>config.txt.d</code> drop-in directory for this layer, ie static fragments in <code>&lt;layer-stem&gt;.d/for/rpi-boot-firmware/config.txt.d/</code> and dynamic fragments written at build time to <code>$LAYER_WORKDIR/for/rpi-boot-firmware/config.txt.d/</code>, no later than <code>preimage</code>. See <em>Drop-ins for Other Layers</em> in the layer documentation for version-specific directories, precedence and ordering. The result is written to <code>/boot/firmware/config.txt</code>.</p>
+</div>
+<div class="paragraph">
+<p>A fragment is written in ordinary <code>config.txt</code> syntax. Fragments are concatenated as they are, in layer order and then by file name. Nothing in them is interpreted, merged or checked. Where a fragment leaves a <a href="https://www.raspberrypi.com/documentation/computers/config_txt.html#conditional-filters">conditional filter</a> set, an <code>[all]</code> filter is automatically added after it, so each fragment applies exactly as written and the file ends with no filter set. This is particularly important for tools such as <code>raspi-config</code> which append to the file on the device.</p>
+</div>
+<div class="paragraph">
+<p>The number in a fragment&#8217;s name only orders it lexicographically among that layer&#8217;s other fragments. A layer&#8217;s fragments follow those of the layers before it in the build, so layer order dictates where a fragment lands. To change a fragment that another layer provides, replace it by name.</p>
+</div>
+<div class="sect2">
+<h3 id="_replacing_or_removing_a_fragment"><a class="anchor" href="#_replacing_or_removing_a_fragment"></a><a class="link" href="#_replacing_or_removing_a_fragment">Replacing or removing a fragment</a></h3>
+<div class="paragraph">
+<p>A fragment replaces any earlier layer&#8217;s fragment with the same file name, and takes its place in the file. An empty fragment removes it. Default configuration settings are provided by fragments from other layers, eg peripheral settings by purpose, model settings by model etc, so that each can be replaced or removed in isolation (ie overridden).</p>
+</div>
+<div class="paragraph">
+<p>Use a <code>[board-type=Type]</code> filter to target exactly one model. See <a href="https://www.raspberrypi.com/documentation/computers/config_txt.html#model-filters">model filters</a>.</p>
+</div>
+<div class="paragraph">
+<p>For example, a layer for a headless device ships an empty <code>30-rpi-display</code>, and a layer for a Compute Module 5 with an attached DSI touchscreen replaces <code>71-rpi-cm5</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>[cm5]
+dtoverlay=dwc2,dr_mode=host
+# Attached 10" DSI touchscreen, rotated
+dtoverlay=vc4-kms-dsi-ili79600-10-1inch,swapxy,invx
+dtoverlay=</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Equally, a layer could remove <code>71-rpi-cm5</code> with an empty file and supply the settings in an alternatively named fragment of its own. The difference is position: a replacement takes the place of the fragment it replaces, while a fragment of its own follows the layers before it.</p>
+</div>
+<div class="paragraph">
+<p>Fragments named <code>NN-rpi-*</code> are provided by Raspberry Pi specific layers. Their names are stable and therefore can be used by custom layers to deterministically replace or remove them.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It&#8217;s recommended that custom layers do not use the <code>NN-rpi-</code> prefix unless replacing or removing a default, since a fragment that shares another layer&#8217;s drop-in name replaces it.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_overlay_parameters"><a class="anchor" href="#_overlay_parameters"></a><a class="link" href="#_overlay_parameters">Overlay parameters</a></h3>
+<div class="paragraph">
+<p><code>dtparam</code> settings apply to the most recent <code>dtoverlay</code>, and an <code>[all]</code> filter does not change that. A fragment that loads an overlay should end its parameters with <code>dtoverlay=</code>, so that <code>dtparam</code> settings in later fragments are not applied to it.</p>
+</div>
+<div class="paragraph">
+<p>For example, a layer for a Compute Module 5 that uses an external antenna adds its own fragment, <code>80-antenna</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>[cm5]
+# Use the external antenna connector
+dtparam=ant2</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+        </div>
     </div>
     <div class="section">
         <h2>Relationships</h2>
+        <p><strong>Depends on:</strong></p>
+        <div class="deps">
+            <a href="rpi-boot-bsp.html" class="dep-badge">rpi-boot-bsp</a>
+        </div>
         <p><strong>Required by:</strong></p>
         <div class="deps">
             
@@ -137,19 +219,21 @@
         </div>
     </div>
     <div class="section">
-        <h2>Configuration Variables</h2>
-        <p><strong>References:</strong>
-        <code>RPI_TEMPLATES</code>
-        </p>
-    </div>
-    <div class="section">
-        <h2>mmdebstrap</h2>
-        
-        <h3>Packages</h3>
-        <p>Installs:</p>
-        <ul>
-            <li><code>raspi-firmware</code></li>
-        </ul>
+        <h2>Late Hooks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>preimage</code></td>
+                    <td>preimage10-configtxt</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="section">

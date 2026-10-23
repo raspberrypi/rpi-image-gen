@@ -124,7 +124,7 @@
     <div class="header">
         <h1>rpi-device-secpolicy</h1>
         <span class="badge">security</span>
-        <span class="badge">v1.0.1</span>
+        <span class="badge">v1.1.0</span>
         <p>Raspberry Pi device family security policy baseline</p>
     </div>
     <div class="section">
@@ -154,13 +154,16 @@
                 <tr>
                     <td><code>IGconf_rpisec_eepromupd</code></td>
                     <td>Enable automatic device EEPROM update service
- See https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#automaticupdates</td>
+ See https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#automaticupdates
+ Off by default when the device boots from slots - updates are staged
+ in the running slot&#39;s boot partition, which may not be the slot the
+ bootloader boots next.</td>
                     <td>
                            <code>y</code>
                     </td>
                     <td>Boolean value - accepts: true/false, 1/0, yes/no, y/n (case insensitive)</td>
                     <td>
-                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
                 </tr>
             </tbody>

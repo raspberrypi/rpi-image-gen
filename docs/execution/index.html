@@ -175,6 +175,7 @@
 <li><a href="#_overview_2">Overview</a></li>
 <li><a href="#_phases">Phases</a></li>
 <li><a href="#_hook_discovery">Hook Discovery</a></li>
+<li><a href="#late-hooks">Late Hooks</a></li>
 <li><a href="#overlays">Overlays</a></li>
 <li><a href="#_core">Core</a></li>
 <li><a href="#_device_and_image_asset_directory">Device and Image Asset Directory</a></li>
@@ -535,6 +536,9 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <li>
 <p><strong>Source tree and built-in hooks</strong> for this phase</p>
 </li>
+<li>
+<p><strong>Per-layer late hooks</strong>, in build plan order - each layer&#8217;s own <code>late/&lt;phase&gt;*</code> hooks (see <a href="#late-hooks">Late Hooks</a>)</p>
+</li>
 </ol>
 </div>
 <div class="paragraph">
@@ -640,7 +644,7 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="sect2">
 <h3 id="_hook_discovery"><a class="anchor" href="#_hook_discovery"></a><a class="link" href="#_hook_discovery">Hook Discovery</a></h3>
 <div class="paragraph">
-<p>For every phase, runner scans two kinds of location, always in this order:</p>
+<p>For every phase, runner scans three kinds of location, always in this order:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -660,10 +664,13 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 </ol>
 </div>
 </li>
+<li>
+<p><strong>Per-layer late</strong> - each layer&#8217;s own <code>&lt;layer-stem&gt;.d/hooks/late/</code>, if present, in build-plan order, after everything above has completed for this phase. No overlay is applied.</p>
+</li>
 </ol>
 </div>
 <div class="paragraph">
-<p>Runner scans for <code>&lt;phase&gt;*</code> hooks (eg <code>customize*</code>, <code>preimage05-do-something</code>) inside <code>hooks/</code> subdirectories at each location, executing matching hooks (alphanumeric basename) in lexicographic order - hence the numbered-prefix convention used throughout (<code>customize01-</code>, <code>essential01</code>, <code>cleanup50-apt-cache</code>, etc), which controls run order for multiple hooks at the same location and phase. Subdirectories aren&#8217;t traversed; the file extension is ignored.</p>
+<p>Runner scans for <code>&lt;phase&gt;*</code> hooks (eg <code>customize*</code>, <code>preimage05-do-something</code>) inside <code>hooks/</code> subdirectories at each location, executing matching hooks (alphanumeric basename) in lexicographic order - hence the numbered-prefix convention used throughout (<code>customize01-</code>, <code>essential01</code>, <code>cleanup50-apt-cache</code>, etc), which controls run order for multiple hooks at the same location and phase. Subdirectories aren&#8217;t traversed - <code>late/</code> is a location of its own. The file extension is ignored.</p>
 </div>
 <div class="paragraph">
 <p>A per-layer hook runs from its own directory, so anything else the layer ships must be reached through the environment runner provides it:</p>
@@ -724,6 +731,47 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 </table>
 <div class="paragraph">
 <p>A hook reading a template the layer ships alongside its YAML therefore writes <code>"$LAYER_DIR/genimage.cfg.in"</code> rather than relying on the working directory.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="late-hooks"><a class="anchor" href="#late-hooks"></a><a class="link" href="#late-hooks">Late Hooks</a></h3>
+<div class="paragraph">
+<p>A layer&#8217;s normal hooks for a phase run in build plan order, so a layer early in the plan cannot see what a later layer does in the same phase. Late hooks close that gap. A layer ships them in <code>&lt;layer-stem&gt;.d/hooks/late/</code>, named for the phase exactly as normal hooks are (eg <code>late/preimage10-assemble</code>).</p>
+</div>
+<div class="paragraph">
+<p>For a given phase, a late hook only runs after all of the following have completed for that phase:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>every layer&#8217;s overlay and normal hooks</p>
+</li>
+<li>
+<p>the source tree overlays</p>
+</li>
+<li>
+<p>the source tree and built-in hooks</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Late hooks then run layer by layer in build plan order, and in lexicographic order within a layer. They receive the same arguments and environment as the layer&#8217;s normal hooks for the phase. There is no late equivalent for the source tree or built-in hook locations.</p>
+</div>
+<div class="paragraph">
+<p>This suits a layer that must collect something every layer may contribute to, such as a drop-in directory swept from each layer in the plan, and act on the complete set.</p>
+</div>
+<div class="paragraph">
+<p>A late hook sees everything produced before it runs: all of the above, plus the output of late hooks in layers earlier in the plan. It sees nothing from late hooks in layers after it. Therefore:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Anything meant for other layers to collect, such as a drop-in fragment, should be written by a normal hook, so that every late hook sees it.</p>
+</li>
+<li>
+<p>A late hook that depends on another layer&#8217;s late output should require that layer (<code>X-Env-Layer-Requires</code>), so that layer is guaranteed to come earlier in the plan.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">

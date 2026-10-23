@@ -124,7 +124,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v6.0.0</span>
+        <span class="badge">v6.3.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -355,7 +355,22 @@ Path=/etc/myapp/state</code></pre>
 <dd>
 <p>One or more absolute paths to share. Multiple <code>Path=</code> entries are supported in a single file. A missing leading <code>/</code> is corrected automatically. Only directory paths are supported.</p>
 </dd>
+<dt class="hdlist1"><code>StaticPath=</code></dt>
+<dd>
+<p>Optional. A file or directory inside a shared path that the image owns rather than the device. The shared path may be declared by a <code>Path=</code> in any <code>.conf</code> file, not only this one. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. Multiple <code>StaticPath=</code> entries are supported.</p>
+</dd>
 </dl>
+</div>
+<div class="paragraph">
+<p>For example, the device&#8217;s SSH host keys are shared across slots, while the SSH configuration follows the active slot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>Version=1
+Path=/etc/ssh
+StaticPath=/etc/ssh/sshd_config
+StaticPath=/etc/ssh/sshd_config.d</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Unknown keys are silently ignored, providing forward compatibility within version 1.
@@ -378,7 +393,7 @@ The files are inert in non-AB configurations.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by <code>rpi-persistent-shared-init</code>, before the bind mounts activate. Files are only pushed if missing from or different to the destination. This means an OTA update can deliver new or updated shared application data simply by including it in the rootfs - no separate data partition update is required.</p>
+<p>Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by <code>rpi-persistent-shared-init</code>, before the bind mounts activate. Files are only pushed if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is <code>StaticPath=</code> entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.</p>
 </div>
 </div>
 </div>
@@ -475,7 +490,7 @@ The files are inert in non-AB configurations.</p>
             <a href="rpi-ab-slot-mapper.html" class="dep-badge">rpi-ab-slot-mapper</a>
             <a href="systemd-min.html" class="dep-badge">systemd-min</a>
         </div>
-        <p><strong>Provides:</strong> image</p>
+        <p><strong>Provides:</strong> image, boot:slotted</p>
     </div>
     <div class="section">
         <h2>Configuration Variables</h2>
@@ -501,7 +516,7 @@ The files are inert in non-AB configurations.</p>
                     <td>
                            <code>96M</code>
                     </td>
-                    <td>Size value with optional unit (bytes, k/m/g/s) or percentage</td>
+                    <td>Size value with optional unit (bytes, k/K/M/G/s) or percentage</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
@@ -512,7 +527,7 @@ The files are inert in non-AB configurations.</p>
                     <td>
                            <code>512M</code>
                     </td>
-                    <td>Size value with optional unit (bytes, k/m/g/s) or percentage</td>
+                    <td>Size value with optional unit (bytes, k/K/M/G/s) or percentage</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
@@ -524,7 +539,7 @@ The files are inert in non-AB configurations.</p>
                     <td>
                            <code>1G</code>
                     </td>
-                    <td>Size value with optional unit (bytes, k/m/g/s) or percentage</td>
+                    <td>Size value with optional unit (bytes, k/K/M/G/s) or percentage</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
