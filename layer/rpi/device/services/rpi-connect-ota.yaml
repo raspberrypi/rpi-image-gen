@@ -1,23 +1,35 @@
 # METABEGIN
 # X-Env-Layer-Name: rpi-connect-ota
 # X-Env-Layer-Category: service
-# X-Env-Layer-Desc: Configures Raspberry Pi Connect's experimental remote update capability
-# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Desc: Configures Raspberry Pi Connect's Remote Update capability
+# X-Env-Layer-Version: 1.1.0
 # X-Env-Layer-RequiresProvider: rpi-connect-client
 #
 # X-Env-VarRequires: IGconf_device_user1
 # X-Env-VarRequires-Valid: string
+#
+# X-Env-VarPrefix: connectota
+#
+# X-Env-Var-bfmt: transitional
+# X-Env-Var-bfmt-Desc: otamaker bundle format to produce. Must be readable by
+#  the Applicator on the device that receives it, which may not be the same as
+#  the version installed by this layer.
+#  legacy: _contents_.yaml only (format 1)
+#  manifest: _manifest_.yaml only (format 2)
+#  transitional: Both, for applicators that read either format.
+# X-Env-Var-bfmt-Required: n
+# X-Env-Var-bfmt-Valid: legacy,manifest,transitional
+# X-Env-Var-bfmt-Set: lazy
 # METAEND
 ---
 mmdebstrap:
   packages:
     - rpi-connect-ota
-
   customize-hooks:
   - |-
     set -eu
 
-    # Enable experimental remote update support in rpi-connectd
+    # Enable remote update support in rpi-connectd
     cat <<-EOF > $1/etc/default/rpi-connect
     RPI_CONNECT_EXPERIMENTAL_OTA=t
     EOF
