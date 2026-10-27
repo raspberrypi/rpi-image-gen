@@ -35,6 +35,13 @@ X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Valid: bool
 X-Env-Var-IG_ENABLE_HOST_EROFS_UTILS-Set: y
 
 
+X-Env-Var-IG_ENABLE_HOST_OTAMAKER: n
+X-Env-Var-IG_ENABLE_HOST_OTAMAKER-Desc: Build and install otamaker - a Raspberry
+ Pi utility to generate device update payloads for OTA delivery.
+X-Env-Var-IG_ENABLE_HOST_OTAMAKER-Valid: bool
+X-Env-Var-IG_ENABLE_HOST_OTAMAKER-Set: y
+
+
 #
 # Global build time defaults
 #
