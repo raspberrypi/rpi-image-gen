@@ -85,6 +85,14 @@
 #  when=layer('rpi-connect-ota') set IGconf_image_updatefmt=otamaker policy=lazy
 #  when=IGconf_image_updatefmt == 'otamaker' set IG_ENABLE_HOST_OTAMAKER=y policy=force
 #
+# X-Env-Var-updatetpl: ${DOTD}/device/otamaker-full.yaml
+# X-Env-Var-updatetpl-Desc: otamaker contents template used to pack the update
+#  bundle. References of the form ${IGconf_<name>} are substituted from the
+#  build environment. Payload sources are resolved relative to the image output directory.
+# X-Env-Var-updatetpl-Required: n
+# X-Env-Var-updatetpl-Valid: file-nzero
+# X-Env-Var-updatetpl-Set: lazy
+#
 # METAEND
 ---
 mmdebstrap:

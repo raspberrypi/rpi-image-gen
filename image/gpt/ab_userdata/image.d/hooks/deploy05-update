@@ -2,7 +2,15 @@
 
 set -eu
 
-# The OTA bundle is packed by a prior script and is already a compressed archive
-upd="${IGconf_image_outputdir}/${IGconf_image_name:-image}.update.tar.zst"
-[[ -f "$upd" ]] || exit 0
-cp -v "$upd" "${1}"
+# See postimage pack-update
+case ${IGconf_image_updatefmt} in
+   none)
+      ;;
+   otamaker)
+      upd="${IGconf_image_outputdir}/ota-${IGconf_image_name}-${IGconf_image_version}.tar.zst"
+      cp -v "$upd" "${upd}.sha256sum" "$1"
+      ;;
+   *)
+      die "unsupported update format: ${IGconf_image_updatefmt}"
+      ;;
+esac

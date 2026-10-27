@@ -2,15 +2,19 @@
 
 set -eu
 
-upd="${1}/update"
-rm -rf $upd
-mkdir -p $upd
+case ${IGconf_image_updatefmt} in
+   none)
+      ;;
+   otamaker)
+      outf="ota-${IGconf_image_name}-${IGconf_image_version}.tar.zst"
 
-[[ -f ${1}/system.sparse ]] || false
-[[ -f ${1}/boot.sparse ]] || false
+      cd "${1}"
+      envsubst < "${IGconf_image_updatetpl}" > contents.yaml
 
-ln -sf ../system.sparse ${upd}/system
-ln -sf ../boot.sparse ${upd}/boot
-
-msg "Packing for OTA..."
-cd $upd && tar -I zstd -h -cf  ${1}/"${IGconf_image_name:-image}".update.tar.zst -- *
+      msg "Packing for OTA..."
+      otamaker -w contents.yaml "${outf}"
+      ;;
+   *)
+      die "unsupported update format: ${IGconf_image_updatefmt}"
+      ;;
+esac

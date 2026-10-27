@@ -1,0 +1,11 @@
+artefact:
+  name: ${IGconf_image_name}
+  version: ${IGconf_image_version}
+  device_type: ${IGconf_device_class}
+  reboot: yes
+
+  payloads:
+    - name: boot         # boot.sparse
+      type: image-sparse
+    - name: system       # system.sparse
+      type: image-sparse
