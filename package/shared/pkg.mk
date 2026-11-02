@@ -1,30 +1,26 @@
 PKG_SHARED_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(PKG_SHARED_DIR)/pkg-env.mk
 
-DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-
-# Tools are built for build arch by default
-PKG_BUILD_GNU_TYPE := $(or $(strip $(PKG_BUILD_GNU_TYPE)),$(DEB_BUILD_GNU_TYPE))
-PKG_HOST_GNU_TYPE  := $(or $(strip $(PKG_HOST_GNU_TYPE)),$(DEB_BUILD_GNU_TYPE))
-
 PKG_DESTDIR         ?= $(abspath $(IGconf_sys_buildroot)/staging/$(PKG_HOST_GNU_TYPE))
 PKG_RUNTIME_DESTDIR ?= $(abspath $(IGconf_sys_buildroot)/host/$(PKG_HOST_GNU_TYPE))
 PKG_PREFIX          ?= /usr
 PKG_CACHE_ROOT      := $(abspath $(if $(strip $(IGconf_sys_cachedir)),$(IGconf_sys_cachedir),/tmp))
+
+$(if $(strip $(PKG_DESTDIR)),,$(error PKG_DESTDIR must not be empty))
+$(if $(strip $(PKG_RUNTIME_DESTDIR)),,$(error PKG_RUNTIME_DESTDIR must not be empty))
 
 PKG_INSTALL_PATH := $(abspath $(PKG_DESTDIR)/$(PKG_PREFIX))
 PKG_RUNTIME_PATH := $(abspath $(PKG_RUNTIME_DESTDIR)/$(PKG_PREFIX))
 
 THIS_PKG ?= $(CURDIR)
 
-PKG_META ?= $(PKG_NAME)-$(PKG_VER).meta
+PKG_META ?= $(PKG_STEM)-$(PKG_VER).meta
 PKG_META_PATH := $(abspath $(THIS_PKG)/$(PKG_META))
 ifeq (,$(wildcard $(PKG_META_PATH)))
 $(error $(PKG_META_PATH) not found)
 endif
-PKG_SOURCE_DIR ?= $(PKG_NAME)-$(PKG_VER)
-PKG_ARCHIVE ?= $(PKG_NAME)-$(PKG_VER).tar.gz
+PKG_SOURCE_DIR ?= $(PKG_STEM)-$(PKG_VER)
+PKG_ARCHIVE ?= $(PKG_STEM)-$(PKG_VER).tar.gz
 PKG_SUBDIR ?= .
 
 PKG_ENVIRONMENT    ?=
@@ -34,7 +30,7 @@ PKG_PATCHES        := $(sort $(wildcard $(abspath $(THIS_PKG)/$(PKG_PATCH_DIR))/
 PKG_PATCH_STRIP    ?= 1
 PKG_UNPACK_STRIP   ?= 1
 PKG_CONFIGURE_OPTS ?=
-PKG_LIB_SHARED     ?= lib$(patsubst lib%,%,$(PKG_NAME))*.so*
+PKG_LIB_SHARED     ?= lib$(patsubst lib%,%,$(PKG_STEM))*.so*
 PKG_MAKE_OPTS      ?=
 
 # Set to y for offline builds - no network access during package build
@@ -63,7 +59,7 @@ PKG_ARCHIVE_PATH := $(PKG_WORK_DIR)/$(PKG_ARCHIVE)
 PKG_SOURCE_ROOT := $(PKG_WORK_DIR)/$(PKG_SOURCE_DIR)
 PKG_SOURCE_PATH := $(PKG_SOURCE_ROOT)/$(PKG_SUBDIR)
 PKG_BUILD_PATH := $(PKG_SOURCE_ROOT)-build
-PKG_BUILD_LOG := $(PKG_WORK_DIR)/$(PKG_NAME)-$(PKG_VER).log
+PKG_BUILD_LOG := $(PKG_WORK_DIR)/$(PKG_STEM)-$(PKG_VER).log
 
 
 .DEFAULT_GOAL := $(PKG_INSTALL_STAMP)
@@ -126,7 +122,39 @@ source: $(PKG_SOURCE_STAMP)
 
 # Build and Install
 
+# Environment for the schemes which configure a toolchain
+ifneq ($(filter autotools cmake,$(PKG_BUILD_SCHEME)),)
+ifeq ($(PKG_USE_HOST_PKGCONFIG),1)
+PKG_ENVIRONMENT += PKG_CONFIG_SYSROOT_DIR=
+PKG_ENVIRONMENT += PKG_CONFIG_PATH=/usr/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
+PKG_ENVIRONMENT += PKG_CONFIG_LIBDIR=/usr/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
+else
+PKG_ENVIRONMENT += PKG_CONFIG_SYSROOT_DIR=$(PKG_DESTDIR)
+PKG_ENVIRONMENT += PKG_CONFIG_PATH=$(PKG_INSTALL_PATH)/lib/pkgconfig:$(PKG_INSTALL_PATH)/share/pkgconfig
+PKG_ENVIRONMENT += PKG_CONFIG_LIBDIR=$(PKG_INSTALL_PATH)/lib/pkgconfig:$(PKG_INSTALL_PATH)/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig
+endif
+
+PKG_ENVIRONMENT += PKG_CONFIG=pkg-config
+PKG_ENVIRONMENT += CPPFLAGS="$(PKG_CPPFLAGS)"
+PKG_ENVIRONMENT += CFLAGS="$(PKG_CFLAGS)"
+PKG_ENVIRONMENT += CXXFLAGS="$(PKG_CXXFLAGS)"
+# Pass $ORIGIN in rpath literally
+PKG_ENVIRONMENT += LDFLAGS='$(PKG_LDFLAGS_ENV)'
+PKG_ENVIRONMENT += MAKEINFO=true
+endif
+
+# Defines what's removed from the runtime tree
+PKG_RUNTIME_PRUNE += \
+	share/doc \
+	share/man
+
 ifeq ($(PKG_BUILD_SCHEME),pysrc)
+
+PKG_RUNTIME_PRUNE += \
+	lib/python*/dist-packages/*.dist-info \
+	lib/python*/dist-packages/*.data \
+	lib/python*/dist-packages/test* \
+	lib/python*/dist-packages/__pycache__
 
 # https://github.com/pypa/pip/issues/10978
 define installwheel
@@ -138,7 +166,7 @@ define installwheel
 			--prefix="$(PKG_PREFIX)" \
 			--ignore-installed \
 			$(2) \
-			$(PKG_NAME)==$(PKG_VER))
+			$(PKG_STEM)==$(PKG_VER))
 endef
 
 PIP_CACHE  := $(PKG_CACHE_ROOT)/pip-cache
@@ -165,33 +193,18 @@ $(PKG_BUILD_STAMP): $(PKG_SOURCE_STAMP) | $(PIP_CACHE) $(PIP_WHEELS)
 $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR)
 	$(call msg,INSTALL)
 	@$(foreach d,$|,$(call installwheel,$(d));)
-	@rm -rf \
-		$(PKG_RUNTIME_PATH)/lib/python*/dist-packages/*.dist-info \
-		$(PKG_RUNTIME_PATH)/lib/python*/dist-packages/*.data \
-		$(PKG_RUNTIME_PATH)/lib/python*/dist-packages/test* \
-		$(PKG_RUNTIME_PATH)/lib/python*/dist-packages/__pycache__ \
-		$(PKG_RUNTIME_PATH)/share/doc \
-		$(PKG_RUNTIME_PATH)/share/man
 	@touch $@
 
 else ifeq ($(PKG_BUILD_SCHEME),autotools)
 
-ifeq ($(PKG_USE_HOST_PKGCONFIG),1)
-PKG_ENVIRONMENT += PKG_CONFIG_SYSROOT_DIR=
-PKG_ENVIRONMENT += PKG_CONFIG_PATH=/usr/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
-PKG_ENVIRONMENT += PKG_CONFIG_LIBDIR=/usr/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
-else
-PKG_ENVIRONMENT += PKG_CONFIG_SYSROOT_DIR=$(PKG_DESTDIR)
-PKG_ENVIRONMENT += PKG_CONFIG_PATH=$(PKG_INSTALL_PATH)/lib/pkgconfig:$(PKG_INSTALL_PATH)/share/pkgconfig
-PKG_ENVIRONMENT += PKG_CONFIG_LIBDIR=$(PKG_INSTALL_PATH)/lib/pkgconfig:$(PKG_INSTALL_PATH)/lib/$(PKG_HOST_GNU_TYPE)/pkgconfig
-endif
+PKG_RUNTIME_PRUNE += \
+	lib/*.a \
+	lib/*.la \
+	include \
+	lib/pkgconfig
 
-PKG_ENVIRONMENT += PKG_CONFIG=pkg-config
-PKG_ENVIRONMENT += CPPFLAGS="$(PKG_CPPFLAGS)"
-PKG_ENVIRONMENT += CFLAGS="$(PKG_CFLAGS)"
-PKG_ENVIRONMENT += CXXFLAGS="$(PKG_CXXFLAGS)"
-PKG_ENVIRONMENT += LDFLAGS="$(PKG_LDFLAGS)"
-PKG_ENVIRONMENT += MAKEINFO=true
+# configure copies LDFLAGS into the generated Makefile, so escape $ORIGIN for make
+PKG_LDFLAGS_ENV = $(subst $$ORIGIN,\$$$$ORIGIN,$(PKG_LDFLAGS))
 
 $(PKG_SOURCE_PATH)/configure: $(PKG_SOURCE_STAMP)
 	$(call msg,AUTORECONF)
@@ -228,16 +241,67 @@ $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_RUNTIME_DESTDIR) $(PKG_DESTDIR)
 	$(call msg,INSTALL)
 	@$(foreach d,$|,$(call run,env $(PKG_ENVIRONMENT) \
 		$(MAKE) -C $(PKG_BUILD_PATH) install $(PKG_MAKE_OPTS) DESTDIR=$(d));)
-	@rm -rf \
-		$(PKG_RUNTIME_PATH)/lib/*.a \
-		$(PKG_RUNTIME_PATH)/lib/*.la \
-		$(PKG_RUNTIME_PATH)/include \
-		$(PKG_RUNTIME_PATH)/lib/pkgconfig \
-		$(PKG_RUNTIME_PATH)/share/doc \
-		$(PKG_RUNTIME_PATH)/share/man
+	@touch $@
+
+else ifeq ($(PKG_BUILD_SCHEME),cmake)
+
+PKG_RUNTIME_PRUNE += \
+	lib/*.a \
+	lib/cmake \
+	include \
+	lib/pkgconfig
+
+PKG_LDFLAGS_ENV = $(PKG_LDFLAGS)
+
+PKG_CMAKE_BUILD_TYPE ?= Release
+
+PKG_CMAKE_OPTS := \
+	-DCMAKE_BUILD_TYPE=$(PKG_CMAKE_BUILD_TYPE) \
+	-DCMAKE_INSTALL_PREFIX=$(PKG_PREFIX) \
+	-DCMAKE_INSTALL_SYSCONFDIR=/etc \
+	-DCMAKE_INSTALL_LIBDIR=lib \
+	-DCMAKE_PREFIX_PATH=$(PKG_INSTALL_PATH)
+
+ifneq ($(PKG_BUILD_GNU_TYPE),$(PKG_HOST_GNU_TYPE))
+PKG_CMAKE_OPTS += \
+	-DCMAKE_SYSTEM_NAME=Linux \
+	-DCMAKE_SYSTEM_PROCESSOR=$(firstword $(subst -, ,$(PKG_HOST_GNU_TYPE))) \
+	-DCMAKE_C_COMPILER=$(PKG_HOST_GNU_TYPE)-gcc \
+	-DCMAKE_CXX_COMPILER=$(PKG_HOST_GNU_TYPE)-g++
+endif
+
+PKG_ENVIRONMENT += CMAKE_GENERATOR="Unix Makefiles"
+
+$(PKG_SOURCE_PATH)/CMakeLists.txt: $(PKG_SOURCE_STAMP)
+	@test -s $@
+
+$(PKG_BUILD_PATH)/Makefile: $(PKG_SOURCE_PATH)/CMakeLists.txt | $(PKG_BUILD_PATH) $(PKG_DESTDIR)
+	$(call msg,CONFIGURE)
+	@$(call run,env $(PKG_ENVIRONMENT) \
+		cmake --fresh -S $(PKG_SOURCE_PATH) -B $(PKG_BUILD_PATH) \
+		$(PKG_CMAKE_OPTS) \
+		$(PKG_CONFIGURE_OPTS))
+	@test -s $@
+
+$(PKG_BUILD_STAMP): $(PKG_BUILD_PATH)/Makefile
+	$(call msg,BUILD)
+	@$(call run,env $(PKG_ENVIRONMENT) \
+		$(MAKE) -C $(PKG_BUILD_PATH) $(PKG_MAKE_OPTS))
+	@touch $@
+
+$(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_RUNTIME_DESTDIR) $(PKG_DESTDIR)
+	$(call msg,INSTALL)
+	@$(foreach d,$|,$(call run,env $(PKG_ENVIRONMENT) \
+		$(MAKE) -C $(PKG_BUILD_PATH) install $(PKG_MAKE_OPTS) DESTDIR=$(d));)
 	@touch $@
 
 else ifeq ($(PKG_BUILD_SCHEME),makefile)
+
+PKG_RUNTIME_PRUNE += \
+	lib/*.a \
+	lib/*.la \
+	include \
+	lib/pkgconfig
 
 PKG_ENVIRONMENT += CC="$(PKG_HOST_GNU_TYPE)-gcc"
 
@@ -252,13 +316,6 @@ $(PKG_INSTALL_STAMP): $(PKG_BUILD_STAMP) | $(PKG_DESTDIR) $(PKG_RUNTIME_DESTDIR)
 	@$(foreach d,$|,$(call run,env $(PKG_ENVIRONMENT) \
 		$(MAKE) -C $(PKG_SOURCE_PATH) install $(PKG_MAKE_OPTS) \
 		PREFIX=$(PKG_PREFIX) DESTDIR=$(d));)
-	@rm -rf \
-		$(PKG_RUNTIME_PATH)/lib/*.a \
-		$(PKG_RUNTIME_PATH)/lib/*.la \
-		$(PKG_RUNTIME_PATH)/include \
-		$(PKG_RUNTIME_PATH)/lib/pkgconfig \
-		$(PKG_RUNTIME_PATH)/share/doc \
-		$(PKG_RUNTIME_PATH)/share/man
 	@touch $@
 
 else
@@ -267,6 +324,10 @@ endif
 
 .PHONY: install
 install: $(PKG_INSTALL_STAMP)
+
+.PHONY: prune
+prune:
+	@rm -rf $(addprefix $(PKG_RUNTIME_PATH)/,$(PKG_RUNTIME_PRUNE))
 
 .PHONY: deps-mk
 deps-mk:

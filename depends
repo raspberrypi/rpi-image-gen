@@ -41,6 +41,7 @@ build:autopoint
 build:flex
 build:gettext
 build:pkg-config:pkgconf
+build:cmake
 
 # maintainer only (docgen)
 # python3-markdown

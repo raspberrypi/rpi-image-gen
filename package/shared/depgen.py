@@ -67,6 +67,7 @@ def render(
         lines.append("")
 
     lines.append(f"ALL_PACKAGE_STAMPS += $(PKG_STAMP_{pkg_id})")
+    lines.append(f"ALL_PACKAGE_DIRS += $(PKG_DIR_{pkg_id})")
     lines.append("")
 
     lines.append(f".PHONY: {pkg_name}")
