@@ -12,7 +12,8 @@ case ${IGconf_image_updatefmt} in
       envsubst < "${IGconf_image_updatetpl}" > contents.yaml
 
       msg "Packing for OTA..."
-      otamaker -w contents.yaml "${outf}"
+      rm -f -- "${outf}" "${outf}".*sha256sum
+      otamaker -w "--${IGconf_connectota_bfmt}" contents.yaml "${outf}"
       ;;
    *)
       die "unsupported update format: ${IGconf_image_updatefmt}"

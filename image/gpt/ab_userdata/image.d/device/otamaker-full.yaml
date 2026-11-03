@@ -5,7 +5,9 @@ artefact:
   reboot: yes
 
   payloads:
-    - name: boot         # boot.sparse
+    - name: boot
+      source: boot.sparse
       type: image-sparse
-    - name: system       # system.sparse
+    - name: system
+      source: system.sparse
       type: image-sparse

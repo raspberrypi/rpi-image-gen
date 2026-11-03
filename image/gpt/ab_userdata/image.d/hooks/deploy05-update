@@ -8,7 +8,7 @@ case ${IGconf_image_updatefmt} in
       ;;
    otamaker)
       upd="${IGconf_image_outputdir}/ota-${IGconf_image_name}-${IGconf_image_version}.tar.zst"
-      cp -v "$upd" "${upd}.sha256sum" "$1"
+      cp -v "$upd" "${upd}".*sha256sum "${1}"
       ;;
    *)
       die "unsupported update format: ${IGconf_image_updatefmt}"
