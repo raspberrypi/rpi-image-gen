@@ -13,6 +13,5 @@ do_install() {
    rsync -av "$1/" "$2/"
   }
 
-do_install ../device/emmc/initramfs-tools "$1/etc/initramfs-tools"
 do_install ../device/emmc/dracut.conf.d "$1/etc/dracut.conf.d"
 do_install ../device/emmc/dracut.modules.d "$1/usr/lib/dracut/modules.d"

@@ -5,8 +5,5 @@
 set -eu
 
 # Install modules into the initramfs
-if [ -d "$1/etc/initramfs-tools" ]; then
-   echo "erofs" >> "$1/etc/initramfs-tools/modules"
-elif [ -d "$1/etc/dracut.conf.d" ]; then
-   echo 'force_drivers+=" erofs "' > "$1/etc/dracut.conf.d/erofs.conf"
-fi
+mkdir -p "$1/etc/dracut.conf.d"
+echo 'force_drivers+=" erofs "' > "$1/etc/dracut.conf.d/erofs.conf"
