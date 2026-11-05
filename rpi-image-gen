@@ -461,6 +461,7 @@ generate_filesystem()
          sub=${sub// /}
          rm -rf -- "${workdir:?}/${sub:?}"
       done
+      rm -rf -- "${workdir:?}"/*.overlay
    }
    local PLAN="${ctx[LAYER_PLAN]}"
    foreach_layer_in_plan _prune_layer_workdir
