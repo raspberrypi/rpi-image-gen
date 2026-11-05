@@ -20,14 +20,13 @@ fi
 # Optional fallback if label is missing/unexpected
 : "${SLOT:=${SLOT_FALLBACK:-system_a}}"
 
-VAR_SRC="/persistent/slots/${SLOT}/var"
+VAR_SRC="<PERSISTENT_DIR>/slots/${SLOT}/var"
 
 # 2) Emit var.mount (bind per-slot /var)
 cat >"$OUT_DIR/var.mount" <<EOF
 [Unit]
 Description=Per-slot /var for ${SLOT}
-Requires=persistent.mount
-After=persistent.mount
+RequiresMountsFor=${VAR_SRC}
 Before=local-fs.target
 ConditionPathExists=${VAR_SRC}
 

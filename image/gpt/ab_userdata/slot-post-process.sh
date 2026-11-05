@@ -27,7 +27,7 @@ EOF
 /dev/disk/by-slot/active/boot  /boot/firmware  vfat defaults,ro,noatime,nofail  0 2
 /dev/disk/by-slot/bootconfig   /bootfs         vfat defaults,rw,noatime,nofail 0 2
 
-# A systemd generator mounts /persistent. See slot-perst-generator.
+# A systemd generator mounts the persistent partition. See slot-perst-generator.
 EOF
       ;;
    *)

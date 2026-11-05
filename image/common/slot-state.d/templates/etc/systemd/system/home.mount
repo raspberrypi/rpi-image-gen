@@ -1,11 +1,10 @@
 [Unit]
 Description=Home directories retained across slot rotations
-RequiresMountsFor=/persistent/home
-After=persistent.mount
+RequiresMountsFor=<PERSISTENT_DIR>/home
 Before=local-fs.target
 
 [Mount]
-What=/persistent/home
+What=<PERSISTENT_DIR>/home
 Where=/home
 Type=none
 Options=bind

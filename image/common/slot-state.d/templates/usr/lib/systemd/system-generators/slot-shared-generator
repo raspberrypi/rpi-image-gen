@@ -33,12 +33,12 @@ for conf in "${CONF_DIR}"/*.conf; do
 
     for path in $paths; do
         unit_name="$(systemd-escape --path "$path").mount"
-        shared_path="/persistent/shared${path}"
+        shared_path="<PERSISTENT_DIR>/shared${path}"
         cat >"${OUT_DIR}/${unit_name}" <<EOF
 [Unit]
 Description=Shared persistent data for ${path}
-Requires=persistent.mount
-After=persistent.mount var.mount
+RequiresMountsFor=${shared_path}
+After=var.mount
 Wants=persistent-shared-init.service
 After=persistent-shared-init.service
 ConditionPathIsDirectory=${shared_path}

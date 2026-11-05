@@ -14,6 +14,8 @@ This system uses an A/B, read‑only root with all writable state on a single pe
 | /persistent | PERSISTENT | ext4 | rw Shared persistent storage
 |===
 
+The persistent mount point is set by `IGconf_image_persistent_dir` (default `/persistent`).
+
 * **Rationale (immutable root + A/B)**
    ** Supports delta/incremental OTA updates by treating root as a static image.
    ** Reliable rollbacks: slot can be flipped if a new root fails health checks.

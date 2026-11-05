@@ -5,6 +5,16 @@
 #  data partition.
 # X-Env-Layer-Version: 1.0.0
 # X-Env-Layer-RequiresProvider: systemd,boot:gpt
+#
+# X-Env-VarPrefix: image
+#
+# X-Env-Var-persistent_dir: /persistent
+# X-Env-Var-persistent_dir-Desc: Directory holding slot state beneath it.
+#  Must be writable and persist across slot rotations. Normally the mount
+#  point of a data partition set by the image layout.
+# X-Env-Var-persistent_dir-Required: n
+# X-Env-Var-persistent_dir-Valid: regex:^(?!/(var|home)(/|$))(/[A-Za-z0-9_][A-Za-z0-9._-]*)+$
+# X-Env-Var-persistent_dir-Set: lazy
 # METAEND
 ---
 mmdebstrap:

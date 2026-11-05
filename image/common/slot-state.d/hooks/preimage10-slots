@@ -7,14 +7,16 @@ genimg_in=$2
 
 [[ -d "$fs" ]] || exit 0
 
+perst="${fs}${IGconf_image_persistent_dir}"
+
 
 # Create persistent skeleton - must match part names in genimage.cfg.in
-mkdir -p ${fs}/persistent/slots/system_a/var
-mkdir -p ${fs}/persistent/slots/system_b/var
-mkdir -p ${fs}/persistent/common/etc
+mkdir -p ${perst}/slots/system_a/var
+mkdir -p ${perst}/slots/system_b/var
+mkdir -p ${perst}/common/etc
 
-install -d -m 1777 ${fs}/persistent/slots/system_a/var/tmp
-install -d -m 1777 ${fs}/persistent/slots/system_b/var/tmp
+install -d -m 1777 ${perst}/slots/system_a/var/tmp
+install -d -m 1777 ${perst}/slots/system_b/var/tmp
 
 
 # machine-id(5) needed by sysinit.target
@@ -65,12 +67,12 @@ done
 
 
 # /var is per-slot, so synchronise
-rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${fs}/persistent/slots/system_a/var/"
-rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${fs}/persistent/slots/system_b/var/"
+rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${perst}/slots/system_a/var/"
+rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${perst}/slots/system_b/var/"
 
 
 # Journal is retained across slot rotations
-install -d -m 2755 -o root -g systemd-journal "${fs}/persistent/log/journal"
+install -d -m 2755 -o root -g systemd-journal "${perst}/log/journal"
 # set preferences
 # https://www.freedesktop.org/software/systemd/man/latest/journald.conf.html
 install -d -m 0755 ${fs}/etc/systemd/journald.conf.d
@@ -100,10 +102,10 @@ Seal=yes
 EOF
 
 
-# /home is bind mounted to /persistent/home and retained across slot rotations
+# /home is bind mounted to the persistent home and retained across slot rotations
 # Mirror it
-mkdir -p "${fs}/persistent/home/"
-rsync -aHAXS --numeric-ids --delete "${fs}/home/" "${fs}/persistent/home/"
+mkdir -p "${perst}/home/"
+rsync -aHAXS --numeric-ids --delete "${fs}/home/" "${perst}/home/"
 
 # Reclaim /home
 find "${fs}/home" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
@@ -118,8 +120,9 @@ install -d -m 0755 ${fs}/var/cache
 install -d -m 0755 ${fs}/var/spool
 
 
-# For each slot-shared path: seed /persistent/shared and retain a copy in the
-# immutable root. Both use the slot-a copy (rsynced above) as the source.
+# For each slot-shared path: seed the persistent shared location and retain a
+# copy in the immutable root. Both use the slot-a copy (rsynced above) as the
+# source.
 # Retaining in the immutable root lets persistent-shared-init push OTA-delivered
 # files into the shared location on each boot, before bind mounts activate.
 if ls "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf >/dev/null 2>&1; then
@@ -142,10 +145,10 @@ if ls "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf >/dev/null 2>&1; then
       fi
 
       for path in $paths; do
-         src="${fs}/persistent/slots/system_a${path}"
+         src="${perst}/slots/system_a${path}"
          [ -d "$src" ] || continue
-         mkdir -p "${fs}/persistent/shared${path}"
-         rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}/persistent/shared${path}/"
+         mkdir -p "${perst}/shared${path}"
+         rsync -aHAXS --numeric-ids --delete "${src}/" "${perst}/shared${path}/"
          mkdir -p "${fs}${path}"
          rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${path}/"
       done

@@ -1,12 +1,12 @@
 #!/bin/sh
 
-# Create shared directories under /persistent/shared for paths declared
-# by layers in /etc/rpi-image-gen/slot-shared.d/*.conf.
+# Create shared directories under the persistent shared location for paths
+# declared by layers in /etc/rpi-image-gen/slot-shared.d/*.conf.
 
 set -eu
 
 CONF_DIR=/etc/rpi-image-gen/slot-shared.d
-SHARED_BASE=/persistent/shared
+SHARED_BASE=<PERSISTENT_DIR>/shared
 
 [ -d "$CONF_DIR" ] || exit 0
 

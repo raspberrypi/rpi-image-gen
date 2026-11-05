@@ -10,6 +10,6 @@ genimg_in=$2
 
 # Generate the persistent skeleton suitable for on-device overlay
 tar --xattrs --xattrs-include='*' --acls --numeric-owner \
-   -C "${fs}/persistent" \
+   -C "${fs}${IGconf_image_persistent_dir}" \
    -czf "${genimg_in}/persistent-skel.tar.gz" \
    --exclude='lost+found' .

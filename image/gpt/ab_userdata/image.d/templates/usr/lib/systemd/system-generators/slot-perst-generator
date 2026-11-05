@@ -10,13 +10,16 @@ mkdir -p "$OUT_DIR"
 path=$(systemd-escape --path "/dev/disk/by-slot/persistent")
 FSCK_UNIT="systemd-fsck@${path}.service"
 
-# 1) Emit persistent.mount (mount the shared persistent partition by label)
+WHERE="<PERSISTENT_DIR>"
+MOUNT_UNIT="$(systemd-escape --path "$WHERE").mount"
+
+# 1) Emit the mount unit (mount the shared persistent partition by label)
 # Mount with:
 # noatime: avoids atime writes entirely (better than relatime)
 # lazytime: defer inode timestamps to memory, flushed with fsync/mtime changes / 24h.
 # commit=60: batches journal commits (fewer writes, risk up to 60s metadata loss on power loss).
 # errors=remount-ro: safer failure mode
-cat >"$OUT_DIR/persistent.mount" <<EOF
+cat >"$OUT_DIR/${MOUNT_UNIT}" <<EOF
 [Unit]
 Description=Persistent data partition
 Before=local-fs.target
@@ -26,7 +29,7 @@ After=${FSCK_UNIT}
 
 [Mount]
 What=/dev/disk/by-slot/persistent
-Where=/persistent
+Where=${WHERE}
 Type=ext4
 Options=rw,noatime,lazytime,commit=60,errors=remount-ro
 
