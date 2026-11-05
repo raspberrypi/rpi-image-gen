@@ -1,0 +1,15 @@
+# METABEGIN
+# X-Env-Layer-Name: test-layer-cond-consumer
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: lc
+#
+# X-Env-Var-mode: none
+# X-Env-Var-mode-Desc: Set by a layer() Trigger
+# X-Env-Var-mode-Required: n
+# X-Env-Var-mode-Valid: none,on
+# X-Env-Var-mode-Set: lazy
+# X-Env-Var-mode-Triggers: when=layer('test-cond-requires-dep') set IGconf_lc_mode=on policy=lazy
+# X-Env-Var-mode-Conflicts: IGconf_lc_mode == 'on' and not layer('test-cond-requires-dep')
+# METAEND
+---

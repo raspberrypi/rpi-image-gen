@@ -17,6 +17,7 @@ defined by the Python language specification:
 Supported comparison operators:  ==  !=  in  not in
 Supported boolean operators:     and  or
 Supported trait functions:       has()  not has()
+Supported layer functions:       layer()  not layer()
 
 Variable names in expressions are resolved from a plain dict[str, str]
 passed in by the caller. The caller is responsible for building that dict
@@ -24,7 +25,7 @@ passed in by the caller. The caller is responsible for building that dict
 """
 
 import ast
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Set
 
 
 class SyntaxExample(NamedTuple):
@@ -42,6 +43,8 @@ SYNTAX_EXAMPLES: List[SyntaxExample] = [
     SyntaxExample("or",      "IGconf_a == 'x' or IGconf_b == 'y'"),
     SyntaxExample("has",     "has('hw:bluetooth')"),
     SyntaxExample("not has", "not has('hw:bluetooth')"),
+    SyntaxExample("layer",     "layer('rpi-connect-ota')"),
+    SyntaxExample("not layer", "not layer('rpi-connect-ota')"),
 ]
 
 
@@ -69,16 +72,18 @@ def validate(condition: str) -> None:
 
 
 def evaluate(condition: str, variables: Dict[str, str],
-             provider_index: Optional[Dict[str, str]] = None) -> bool:
+             provider_index: Optional[Dict[str, str]] = None,
+             layers: Optional[Set[str]] = None) -> bool:
     """
     Evaluate a condition expression against a variable dict.
     Parses the expression and walks the AST, resolving variable names against
     the provided dict. Assumes validate() has already been called.
 
     provider_index must be supplied when the condition contains has() calls.
+    layers (the build's layer names) must be supplied for layer() calls.
     """
     tree = ast.parse(condition, mode='eval')
-    return bool(_eval_node(tree.body, variables, condition, provider_index))
+    return bool(_eval_node(tree.body, variables, condition, provider_index, layers))
 
 
 # -----------------------------------------------------------------------------
@@ -140,33 +145,34 @@ def _check_node(node, condition: str) -> None:
             _check_node(elt, condition)
 
     elif isinstance(node, ast.UnaryOp):
-        # Only 'not has(...)' is supported. 'not' applied to a variable name
-        # (e.g. 'not IGconf_x') would silently invert the string's truthiness,
-        # which is never what a layer author intends.
+        # Only 'not has(...)' and 'not layer(...)' are supported. 'not' applied
+        # to a variable name (e.g. 'not IGconf_x') would silently invert the
+        # string's truthiness, which is never what a layer author intends.
         if not isinstance(node.op, ast.Not):
             raise ValueError(
                 f"Unsupported unary operator in '{condition}' — only 'not' is supported"
             )
         if not isinstance(node.operand, ast.Call):
             raise ValueError(
-                f"'not' can only negate has() in '{condition}'"
+                f"'not' can only negate has() or layer() in '{condition}'"
                 f" — use != '' to test for a non-empty variable"
             )
         _check_node(node.operand, condition)
 
     elif isinstance(node, ast.Call):
-        # Only has('token') is permitted — no other function calls.
-        if not (isinstance(node.func, ast.Name) and node.func.id == 'has'):
+        # Only has('token') and layer('name') are permitted — no other function calls.
+        if not (isinstance(node.func, ast.Name) and node.func.id in ('has', 'layer')):
             raise ValueError(
-                f"Unsupported function call in '{condition}' — only has() is permitted"
+                f"Unsupported function call in '{condition}' — only has() and layer() are permitted"
             )
+        fn = node.func.id
         if len(node.args) != 1 or node.keywords:
             raise ValueError(
-                f"has() requires exactly one string argument in '{condition}'"
+                f"{fn}() requires exactly one string argument in '{condition}'"
             )
         if not isinstance(node.args[0], ast.Constant) or not isinstance(node.args[0].value, str):
             raise ValueError(
-                f"has() argument must be a quoted string in '{condition}'"
+                f"{fn}() argument must be a quoted string in '{condition}'"
             )
 
     else:
@@ -176,17 +182,18 @@ def _check_node(node, condition: str) -> None:
 
 
 def _eval_node(node, variables: Dict[str, str], condition: str,
-               provider_index: Optional[Dict[str, str]] = None):
+               provider_index: Optional[Dict[str, str]] = None,
+               layers: Optional[Set[str]] = None):
     """
     Recursively evaluate an AST node and return a Python value.
 
     Compare nodes return bool. Name and Constant nodes return str.
     List and Tuple nodes return list[str] for use with 'in' / 'not in'.
-    Call nodes (has()) return bool. UnaryOp(Not) inverts its operand.
+    Call nodes (has(), layer()) return bool. UnaryOp(Not) inverts its operand.
     """
     if isinstance(node, ast.Compare):
-        left = _eval_node(node.left, variables, condition, provider_index)
-        right = _eval_node(node.comparators[0], variables, condition, provider_index)
+        left = _eval_node(node.left, variables, condition, provider_index, layers)
+        right = _eval_node(node.comparators[0], variables, condition, provider_index, layers)
         op = node.ops[0]
         if isinstance(op, ast.Eq):    return left == right
         if isinstance(op, ast.NotEq): return left != right
@@ -196,14 +203,20 @@ def _eval_node(node, variables: Dict[str, str], condition: str,
     if isinstance(node, ast.BoolOp):
         # Use all() / any() so that short-circuit eval is preserved
         if isinstance(node.op, ast.And):
-            return all(_eval_node(v, variables, condition, provider_index) for v in node.values)
-        return any(_eval_node(v, variables, condition, provider_index) for v in node.values)
+            return all(_eval_node(v, variables, condition, provider_index, layers) for v in node.values)
+        return any(_eval_node(v, variables, condition, provider_index, layers) for v in node.values)
 
     if isinstance(node, ast.UnaryOp):
-        return not _eval_node(node.operand, variables, condition, provider_index)
+        return not _eval_node(node.operand, variables, condition, provider_index, layers)
 
     if isinstance(node, ast.Call):
         token = node.args[0].value
+        if node.func.id == 'layer':
+            if layers is None:
+                raise ValueError(
+                    f"layer() used in '{condition}' but layer set unknown"
+                )
+            return token in layers
         if provider_index is None:
             raise ValueError(
                 f"has() used in '{condition}' but no provider index is available"
@@ -221,7 +234,7 @@ def _eval_node(node, variables: Dict[str, str], condition: str,
         return node.value
 
     if isinstance(node, (ast.List, ast.Tuple)):
-        return [_eval_node(e, variables, condition, provider_index) for e in node.elts]
+        return [_eval_node(e, variables, condition, provider_index, layers) for e in node.elts]
 
     raise ValueError(
         f"Unsupported node '{type(node).__name__}' in condition '{condition}'"

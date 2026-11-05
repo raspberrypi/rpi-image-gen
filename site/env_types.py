@@ -2,7 +2,7 @@ import re
 import shlex
 import uuid
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Set, Tuple
 from validators import BaseValidator, BooleanValidator, parse_validator
 
 # Namespace for a layer's UUID: uuid5 of (name, version), reproducible.
@@ -1219,11 +1219,13 @@ class VariableResolver:
         pass
 
     def resolve(self, variable_definitions: Dict[str, List[EnvVariable]],
-                provider_index: Optional[Dict[str, Any]] = None) -> Dict[str, EnvVariable]:
+                provider_index: Optional[Dict[str, Any]] = None,
+                layers: Optional[Set[str]] = None) -> Dict[str, EnvVariable]:
         """
         Resolve variables and trigger injections until the injected set reaches
-        a stable fixed point. 'provider_index' is passed through to condition
-        evaluation so has() works inside variable Triggers:/Conflicts:.
+        a stable fixed point. 'provider_index' and 'layers' are passed through
+        to condition evaluation so has() and layer() work inside variable
+        Triggers:/Conflicts:.
         """
         max_iterations = self.MAX_TRIGGER_ITERATIONS
         base_defs: Dict[str, List[EnvVariable]] = {k: list(v) for k, v in variable_definitions.items()}
@@ -1232,7 +1234,7 @@ class VariableResolver:
 
         for _ in range(max_iterations):
             resolved = self._resolve_pass(current_defs)
-            trigger_defs = self._collect_trigger_definitions(resolved, provider_index)
+            trigger_defs = self._collect_trigger_definitions(resolved, provider_index, layers)
             next_defs = self._merge_base_and_triggers(base_defs, trigger_defs)
             next_signature = self._definition_map_signature(next_defs)
             if next_signature == current_signature:
@@ -1395,7 +1397,8 @@ class VariableResolver:
         return merged
 
     def _collect_trigger_definitions(self, resolved: Dict[str, EnvVariable],
-                                      provider_index: Optional[Dict[str, Any]] = None) -> Dict[str, List[EnvVariable]]:
+                                      provider_index: Optional[Dict[str, Any]] = None,
+                                      layers: Optional[Set[str]] = None) -> Dict[str, List[EnvVariable]]:
         """Build trigger-sourced definitions based on resolved values."""
         trigger_defs: Dict[str, List[EnvVariable]] = {}
         for env_var in resolved.values():
@@ -1405,6 +1408,7 @@ class VariableResolver:
                     resolved,
                     env_var.source_layer,
                     provider_index,
+                    layers,
                 ):
                     continue
                 if rule.action != "set":
@@ -1441,6 +1445,7 @@ class VariableResolver:
         resolved: Dict[str, EnvVariable],
         source_layer: Optional[str] = None,
         provider_index: Optional[Dict[str, Any]] = None,
+        layers: Optional[Set[str]] = None,
     ) -> bool:
         """
         Evaluate a trigger condition expression against resolved variables.
@@ -1465,7 +1470,7 @@ class VariableResolver:
 
         layer_note = f" (layer: {source_layer})" if source_layer else ""
         try:
-            return _cond.evaluate(condition, variables, provider_index)
+            return _cond.evaluate(condition, variables, provider_index, layers)
         except ValueError as e:
             raise ValueError(f"{e}{layer_note}") from e
 

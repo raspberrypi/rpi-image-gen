@@ -861,6 +861,46 @@ run_test "conditional-requires-first-order-only" \
 
 cleanup_env
 
+# layer() condition: matches on the build's layer set
+run_test "layer-condition-trigger-fires" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/layer-cond-consumer.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/conditional-requires-dep.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-layer-cond-consumer test-cond-requires-dep \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     grep -q "^IGconf_lc_mode=on$" "$TMP_OUT"; \
+     rc=$?; rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"; exit $rc' \
+    0 \
+    "A Trigger gated on layer() should fire when the named layer is in the build"
+
+cleanup_env
+run_test "layer-condition-trigger-not-fires" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/layer-cond-consumer.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/conditional-requires-dep.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     ig pipeline --env-in "$TMP_ENV" --layers test-layer-cond-consumer \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" --plan-out "$TMP_ORDER" >/dev/null && \
+     grep -q "^IGconf_lc_mode=none$" "$TMP_OUT"; \
+     rc=$?; rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"; exit $rc' \
+    0 \
+    "A Trigger gated on layer() should not fire when the named layer is absent"
+
+cleanup_env
+run_test "layer-condition-conflict" \
+    'TMP_ENV=$(mktemp) && TMP_OUT=$(mktemp) && TMP_ORDER=$(mktemp) && TMP_DIR=$(mktemp -d) && \
+     cp '"${LAYERS}"'/layer-cond-consumer.yaml "$TMP_DIR"/ && \
+     cp '"${LAYERS}"'/conditional-requires-dep.yaml "$TMP_DIR"/ && \
+     printf "IGROOT=%s\nSRCROOT=%s\n" "${IGTOP}" "${IGTOP}" > "$TMP_ENV" && \
+     IGconf_lc_mode=on ig pipeline --env-in "$TMP_ENV" --layers test-layer-cond-consumer \
+        --path "$TMP_DIR" --env-out "$TMP_OUT" --plan-out "$TMP_ORDER" >/dev/null; \
+     rc=$?; rm -rf "$TMP_ENV" "$TMP_OUT" "$TMP_ORDER" "$TMP_DIR"; exit $rc' \
+    1 \
+    "A Conflict using not layer() should fail the build when the named layer is absent"
+
+cleanup_env
+
 # Single-file conditional-Requires: syntax errors (parse-time rejection)
 run_test "invalid-conditional-requires-bad-name-parse" \
     "ig metadata --parse ${LAYERS}/invalid-conditional-requires-bad-name.yaml" \

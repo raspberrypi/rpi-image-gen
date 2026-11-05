@@ -272,7 +272,7 @@ def _apply_layers(
 ) -> OrderedDict[str, str]:
     variable_definitions = _collect_variable_definitions(manager, build_order)
     resolver = VariableResolver()
-    resolved_variables = resolver.resolve(variable_definitions, manager.provider_index)
+    resolved_variables = resolver.resolve(variable_definitions, manager.provider_index, set(build_order))
 
     applied: "OrderedDict[str, str]" = OrderedDict()
     ordered_vars = sorted(resolved_variables.values(), key=lambda env_var: env_var.position)
@@ -412,7 +412,7 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
     # Include trigger-injected variables so their required/validator checks are
     # not silently skipped. resolver.resolve() runs the full trigger loop,
     # including has()-gated triggers evaluated against provider_index.
-    trigger_resolved = resolver.resolve(variable_definitions, manager.provider_index)
+    trigger_resolved = resolver.resolve(variable_definitions, manager.provider_index, set(build_order))
     for var_name, env_var in trigger_resolved.items():
         if var_name in selected:
             continue
@@ -450,7 +450,7 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
                 continue
             seen_exprs.add(expr)
             try:
-                fired = _cond.evaluate(expr, variables, manager.provider_index)
+                fired = _cond.evaluate(expr, variables, manager.provider_index, set(build_order))
             except ValueError:
                 continue
             if fired:

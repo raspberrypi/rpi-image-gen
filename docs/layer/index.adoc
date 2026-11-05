@@ -310,17 +310,19 @@ Conditional expressions appear in several contexts: variable `Triggers:`/`Confli
 
 Despite being common syntax, it does not mean every context can use it consistently everywhere - what's available at *evaluation* time depends on what data exists at that point in the build:
 
-[cols="2,1,1",options="header"]
+[cols="2,1,1,1",options="header"]
 |===
-|Context |`IGconf_*` variables |`has()` / `not has()`
+|Context |`IGconf_*` variables |`has()` / `not has()` |`layer()` / `not layer()`
 
-|`X-Env-Var-*-Triggers`      | yes | yes
-|`X-Env-Var-*-Conflicts`     | yes | yes
-|`X-Env-Trait-*-Triggers`    | *no* | yes
-|Conditional `X-Env-Layer-Requires` | *no* | yes
+|`X-Env-Var-*-Triggers`      | yes | yes | yes
+|`X-Env-Var-*-Conflicts`     | yes | yes | yes
+|`X-Env-Trait-*-Triggers`    | *no* | yes | *no*
+|Conditional `X-Env-Layer-Requires` | *no* | yes | *no*
 |===
 
 Trait `Triggers:` are resolved before variable resolution runs, and conditional layer `Requires:` are evaluated during layer discovery. Before that, neither has a variable dict to check against, only the provider index built so far. An `IGconf_*` reference in either context still parses and validates cleanly (it's the same syntax), but it will silently never fires at evaluation time.
+
+`layer('name')` is true if a layer of that name is anywhere in the build, regardless of its position in the build order. It matches layer names (`X-Env-Layer-Name`) only.
 
 [cols="1,3",options="header"]
 |===
@@ -334,6 +336,8 @@ Trait `Triggers:` are resolved before variable resolution runs, and conditional 
 |`or`     |`IGconf_a == 'x' or IGconf_b == 'y'`
 |`has()`     |`has('hw:bluetooth')`
 |`not has()` |`not has('hw:bluetooth')`
+|`layer()`     |`layer('network-manager')`
+|`not layer()` |`not layer('network-manager')`
 |===
 
 To check for a non-empty value, use `!= ''`. `has('token')` checks for the presence of a trait or label token in the fully-expanded provider index - see the trait registry documentation for how tokens enter that index. Syntax errors and unknown variable references are caught at lint time, not at build time.

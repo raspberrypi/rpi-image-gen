@@ -12,6 +12,7 @@ readonly -a IG_TOOLS_REGISTRY=(
    "IG_ENABLE_HOST_GENIMAGE|y|genimage"
    "IG_ENABLE_HOST_ZSTD|y|zstd"
    "IG_ENABLE_HOST_EROFS_UTILS|y|erofs-utils"
+   "IG_ENABLE_HOST_OTAMAKER|y|rpi/otamaker"
 )
 
 collect_build_deps() {
