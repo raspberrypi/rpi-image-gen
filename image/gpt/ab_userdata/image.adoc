@@ -14,7 +14,7 @@ This system uses an A/B, read‑only root with all writable state on a single pe
 | /persistent | PERSISTENT | ext4 | rw Shared persistent storage
 |===
 
-The persistent mount point is set by `IGconf_image_persistent_dir` (default `/persistent`).
+The persistent mount point is set by `IGconf_image_persistent_dir` (default `/persistent`). The partition is checked and mounted in the initramfs.
 
 * **Rationale (immutable root + A/B)**
    ** Supports delta/incremental OTA updates by treating root as a static image.

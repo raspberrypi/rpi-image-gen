@@ -1,7 +1,11 @@
 #!/bin/sh
-# systemd generator to mount the persistent partition by its by-slot alias
+# systemd generator to mount the persistent partition by its by-slot alias.
+# Runs in the initrd, which mounts it under /sysroot so it carries across
+# switch-root.
 
 set -eu
+
+[ -e /etc/initrd-release ] || exit 0
 
 OUT_DIR="/run/systemd/generator"
 mkdir -p "$OUT_DIR"
@@ -10,7 +14,7 @@ mkdir -p "$OUT_DIR"
 path=$(systemd-escape --path "/dev/disk/by-slot/persistent")
 FSCK_UNIT="systemd-fsck@${path}.service"
 
-WHERE="<PERSISTENT_DIR>"
+WHERE="/sysroot<PERSISTENT_DIR>"
 MOUNT_UNIT="$(systemd-escape --path "$WHERE").mount"
 
 # 1) Emit the mount unit (mount the shared persistent partition by label)
@@ -22,7 +26,7 @@ MOUNT_UNIT="$(systemd-escape --path "$WHERE").mount"
 cat >"$OUT_DIR/${MOUNT_UNIT}" <<EOF
 [Unit]
 Description=Persistent data partition
-Before=local-fs.target
+Before=initrd-fs.target
 Conflicts=umount.target
 Requires=${FSCK_UNIT}
 After=${FSCK_UNIT}
@@ -32,10 +36,10 @@ What=/dev/disk/by-slot/persistent
 Where=${WHERE}
 Type=ext4
 Options=rw,noatime,lazytime,commit=60,errors=remount-ro
-
-[Install]
-WantedBy=local-fs.target
 EOF
+
+mkdir -p "$OUT_DIR/initrd-fs.target.requires"
+ln -sf "../${MOUNT_UNIT}" "$OUT_DIR/initrd-fs.target.requires/${MOUNT_UNIT}"
 
 # 2) Emit fsck settings
 fsck_dir="/run/systemd/system/${FSCK_UNIT}.d"
