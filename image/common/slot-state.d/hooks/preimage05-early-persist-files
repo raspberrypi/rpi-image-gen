@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# Compile the EarlyPersistFile= entries of every slot-shared.d file into one list
+
+set -eu
+
+fs=$1
+
+[[ -d "$fs" ]] || exit 0
+
+list="${fs}/usr/lib/rpi-image-gen/early-persist-files"
+
+shared=()
+files=()
+for conf in "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf; do
+   [ -f "$conf" ] || continue
+   while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in ''|\#*) continue ;; esac
+      key="${line%%=*}"
+      value="${line#*=}"
+      case "$key" in
+         Path)             shared+=("/${value#/}") ;;
+         EarlyPersistFile) files+=("/${value#/}") ;;
+      esac
+   done < "$conf"
+done
+
+# The initrd restores files into an overlay on /etc. The rest of the root is
+# read-only at that point, so nothing outside /etc can be restored from
+# persistent storage.
+for file in "${files[@]}"; do
+   [[ $file =~ ^/etc(/[^/[:space:]]+)+$ && "${file}/" != */./* && "${file}/" != */../* ]] ||
+      die "EarlyPersistFile=${file}: must be a file path under /etc"
+   for path in "${shared[@]}"; do
+      [[ $file == "${path%/}/"* ]] && die "EarlyPersistFile=${file}: inside shared Path=${path}"
+   done
+done
+
+install -d -m 0755 "$(dirname "$list")"
+printf '%s\n' "${files[@]}" | sed '/^$/d' | sort -u > "$list"
+chmod 0644 "$list"
