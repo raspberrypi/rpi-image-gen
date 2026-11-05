@@ -53,5 +53,5 @@ for path in $paths; do
    printf 'persistent-shared-init: %s\n' "$path"
    mkdir -p "${SHARED_BASE}${path}"
    # Write missing files into shared, never overwriting existing ones
-   [ -d "${path}" ] && rsync -av --ignore-existing "${path}/" "${SHARED_BASE}${path}/"
+   [ -d "${path}" ] && rsync -av --numeric-ids --ignore-existing "${path}/" "${SHARED_BASE}${path}/"
 done

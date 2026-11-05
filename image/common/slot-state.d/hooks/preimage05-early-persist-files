@@ -26,6 +26,10 @@ for conf in "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf; do
    done < "$conf"
 done
 
+# The update stamp describes the files restored with it, so units with
+# ConditionNeedsUpdate=/etc run once after a rotation to a newer /usr
+files+=("/etc/.updated")
+
 # The initrd restores files into an overlay on /etc. The rest of the root is
 # read-only at that point, so nothing outside /etc can be restored from
 # persistent storage.
@@ -40,8 +44,6 @@ done
 install -d -m 0755 "$(dirname "$list")"
 printf '%s\n' "${files[@]}" | sed '/^$/d' | sort -u > "$list"
 chmod 0644 "$list"
-
-[ -s "$list" ] || exit 0
 
 sysd="${fs}/etc/systemd/system"
 [ -f "${sysd}/rpi-persist-files.service" ] || die "missing rpi-persist-files.service"

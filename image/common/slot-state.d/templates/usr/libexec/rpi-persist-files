@@ -1,8 +1,17 @@
 #!/bin/sh
 # Save files listed by EarlyPersistFile= to persistent storage. Only files
-# whose contents differ are written.
+# whose contents differ are written. The /etc/.updated stamp is saved last, so
+# it never records an update whose files were not saved.
 
 set -eu
 
-exec rsync -a --numeric-ids --checksum --fsync --ignore-missing-args \
-   --files-from=/usr/lib/rpi-image-gen/early-persist-files / "<PERSISTENT_DIR>/common/"
+list=/usr/lib/rpi-image-gen/early-persist-files
+stamp=/etc/.updated
+dst="<PERSISTENT_DIR>/common/"
+
+save() {
+   rsync -a --numeric-ids --checksum --fsync --ignore-missing-args --files-from=- / "$dst"
+}
+
+grep -vxF "$stamp" "$list" | save
+echo "$stamp" | save

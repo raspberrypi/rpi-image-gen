@@ -26,6 +26,9 @@ Paths on the persistent partition are shown under the default mount point, `/per
 * **Machine Identity (systemd)**
    ** `/etc/machine-id` is kept in `/persistent/common/etc/machine-id` with `EarlyPersistFile=`.
 
+* **Offline updates (systemd)**
+   ** Compatible with https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#ConditionNeedsUpdate=[`ConditionNeedsUpdate=/etc`]. A rotation to a slot built with a newer `SOURCE_DATE_EPOCH` is an update of `/usr`.
+
 
 [WARNING]
 ====
@@ -72,10 +75,12 @@ Path=/var/lib/myapp
 Path=/etc/myapp/state
 ----
 
+Every copy between the image, the device and persistent storage keeps a file's contents, ownership (by numeric ID), mode and modification time.
+
 `Version=1`:: Required. A generator that does not recognise the version skips the file with a warning rather than misprocessing it.
 `Path=`:: One or more absolute paths to share. Multiple `Path=` entries are supported in a single file. A missing leading `/` is corrected automatically. Only directory paths are supported.
 `StaticPath=`:: Optional. A file or directory inside a shared path that the image owns rather than the device. The shared path may be declared by a `Path=` in any `.conf` file, not only this one. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. Multiple `StaticPath=` entries are supported.
-`EarlyPersistFile=`:: Optional. A file under `/etc` kept in `/persistent/common` across boots and slot rotations. The initramfs restores it into an overlay on `/etc`, so it is in place before switch-root. It is saved back at boot, at shutdown and on `systemctl reload rpi-persist-files`. It must not be inside a shared path. Multiple `EarlyPersistFile=` entries are supported. Other writes to `/etc` succeed but are lost at reboot.
+`EarlyPersistFile=`:: Optional. A file under `/etc` kept in `/persistent/common` across boots and slot rotations. The initramfs restores the stored copy into an overlay on `/etc` with a tmpfs upper layer, so it is in place before switch-root. A stored copy takes precedence over the image's file, and the image's file is used until a copy is stored. It is saved back at boot, at shutdown and on `systemctl reload rpi-persist-files`. Deleting the file on the device does not remove the stored copy. It must not be inside a shared path. Multiple `EarlyPersistFile=` entries are supported. Other writes to `/etc` succeed but are lost at reboot.
 
 For example, the device's SSH host keys are shared across slots, while the SSH configuration follows the active slot:
 
