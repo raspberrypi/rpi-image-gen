@@ -12,108 +12,17 @@ This system uses an A/B, read‑only root with all writable state on a single pe
 | /boot/firmware | /dev/disk/by-slot/active/boot | vfat | ro Boot files (active slot A or B)
 | /bootfs | BOOTFS | vfat | rw Boot metadata
 | /persistent | PERSISTENT | ext4 | rw Shared persistent storage
-| /home | /persistent/home | bind | User data shared across slots
-| /var | /persistent/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
-| /var/log/journal | /persistent/log/journal | bind | Single log directory used by both slots
-| _<slot-shared paths>_ | /persistent/shared/<path> | bind | Application data shared across slots (layer-declared, see <<slot-shared>>)
 |===
 
 * **Rationale (immutable root + A/B)**
    ** Supports delta/incremental OTA updates by treating root as a static image.
    ** Reliable rollbacks: slot can be flipped if a new root fails health checks.
    ** Reduced write amplification and storage wear, clearer separation of state.
-   ** Predictable per‑slot state in `/var`.
-   ** Shared `/home` for slot agnostic user storage.
-   ** Shared journalling: centralised point for device logging.
    ** Preserves SBOM accuracy: executing software matches the manifest exactly.
    ** Blocks on-device package installs, preventing SBOM drift.
    ** Enables auditable, reproducible releases and stronger supply-chain assurances.
 
-* **Logging**
-   ** A single persistent journal directory at `/persistent/log/journal` stores logs from either slot.
-   ** Journaling is configured for endurance and reliability.
-
-* **Machine Identity (systemd)**
-   ** `/etc/machine-id` is synchronised early with `/persistent/common/etc/machine-id` using a oneshot unit.
-
-
-[WARNING]
-====
-Slot partition GPT labels are mandatory to associate the immutable root with its matching persistent storage.
-
-- Root slots must have stable PARTLABELs: e.g. `system_a` and `system_b`.
-- At boot, a generator reads the root slot’s `PARTLABEL` to select `/persistent/slots/<slot>/var`.
-
-If slot GPT labels are missing/duplicated, `/var` binding will fail.
-
-If slot GPT labels can’t be guaranteed, this layout is not suitable for your device.
-====
-
-
-[[slot-shared]]
-== Slot-shared application data
-
-Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.
-
-=== Why /var is slot-local by default
-
-Read literally, FHS supports sharing most of `/var` across slots: `/var/lib` is explicitly persistent per-host application state (unlike `/run`, which FHS separates out precisely because it is *not* meant to survive), and `/var/log`, `/var/spool`, and most software that keeps working state under `/var/lib` (NetworkManager, databases, container runtimes) expect that state to survive an upgrade.
-
-But "survives an upgrade" and "survives a rollback" are different guarantees, and rollback is the reason this layout exists. State shared across slots can be written or migrated by a newer slot into a form the older slot's software cannot read. If a rollback then hits state it doesn't understand, the rollback - the main safety mechanism this A/B layout provides - is compromised.
-
-Enumerating every `/var` path that is safe to share, and keeping that list correct as packages change what they write, is more failure-prone than making sharing an explicit, per-layer decision. Slot-local by default means a layer's on-disk state is simply absent/reset after a slot change unless the layer says otherwise. That makes the safe outcome the automatic one: a layer author who forgets to declare sharing ends up with reset state, not a silently shared state that a rollback can't read. Sharing is therefore opt-in, applied only where a maintainer has actually verified the application's state is safe (or required) to carry across slots - e.g. `machine-id` for identity stability, or NetworkManager's connection profiles and secret key for network continuity.
-
-If you are writing a layer whose software keeps state under `/var` that users would reasonably expect to survive an update - credentials, device identity, accumulated data, long-lived queues - assume it will be wiped or reset on the next slot flip unless you add a `slot-shared.d` entry for it.
-
-=== How it works
-
-. `slot-shared-generator` runs at early boot, reads every `/etc/rpi-image-gen/slot-shared.d/*.conf` file and emits a `.mount` systemd unit for each declared path, mounting `/persistent/shared/<path>` over `<path>` as a bind mount.
-. `persistent-shared-init.service` runs before the bind mounts activate. It creates any missing `/persistent/shared/<path>` directories on the persistent partition, handling first boot and disaster-recovery scenarios where the partition has been re-initialised.
-. Bind mounts are guarded by `ConditionPathIsDirectory` on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.
-
-=== Declaring a shared path
-
-Drop a `.conf` file into `/etc/rpi-image-gen/slot-shared.d/`, eg via the layer's rootfs overlay or script:
-
-[source]
-----
-Version=1
-Path=/var/lib/myapp
-Path=/etc/myapp/state
-----
-
-`Version=1`:: Required. A generator that does not recognise the version skips the file with a warning rather than misprocessing it.
-`Path=`:: One or more absolute paths to share. Multiple `Path=` entries are supported in a single file. A missing leading `/` is corrected automatically. Only directory paths are supported.
-`StaticPath=`:: Optional. A file or directory inside a shared path that the image owns rather than the device. The shared path may be declared by a `Path=` in any `.conf` file, not only this one. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. Multiple `StaticPath=` entries are supported.
-
-For example, the device's SSH host keys are shared across slots, while the SSH configuration follows the active slot:
-
-[source]
-----
-Version=1
-Path=/etc/ssh
-StaticPath=/etc/ssh/sshd_config
-StaticPath=/etc/ssh/sshd_config.d
-----
-
-Unknown keys are silently ignored, providing forward compatibility within version 1.
-A version increment signals a breaking change.
-The files are inert in non-AB configurations.
-
-=== Persistent partition layout
-
-Shared data is stored under `/persistent/shared/`, mirroring the full path hierarchy:
-
-[source]
-----
-/persistent/
-└── shared/
-    └── var/
-        └── lib/
-            └── myapp/    <-- bind-mounted over /var/lib/myapp
-----
-
-Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is `StaticPath=` entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.
+State on the persistent partition is handled by layer `slot-state`.
 
 
 == Slot Selection (run-time)

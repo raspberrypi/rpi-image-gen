@@ -1,0 +1,14 @@
+[Unit]
+Description=Home directories retained across slot rotations
+RequiresMountsFor=/persistent/home
+After=persistent.mount
+Before=local-fs.target
+
+[Mount]
+What=/persistent/home
+Where=/home
+Type=none
+Options=bind
+
+[Install]
+RequiredBy=local-fs.target

@@ -50,6 +50,20 @@ for unit in "${units[@]}"; do
 done
 
 
+# /home and the journal bind mounts required by local-fs.target
+requires_dir="${fs}/etc/systemd/system/local-fs.target.requires"
+units=(
+  "home.mount"
+  "var-log-journal.mount"
+)
+install -d -m 0755 "${requires_dir}"
+for unit in "${units[@]}"; do
+  [ -f "${fs}/etc/systemd/system/${unit}" ] || die "missing ${unit}"
+  chmod 0644 "${fs}/etc/systemd/system/${unit}"
+  ln -sf "../${unit}" "${requires_dir}/${unit}"
+done
+
+
 # /var is per-slot, so synchronise
 rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${fs}/persistent/slots/system_a/var/"
 rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${fs}/persistent/slots/system_b/var/"
@@ -136,28 +150,6 @@ if ls "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf >/dev/null 2>&1; then
          rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${path}/"
       done
    done
-fi
-
-
-# Older systemd (eg 252/Bookworm) sets up per‑service mount namespaces by
-# bind mounting a read‑only snapshot of / under /run/systemd/unit-root then
-# mounting APIVFS and PrivateTmp bits (eg, /dev, /proc, /sys) inside that.
-# systemd is not able to create these on an immutable root if they don't
-# exist. Even if we create them, namespace init fails (status=226/NAMESPACE).
-# New systemd (eg 257/Trixie) does not have this problem. Only workaround is
-# to relax the sandboxing for these services. See:
-# https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html
-ver=$(systemd-major "$fs")
-[[ "$ver" =~ ^[0-9]+$ ]] || { echo "systemd-major error for $fs" >&2; exit 1; }
-if [[ "$ver" -lt 257 ]]; then
-  for svc in systemd-resolved systemd-timesyncd; do
-    d="${fs}/etc/systemd/system/${svc}.service.d"
-    mkdir -p "$d"
-    cat > "${d}/immutable-root.conf" <<'EOF'
-[Service]
-PrivateDevices=no
-EOF
-  done
 fi
 
 

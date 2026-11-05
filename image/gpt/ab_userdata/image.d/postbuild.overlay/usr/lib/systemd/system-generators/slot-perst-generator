@@ -1,5 +1,5 @@
 #!/bin/sh
-# systemd generator to bind per-slot /var based on the persistent by-slot alias
+# systemd generator to mount the persistent partition by its by-slot alias
 
 set -eu
 
@@ -10,23 +10,7 @@ mkdir -p "$OUT_DIR"
 path=$(systemd-escape --path "/dev/disk/by-slot/persistent")
 FSCK_UNIT="systemd-fsck@${path}.service"
 
-# 1) Determine current slot
-SLOT=""
-ROOT_DEV="$(findmnt -no SOURCE / || true)"
-if [ -n "$ROOT_DEV" ]; then
-  PARTLABEL="$(blkid -s PARTLABEL -o value -- "$ROOT_DEV" 2>/dev/null || true)"
-  case "$(printf '%s' "$PARTLABEL" | tr '[:upper:]' '[:lower:]')" in
-    system_a) SLOT="system_a" ;;
-    system_b) SLOT="system_b" ;;
-  esac
-fi
-
-# Optional fallback if label is missing/unexpected
-: "${SLOT:=${SLOT_FALLBACK:-system_a}}"
-
-VAR_SRC="/persistent/slots/${SLOT}/var"
-
-# 2) Emit persistent.mount (mount the shared persistent partition by label)
+# 1) Emit persistent.mount (mount the shared persistent partition by label)
 # Mount with:
 # noatime: avoids atime writes entirely (better than relatime)
 # lazytime: defer inode timestamps to memory, flushed with fsync/mtime changes / 24h.
@@ -50,7 +34,7 @@ Options=rw,noatime,lazytime,commit=60,errors=remount-ro
 WantedBy=local-fs.target
 EOF
 
-# 3) Emit fsck settings
+# 2) Emit fsck settings
 fsck_dir="/run/systemd/system/${FSCK_UNIT}.d"
 mkdir -p "$fsck_dir"
 cat >"$fsck_dir/repair.conf" <<EOF
@@ -58,23 +42,4 @@ cat >"$fsck_dir/repair.conf" <<EOF
 # Automatic non-interactive repair always
 Environment=SYSTEMD_FSCK_FORCE=yes
 Environment=SYSTEMD_FSCK_REPAIR=yes
-EOF
-
-# 4) Emit var.mount (bind per-slot /var)
-cat >"$OUT_DIR/var.mount" <<EOF
-[Unit]
-Description=Per-slot /var for ${SLOT}
-Requires=persistent.mount
-After=persistent.mount
-Before=local-fs.target
-ConditionPathExists=${VAR_SRC}
-
-[Mount]
-What=${VAR_SRC}
-Where=/var
-Type=none
-Options=bind
-
-[Install]
-WantedBy=local-fs.target
 EOF
