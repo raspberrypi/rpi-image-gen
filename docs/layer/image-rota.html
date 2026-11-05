@@ -124,7 +124,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v6.3.0</span>
+        <span class="badge">v6.4.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -603,6 +603,32 @@ The files are inert in non-AB configurations.</p>
                     <td>Non-empty string value</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_updatefmt</code></td>
+                    <td>Format of the update bundle produced for this image.
+ none: No update bundle.
+ otamaker: Raspberry Pi Connect Remote Update bundle.</td>
+                    <td>
+                           <code>none</code>
+                    </td>
+                    <td>Must be one of: none, otamaker</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_updatetpl</code></td>
+                    <td>otamaker contents template used to pack the update
+ bundle. References of the form ${IGconf_&lt;name&gt;} are substituted from the
+ build environment. Payload sources are resolved relative to the image output directory.</td>
+                    <td>
+                           <code class="long-default">${DOTD}/device/otamaker-full.yaml</code>
+                    </td>
+                    <td>Path to an existing non-empty regular file</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
                 </tr>
             </tbody>

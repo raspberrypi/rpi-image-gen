@@ -793,15 +793,17 @@ mmdebstrap:
 </div>
 <table class="tableblock frame-all grid-all stripes-even stretch">
 <colgroup>
-<col style="width: 50%;">
-<col style="width: 25%;">
-<col style="width: 25%;">
+<col style="width: 40%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Context</th>
 <th class="tableblock halign-left valign-top"><code>IGconf_*</code> variables</th>
 <th class="tableblock halign-left valign-top"><code>has()</code> / <code>not has()</code></th>
+<th class="tableblock halign-left valign-top"><code>layer()</code> / <code>not layer()</code></th>
 </tr>
 </thead>
 <tbody>
@@ -809,9 +811,11 @@ mmdebstrap:
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Var-*-Triggers</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Var-*-Conflicts</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
 </tr>
@@ -819,16 +823,21 @@ mmdebstrap:
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Env-Trait-*-Triggers</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>no</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>no</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Conditional <code>X-Env-Layer-Requires</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>no</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>no</strong></p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
 <p>Trait <code>Triggers:</code> are resolved before variable resolution runs, and conditional layer <code>Requires:</code> are evaluated during layer discovery. Before that, neither has a variable dict to check against, only the provider index built so far. An <code>IGconf_*</code> reference in either context still parses and validates cleanly (it&#8217;s the same syntax), but it will silently never fires at evaluation time.</p>
+</div>
+<div class="paragraph">
+<p><code>layer('name')</code> is true if a layer of that name is anywhere in the build, regardless of its position in the build order. It matches layer names (<code>X-Env-Layer-Name</code>) only.</p>
 </div>
 <table class="tableblock frame-all grid-all stripes-even stretch">
 <colgroup>
@@ -873,6 +882,14 @@ mmdebstrap:
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>not has()</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>not has('hw:bluetooth')</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>layer()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>layer('network-manager')</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>not layer()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>not layer('network-manager')</code></p></td>
 </tr>
 </tbody>
 </table>
