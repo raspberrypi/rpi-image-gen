@@ -1,0 +1,16 @@
+[Unit]
+Description=Save persisted files to persistent storage
+RequiresMountsFor=/etc <PERSISTENT_DIR>/common
+# Only from the overlay. Without it /etc holds the image's defaults.
+ConditionPathIsMountPoint=/etc
+
+# Save at boot, on reload and at shutdown
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/rpi-persist-files
+ExecReload=/usr/libexec/rpi-persist-files
+ExecStop=/usr/libexec/rpi-persist-files
+
+[Install]
+WantedBy=multi-user.target

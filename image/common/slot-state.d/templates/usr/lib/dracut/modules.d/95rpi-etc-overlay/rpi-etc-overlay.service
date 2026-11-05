@@ -1,0 +1,12 @@
+[Unit]
+Description=Overlay /etc with persisted files
+DefaultDependencies=no
+ConditionPathExists=/etc/initrd-release
+After=initrd-root-fs.target
+RequiresMountsFor=/sysroot<PERSISTENT_DIR>
+Before=initrd-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/rpi-etc-overlay

@@ -1,8 +1,8 @@
 [Unit]
 Description=Initialise persistent shared directories
 # TODO: if/when a top level persistent-ready.target is introduced, replace the
-# direct persistent mount dependency below (and in machine-id-sync.service) with
-# After=persistent-ready.target, and add health-check service before it.
+# direct persistent mount dependency below with After=persistent-ready.target,
+# and add health-check service before it.
 DefaultDependencies=no
 RequiresMountsFor=<PERSISTENT_DIR>
 Before=local-fs.target

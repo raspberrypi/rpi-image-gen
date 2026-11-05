@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# Compile the EarlyPersistFile= entries of every slot-shared.d file into one list
+# Compile the EarlyPersistFile= entries of every slot-shared.d file into one
+# list, and enable saving the files back to persistent storage
 
 set -eu
 
@@ -39,3 +40,10 @@ done
 install -d -m 0755 "$(dirname "$list")"
 printf '%s\n' "${files[@]}" | sed '/^$/d' | sort -u > "$list"
 chmod 0644 "$list"
+
+[ -s "$list" ] || exit 0
+
+sysd="${fs}/etc/systemd/system"
+[ -f "${sysd}/rpi-persist-files.service" ] || die "missing rpi-persist-files.service"
+install -d -m 0755 "${sysd}/multi-user.target.wants"
+ln -sf ../rpi-persist-files.service "${sysd}/multi-user.target.wants/rpi-persist-files.service"

@@ -19,19 +19,7 @@ install -d -m 1777 ${perst}/slots/system_a/var/tmp
 install -d -m 1777 ${perst}/slots/system_b/var/tmp
 
 
-# machine-id(5) needed by sysinit.target
-wants_dir="${fs}/etc/systemd/system/sysinit.target.wants"
-units=(
-  "machine-id-sync.service"
-)
-install -d -m 0755 "${wants_dir}"
-for unit in "${units[@]}"; do
-  [ -f "${fs}/etc/systemd/system/${unit}" ] || die "missing ${unit}"
-  chmod 0644 "${fs}/etc/systemd/system/${unit}"
-  ln -sf "../${unit}" "${wants_dir}/${unit}"
-done
-
-# Ship an empty file, add entry for legacy dbus
+# machine-id(5): ship an empty file, add entry for legacy dbus
 rm -f "${fs}/etc/machine-id"
 rm -f "${fs}/var/lib/dbus/machine-id"
 install -m0644 -o root -g root /dev/null "${fs}/etc/machine-id"

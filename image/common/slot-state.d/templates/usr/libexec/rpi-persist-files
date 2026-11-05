@@ -1,0 +1,8 @@
+#!/bin/sh
+# Save files listed by EarlyPersistFile= to persistent storage. Only files
+# whose contents differ are written.
+
+set -eu
+
+exec rsync -a --numeric-ids --checksum --fsync --ignore-missing-args \
+   --files-from=/usr/lib/rpi-image-gen/early-persist-files / "<PERSISTENT_DIR>/common/"
