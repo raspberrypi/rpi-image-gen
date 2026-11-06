@@ -1,6 +1,7 @@
 = slot-state
+:persistent_dir: /persistent
 
-Paths on the persistent partition are shown under the default mount point, `/persistent`. The image layout sets it with `IGconf_image_persistent_dir`.
+Paths on the persistent partition are shown under the default mount point, `{persistent_dir}`. The image layout sets it with `IGconf_image_persistent_dir`.
 
 == Mount points
 
@@ -8,10 +9,10 @@ Paths on the persistent partition are shown under the default mount point, `/per
 |===
 | Mount point | Backing | Type | Notes
 
-| /home | /persistent/home | bind | User data shared across slots
-| /var | /persistent/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
-| /var/log/journal | /persistent/log/journal | bind | Single log directory used by both slots
-| _<slot-shared paths>_ | /persistent/shared/<path> | bind | Application data shared across slots (layer-declared, see <<slot-shared>>)
+| /home | {persistent_dir}/home | bind | User data shared across slots
+| /var | {persistent_dir}/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
+| /var/log/journal | {persistent_dir}/log/journal | bind | Single log directory used by both slots
+| _<slot-shared paths>_ | {persistent_dir}/shared/<path> | bind | Application data shared across slots (layer-declared, see <<slot-shared>>)
 |===
 
 * **Rationale**
@@ -20,11 +21,11 @@ Paths on the persistent partition are shown under the default mount point, `/per
    ** Shared journalling: centralised point for device logging.
 
 * **Logging**
-   ** A single persistent journal directory at `/persistent/log/journal` stores logs from either slot.
+   ** A single persistent journal directory at `{persistent_dir}/log/journal` stores logs from either slot.
    ** Journaling is configured for endurance and reliability.
 
 * **Machine Identity (systemd)**
-   ** `/etc/machine-id` is kept in `/persistent/common/etc/machine-id` with `EarlyPersistFile=`.
+   ** `/etc/machine-id` is kept in `{persistent_dir}/common/etc/machine-id` with `EarlyPersistFile=`.
 
 * **Offline updates (systemd)**
    ** Compatible with https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#ConditionNeedsUpdate=[`ConditionNeedsUpdate=/etc`]. A rotation to a slot built with a newer `SOURCE_DATE_EPOCH` is an update of `/usr`.
@@ -35,7 +36,7 @@ Paths on the persistent partition are shown under the default mount point, `/per
 Slot partition GPT labels are mandatory to associate the immutable root with its matching persistent storage.
 
 - Root slots must have stable PARTLABELs: e.g. `system_a` and `system_b`.
-- At boot, a generator reads the root slot’s `PARTLABEL` to select `/persistent/slots/<slot>/var`.
+- At boot, a generator reads the root slot’s `PARTLABEL` to select `{persistent_dir}/slots/<slot>/var`.
 
 If slot GPT labels are missing/duplicated, `/var` binding will fail.
 
@@ -60,8 +61,8 @@ If you are writing a layer whose software keeps state under `/var` that users wo
 
 === How it works
 
-. `slot-shared-generator` runs at early boot, reads every `/etc/rpi-image-gen/slot-shared.d/*.conf` file and emits a `.mount` systemd unit for each declared path, mounting `/persistent/shared/<path>` over `<path>` as a bind mount.
-. `persistent-shared-init.service` runs before the bind mounts activate. It creates any missing `/persistent/shared/<path>` directories on the persistent partition, handling first boot and disaster-recovery scenarios where the partition has been re-initialised.
+. `slot-shared-generator` runs at early boot, reads every `/etc/rpi-image-gen/slot-shared.d/*.conf` file and emits a `.mount` systemd unit for each declared path, mounting `{persistent_dir}/shared/<path>` over `<path>` as a bind mount.
+. `persistent-shared-init.service` runs before the bind mounts activate. It creates any missing `{persistent_dir}/shared/<path>` directories on the persistent partition, handling first boot and disaster-recovery scenarios where the partition has been re-initialised.
 . Bind mounts are guarded by `ConditionPathIsDirectory` on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.
 
 === Declaring a shared path
@@ -71,38 +72,45 @@ Drop a `.conf` file into `/etc/rpi-image-gen/slot-shared.d/`, eg via the layer's
 [source]
 ----
 Version=1
-Path=/var/lib/myapp
-Path=/etc/myapp/state
+SharedPath=/var/lib/myapp
+SharedPath=/etc/myapp/state
 ----
 
 Every copy between the image, the device and persistent storage keeps a file's contents, ownership (by numeric ID), mode and modification time.
 
-`Version=1`:: Required. A generator that does not recognise the version skips the file with a warning rather than misprocessing it.
-`Path=`:: One or more absolute paths to share. Multiple `Path=` entries are supported in a single file. A missing leading `/` is corrected automatically. Only directory paths are supported.
-`StaticPath=`:: Optional. A file or directory inside a shared path that the image owns rather than the device. The shared path may be declared by a `Path=` in any `.conf` file, not only this one. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. Multiple `StaticPath=` entries are supported.
-`EarlyPersistFile=`:: Optional. A file under `/etc` kept in `/persistent/common` across boots and slot rotations. The initramfs restores the stored copy into an overlay on `/etc` with a tmpfs upper layer, so it is in place before switch-root. A stored copy takes precedence over the image's file, and the image's file is used until a copy is stored. It is saved back at boot, at shutdown and on `systemctl reload rpi-persist-files`. Deleting the file on the device does not remove the stored copy. It must not be inside a shared path. Multiple `EarlyPersistFile=` entries are supported. Other writes to `/etc` succeed but are lost at reboot.
+// BEGIN generated by slot-state.d/self/host/bin/slot-state-manifest doc
+Each key other than `Version=` declares a VFS operation (vfsop) on a path.
+
+`Version=1`:: Required. The format of the file. Any other value fails the build.
+`SharedPath=`:: A directory shared across slots. `{persistent_dir}/shared/<path>` is bind-mounted over it, so every slot reads and writes the same data. Before the bind, files from the image that are missing there are copied in. Existing files are never overwritten, so changes made at runtime are kept. It must exist as a directory in the image. `SharedPath=` directories may be nested.
+`Path=`:: The original name of `SharedPath=`, still accepted.
+`StaticPath=`:: A file or directory inside a `SharedPath=` directory that the image owns rather than the device. The `SharedPath=` may be declared by any file. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. If the image does not contain it, it is removed from the shared location.
+`EarlyPersistFile=`:: A file under `/etc` kept in `{persistent_dir}/common` across boots and slot rotations. The initramfs restores the stored copy into an overlay on `/etc` with a tmpfs upper layer, so it is in place before switch-root. A stored copy takes precedence over the image's file, and the image's file is used until a copy is stored. It is saved back at boot, at shutdown and on `systemctl reload rpi-persist-files`. Deleting the file on the device does not remove the stored copy. It must not be inside a `SharedPath=` directory. Other writes to `/etc` succeed but are lost at reboot.
+
+Each key may appear any number of times. Paths are absolute: a missing leading `/`, a trailing `/` and repeated `/` are corrected. A path must not contain whitespace, `.` or `..`, must not pass through a symlink in the image, and must not overlap the persistent directory. A path declared more than once with the same vfsop, by any files, is one entry. Declaring it with different vfsops, or using an unknown key, fails the build.
+
+VFS operations are applied in a fixed order, whatever their order in a file: `EarlyPersistFile=`, then `StaticPath=`, then `SharedPath=`. Within each, paths are applied parents first.
+// END generated
 
 For example, the device's SSH host keys are shared across slots, while the SSH configuration follows the active slot:
 
 [source]
 ----
 Version=1
-Path=/etc/ssh
+SharedPath=/etc/ssh
 StaticPath=/etc/ssh/sshd_config
 StaticPath=/etc/ssh/sshd_config.d
 ----
 
-Unknown keys are silently ignored, providing forward compatibility within version 1.
-A version increment signals a breaking change.
 The files are inert in non-AB configurations.
 
 === Persistent partition layout
 
-Shared data is stored under `/persistent/shared/`, mirroring the full path hierarchy:
+Shared data is stored under `{persistent_dir}/shared/`, mirroring the full path hierarchy:
 
-[source]
+[source,subs="attributes+"]
 ----
-/persistent/
+{persistent_dir}/
 └── shared/
     └── var/
         └── lib/
