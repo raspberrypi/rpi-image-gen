@@ -53,7 +53,7 @@ ConditionPathExists=${VAR_SRC}
 What=${VAR_SRC}
 Where=/var
 Type=none
-Options=bind
+Options=bind,slave,shared
 
 [Install]
 WantedBy=local-fs.target

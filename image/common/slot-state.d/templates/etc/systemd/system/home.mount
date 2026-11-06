@@ -7,7 +7,7 @@ Before=local-fs.target
 What=<PERSISTENT_DIR>/home
 Where=/home
 Type=none
-Options=bind
+Options=bind,slave,shared
 
 [Install]
 RequiredBy=local-fs.target

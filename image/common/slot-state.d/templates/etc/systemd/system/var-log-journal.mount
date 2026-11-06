@@ -7,7 +7,7 @@ Before=local-fs.target
 What=<PERSISTENT_DIR>/log/journal
 Where=/var/log/journal
 Type=none
-Options=bind
+Options=bind,slave,shared
 
 [Install]
 RequiredBy=local-fs.target

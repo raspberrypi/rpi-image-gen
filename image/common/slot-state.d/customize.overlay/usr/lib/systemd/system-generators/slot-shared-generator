@@ -37,7 +37,7 @@ Before=local-fs.target
 What=${store}
 Where=${path}
 Type=none
-Options=bind
+Options=bind,slave,shared
 EOF
     mkdir -p "${OUT_DIR}/${target}"
     ln -sf "../${unit_name}" "${OUT_DIR}/${target}/${unit_name}"
