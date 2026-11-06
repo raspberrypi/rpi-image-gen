@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# Deploy the account map
+
+set -eu
+
+cp -v "${IGconf_target_dir}/account-registry.conf" "${1}/"

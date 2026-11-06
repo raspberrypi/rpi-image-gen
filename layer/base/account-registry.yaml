@@ -1,0 +1,8 @@
+# METABEGIN
+# X-Env-Layer-Name: account-registry
+# X-Env-Layer-Category: audit
+# X-Env-Layer-Desc: Records the user and group IDs in the image.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: systemd
+# METAEND
+---

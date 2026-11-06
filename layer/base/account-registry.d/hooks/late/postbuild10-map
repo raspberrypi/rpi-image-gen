@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# Record every account in the image with its numeric ID in sysusers.d(5) format
+
+set -eu
+
+fs=$1
+
+[[ -d "$fs" ]] || exit 0
+
+map="${IGconf_target_dir}/account-registry.conf"
+
+{
+   echo "# Accounts in this image, see sysusers.d(5)"
+
+   while IFS=: read -r name _ gid _; do
+      echo "g ${name} ${gid}"
+   done < "${fs}/etc/group"
+
+   while IFS=: read -r name _ uid gid gecos home shell; do
+      echo "u ${name} ${uid}:${gid} \"${gecos}\" ${home} ${shell}"
+   done < "${fs}/etc/passwd"
+
+   while IFS=: read -r name _ _ members; do
+      for user in ${members//,/ }; do
+         echo "m ${user} ${name}"
+      done
+   done < "${fs}/etc/group"
+} > "$map"
+
+install -D -m 0644 "$map" "${fs}/usr/lib/sysusers.d/00-account-registry.conf"
