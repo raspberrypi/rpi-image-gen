@@ -15,11 +15,11 @@ while read -r op path store seed bind; do
    case "$op" in
       StaticPath)
          # Replaced from the active slot by the seeding below
-         printf 'persistent-shared-init: static %s\n' "$path"
+         printf 'persistent-shared-init: %s %s\n' "$op" "$path"
          rm -rf -- "$store"
          ;;
       SharedPath)
-         printf 'persistent-shared-init: %s\n' "$path"
+         printf 'persistent-shared-init: %s %s\n' "$op" "$path"
          mkdir -p "$store"
          # Write missing files into shared, never overwriting existing ones
          if [ -d "$seed" ]; then
