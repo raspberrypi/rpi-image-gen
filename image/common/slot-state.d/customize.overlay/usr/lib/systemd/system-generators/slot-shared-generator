@@ -1,0 +1,44 @@
+#!/bin/sh
+# systemd generator to bind-mount each SharedPath= in the slot-state manifest
+
+set -eu
+
+OUT_DIR="/run/systemd/generator"
+mkdir -p "$OUT_DIR"
+
+MANIFEST=/usr/lib/rpi-image-gen/slot-state.manifest
+[ -f "$MANIFEST" ] || exit 0
+
+while read -r op path store seed bind; do
+    [ "$op" = SharedPath ] || continue
+
+    # An optional bind is skipped if its store is missing, and the path falls
+    # back to the image's copy. A required bind fails local-fs.target.
+    if [ "$bind" = required ]; then
+        condition=""
+        target=local-fs.target.requires
+    else
+        condition="ConditionPathIsDirectory=${store}"
+        target=local-fs.target.wants
+    fi
+
+    unit_name="$(systemd-escape --path "$path").mount"
+    cat >"${OUT_DIR}/${unit_name}" <<EOF
+[Unit]
+Description=Shared persistent data for ${path}
+RequiresMountsFor=${store}
+After=var.mount
+Wants=persistent-shared-init.service
+After=persistent-shared-init.service
+${condition}
+Before=local-fs.target
+
+[Mount]
+What=${store}
+Where=${path}
+Type=none
+Options=bind
+EOF
+    mkdir -p "${OUT_DIR}/${target}"
+    ln -sf "../${unit_name}" "${OUT_DIR}/${target}/${unit_name}"
+done < "$MANIFEST"

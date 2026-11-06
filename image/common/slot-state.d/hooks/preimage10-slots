@@ -40,6 +40,13 @@ for unit in "${units[@]}"; do
 done
 
 
+# Save the EarlyPersistFile= paths back to persistent storage
+sysd="${fs}/etc/systemd/system"
+[ -f "${sysd}/rpi-persist-files.service" ] || die "missing rpi-persist-files.service"
+install -d -m 0755 "${sysd}/multi-user.target.wants"
+ln -sf ../rpi-persist-files.service "${sysd}/multi-user.target.wants/rpi-persist-files.service"
+
+
 # /home and the journal bind mounts required by local-fs.target
 requires_dir="${fs}/etc/systemd/system/local-fs.target.requires"
 units=(
@@ -108,40 +115,20 @@ install -d -m 0755 ${fs}/var/cache
 install -d -m 0755 ${fs}/var/spool
 
 
-# For each slot-shared path: seed the persistent shared location and retain a
-# copy in the immutable root. Both use the slot-a copy (rsynced above) as the
-# source.
+# For each SharedPath= in the manifest: seed its store on the persistent
+# partition and retain a copy in the immutable root. Both use the slot-a copy
+# (rsynced above) as the source.
 # Retaining in the immutable root lets persistent-shared-init push OTA-delivered
 # files into the shared location on each boot, before bind mounts activate.
-if ls "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf >/dev/null 2>&1; then
-   for conf in "${fs}/etc/rpi-image-gen/slot-shared.d/"*.conf; do
-      [ -f "$conf" ] || continue
-      version=""
-      paths=""
-      while IFS= read -r line || [ -n "$line" ]; do
-         case "$line" in ''|\#*) continue ;; esac
-           key="${line%%=*}"
-           value="${line#*=}"
-           case "$key" in
-               Version) version="$value" ;;
-               Path)    paths="$paths /${value#/}" ;;
-           esac
-      done < "$conf"
-
-      if [ "$version" != "1" ]; then
-         die "preimage: $conf: unsupported slot-shared version '${version:-missing}'"
-      fi
-
-      for path in $paths; do
-         src="${perst}/slots/system_a${path}"
-         [ -d "$src" ] || continue
-         mkdir -p "${perst}/shared${path}"
-         rsync -aHAXS --numeric-ids --delete "${src}/" "${perst}/shared${path}/"
-         mkdir -p "${fs}${path}"
-         rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${path}/"
-      done
-   done
-fi
+while read -r op path store seed bind; do
+   [[ $op == SharedPath ]] || continue
+   src="${perst}/slots/system_a${path}"
+   [ -d "$src" ] || continue
+   mkdir -p "${fs}${store}"
+   rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${store}/"
+   mkdir -p "${fs}${path}"
+   rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${path}/"
+done < "${fs}/usr/lib/rpi-image-gen/slot-state.manifest"
 
 
 # Perms for bind mounts on the immutable root

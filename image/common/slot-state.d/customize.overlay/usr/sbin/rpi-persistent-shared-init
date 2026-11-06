@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Prepare the store of each SharedPath= in the slot-state manifest before the
+# bind mounts activate. The manifest lists every StaticPath= first, so
+# image-owned entries are removed before anything is seeded, and parents come
+# before children.
+
+set -eu
+
+MANIFEST=/usr/lib/rpi-image-gen/slot-state.manifest
+
+[ -f "$MANIFEST" ] || exit 0
+
+while read -r op path store seed bind; do
+   case "$op" in
+      StaticPath)
+         # Replaced from the active slot by the seeding below
+         printf 'persistent-shared-init: static %s\n' "$path"
+         rm -rf -- "$store"
+         ;;
+      SharedPath)
+         printf 'persistent-shared-init: %s\n' "$path"
+         mkdir -p "$store"
+         # Write missing files into shared, never overwriting existing ones
+         if [ -d "$seed" ]; then
+            rsync -av --numeric-ids --ignore-existing "${seed}/" "${store}/" </dev/null
+         fi
+         ;;
+   esac
+done < "$MANIFEST"
