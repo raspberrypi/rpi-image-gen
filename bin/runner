@@ -158,7 +158,6 @@ layer_vars() {
       local selfpath
       selfpath=$(IFS=:; echo "${dirs[*]}")
       _lvars+=( "PATH=${selfpath}:${PATH}" )
-      msg "runner: $layer [self PATH $selfpath]"
    fi
 }
 
