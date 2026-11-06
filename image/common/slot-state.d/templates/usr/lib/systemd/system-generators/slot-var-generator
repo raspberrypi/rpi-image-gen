@@ -22,11 +22,30 @@ fi
 
 VAR_SRC="<PERSISTENT_DIR>/slots/${SLOT}/var"
 
-# 2) Emit var.mount (bind per-slot /var)
+# 2) Emit slot-var-reset.service (reset the slot's /var from the image after
+# an update, before it is mounted). ConditionNeedsUpdate= is documented for
+# /etc and /var, but systemd applies the same check to any absolute path.
+cat >"$OUT_DIR/slot-var-reset.service" <<EOF
+[Unit]
+Description=Reset /var for ${SLOT} from the image
+DefaultDependencies=no
+RequiresMountsFor=${VAR_SRC}
+ConditionNeedsUpdate=${VAR_SRC}
+Before=var.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/slot-var-reset ${VAR_SRC}
+EOF
+
+# 3) Emit var.mount (bind per-slot /var)
 cat >"$OUT_DIR/var.mount" <<EOF
 [Unit]
 Description=Per-slot /var for ${SLOT}
 RequiresMountsFor=${VAR_SRC}
+Wants=slot-var-reset.service
+After=slot-var-reset.service
 Before=local-fs.target
 ConditionPathExists=${VAR_SRC}
 

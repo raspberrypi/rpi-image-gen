@@ -188,13 +188,19 @@ def store(path, op):
     return store(parent, "SharedPath") + path.removeprefix(parent)
 
 
+# Where an entry's content comes from in the image. /var is emptied in the
+# image, and kept in its factory copy.
+def factory(path):
+    return f"/usr/share/factory{path}" if inside(path, "/var") else path
+
+
 entries = sorted(decl.items(), key=lambda e: (ORDER.index(e[1][0]), e[0].split("/")))
 
 manifest.parent.mkdir(parents=True, exist_ok=True)
 with manifest.open("w") as f:
     f.write("# op path store seed bind\n")
     for path, (op, _, _) in entries:
-        seed = "-" if op == "EarlyPersistFile" else path
+        seed = "-" if op == "EarlyPersistFile" else factory(path)
         bind = "optional" if op == "SharedPath" else "-"
         f.write(f"{op} {path} {store(path, op)} {seed} {bind}\n")
 manifest.chmod(0o644)

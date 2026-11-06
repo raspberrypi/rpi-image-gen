@@ -44,6 +44,26 @@ If slot GPT labels can’t be guaranteed, this layout is not suitable for your d
 ====
 
 
+== Slot updates
+
+An update writes a new image to the inactive slot and boots it with tryboot. On the first boot of a slot after its image has changed:
+
+* The slot's `/var` is reset from the image. The image's `/var` is shipped in `/usr/share/factory/var` and replaces the slot's `/var` before it is mounted, so state written by the slot's previous image is discarded. Files in `/var/cache`, `/var/log` and `/var/tmp` are not shipped, but their directories are.
+* Shared paths, `/home`, the journal and `EarlyPersistFile=` files are kept.
+* Units with `ConditionNeedsUpdate=/etc` run if the device has not run this image or a newer one before.
+* Units with `ConditionNeedsUpdate=/var` run, as the slot's `/var` has changed.
+
+The slot's `/var/.updated` records the image its `/var` was last reset for, so a reboot does not reset it. The other slot's `/var` is never touched, so returning to that slot returns to its own state.
+
+A slot's image has changed when it was built with a newer `SOURCE_DATE_EPOCH` than the image its `/var` was last reset for. An older image written to a slot is not detected, and the slot's `/var` is not reset.
+
+=== Application data
+
+* State under `/var` that must survive an update must be declared shared (see <<slot-shared>>). Anything else is reset.
+* Shared data is written by whichever slot is running, including during a tryboot that is then rolled back. A layer that changes the format of its shared data must keep it readable by the previous release.
+* One-off work after an update, such as migrating shared data, belongs in a unit with `ConditionNeedsUpdate=/etc`. It can run again after a power loss, so it must be safe to repeat.
+
+
 [[slot-shared]]
 == Slot-shared application data
 
@@ -118,4 +138,4 @@ Shared data is stored under `{persistent_dir}/shared/`, mirroring the full path 
             └── myapp/    <-- bind-mounted over /var/lib/myapp
 ----
 
-Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is `StaticPath=` entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.
+Because the image keeps a copy of each declared path (paths under `/var` in `/usr/share/factory/var`), files baked into the image are pushed into the shared location by `rpi-persistent-shared-init`, before the bind mounts activate. Files are only pushed if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is `StaticPath=` entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.

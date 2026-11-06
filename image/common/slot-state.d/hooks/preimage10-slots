@@ -61,9 +61,19 @@ for unit in "${units[@]}"; do
 done
 
 
-# /var is per-slot, so synchronise
-rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${perst}/slots/system_a/var/"
-rsync -aHAXS --numeric-ids --delete "${fs}/var/" "${perst}/slots/system_b/var/"
+# The image's /var, kept in the image. A slot's /var is reset from it on its
+# first boot after an update, see slot-var-reset. The directories in cache,
+# log and tmp are kept, but not the files.
+factory="${fs}/usr/share/factory/var"
+mkdir -p "$factory"
+rsync -aHAXS --numeric-ids --delete \
+   --include='/cache/**/' --include='/log/**/' --include='/tmp/**/' \
+   --exclude='/cache/**' --exclude='/log/**' --exclude='/tmp/**' \
+   "${fs}/var/" "${factory}/"
+
+# /var is per-slot, and starts as the factory copy
+rsync -aHAXS --numeric-ids --delete "${factory}/" "${perst}/slots/system_a/var/"
+rsync -aHAXS --numeric-ids --delete "${factory}/" "${perst}/slots/system_b/var/"
 
 
 # Journal is retained across slot rotations
@@ -114,21 +124,6 @@ install -d -m 0755 ${fs}/var/log
 install -d -m 0755 ${fs}/var/cache
 install -d -m 0755 ${fs}/var/spool
 
-
-# For each SharedPath= in the manifest: seed its store on the persistent
-# partition and retain a copy in the immutable root. Both use the slot-a copy
-# (rsynced above) as the source.
-# Retaining in the immutable root lets persistent-shared-init push OTA-delivered
-# files into the shared location on each boot, before bind mounts activate.
-while read -r op path store seed bind; do
-   [[ $op == SharedPath ]] || continue
-   src="${perst}/slots/system_a${path}"
-   [ -d "$src" ] || continue
-   mkdir -p "${fs}${store}"
-   rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${store}/"
-   mkdir -p "${fs}${path}"
-   rsync -aHAXS --numeric-ids --delete "${src}/" "${fs}${path}/"
-done < "${fs}/usr/lib/rpi-image-gen/slot-state.manifest"
 
 
 # Perms for bind mounts on the immutable root
