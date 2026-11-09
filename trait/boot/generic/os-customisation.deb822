@@ -1,0 +1,3 @@
+X-Env-Trait-rpi-preseed-Desc: OS customisation is provided by rpi-preseed, the Raspberry Pi
+ first-boot customisation agent for Raspberry Pi OS.
+X-Env-Trait-rpi-preseed-Valid: bool

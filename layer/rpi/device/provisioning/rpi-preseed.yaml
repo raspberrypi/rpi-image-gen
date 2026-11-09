@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-preseed
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: First boot OS customisation with rpi-preseed
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: systemd,hw:device:rpi
+# X-Env-Layer-Provides: boot:os-customisation:rpi-preseed
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - rpi-preseed
