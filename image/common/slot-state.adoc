@@ -111,7 +111,7 @@ If you are writing a layer whose software keeps state under `/var` that users wo
 
 . At build time, every `/etc/rpi-image-gen/slot-shared.d/*.conf` file is compiled into `/usr/lib/rpi-image-gen/slot-state.manifest` and `/usr/lib/rpi-image-gen/slot-state.tmpfiles`. The device reads only these.
 . `slot-shared-generator` runs at early boot and emits a `.mount` systemd unit for each `SharedPath=` in the manifest, mounting `{persistent_dir}/shared/<path>` over `<path>` as a bind mount.
-. `persistent-shared-init.service` applies `slot-state.tmpfiles` with `systemd-tmpfiles` before the bind mounts activate. It creates the persistent partition's own directories, removes each `StaticPath=` from the shared location, then copies into each `{persistent_dir}/shared/<path>` whatever the image has that is missing there. Existing files and directories are left alone. This handles first boot and a re-initialised partition.
+. `persistent-shared-init.service` applies `slot-state.tmpfiles` with `systemd-tmpfiles` before the bind mounts activate. It creates the persistent partition's own directories, fills `{persistent_dir}/home` from the image if it is empty, removes each `StaticPath=` from the shared location, then copies into each `{persistent_dir}/shared/<path>` whatever the image has that is missing there. Existing files and directories are left alone. This handles first boot and a re-initialised partition.
 . Bind mounts are guarded by `ConditionPathIsDirectory` on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.
 
 === Declaring a shared path

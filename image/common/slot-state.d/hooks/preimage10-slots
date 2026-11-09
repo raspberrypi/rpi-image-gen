@@ -105,10 +105,11 @@ Seal=yes
 EOF
 
 
-# /home is bind mounted to the persistent home and retained across slot rotations
-# Mirror it
-mkdir -p "${perst}/home/"
-rsync -aHAXS --numeric-ids --delete "${fs}/home/" "${perst}/home/"
+# /home is bind mounted to the persistent home and retained across slot
+# rotations. The image's /home is kept in its factory copy, which fills the
+# persistent home on the device when it is empty.
+mkdir -p "${fs}/usr/share/factory/home"
+rsync -aHAXS --numeric-ids --delete "${fs}/home/" "${fs}/usr/share/factory/home/"
 
 # Reclaim /home
 find "${fs}/home" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
