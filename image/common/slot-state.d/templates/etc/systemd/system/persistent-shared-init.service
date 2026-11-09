@@ -1,5 +1,5 @@
 [Unit]
-Description=Initialise persistent shared directories
+Description=Initialise the persistent partition
 # TODO: if/when a top level persistent-ready.target is introduced, replace the
 # direct persistent mount dependency below with After=persistent-ready.target,
 # and add health-check service before it.
@@ -11,4 +11,4 @@ Before=var.mount
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/sbin/rpi-persistent-shared-init
+ExecStart=/usr/bin/systemd-tmpfiles --remove --create /usr/lib/rpi-image-gen/slot-state.tmpfiles

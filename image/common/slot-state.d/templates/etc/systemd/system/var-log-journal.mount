@@ -1,6 +1,8 @@
 [Unit]
 Description=Journal retained across slot rotations
 RequiresMountsFor=<PERSISTENT_DIR>/log/journal
+Wants=persistent-shared-init.service
+After=persistent-shared-init.service
 Before=local-fs.target
 
 [Mount]
