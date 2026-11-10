@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# Declare the files written by the selected rpi-preseed domains so they're
+# retained across reboots and slot updates.
+
+set -eu
+
+out="${LAYER_WORKDIR}/customize.overlay"
+conf="${out}/etc/rpi-image-gen/slot-shared.d/rpi-preseed-slotted.conf"
+
+files() {
+   case "$1" in
+      system) echo /etc/hostname /etc/hosts ;;
+      user)   echo /etc/passwd /etc/group /etc/shadow /etc/gshadow /etc/sudoers.d/010_rpi-preseed-nopasswd ;;
+      time)   echo /etc/systemd/timesyncd.conf.d/10-rpi-preseed.conf ;;
+      locale) echo /etc/default/keyboard ;;
+   esac
+}
+
+install -d "${out}/var/lib/rpi-preseed" "$(dirname "$conf")"
+
+IFS=, read -ra domains <<< "$IGconf_rpipreseed_domains"
+{
+   echo "Version=1"
+   echo "SharedPath=/var/lib/rpi-preseed"
+   for d in "${domains[@]}"; do
+      for f in $(files "$d"); do
+         echo "EarlyPersistFile=${f}"
+      done
+   done
+} > "$conf"

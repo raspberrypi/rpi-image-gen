@@ -1,0 +1,25 @@
+# METABEGIN
+# X-Env-Layer-Name: rpi-preseed-slotted
+# X-Env-Layer-Category: device
+# X-Env-Layer-Desc: Retain rpi-preseed customisation across reboots and updates
+#  on a slotted image.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-RequiresProvider: boot:slotted,boot:os-customisation:rpi-preseed
+#
+# X-Env-VarPrefix: rpipreseed
+#
+# X-Env-Var-domains: system
+# X-Env-Var-domains-Desc: The rpi-preseed domains whose files this layer
+#  declares so that they persist when rpi-preseed writes them. The files of a
+#  domain that isn't selected don't persist. Files owned by other software
+#  are declared by the layers that install it, eg NetworkManager connections
+#  by network-manager.
+#  system: hostname and hosts
+#  user: accounts and sudo
+#  time: NTP servers
+#  locale: keyboard layout only
+# X-Env-Var-domains-Required: n
+# X-Env-Var-domains-Valid: list:system,user,time,locale
+# X-Env-Var-domains-Set: y
+# METAEND
+---
