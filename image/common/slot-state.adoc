@@ -36,7 +36,7 @@ Paths on the persistent partition are shown under the default mount point, `{per
 Slot partition GPT labels are mandatory to associate the immutable root with its matching persistent storage.
 
 - Root slots must have stable PARTLABELs: e.g. `system_a` and `system_b`.
-- At boot, a generator reads the root slot’s `PARTLABEL` to select `{persistent_dir}/slots/<slot>/var`.
+- At boot, a generator reads the `PARTLABEL` of the active system partition, `/dev/disk/by-slot/active/system`, to select `{persistent_dir}/slots/<slot>/var`.
 
 If slot GPT labels are missing/duplicated, `/var` binding will fail.
 
