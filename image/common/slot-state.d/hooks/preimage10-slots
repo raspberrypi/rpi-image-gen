@@ -45,6 +45,18 @@ sysd="${fs}/etc/systemd/system"
 install -d -m 0755 "${sysd}/multi-user.target.wants"
 ln -sf ../rpi-persist-files.service "${sysd}/multi-user.target.wants/rpi-persist-files.service"
 
+# ...at shutdown
+[ -f "${sysd}/rpi-persist-files-shutdown.service" ] || die "missing rpi-persist-files-shutdown.service"
+ln -sf ../rpi-persist-files-shutdown.service "${sysd}/multi-user.target.wants/rpi-persist-files-shutdown.service"
+
+# ...and whenever one changes
+install -d -m 0755 "${sysd}/paths.target.wants"
+for unit in rpi-persist-files-changed.path rpi-persist-files-changed.service rpi-persist-files.path; do
+   [ -f "${sysd}/${unit}" ] || die "missing ${unit}"
+done
+ln -sf ../rpi-persist-files-changed.path "${sysd}/paths.target.wants/rpi-persist-files-changed.path"
+ln -sf ../rpi-persist-files.path "${sysd}/paths.target.wants/rpi-persist-files.path"
+
 
 # /home and the journal bind mounts required by local-fs.target
 requires_dir="${fs}/etc/systemd/system/local-fs.target.requires"
@@ -106,8 +118,7 @@ EOF
 
 
 # /home is bind mounted to the persistent home and retained across slot
-# rotations. The image's /home is kept in its factory copy, which fills the
-# persistent home on the device when it is empty.
+# rotations. The image's /home also starts as the factory copy
 mkdir -p "${fs}/usr/share/factory/home"
 rsync -aHAXS --numeric-ids --delete "${fs}/home/" "${fs}/usr/share/factory/home/"
 

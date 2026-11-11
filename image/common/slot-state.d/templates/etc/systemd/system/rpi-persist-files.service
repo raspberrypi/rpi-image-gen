@@ -3,14 +3,15 @@ Description=Save persisted files to persistent storage
 RequiresMountsFor=/etc <PERSISTENT_DIR>/common
 # Only from the overlay. Without it /etc holds the image's defaults.
 ConditionPathIsMountPoint=/etc
+# A start limit would stop rpi-persist-files.path after a burst of changes
+StartLimitIntervalSec=0
 
-# Save at boot, on reload and at shutdown
+# Started at boot and by rpi-persist-files.path. The flag is removed before
+# saving, so a change during the save sets it again and the save runs again.
 [Service]
 Type=oneshot
-RemainAfterExit=yes
+ExecStartPre=/usr/bin/rm -f /run/rpi-persist-files.pending
 ExecStart=/usr/libexec/rpi-persist-files
-ExecReload=/usr/libexec/rpi-persist-files
-ExecStop=/usr/libexec/rpi-persist-files
 
 [Install]
 WantedBy=multi-user.target

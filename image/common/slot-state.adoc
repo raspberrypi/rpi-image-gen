@@ -79,6 +79,7 @@ grep -E '^(IMAGE_VERSION|IG_SOURCE_DATE_EPOCH)=' /etc/os-release
 # Update units on this boot
 systemctl show -p Id -p ConditionResult slot-var-reset systemd-update-done systemd-sysusers
 journalctl -b -u slot-var-reset -u persistent-shared-init -u rpi-persist-files
+systemctl status rpi-persist-files-changed.path rpi-persist-files.path
 
 # Update stamps
 stat -c '%y %n' /usr /var/.updated {persistent_dir}/common/etc/.updated
@@ -109,10 +110,11 @@ If you are writing a layer whose software keeps state under `/var` that users wo
 
 === How it works
 
-. At build time, every `/etc/rpi-image-gen/slot-shared.d/*.conf` file is compiled into `/usr/lib/rpi-image-gen/slot-state.manifest` and `/usr/lib/rpi-image-gen/slot-state.tmpfiles`. The device reads only these.
+. At build time, every `/etc/rpi-image-gen/slot-shared.d/*.conf` file is compiled into `/usr/lib/rpi-image-gen/slot-state.manifest`, `/usr/lib/rpi-image-gen/slot-state.tmpfiles` and `rpi-persist-files-changed.path`. The device reads only these.
 . `slot-shared-generator` runs at early boot and emits a `.mount` systemd unit for each `SharedPath=` in the manifest, mounting `{persistent_dir}/shared/<path>` over `<path>` as a bind mount.
 . `persistent-shared-init.service` applies `slot-state.tmpfiles` with `systemd-tmpfiles` before the bind mounts activate. It creates the persistent partition's own directories, fills `{persistent_dir}/home` from the image if it is empty, removes each `StaticPath=` from the shared location, then copies into each `{persistent_dir}/shared/<path>` whatever the image has that is missing there. Existing files and directories are left alone. This handles first boot and a re-initialised partition.
 . Bind mounts are guarded by `ConditionPathIsDirectory` on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.
+. The initramfs restores each `EarlyPersistFile=` from `{persistent_dir}/common` into `/etc` before switch-root. Changes to them are saved back as described in <<early-persist-files>>.
 
 === Declaring a shared path
 
@@ -134,7 +136,7 @@ Each key other than `Version=` declares a VFS operation (vfsop) on a path.
 `SharedPath=`:: A directory shared across slots. `{persistent_dir}/shared/<path>` is bind-mounted over it, so every slot reads and writes the same data. Before the bind, files from the image that are missing there are copied in. Existing files are never overwritten, so changes made at runtime are kept. It must exist as a directory in the image. `SharedPath=` directories may be nested.
 `Path=`:: The original name of `SharedPath=`, still accepted.
 `StaticPath=`:: A file or directory inside a `SharedPath=` directory that the image owns rather than the device. The `SharedPath=` may be declared by any file. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. If the image does not contain it, it is removed from the shared location.
-`EarlyPersistFile=`:: A file under `/etc` kept in `{persistent_dir}/common` across boots and slot rotations. The initramfs restores the stored copy into an overlay on `/etc` with a tmpfs upper layer, so it is in place before switch-root. A stored copy takes precedence over the image's file, and the image's file is used until a copy is stored. It is saved back at boot, at shutdown and on `systemctl reload rpi-persist-files`. Deleting the file on the device does not remove the stored copy. It must not be inside a `SharedPath=` directory. Other writes to `/etc` succeed but are lost at reboot.
+`EarlyPersistFile=`:: A single file under `/etc` kept in `{persistent_dir}/common` across boots and slot rotations, and in place before switch-root. A stored copy takes precedence over the image's file. Changes made on the device are saved back, see <<early-persist-files>>.
 
 Each key may appear any number of times. Paths are absolute: a missing leading `/`, a trailing `/` and repeated `/` are corrected. A path must not contain whitespace, `%`, `.` or `..`, must not pass through a symlink in the image, and must not overlap the persistent directory. A path declared more than once with the same vfsop, by any files, is one entry. Declaring it with different vfsops, or using an unknown key, fails the build.
 
@@ -167,3 +169,79 @@ Shared data is stored under `{persistent_dir}/shared/`, mirroring the full path 
 ----
 
 Because the image keeps a copy of each declared path (paths under `/var` in `/usr/share/factory/var`), files baked into the image are copied into the shared location by `persistent-shared-init.service`, before the bind mounts activate. Files are only copied if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is `StaticPath=` entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.
+
+
+[[early-persist-files]]
+== Early persist files
+
+`EarlyPersistFile=` keeps a single file under `/etc` in sync across boots and slot rotations. It exists for two use-cases:
+
+* Files PID 1 reads as it starts, before any bind mount is in place, eg `/etc/machine-id`.
+* Files that are customised on the device at runtime, eg the hostname or user accounts set by a provisioning agent, `hostnamectl` or `passwd`. These tools replace a file by renaming a new one over it, which fails on a bind-mounted file, so `SharedPath=` cannot be used for them.
+
+`/etc` is part of the immutable root, so these files are copied rather than bind mounted.
+
+=== Restore
+
+The initramfs mounts an overlay on `/etc`. The image's `/etc` is the lower layer and a tmpfs, `/run/rpi-etc-overlay/upper`, is the upper layer. It copies each stored file from `{persistent_dir}/common` into the upper layer, so the stored copy (if it exists) is what the system sees.
+
+A write to `/etc` outside a `SharedPath=` goes to the tmpfs, so a change to an early persist file is in RAM until it is saved back.
+
+=== Save
+
+`/usr/libexec/rpi-persist-files` copies every `EarlyPersistFile=` in the manifest from `/etc` to `{persistent_dir}/common`. Only files whose contents differ are written. The persistent partition is synced after the files are copied and again after `/etc/.updated`, which is copied last, so the stored stamp never records an update whose files are not on disk. A file that is missing from `/etc`, eg because it was deleted, is skipped. Its stored copy is left as it is, so it is restored at the next boot.
+
+The following units implement the scheme:
+
+[cols="2,1,4", options="header"]
+|===
+| Unit | Source | Role
+
+| `rpi-persist-files.service` | template | Runs the save. Started at boot by `multi-user.target`, by `rpi-persist-files.path`, and by `systemctl start rpi-persist-files`. Removes the pending flag before it saves.
+| `rpi-persist-files-changed.path` | generated from the manifest | One `PathChanged=` for each `EarlyPersistFile=`. Starts `rpi-persist-files-changed.service` when one changes.
+| `rpi-persist-files-changed.service` | template | Creates the pending flag, `/run/rpi-persist-files.pending`, and exits.
+| `rpi-persist-files.path` | template | `PathExists=` on the pending flag. Starts `rpi-persist-files.service` while the flag exists.
+| `rpi-persist-files-shutdown.service` | template | Runs the save at shutdown.
+|===
+
+The units only run when `/etc` is the overlay (`ConditionPathIsMountPoint=/etc`). Without it, `/etc` holds the image's files and there is nothing to save.
+
+=== Why there are two path units
+
+A path unit does not watch while the service it started is running. When that service exits, systemd checks the paths again, but only catches conditions that describe a state, such as `PathExists=`. A _changed_ (`PathChanged=`) event that happened while the service ran is not seen, so it's lost. This means a single path unit that started the save directly would miss any file changes made _during_ the save. See https://www.freedesktop.org/software/systemd/man/latest/systemd.path.html[systemd.path(5)].
+
+So that a change made during a save is still saved, the work is split in two:
+
+. A file changes. `rpi-persist-files-changed.path` starts `rpi-persist-files-changed.service`, which creates a flag file in `/run` and exits. The path unit is watching again almost immediately.
+. `rpi-persist-files.path` sees the flag and starts `rpi-persist-files.service`.
+. `rpi-persist-files.service` removes the flag, then copies the files.
+. A change during the save creates the flag again.
+. When the save exits, systemd checks `rpi-persist-files.path` again, finds the flag, and runs the save again.
+
+Any number of changes during one save lead to one more save. The same applies to a save started at boot or by hand. It relies only on documented systemd behaviour.
+
+=== Limits
+
+* A change made before the path units start, during `sysinit.target`, is saved by the save at boot. This covers `machine-id` being committed, accounts added by `systemd-sysusers` and the stamp written by `systemd-update-done`.
+* A change made in the moment `rpi-persist-files-changed.service` is running is not seen. It is saved with the next change or at shutdown.
+* A change is in RAM until its save completes. A power loss before then means it's lost.
+* Each file is replaced on its own, so a power loss during a save can leave related files out of step with each other, eg `/etc/passwd` and `/etc/shadow`.
+
+=== Checking
+
+[source,sh,subs="attributes+"]
+----
+# Watched files, and the units' state
+systemctl cat rpi-persist-files-changed.path
+systemctl status rpi-persist-files-changed.path rpi-persist-files.path
+
+# Saves on this boot
+journalctl -b -o short-precise -u rpi-persist-files-changed -u rpi-persist-files
+
+# Present only between a change and the start of its save
+ls -l /run/rpi-persist-files.pending
+
+# What the device sees, and what is stored
+ls -A /run/rpi-etc-overlay/upper
+ls -A {persistent_dir}/common/etc
+----

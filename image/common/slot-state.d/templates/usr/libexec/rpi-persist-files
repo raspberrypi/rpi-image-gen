@@ -3,6 +3,7 @@
 # storage. Only files whose contents differ are written. The /etc/.updated
 # stamp is saved last, so it never records an update whose files were not
 # saved.
+# sync the filesystem after each copy to avoid journalling latency/writeback
 
 set -eu
 
@@ -11,7 +12,8 @@ stamp=/etc/.updated
 dst="<PERSISTENT_DIR>/common/"
 
 save() {
-   rsync -a --numeric-ids --checksum --fsync --ignore-missing-args --files-from=- / "$dst"
+   rsync -a --numeric-ids --checksum --ignore-missing-args --files-from=- / "$dst"
+   sync -f "$dst"
 }
 
 # Every EarlyPersistFile= path but the stamp
