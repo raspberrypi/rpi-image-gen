@@ -19,6 +19,7 @@ MOUNT_UNIT="$(systemd-escape --path "$WHERE").mount"
 
 # 1) Emit the mount unit (mount the shared persistent partition by label)
 # Mount with:
+# nosuid,nodev: no setuid binaries or device nodes on the data partition
 # noatime: avoids atime writes entirely (better than relatime)
 # lazytime: defer inode timestamps to memory, flushed with fsync/mtime changes / 24h.
 # commit=60: batches journal commits (fewer writes, risk up to 60s metadata loss on power loss).
@@ -35,7 +36,7 @@ After=${FSCK_UNIT}
 What=/dev/disk/by-slot/persistent
 Where=${WHERE}
 Type=ext4
-Options=rw,noatime,lazytime,commit=60,errors=remount-ro
+Options=rw,nosuid,nodev,noatime,lazytime,commit=60,errors=remount-ro
 EOF
 
 mkdir -p "$OUT_DIR/initrd-fs.target.requires"
