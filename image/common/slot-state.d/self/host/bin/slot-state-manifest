@@ -20,6 +20,7 @@
 # then StaticPath (removed before anything is seeded), then SharedPath, parents
 # before children.
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -177,8 +178,15 @@ for path, (op, conf, key) in decl.items():
 
     parts = path.split("/")[1:]
     for i in range(len(parts)):
-        if fs.joinpath(*parts[:i + 1]).is_symlink():
-            fail(f"{what}: /{'/'.join(parts[:i + 1])} is a symlink in the image")
+        link = fs.joinpath(*parts[:i + 1])
+        if not link.is_symlink():
+            continue
+        if op == "EarlyPersistFile" and i == len(parts) - 1:
+            target = os.path.normpath(os.path.join(os.path.dirname(path), os.readlink(link)))
+            if inside(target, "/etc"):
+                fail(f"{what}: is a symlink to {target}, declare that instead")
+            fail(f"{what}: is a symlink to {target}, outside /etc")
+        fail(f"{what}: /{'/'.join(parts[:i + 1])} is a symlink in the image")
 
     if path == perst or inside(path, perst) or inside(perst, path):
         fail(f"{what}: overlaps the persistent directory {perst}")
