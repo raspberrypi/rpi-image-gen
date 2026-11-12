@@ -225,7 +225,7 @@ Any number of changes during one save lead to one more save. The same applies to
 * A change made before the path units start, during `sysinit.target`, is saved by the save at boot. This covers `machine-id` being committed, accounts added by `systemd-sysusers` and the stamp written by `systemd-update-done`.
 * A change made in the moment `rpi-persist-files-changed.service` is running is not seen. It is saved with the next change or at shutdown.
 * A change is in RAM until its save completes. A power loss before then means it's lost.
-* Each file is replaced on its own, so a power loss during a save can leave related files out of step with each other, eg `/etc/passwd` and `/etc/shadow`.
+* Account files are reconciled at boot by `rpi-persist-accounts.service`.
 
 === Checking
 

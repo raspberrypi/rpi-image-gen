@@ -20,3 +20,4 @@
 mmdebstrap:
   packages:
     - rsync
+    - passwd

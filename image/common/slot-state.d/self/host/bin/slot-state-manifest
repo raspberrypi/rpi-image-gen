@@ -59,6 +59,9 @@ RULES_DOC = (
     "directory. A path declared more than once with the same vfsop, by any files, is one entry. "
     "Declaring it with different vfsops, or using an unknown key, fails the build.")
 
+# The account files, which are only consistent with each other
+ACCOUNT_FILES = ["/etc/passwd", "/etc/shadow", "/etc/group", "/etc/gshadow"]
+
 # The order vfsops are applied in, whatever their order in a file
 ORDER = ["EarlyPersistFile", "StaticPath", "SharedPath"]
 
@@ -158,6 +161,12 @@ for conf in sorted(confdir.glob("*.conf")):
     for key, op, path in PARSERS[version](conf.name, pairs):
         if decl.setdefault(path, (op, conf.name, key))[0] != op:
             fail(f"{conf.name}: {key}={path}: also declared by {decl[path][1]} as {decl[path][2]}=")
+
+# Persisting some account files and not others leaves them out of step
+persisted = [p for p in ACCOUNT_FILES if decl.get(p, ("",))[0] == "EarlyPersistFile"]
+if persisted and len(persisted) != len(ACCOUNT_FILES):
+    missing = ", ".join(p for p in ACCOUNT_FILES if p not in persisted)
+    fail(f"EarlyPersistFile={persisted[0]}: also needs EarlyPersistFile= for {missing}")
 
 shared = sorted(p for p, (o, _, _) in decl.items() if o == "SharedPath")
 

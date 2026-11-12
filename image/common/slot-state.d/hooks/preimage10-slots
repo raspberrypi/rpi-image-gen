@@ -58,6 +58,12 @@ ln -sf ../rpi-persist-files-changed.path "${sysd}/paths.target.wants/rpi-persist
 ln -sf ../rpi-persist-files.path "${sysd}/paths.target.wants/rpi-persist-files.path"
 
 
+# Reconcile the account files at boot
+[ -f "${sysd}/rpi-persist-accounts.service" ] || die "missing rpi-persist-accounts.service"
+install -d -m 0755 "${sysd}/sysinit.target.wants"
+ln -sf ../rpi-persist-accounts.service "${sysd}/sysinit.target.wants/rpi-persist-accounts.service"
+
+
 # /home and the journal bind mounts required by local-fs.target
 requires_dir="${fs}/etc/systemd/system/local-fs.target.requires"
 units=(
