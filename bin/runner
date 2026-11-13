@@ -65,7 +65,8 @@ phase_args() {
 
 
 # Run one hook from its own directory. An env file, when non-empty and present,
-# is supported. Variables named by $envref are exported to the hook alone.
+# is supported, with variables in its values expanded. Variables named by
+# $envref are exported to the hook alone.
 runhook() {
    local envref=$1 envfile=$2 path=$3; shift 3 || true
    local -n _lenv=$envref
@@ -79,7 +80,7 @@ runhook() {
 
    msg "runner: $dir [run $name] [args $@]"
    if [[ -n $envfile && -f $envfile ]]; then
-      runenv "$envfile" -C "$dir" "${_lenv[@]}" "./$name" "$@"
+      runenv "$envfile" -x -C "$dir" "${_lenv[@]}" "./$name" "$@"
    else
       env -C "$dir" "${_lenv[@]}" "./$name" "$@"
    fi
