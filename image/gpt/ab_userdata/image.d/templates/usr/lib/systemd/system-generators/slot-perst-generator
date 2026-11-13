@@ -1,0 +1,53 @@
+#!/bin/sh
+# systemd generator to mount the persistent partition by its by-slot alias.
+# Runs in the initrd, which mounts it under /sysroot so it carries across
+# switch-root.
+
+set -eu
+
+[ -e /etc/initrd-release ] || exit 0
+
+OUT_DIR="/run/systemd/generator"
+mkdir -p "$OUT_DIR"
+
+# fsck unit
+path=$(systemd-escape --path "/dev/disk/by-slot/persistent")
+FSCK_UNIT="systemd-fsck@${path}.service"
+
+WHERE="/sysroot<PERSISTENT_DIR>"
+MOUNT_UNIT="$(systemd-escape --path "$WHERE").mount"
+
+# 1) Emit the mount unit (mount the shared persistent partition by label)
+# Mount with:
+# nosuid,nodev: no setuid binaries or device nodes on the data partition
+# noatime: avoids atime writes entirely (better than relatime)
+# lazytime: defer inode timestamps to memory, flushed with fsync/mtime changes / 24h.
+# commit=60: batches journal commits (fewer writes, risk up to 60s metadata loss on power loss).
+# errors=remount-ro: safer failure mode
+cat >"$OUT_DIR/${MOUNT_UNIT}" <<EOF
+[Unit]
+Description=Persistent data partition
+Before=initrd-fs.target
+Conflicts=umount.target
+Requires=${FSCK_UNIT}
+After=${FSCK_UNIT}
+
+[Mount]
+What=/dev/disk/by-slot/persistent
+Where=${WHERE}
+Type=ext4
+Options=rw,nosuid,nodev,noatime,lazytime,commit=60,errors=remount-ro
+EOF
+
+mkdir -p "$OUT_DIR/initrd-fs.target.requires"
+ln -sf "../${MOUNT_UNIT}" "$OUT_DIR/initrd-fs.target.requires/${MOUNT_UNIT}"
+
+# 2) Emit fsck settings
+fsck_dir="/run/systemd/system/${FSCK_UNIT}.d"
+mkdir -p "$fsck_dir"
+cat >"$fsck_dir/repair.conf" <<EOF
+[Service]
+# Automatic non-interactive repair always
+Environment=SYSTEMD_FSCK_FORCE=yes
+Environment=SYSTEMD_FSCK_REPAIR=yes
+EOF

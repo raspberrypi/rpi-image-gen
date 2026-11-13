@@ -1,0 +1,8 @@
+[Unit]
+Description=Mark persisted files as changed
+# A start limit would stop rpi-persist-files-changed.path after a burst of changes
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/touch /run/rpi-persist-files.pending

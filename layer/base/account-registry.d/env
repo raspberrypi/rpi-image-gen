@@ -1,0 +1,5 @@
+# Every account in the image, in the target and deploy directories
+ACCOUNT_REGISTRY_MAP=account-registry.conf
+
+# The system accounts, in sysusers.d
+ACCOUNT_REGISTRY_SYSUSERS=00-account-registry.conf

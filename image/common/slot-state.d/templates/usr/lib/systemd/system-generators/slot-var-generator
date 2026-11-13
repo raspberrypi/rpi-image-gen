@@ -1,0 +1,59 @@
+#!/bin/sh
+# systemd generator to bind per-slot /var from the persistent partition
+
+set -eu
+
+OUT_DIR="/run/systemd/generator"
+mkdir -p "$OUT_DIR"
+
+# 1) Determine the active slot from the slot mapper's link
+SLOT=""
+PARTLABEL="$(blkid -s PARTLABEL -o value -- /dev/disk/by-slot/active/system 2>/dev/null || true)"
+case "$(printf '%s' "$PARTLABEL" | tr '[:upper:]' '[:lower:]')" in
+  system_a) SLOT="system_a" ;;
+  system_b) SLOT="system_b" ;;
+esac
+
+if [ -z "$SLOT" ]; then
+  echo "<3>slot-var-generator: cannot determine the active slot, /var not bound" > /dev/kmsg
+  exit 1
+fi
+
+VAR_SRC="<PERSISTENT_DIR>/slots/${SLOT}/var"
+
+# 2) Emit slot-var-reset.service (reset the slot's /var from the image after
+# an update, before it is mounted). ConditionNeedsUpdate= is documented for
+# /etc and /var, but systemd applies the same check to any absolute path.
+cat >"$OUT_DIR/slot-var-reset.service" <<EOF
+[Unit]
+Description=Reset /var for ${SLOT} from the image
+DefaultDependencies=no
+RequiresMountsFor=${VAR_SRC}
+ConditionNeedsUpdate=${VAR_SRC}
+Before=var.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/slot-var-reset ${VAR_SRC}
+EOF
+
+# 3) Emit var.mount (bind per-slot /var)
+cat >"$OUT_DIR/var.mount" <<EOF
+[Unit]
+Description=Per-slot /var for ${SLOT}
+RequiresMountsFor=${VAR_SRC}
+Wants=slot-var-reset.service
+After=slot-var-reset.service
+Before=local-fs.target
+ConditionPathExists=${VAR_SRC}
+
+[Mount]
+What=${VAR_SRC}
+Where=/var
+Type=none
+Options=bind,slave,shared
+
+[Install]
+WantedBy=local-fs.target
+EOF

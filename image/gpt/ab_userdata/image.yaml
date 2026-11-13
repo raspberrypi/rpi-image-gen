@@ -3,8 +3,8 @@
 # X-Env-Layer-Category: image
 # X-Env-Layer-Desc: Immutable GPT A/B layout for rotational OTA updates,
 #  boot/system redundancy, and a shared persistent data partition.
-# X-Env-Layer-Version: 6.4.0
-# X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min
+# X-Env-Layer-Version: 7.0.0
+# X-Env-Layer-Requires: image-base,device-base,rpi-ab-slot-mapper,systemd-min,slot-state
 # X-Env-Layer-Provides: image,boot:slotted
 #
 # X-Env-VarRequires: IGconf_device_storage_type,IGconf_device_class
@@ -30,6 +30,12 @@
 # X-Env-Var-data_part_size-Required: n
 # X-Env-Var-data_part_size-Valid: size
 # X-Env-Var-data_part_size-Set: y
+#
+# X-Env-Var-persistent_dir: /persistent
+# X-Env-Var-persistent_dir-Desc: Mount point of the data partition.
+# X-Env-Var-persistent_dir-Required: n
+# X-Env-Var-persistent_dir-Valid: regex:^(?!/(var|home)(/|$))(/[A-Za-z0-9_][A-Za-z0-9._-]*)+$
+# X-Env-Var-persistent_dir-Set: y
 #
 # X-Env-Var-rootfs_type: erofs
 # X-Env-Var-rootfs_type-Desc: Root filesystem type for each system partition.
@@ -99,7 +105,6 @@ mmdebstrap:
   packages:
     - dosfstools
     - e2fsprogs
-    - initramfs-tools
-    - rsync
+    - dracut
   customize-hooks:
     - mkdir -p $1/bootfs

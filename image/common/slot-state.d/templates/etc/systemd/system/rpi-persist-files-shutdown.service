@@ -1,0 +1,15 @@
+[Unit]
+Description=Save persisted files at shutdown
+RequiresMountsFor=/etc <PERSISTENT_DIR>/common
+ConditionPathIsMountPoint=/etc
+# Stopped after rpi-persist-files.service, so the saves never overlap
+Before=rpi-persist-files.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/libexec/rpi-persist-files
+
+[Install]
+WantedBy=multi-user.target

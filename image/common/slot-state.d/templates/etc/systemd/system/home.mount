@@ -1,0 +1,15 @@
+[Unit]
+Description=Home directories retained across slot rotations
+RequiresMountsFor=<PERSISTENT_DIR>/home
+Wants=persistent-shared-init.service
+After=persistent-shared-init.service
+Before=local-fs.target
+
+[Mount]
+What=<PERSISTENT_DIR>/home
+Where=/home
+Type=none
+Options=bind,slave,shared
+
+[Install]
+RequiredBy=local-fs.target

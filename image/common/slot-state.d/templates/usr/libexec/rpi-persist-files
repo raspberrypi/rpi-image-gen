@@ -1,0 +1,29 @@
+#!/bin/sh
+# Save the EarlyPersistFile= paths in the slot-state manifest to persistent
+# storage. Only files whose contents differ are written. The /etc/.updated
+# stamp is saved last, so it never records an update whose files were not
+# saved.
+# sync the filesystem after each copy to avoid journalling latency/writeback
+
+set -eu
+
+manifest=/usr/lib/rpi-image-gen/slot-state.manifest
+stamp=/etc/.updated
+dst="<PERSISTENT_DIR>/common/"
+
+save() {
+   rsync -a --numeric-ids --checksum --ignore-missing-args --files-from=- / "$dst"
+   sync -f "$dst"
+}
+
+# Every EarlyPersistFile= path but the stamp
+files() {
+   while read -r op path _; do
+      case "$op" in
+         EarlyPersistFile) [ "$path" = "$stamp" ] || echo "$path" ;;
+      esac
+   done < "$manifest"
+}
+
+files | save
+echo "$stamp" | save
