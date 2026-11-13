@@ -1,6 +1,9 @@
 #!/bin/bash
 #
-# Record every account in the image with its numeric ID in sysusers.d(5) format
+# Record the accounts in the image with their numeric IDs in sysusers.d(5)
+# format: every account in the map, and only the system accounts for
+# systemd-sysusers. Regular accounts, in the login.defs(5) UID and GID
+# ranges, belong to the device.
 
 set -eu
 
@@ -8,24 +11,50 @@ fs=$1
 
 [[ -d "$fs" ]] || exit 0
 
-map="${IGconf_target_dir}/account-registry.conf"
+[[ -f "${fs}/etc/login.defs" ]] || die "account-registry: /etc/login.defs not found"
+while read -r key value _; do
+   case $key in
+      UID_MIN|UID_MAX|GID_MIN|GID_MAX) declare "${key}=${value}" ;;
+   esac
+done < "${fs}/etc/login.defs"
+for key in UID_MIN UID_MAX GID_MIN GID_MAX; do
+   [[ -n "${!key:-}" ]] || die "account-registry: ${key} not set in /etc/login.defs"
+done
 
-{
-   echo "# Accounts in this image, see sysusers.d(5)"
+
+# Print the accounts, all or system
+accounts() {
+   local which=$1
+   local -A regular_group=() regular_user=()
+
+   echo "# ${which^} accounts in this image, see sysusers.d(5)"
 
    while IFS=: read -r name _ gid _; do
+      if [[ $which == system ]] && (( gid >= GID_MIN && gid <= GID_MAX )); then
+         regular_group[$name]=1
+         continue
+      fi
       echo "g ${name} ${gid}"
    done < "${fs}/etc/group"
 
    while IFS=: read -r name _ uid gid gecos home shell; do
+      if [[ $which == system ]] && (( uid >= UID_MIN && uid <= UID_MAX )); then
+         regular_user[$name]=1
+         continue
+      fi
       echo "u ${name} ${uid}:${gid} \"${gecos}\" ${home} ${shell}"
    done < "${fs}/etc/passwd"
 
+   # sysusers would create a missing user or group
    while IFS=: read -r name _ _ members; do
       for user in ${members//,/ }; do
+         if [[ -n "${regular_user[$user]:-}" || -n "${regular_group[$name]:-}" ]]; then
+            continue
+         fi
          echo "m ${user} ${name}"
       done
    done < "${fs}/etc/group"
-} > "$map"
+}
 
-install -D -m 0644 "$map" "${fs}/usr/lib/sysusers.d/00-account-registry.conf"
+accounts all > "${IGconf_target_dir}/${ACCOUNT_REGISTRY_MAP}"
+accounts system > "${fs}/usr/lib/sysusers.d/${ACCOUNT_REGISTRY_SYSUSERS}"

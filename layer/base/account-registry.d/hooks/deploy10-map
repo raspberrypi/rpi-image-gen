@@ -4,4 +4,4 @@
 
 set -eu
 
-cp -v "${IGconf_target_dir}/account-registry.conf" "${1}/"
+cp -v "${IGconf_target_dir}/${ACCOUNT_REGISTRY_MAP}" "${1}/"
