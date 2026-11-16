@@ -1,0 +1,19 @@
+[Unit]
+Description=Reconcile account files restored from persistent storage
+DefaultDependencies=no
+RequiresMountsFor=/etc <PERSISTENT_DIR>/common/etc/shadow
+ConditionPathIsMountPoint=/etc
+ConditionPathExists=<PERSISTENT_DIR>/common/etc/shadow
+Before=systemd-sysusers.service sysinit.target shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/pwconv
+ExecStart=/usr/sbin/grpconv
+ExecStartPost=-/usr/sbin/pwck -qr
+ExecStartPost=-/usr/sbin/grpck -r
+
+[Install]
+WantedBy=sysinit.target

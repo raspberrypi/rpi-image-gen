@@ -6,14 +6,15 @@ case ${IGconf_image_updatefmt} in
    none)
       ;;
    otamaker)
-      outf="ota-${IGconf_image_name}-${IGconf_image_version}.tar.zst"
+      outf="${1}/ota-${IGconf_image_name}-${IGconf_image_version}.tar.zst"
+      inf="${1}/contents.yaml"
 
-      cd "${1}"
-      envsubst < "${IGconf_image_updatetpl}" > contents.yaml
+      #cd "${1}"
+      envsubst < "${IGconf_image_updatetpl}" > "$inf"
 
       msg "Packing for OTA..."
-      rm -f -- "${outf}" "${outf}".*sha256sum
-      otamaker -w "--${IGconf_connectota_bfmt}" contents.yaml "${outf}"
+      rm -f -- "${outf}" "${outf}" "${outf}".*sha256sum
+      otamaker -w "--${IGconf_connectota_bfmt}" -C "${1}" "$inf" "${outf}"
       ;;
    *)
       die "unsupported update format: ${IGconf_image_updatefmt}"

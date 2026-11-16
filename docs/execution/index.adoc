@@ -143,7 +143,7 @@ Two distinct kinds of hook exist. A layer may declare hooks natively inline in i
 
 The phase name is the only key runner works from - it is the prefix every hook and overlay is discovered by, and every phase takes the same path through runner. Within a phase, work happens in a fixed order, and any step with nothing to do is simply skipped:
 
-. **Per-layer**, in build plan order - each layer's overlay for this phase, then that layer's own `<phase>*` hooks
+. **Per-layer**, in build plan order - each layer's overlay for this phase, then that layer's own `<phase>*` hooks, then its generated overlay
 . **Source tree overlays** for this phase
 . **Source tree and built-in hooks** for this phase
 . **Per-layer late hooks**, in build plan order - each layer's own `late/<phase>*` hooks (see <<late-hooks>>)
@@ -245,6 +245,8 @@ Two independent overlay mechanisms exist, applied at different times for differe
 No metadata declares the timing - the directory name is the whole declaration, so deferring content until after filesystem construction is a matter of naming the directory `preimage.overlay` rather than `customize.overlay`.
 
 `customize.overlay` is the one runner does not apply itself; it is applied by the layer's synthesised pre-config, which is what buys it the position ahead of that layer's own `customize-hooks`.
+
+**Generated overlays** are written by a layer's hooks to `$LAYER_WORKDIR/<phase>.overlay/`. Runner applies one immediately after that layer's own hooks for the phase, so YAML hooks can't use it. They are removed each time the filesystem is built.
 
 [CAUTION]
 ====

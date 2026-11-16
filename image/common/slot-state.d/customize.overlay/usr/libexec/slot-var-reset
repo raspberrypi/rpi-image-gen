@@ -1,0 +1,29 @@
+#!/bin/sh
+# Reset a slot's /var from the image's factory copy. Run by
+# slot-var-reset.service, before the slot's /var is mounted, on its first boot
+# after an update.
+#
+# Each SharedPath= under /var is kept as an empty mount point, as its data is
+# bound over it. The old /var/.updated is removed, and systemd-update-done
+# writes the new one later in boot, so an interrupted reset is repeated on the
+# next boot.
+
+set -eu
+
+var=$1
+factory=/usr/share/factory/var
+manifest=/usr/lib/rpi-image-gen/slot-state.manifest
+
+# The contents of each shared /var path, relative to /var
+shared() {
+   while read -r op path _; do
+      case "$op:$path" in
+         SharedPath:/var/*) echo "${path#/var}/**" ;;
+      esac
+   done < "$manifest"
+}
+
+mkdir -p "$var"
+shared | rsync -aHAX --numeric-ids --checksum --delete --delete-excluded \
+   --exclude=/.updated --exclude-from=- "${factory}/" "${var}/"
+sync -f "$var"

@@ -1,0 +1,9 @@
+[Unit]
+Description=Save persisted files while a change is marked
+ConditionPathIsMountPoint=/etc
+
+[Path]
+PathExists=/run/rpi-persist-files.pending
+
+[Install]
+WantedBy=paths.target

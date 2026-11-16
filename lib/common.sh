@@ -95,11 +95,12 @@ runenv() {
 
     # collect env options
     local -a env_opts
-    local safe=0
+    local safe=0 expand=0
     while (( $# )); do
        case $1 in
           -C) env_opts+=("$1" "$2"); shift 2 ;;
           -s) safe=1; shift 1 ;;
+          -x) expand=1; shift 1 ;; # expand variables in values
           --) shift; break ;; # explicit terminate
           *)  break ;;
        esac
@@ -113,6 +114,9 @@ runenv() {
     while IFS='=' read -r k v; do
        v=${v#\"}
        v=${v%\"}
+       if [[ $expand -eq 1 ]]; then
+          v=$(envsubst <<< "$v")
+       fi
        env_args+=("$k=$v")
     done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "$file")
 

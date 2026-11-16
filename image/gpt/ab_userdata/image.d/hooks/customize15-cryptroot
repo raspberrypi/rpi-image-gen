@@ -21,10 +21,6 @@ if [ -n "$CONTAINERS" ]; then
       label_var="${container}_LABEL"
       echo "SUBSYSTEM==\"block\", ENV{RPI_ONBOOTDEV}==\"1\", ENV{ID_FS_LABEL}==\"${!label_var}\", SYMLINK+=\"disk/by-slot/${container}\"" >> "$rules"
 
-      if [ -d "$1/etc/initramfs-tools" ]; then
-         echo "$container /dev/disk/by-slot/${container} none luks,initramfs,keyscript=/lib/cryptsetup/keyscripts/hwkey" >> "${1}/etc/crypttab"
-      elif [ -d "$1/usr/lib/dracut" ]; then
-         echo "$container /dev/disk/by-slot/${container} none luks" >> "${1}/etc/crypttab"
-      fi
+      echo "$container /dev/disk/by-slot/${container} none luks" >> "${1}/etc/crypttab"
    done
 fi

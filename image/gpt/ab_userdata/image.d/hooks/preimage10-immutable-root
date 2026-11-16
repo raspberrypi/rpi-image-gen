@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eu
+
+fs=$1
+genimg_in=$2
+
+[[ -d "$fs" ]] || exit 0
+
+
+# Older systemd (eg 252/Bookworm) sets up per‑service mount namespaces by
+# bind mounting a read‑only snapshot of / under /run/systemd/unit-root then
+# mounting APIVFS and PrivateTmp bits (eg, /dev, /proc, /sys) inside that.
+# systemd is not able to create these on an immutable root if they don't
+# exist. Even if we create them, namespace init fails (status=226/NAMESPACE).
+# New systemd (eg 257/Trixie) does not have this problem. Only workaround is
+# to relax the sandboxing for these services. See:
+# https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html
+ver=$(systemd-major "$fs")
+[[ "$ver" =~ ^[0-9]+$ ]] || { echo "systemd-major error for $fs" >&2; exit 1; }
+if [[ "$ver" -lt 257 ]]; then
+  for svc in systemd-resolved systemd-timesyncd; do
+    d="${fs}/etc/systemd/system/${svc}.service.d"
+    mkdir -p "$d"
+    cat > "${d}/immutable-root.conf" <<'EOF'
+[Service]
+PrivateDevices=no
+EOF
+  done
+fi

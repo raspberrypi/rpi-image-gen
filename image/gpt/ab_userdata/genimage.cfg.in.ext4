@@ -121,6 +121,6 @@ image persistent.ext4 {
       label = "PERSISTENT"
       extraargs = "<MKE2FS_DATA>"
    }
-   mountpoint = "/persistent"
+   mountpoint = "<PERSISTENT_DIR>"
    size = <PERSISTENT_SIZE>
 }

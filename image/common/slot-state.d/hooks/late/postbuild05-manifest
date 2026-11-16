@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Compile the slot-state manifest. Late, so every layer's declarations are in
+# place.
+
+set -eu
+
+fs=$1
+
+[[ -d "$fs" ]] || exit 0
+
+slot-state-manifest compile "$IGconf_image_persistent_dir" "$fs"

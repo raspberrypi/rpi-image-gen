@@ -54,6 +54,7 @@ cat "$LAYER_DIR/genimage.cfg.in.$IGconf_image_rootfs_type" | sed \
    -e "s|<BOOT_SIZE>|$IGconf_image_boot_part_size|g" \
    -e "s|<SYSTEM_SIZE>|$IGconf_image_system_part_size|g" \
    -e "s|<PERSISTENT_SIZE>|$IGconf_image_data_part_size|g" \
+   -e "s|<PERSISTENT_DIR>|$IGconf_image_persistent_dir|g" \
    -e "s|<SECTOR_SIZE>|$IGconf_device_sector_size|g" \
    -e "s|<SLOTP>|'$(readlink -ef "$LAYER_DIR/slot-post-process.sh")'|g" \
    -e "s|<BOOT_LABEL>|$BOOT_LABEL|g" \

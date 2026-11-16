@@ -1,0 +1,247 @@
+= slot-state
+:persistent_dir: /persistent
+
+Paths on the persistent partition are shown under the default mount point, `{persistent_dir}`. The image layout sets it with `IGconf_image_persistent_dir`.
+
+== Mount points
+
+[cols="1,3,1,4", options="header"]
+|===
+| Mount point | Backing | Type | Notes
+
+| /home | {persistent_dir}/home | bind | User data shared across slots
+| /var | {persistent_dir}/slots/<slot>/var | bind | Per‑slot runtime state (systemd, caches, etc.)
+| /var/log/journal | {persistent_dir}/log/journal | bind | Single log directory used by both slots
+| _<slot-shared paths>_ | {persistent_dir}/shared/<path> | bind | Application data shared across slots (layer-declared, see <<slot-shared>>)
+|===
+
+* **Rationale**
+   ** Predictable per‑slot state in `/var`.
+   ** Shared `/home` for slot agnostic user storage.
+   ** Shared journalling: centralised point for device logging.
+
+* **Logging**
+   ** A single persistent journal directory at `{persistent_dir}/log/journal` stores logs from either slot.
+   ** Journaling is configured for endurance and reliability.
+
+* **Machine Identity (systemd)**
+   ** `/etc/machine-id` is kept in `{persistent_dir}/common/etc/machine-id` with `EarlyPersistFile=`.
+
+* **Offline updates (systemd)**
+   ** Compatible with https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#ConditionNeedsUpdate=[`ConditionNeedsUpdate=/etc`]. A rotation to a slot built with a newer `SOURCE_DATE_EPOCH` is an update of `/usr`.
+
+
+[WARNING]
+====
+Slot partition GPT labels are mandatory to associate the immutable root with its matching persistent storage.
+
+- Root slots must have stable PARTLABELs: e.g. `system_a` and `system_b`.
+- At boot, a generator reads the `PARTLABEL` of the active system partition, `/dev/disk/by-slot/active/system`, to select `{persistent_dir}/slots/<slot>/var`.
+
+If slot GPT labels are missing/duplicated, `/var` binding will fail.
+
+If slot GPT labels can’t be guaranteed, this layout is not suitable for your device.
+====
+
+
+== Slot updates
+
+An update writes a new image to the inactive slot and boots it with tryboot. On the first boot of a slot after its resident image has changed:
+
+* The slot's `/var` is reset from the image. The image's `/var` is shipped in `/usr/share/factory/var` and replaces the slot's `/var` in entirety before it's mounted. This means that state written by the slot's previous image is discarded. Files in `/var/cache`, `/var/log` and `/var/tmp` are not shipped in the image, but their directories are.
+* Locations such as `/home`, the journal, and <<slot-shared>> classified assets, eg via `SharedPath=`, are retained.
+* Units with `ConditionNeedsUpdate=/etc` run if the device has not run this image (or a newer one) before.
+* Units with `ConditionNeedsUpdate=/var` run (because the slot's `/var` has changed).
+
+`/var/.updated`, written by `systemd-update-done`, records the image the slot's `/var` was last reset for, so later boots do not reset it again. The other slot's `/var` is never touched, so returning to that slot returns to its own state.
+
+[IMPORTANT]
+====
+A slot's image is regarded as updated when it was built with a newer `SOURCE_DATE_EPOCH` than the image its `/var` was last reset for. An image with an older `SOURCE_DATE_EPOCH` than the previous resident slot image is not detected, the slot's `/var` is not reset, and units using `ConditionNeedsUpdate=` on `/var` or `/etc` will not run.
+====
+
+=== Application data
+
+* State under `/var` that must survive an update must be declared shared (see <<slot-shared>>). Anything else is reset.
+* Shared data is written by whichever slot is running, including during a tryboot that is then rolled back. A layer that changes the format of its shared data must keep it readable by the previous release.
+* One-off work after an update, such as migrating shared data, belongs in a unit with `ConditionNeedsUpdate=/etc`. It can run again after a power loss, so it must be safe to repeat.
+
+=== Verifying a slot update
+
+These commands show which slot is running, whether the update units ran on this boot, and the state of the persistent partition. The update units run on the first boot of a slot after an update, and not on later boots.
+
+[source,sh,subs="attributes+"]
+----
+# Running slot and image
+findmnt -no SOURCE /var
+grep -E '^(IMAGE_VERSION|IG_SOURCE_DATE_EPOCH)=' /etc/os-release
+
+# Update units on this boot
+systemctl show -p Id -p ConditionResult slot-var-reset systemd-update-done systemd-sysusers
+journalctl -b -u slot-var-reset -u persistent-shared-init -u rpi-persist-files
+systemctl status rpi-persist-files-changed.path rpi-persist-files.path
+
+# Update stamps
+stat -c '%y %n' /usr /var/.updated {persistent_dir}/common/etc/.updated
+
+# Shared and persisted state
+cat /usr/lib/rpi-image-gen/slot-state.manifest
+findmnt -no TARGET,SOURCE,PROPAGATION /var
+ls -A /run/rpi-etc-overlay/upper
+
+systemctl --failed
+----
+
+
+[[slot-shared]]
+== Slot-shared application data
+
+Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.
+
+=== Why /var is slot-local by default
+
+Read literally, FHS supports sharing most of `/var` across slots: `/var/lib` is explicitly persistent per-host application state (unlike `/run`, which FHS separates out precisely because it is *not* meant to survive), and `/var/log`, `/var/spool`, and most software that keeps working state under `/var/lib` (NetworkManager, databases, container runtimes) expect that state to survive an upgrade.
+
+But "survives an upgrade" and "survives a rollback" are different guarantees, and rollback is the reason this layout exists. State shared across slots can be written or migrated by a newer slot into a form the older slot's software cannot read. If a rollback then hits state it doesn't understand, the rollback - the main safety mechanism this A/B layout provides - is compromised.
+
+Enumerating every `/var` path that is safe to share, and keeping that list correct as packages change what they write, is more failure-prone than making sharing an explicit, per-layer decision. Slot-local by default means a layer's on-disk state is simply absent/reset after a slot change unless the layer says otherwise. That makes the safe outcome the automatic one: a layer author who forgets to declare sharing ends up with reset state, not a silently shared state that a rollback can't read. Sharing is therefore opt-in, applied only where a maintainer has actually verified the application's state is safe (or required) to carry across slots - e.g. `machine-id` for identity stability, or NetworkManager's connection profiles and secret key for network continuity.
+
+If you are writing a layer whose software keeps state under `/var` that users would reasonably expect to survive an update - credentials, device identity, accumulated data, long-lived queues - assume it will be wiped or reset on the next slot flip unless you add a `slot-shared.d` entry for it.
+
+=== How it works
+
+. At build time, every `/etc/rpi-image-gen/slot-shared.d/*.conf` file is compiled into `/usr/lib/rpi-image-gen/slot-state.manifest`, `/usr/lib/rpi-image-gen/slot-state.tmpfiles` and `rpi-persist-files-changed.path`. The device reads only these.
+. `slot-shared-generator` runs at early boot and emits a `.mount` systemd unit for each `SharedPath=` in the manifest, mounting `{persistent_dir}/shared/<path>` over `<path>` as a bind mount.
+. `persistent-shared-init.service` applies `slot-state.tmpfiles` with `systemd-tmpfiles` before the bind mounts activate. It creates the persistent partition's own directories, fills `{persistent_dir}/home` from the image if it is empty, removes each `StaticPath=` from the shared location, then copies into each `{persistent_dir}/shared/<path>` whatever the image has that is missing there. Existing files and directories are left alone. This handles first boot and a re-initialised partition.
+. Bind mounts are guarded by `ConditionPathIsDirectory` on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.
+. The initramfs restores each `EarlyPersistFile=` from `{persistent_dir}/common` into `/etc` before switch-root. Changes to them are saved back as described in <<early-persist-files>>.
+
+=== Declaring a shared path
+
+Drop a `.conf` file into `/etc/rpi-image-gen/slot-shared.d/`, eg via the layer's rootfs overlay or script:
+
+[source]
+----
+Version=1
+SharedPath=/var/lib/myapp
+SharedPath=/etc/myapp/state
+----
+
+Every copy between the image, the device and persistent storage keeps a file's contents, ownership (by numeric ID), mode and modification time.
+
+// BEGIN generated by slot-state.d/self/host/bin/slot-state-manifest doc
+Each key other than `Version=` declares a VFS operation (vfsop) on a path.
+
+`Version=1`:: Required. The format of the file. Any other value fails the build.
+`SharedPath=`:: A directory shared across slots. `{persistent_dir}/shared/<path>` is bind-mounted over it, so every slot reads and writes the same data. Before the bind, files from the image that are missing there are copied in. Existing files are never overwritten, so changes made at runtime are kept. It must exist as a directory in the image. `SharedPath=` directories may be nested.
+`Path=`:: The original name of `SharedPath=`, still accepted.
+`StaticPath=`:: A file or directory inside a `SharedPath=` directory that the image owns rather than the device. The `SharedPath=` may be declared by any file. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. If the image does not contain it, it is removed from the shared location.
+`EarlyPersistFile=`:: A single file under `/etc` kept in `{persistent_dir}/common` across boots and slot rotations, and in place before switch-root. A stored copy takes precedence over the image's file. Changes made on the device are saved back, see <<early-persist-files>>.
+
+Each key may appear any number of times. Paths are absolute: a missing leading `/`, a trailing `/` and repeated `/` are corrected. A path must not contain whitespace, `%`, `.` or `..`, must not pass through a symlink in the image, and must not overlap the persistent directory. A path declared more than once with the same vfsop, by any files, is one entry. Declaring it with different vfsops, or using an unknown key, fails the build.
+
+VFS operations are applied in a fixed order, whatever their order in a file: `EarlyPersistFile=`, then `StaticPath=`, then `SharedPath=`. Within each, paths are applied parents first.
+// END generated
+
+For example, the device's SSH host keys are shared across slots, while the SSH configuration follows the active slot:
+
+[source]
+----
+Version=1
+SharedPath=/etc/ssh
+StaticPath=/etc/ssh/sshd_config
+StaticPath=/etc/ssh/sshd_config.d
+----
+
+The files are inert in non-AB configurations.
+
+=== Persistent partition layout
+
+Shared data is stored under `{persistent_dir}/shared/`, mirroring the full path hierarchy:
+
+[source,subs="attributes+"]
+----
+{persistent_dir}/
+└── shared/
+    └── var/
+        └── lib/
+            └── myapp/    <-- bind-mounted over /var/lib/myapp
+----
+
+Because the image keeps a copy of each declared path (paths under `/var` in `/usr/share/factory/var`), files baked into the image are copied into the shared location by `persistent-shared-init.service`, before the bind mounts activate. Files are only copied if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is `StaticPath=` entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.
+
+
+[[early-persist-files]]
+== Early persist files
+
+`EarlyPersistFile=` keeps a single file under `/etc` in sync across boots and slot rotations. It exists for two use-cases:
+
+* Files PID 1 reads as it starts, before any bind mount is in place, eg `/etc/machine-id`.
+* Files that are customised on the device at runtime, eg the hostname or user accounts set by a provisioning agent, `hostnamectl` or `passwd`. These tools replace a file by renaming a new one over it, which fails on a bind-mounted file, so `SharedPath=` cannot be used for them.
+
+`/etc` is part of the immutable root, so these files are copied rather than bind mounted.
+
+=== Restore
+
+The initramfs mounts an overlay on `/etc`. The image's `/etc` is the lower layer and a tmpfs, `/run/rpi-etc-overlay/upper`, is the upper layer. It copies each stored file from `{persistent_dir}/common` into the upper layer, so the stored copy (if it exists) is what the system sees.
+
+A write to `/etc` outside a `SharedPath=` goes to the tmpfs, so a change to an early persist file is in RAM until it is saved back.
+
+=== Save
+
+`/usr/libexec/rpi-persist-files` copies every `EarlyPersistFile=` in the manifest from `/etc` to `{persistent_dir}/common`. Only files whose contents differ are written. The persistent partition is synced after the files are copied and again after `/etc/.updated`, which is copied last, so the stored stamp never records an update whose files are not on disk. A file that is missing from `/etc`, eg because it was deleted, is skipped. Its stored copy is left as it is, so it is restored at the next boot.
+
+The following units implement the scheme:
+
+[cols="2,1,4", options="header"]
+|===
+| Unit | Source | Role
+
+| `rpi-persist-files.service` | template | Runs the save. Started at boot by `multi-user.target`, by `rpi-persist-files.path`, and by `systemctl start rpi-persist-files`. Removes the pending flag before it saves.
+| `rpi-persist-files-changed.path` | generated from the manifest | One `PathChanged=` for each `EarlyPersistFile=`. Starts `rpi-persist-files-changed.service` when one changes.
+| `rpi-persist-files-changed.service` | template | Creates the pending flag, `/run/rpi-persist-files.pending`, and exits.
+| `rpi-persist-files.path` | template | `PathExists=` on the pending flag. Starts `rpi-persist-files.service` while the flag exists.
+| `rpi-persist-files-shutdown.service` | template | Runs the save at shutdown.
+|===
+
+The units only run when `/etc` is the overlay (`ConditionPathIsMountPoint=/etc`). Without it, `/etc` holds the image's files and there is nothing to save.
+
+=== Why there are two path units
+
+A path unit does not watch while the service it started is running. When that service exits, systemd checks the paths again, but only catches conditions that describe a state, such as `PathExists=`. A _changed_ (`PathChanged=`) event that happened while the service ran is not seen, so it's lost. This means a single path unit that started the save directly would miss any file changes made _during_ the save. See https://www.freedesktop.org/software/systemd/man/latest/systemd.path.html[systemd.path(5)].
+
+So that a change made during a save is still saved, the work is split in two:
+
+. A file changes. `rpi-persist-files-changed.path` starts `rpi-persist-files-changed.service`, which creates a flag file in `/run` and exits. The path unit is watching again almost immediately.
+. `rpi-persist-files.path` sees the flag and starts `rpi-persist-files.service`.
+. `rpi-persist-files.service` removes the flag, then copies the files.
+. A change during the save creates the flag again.
+. When the save exits, systemd checks `rpi-persist-files.path` again, finds the flag, and runs the save again.
+
+Any number of changes during one save lead to one more save. The same applies to a save started at boot or by hand. It relies only on documented systemd behaviour.
+
+=== Limits
+
+* A change made before the path units start, during `sysinit.target`, is saved by the save at boot. This covers `machine-id` being committed, accounts added by `systemd-sysusers` and the stamp written by `systemd-update-done`.
+* A change made in the moment `rpi-persist-files-changed.service` is running is not seen. It is saved with the next change or at shutdown.
+* A change is in RAM until its save completes. A power loss before then means it's lost.
+* Account files are reconciled at boot by `rpi-persist-accounts.service`.
+
+=== Checking
+
+[source,sh,subs="attributes+"]
+----
+# Watched files, and the units' state
+systemctl cat rpi-persist-files-changed.path
+systemctl status rpi-persist-files-changed.path rpi-persist-files.path
+
+# Saves on this boot
+journalctl -b -o short-precise -u rpi-persist-files-changed -u rpi-persist-files
+
+# Present only between a change and the start of its save
+ls -l /run/rpi-persist-files.pending
+
+# What the device sees, and what is stored
+ls -A /run/rpi-etc-overlay/upper
+ls -A {persistent_dir}/common/etc
+----

@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# Mark /etc and /var as up to date with /usr, as systemd-update-done does, so
+# units with ConditionNeedsUpdate= do not run on every boot. /usr is given the
+# build's SOURCE_DATE_EPOCH, so a release built later has a newer /usr. Late,
+# so nothing changes /usr afterwards.
+
+set -eu
+
+fs=$1
+
+[[ -d "$fs" ]] || exit 0
+
+stamp="${fs}/etc/.updated"
+
+touch -d "@${SOURCE_DATE_EPOCH}" "${fs}/usr"
+nsec=$(stat -c %.9Y "${fs}/usr")
+
+install -m 0644 /dev/null "$stamp"
+printf 'TIMESTAMP_NSEC=%s\n' "${nsec/./}" > "$stamp"
+touch -r "${fs}/usr" "$stamp"
+
+# Each slot's /var is made from the image, so is up to date too
+perst="${fs}${IGconf_image_persistent_dir}"
+for var in "${perst}/slots/system_a/var" "${perst}/slots/system_b/var"; do
+   cp -p "$stamp" "${var}/.updated"
+done

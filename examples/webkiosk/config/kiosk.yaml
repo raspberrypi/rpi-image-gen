@@ -7,7 +7,7 @@ image:
 
 layer:
   app: example-kiosk
-  extra: rpi-splash-screen
+  # extra: rpi-splash-screen see rpi-splash-screen-support #10
 
 splash:
   image_path: ${@SRCROOT}/splash.tga

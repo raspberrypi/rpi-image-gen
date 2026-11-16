@@ -2,8 +2,9 @@
 # X-Env-Layer-Name: systemd-min
 # X-Env-Layer-Desc: Core systemd components for init and SysV compatibility,
 #  without additional services
-# X-Env-Layer-Version: 2.0.0
+# X-Env-Layer-Version: 2.1.0
 # X-Env-Layer-Provides: systemd
+# X-Env-Layer-Requires: account-registry
 # METAEND
 ---
 mmdebstrap:
