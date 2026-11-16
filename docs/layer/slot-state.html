@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>slot-state - Layer Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .badge { display: inline-block; background: #007acc; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-right: 10px; }
+        .policy-immediate { background: #28a745; color: white; text-decoration: none; }
+        .policy-lazy { background: #ffc107; color: #212529; text-decoration: none; }
+        .policy-force { background: #dc3545; color: white; text-decoration: none; }
+        .policy-skip { background: #6c757d; color: white; text-decoration: none; }
+        .policy-immediate:hover { background: #1e7e34; }
+        .policy-lazy:hover { background: #e0a800; }
+        .policy-force:hover { background: #c82333; }
+        .policy-skip:hover { background: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+        td:nth-child(3) {
+            width: auto;
+        }
+        code { background: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: 'Monaco', monospace; font-size: 14px; }
+        code.long-default { word-break: break-all; white-space: pre-wrap; display: block; min-width: 30ch; }
+        .back-link { margin-bottom: 20px; }
+        .back-link a { text-decoration: none; color: #007acc; }
+        .deps { display: flex; flex-wrap: wrap; gap: 5px; }
+        .dep-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; text-decoration: none; }
+        .dep-badge:hover { background: #1e7e34; }
+        /* Main content headers styling */
+        h1, h2, h3, h4, h5, h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: #333; text-decoration: none; }
+        /* Companion documentation content styling */
+        .companion-content h1, .companion-content h2, .companion-content h3, .companion-content h4, .companion-content h5, .companion-content h6 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+        .companion-content p { margin: 10px 0; }
+        .companion-content ul, .companion-content ol { margin: 10px 0; padding-left: 30px; }
+        .companion-content blockquote { border-left: 4px solid #007acc; padding-left: 15px; margin: 15px 0; color: #666; background: #f8f9fa; padding: 10px 15px; }
+        .companion-content pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #007acc; }
+        .companion-content table { border: 1px solid #ddd; }
+        .companion-content th, .companion-content td { border: 1px solid #ddd; }
+
+        /* AsciiDoc admonition blocks (NOTE, TIP, WARNING, etc.) */
+        .admonitionblock {
+            margin: 1.5em 0;
+            padding: 0.4em 0.6em;
+            border-left: 4px solid;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .admonitionblock .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            margin-bottom: 0.25em;
+            letter-spacing: 0.5px;
+        }
+
+        .admonitionblock .content {
+            margin: 0;
+        }
+
+        /* Reduce spacing for paragraphs inside admonitions */
+        .admonitionblock p {
+            margin: 0.25em 0;
+        }
+
+        .admonitionblock p:first-child {
+            margin-top: 0;
+        }
+
+        .admonitionblock p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Specific admonition types */
+        .admonitionblock.note {
+            border-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .admonitionblock.note .title {
+            color: #0c5460;
+        }
+
+        .admonitionblock.tip {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .admonitionblock.tip .title {
+            color: #155724;
+        }
+
+        .admonitionblock.important {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .admonitionblock.important .title {
+            color: #856404;
+        }
+
+        .admonitionblock.warning,
+        .admonitionblock.caution {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .admonitionblock.warning .title,
+        .admonitionblock.caution .title {
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="index.html">← Back to Layer Index</a>
+    </div>
+
+    <div class="header">
+        <h1>slot-state</h1>
+        <span class="badge">image</span>
+        <span class="badge">v1.0.0</span>
+        <p>State handling for A/B slot layouts with a persistent
+ data partition.</p>
+    </div>
+    <div class="section">
+        <h2>Additional Documentation</h2>
+        <div class="companion-content">
+            <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Paths on the persistent partition are shown under the default mount point, <code>/persistent</code>. The image layout sets it with <code>IGconf_image_persistent_dir</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mount_points"><a class="anchor" href="#_mount_points"></a><a class="link" href="#_mount_points">Mount points</a></h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 33.3333%;">
+<col style="width: 11.1111%;">
+<col style="width: 44.4445%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Mount point</th>
+<th class="tableblock halign-left valign-top">Backing</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/home</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/home</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User data shared across slots</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/slots/&lt;slot&gt;/var</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Per‑slot runtime state (systemd, caches, etc.)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/log/journal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/log/journal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single log directory used by both slots</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;slot-shared paths&gt;</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/shared/&lt;path&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application data shared across slots (layer-declared, see <a href="#slot-shared">Slot-shared application data</a>)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Rationale</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>Predictable per‑slot state in <code>/var</code>.</p>
+</li>
+<li>
+<p>Shared <code>/home</code> for slot agnostic user storage.</p>
+</li>
+<li>
+<p>Shared journalling: centralised point for device logging.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Logging</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>A single persistent journal directory at <code>/persistent/log/journal</code> stores logs from either slot.</p>
+</li>
+<li>
+<p>Journaling is configured for endurance and reliability.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Machine Identity (systemd)</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/etc/machine-id</code> is kept in <code>/persistent/common/etc/machine-id</code> with <code>EarlyPersistFile=</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Offline updates (systemd)</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>Compatible with <a href="https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#ConditionNeedsUpdate="><code>ConditionNeedsUpdate=/etc</code></a>. A rotation to a slot built with a newer <code>SOURCE_DATE_EPOCH</code> is an update of <code>/usr</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Slot partition GPT labels are mandatory to associate the immutable root with its matching persistent storage.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Root slots must have stable PARTLABELs: e.g. <code>system_a</code> and <code>system_b</code>.</p>
+</li>
+<li>
+<p>At boot, a generator reads the <code>PARTLABEL</code> of the active system partition, <code>/dev/disk/by-slot/active/system</code>, to select <code>/persistent/slots/&lt;slot&gt;/var</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If slot GPT labels are missing/duplicated, <code>/var</code> binding will fail.</p>
+</div>
+<div class="paragraph">
+<p>If slot GPT labels can’t be guaranteed, this layout is not suitable for your device.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_slot_updates"><a class="anchor" href="#_slot_updates"></a><a class="link" href="#_slot_updates">Slot updates</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An update writes a new image to the inactive slot and boots it with tryboot. On the first boot of a slot after its resident image has changed:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The slot&#8217;s <code>/var</code> is reset from the image. The image&#8217;s <code>/var</code> is shipped in <code>/usr/share/factory/var</code> and replaces the slot&#8217;s <code>/var</code> in entirety before it&#8217;s mounted. This means that state written by the slot&#8217;s previous image is discarded. Files in <code>/var/cache</code>, <code>/var/log</code> and <code>/var/tmp</code> are not shipped in the image, but their directories are.</p>
+</li>
+<li>
+<p>Locations such as <code>/home</code>, the journal, and <a href="#slot-shared">Slot-shared application data</a> classified assets, eg via <code>SharedPath=</code>, are retained.</p>
+</li>
+<li>
+<p>Units with <code>ConditionNeedsUpdate=/etc</code> run if the device has not run this image (or a newer one) before.</p>
+</li>
+<li>
+<p>Units with <code>ConditionNeedsUpdate=/var</code> run (because the slot&#8217;s <code>/var</code> has changed).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>/var/.updated</code>, written by <code>systemd-update-done</code>, records the image the slot&#8217;s <code>/var</code> was last reset for, so later boots do not reset it again. The other slot&#8217;s <code>/var</code> is never touched, so returning to that slot returns to its own state.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A slot&#8217;s image is regarded as updated when it was built with a newer <code>SOURCE_DATE_EPOCH</code> than the image its <code>/var</code> was last reset for. An image with an older <code>SOURCE_DATE_EPOCH</code> than the previous resident slot image is not detected, the slot&#8217;s <code>/var</code> is not reset, and units using <code>ConditionNeedsUpdate=</code> on <code>/var</code> or <code>/etc</code> will not run.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_application_data"><a class="anchor" href="#_application_data"></a><a class="link" href="#_application_data">Application data</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p>State under <code>/var</code> that must survive an update must be declared shared (see <a href="#slot-shared">Slot-shared application data</a>). Anything else is reset.</p>
+</li>
+<li>
+<p>Shared data is written by whichever slot is running, including during a tryboot that is then rolled back. A layer that changes the format of its shared data must keep it readable by the previous release.</p>
+</li>
+<li>
+<p>One-off work after an update, such as migrating shared data, belongs in a unit with <code>ConditionNeedsUpdate=/etc</code>. It can run again after a power loss, so it must be safe to repeat.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verifying_a_slot_update"><a class="anchor" href="#_verifying_a_slot_update"></a><a class="link" href="#_verifying_a_slot_update">Verifying a slot update</a></h3>
+<div class="paragraph">
+<p>These commands show which slot is running, whether the update units ran on this boot, and the state of the persistent partition. The update units run on the first boot of a slot after an update, and not on later boots.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sh" data-lang="sh"># Running slot and image
+findmnt -no SOURCE /var
+grep -E '^(IMAGE_VERSION|IG_SOURCE_DATE_EPOCH)=' /etc/os-release
+
+# Update units on this boot
+systemctl show -p Id -p ConditionResult slot-var-reset systemd-update-done systemd-sysusers
+journalctl -b -u slot-var-reset -u persistent-shared-init -u rpi-persist-files
+systemctl status rpi-persist-files-changed.path rpi-persist-files.path
+
+# Update stamps
+stat -c '%y %n' /usr /var/.updated /persistent/common/etc/.updated
+
+# Shared and persisted state
+cat /usr/lib/rpi-image-gen/slot-state.manifest
+findmnt -no TARGET,SOURCE,PROPAGATION /var
+ls -A /run/rpi-etc-overlay/upper
+
+systemctl --failed</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="slot-shared"><a class="anchor" href="#slot-shared"></a><a class="link" href="#slot-shared">Slot-shared application data</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.</p>
+</div>
+<div class="sect2">
+<h3 id="_why_var_is_slot_local_by_default"><a class="anchor" href="#_why_var_is_slot_local_by_default"></a><a class="link" href="#_why_var_is_slot_local_by_default">Why /var is slot-local by default</a></h3>
+<div class="paragraph">
+<p>Read literally, FHS supports sharing most of <code>/var</code> across slots: <code>/var/lib</code> is explicitly persistent per-host application state (unlike <code>/run</code>, which FHS separates out precisely because it is <strong>not</strong> meant to survive), and <code>/var/log</code>, <code>/var/spool</code>, and most software that keeps working state under <code>/var/lib</code> (NetworkManager, databases, container runtimes) expect that state to survive an upgrade.</p>
+</div>
+<div class="paragraph">
+<p>But "survives an upgrade" and "survives a rollback" are different guarantees, and rollback is the reason this layout exists. State shared across slots can be written or migrated by a newer slot into a form the older slot&#8217;s software cannot read. If a rollback then hits state it doesn&#8217;t understand, the rollback - the main safety mechanism this A/B layout provides - is compromised.</p>
+</div>
+<div class="paragraph">
+<p>Enumerating every <code>/var</code> path that is safe to share, and keeping that list correct as packages change what they write, is more failure-prone than making sharing an explicit, per-layer decision. Slot-local by default means a layer&#8217;s on-disk state is simply absent/reset after a slot change unless the layer says otherwise. That makes the safe outcome the automatic one: a layer author who forgets to declare sharing ends up with reset state, not a silently shared state that a rollback can&#8217;t read. Sharing is therefore opt-in, applied only where a maintainer has actually verified the application&#8217;s state is safe (or required) to carry across slots - e.g. <code>machine-id</code> for identity stability, or NetworkManager&#8217;s connection profiles and secret key for network continuity.</p>
+</div>
+<div class="paragraph">
+<p>If you are writing a layer whose software keeps state under <code>/var</code> that users would reasonably expect to survive an update - credentials, device identity, accumulated data, long-lived queues - assume it will be wiped or reset on the next slot flip unless you add a <code>slot-shared.d</code> entry for it.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a><a class="link" href="#_how_it_works">How it works</a></h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>At build time, every <code>/etc/rpi-image-gen/slot-shared.d/*.conf</code> file is compiled into <code>/usr/lib/rpi-image-gen/slot-state.manifest</code>, <code>/usr/lib/rpi-image-gen/slot-state.tmpfiles</code> and <code>rpi-persist-files-changed.path</code>. The device reads only these.</p>
+</li>
+<li>
+<p><code>slot-shared-generator</code> runs at early boot and emits a <code>.mount</code> systemd unit for each <code>SharedPath=</code> in the manifest, mounting <code>/persistent/shared/&lt;path&gt;</code> over <code>&lt;path&gt;</code> as a bind mount.</p>
+</li>
+<li>
+<p><code>persistent-shared-init.service</code> applies <code>slot-state.tmpfiles</code> with <code>systemd-tmpfiles</code> before the bind mounts activate. It creates the persistent partition&#8217;s own directories, fills <code>/persistent/home</code> from the image if it is empty, removes each <code>StaticPath=</code> from the shared location, then copies into each <code>/persistent/shared/&lt;path&gt;</code> whatever the image has that is missing there. Existing files and directories are left alone. This handles first boot and a re-initialised partition.</p>
+</li>
+<li>
+<p>Bind mounts are guarded by <code>ConditionPathIsDirectory</code> on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.</p>
+</li>
+<li>
+<p>The initramfs restores each <code>EarlyPersistFile=</code> from <code>/persistent/common</code> into <code>/etc</code> before switch-root. Changes to them are saved back as described in <a href="#early-persist-files">Early persist files</a>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_declaring_a_shared_path"><a class="anchor" href="#_declaring_a_shared_path"></a><a class="link" href="#_declaring_a_shared_path">Declaring a shared path</a></h3>
+<div class="paragraph">
+<p>Drop a <code>.conf</code> file into <code>/etc/rpi-image-gen/slot-shared.d/</code>, eg via the layer&#8217;s rootfs overlay or script:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>Version=1
+SharedPath=/var/lib/myapp
+SharedPath=/etc/myapp/state</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Every copy between the image, the device and persistent storage keeps a file&#8217;s contents, ownership (by numeric ID), mode and modification time.</p>
+</div>
+<div class="paragraph">
+<p>Each key other than <code>Version=</code> declares a VFS operation (vfsop) on a path.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>Version=1</code></dt>
+<dd>
+<p>Required. The format of the file. Any other value fails the build.</p>
+</dd>
+<dt class="hdlist1"><code>SharedPath=</code></dt>
+<dd>
+<p>A directory shared across slots. <code>/persistent/shared/&lt;path&gt;</code> is bind-mounted over it, so every slot reads and writes the same data. Before the bind, files from the image that are missing there are copied in. Existing files are never overwritten, so changes made at runtime are kept. It must exist as a directory in the image. <code>SharedPath=</code> directories may be nested.</p>
+</dd>
+<dt class="hdlist1"><code>Path=</code></dt>
+<dd>
+<p>The original name of <code>SharedPath=</code>, still accepted.</p>
+</dd>
+<dt class="hdlist1"><code>StaticPath=</code></dt>
+<dd>
+<p>A file or directory inside a <code>SharedPath=</code> directory that the image owns rather than the device. The <code>SharedPath=</code> may be declared by any file. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. If the image does not contain it, it is removed from the shared location.</p>
+</dd>
+<dt class="hdlist1"><code>EarlyPersistFile=</code></dt>
+<dd>
+<p>A single file under <code>/etc</code> kept in <code>/persistent/common</code> across boots and slot rotations, and in place before switch-root. A stored copy takes precedence over the image&#8217;s file. Changes made on the device are saved back, see <a href="#early-persist-files">Early persist files</a>.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Each key may appear any number of times. Paths are absolute: a missing leading <code>/</code>, a trailing <code>/</code> and repeated <code>/</code> are corrected. A path must not contain whitespace, <code>%</code>, <code>.</code> or <code>..</code>, must not pass through a symlink in the image, and must not overlap the persistent directory. A path declared more than once with the same vfsop, by any files, is one entry. Declaring it with different vfsops, or using an unknown key, fails the build.</p>
+</div>
+<div class="paragraph">
+<p>VFS operations are applied in a fixed order, whatever their order in a file: <code>EarlyPersistFile=</code>, then <code>StaticPath=</code>, then <code>SharedPath=</code>. Within each, paths are applied parents first.</p>
+</div>
+<div class="paragraph">
+<p>For example, the device&#8217;s SSH host keys are shared across slots, while the SSH configuration follows the active slot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>Version=1
+SharedPath=/etc/ssh
+StaticPath=/etc/ssh/sshd_config
+StaticPath=/etc/ssh/sshd_config.d</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The files are inert in non-AB configurations.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_persistent_partition_layout"><a class="anchor" href="#_persistent_partition_layout"></a><a class="link" href="#_persistent_partition_layout">Persistent partition layout</a></h3>
+<div class="paragraph">
+<p>Shared data is stored under <code>/persistent/shared/</code>, mirroring the full path hierarchy:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>/persistent/
+└── shared/
+    └── var/
+        └── lib/
+            └── myapp/    &lt;-- bind-mounted over /var/lib/myapp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because the image keeps a copy of each declared path (paths under <code>/var</code> in <code>/usr/share/factory/var</code>), files baked into the image are copied into the shared location by <code>persistent-shared-init.service</code>, before the bind mounts activate. Files are only copied if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is <code>StaticPath=</code> entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="early-persist-files"><a class="anchor" href="#early-persist-files"></a><a class="link" href="#early-persist-files">Early persist files</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>EarlyPersistFile=</code> keeps a single file under <code>/etc</code> in sync across boots and slot rotations. It exists for two use-cases:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Files PID 1 reads as it starts, before any bind mount is in place, eg <code>/etc/machine-id</code>.</p>
+</li>
+<li>
+<p>Files that are customised on the device at runtime, eg the hostname or user accounts set by a provisioning agent, <code>hostnamectl</code> or <code>passwd</code>. These tools replace a file by renaming a new one over it, which fails on a bind-mounted file, so <code>SharedPath=</code> cannot be used for them.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>/etc</code> is part of the immutable root, so these files are copied rather than bind mounted.</p>
+</div>
+<div class="sect2">
+<h3 id="_restore"><a class="anchor" href="#_restore"></a><a class="link" href="#_restore">Restore</a></h3>
+<div class="paragraph">
+<p>The initramfs mounts an overlay on <code>/etc</code>. The image&#8217;s <code>/etc</code> is the lower layer and a tmpfs, <code>/run/rpi-etc-overlay/upper</code>, is the upper layer. It copies each stored file from <code>/persistent/common</code> into the upper layer, so the stored copy (if it exists) is what the system sees.</p>
+</div>
+<div class="paragraph">
+<p>A write to <code>/etc</code> outside a <code>SharedPath=</code> goes to the tmpfs, so a change to an early persist file is in RAM until it is saved back.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_save"><a class="anchor" href="#_save"></a><a class="link" href="#_save">Save</a></h3>
+<div class="paragraph">
+<p><code>/usr/libexec/rpi-persist-files</code> copies every <code>EarlyPersistFile=</code> in the manifest from <code>/etc</code> to <code>/persistent/common</code>. Only files whose contents differ are written. The persistent partition is synced after the files are copied and again after <code>/etc/.updated</code>, which is copied last, so the stored stamp never records an update whose files are not on disk. A file that is missing from <code>/etc</code>, eg because it was deleted, is skipped. Its stored copy is left as it is, so it is restored at the next boot.</p>
+</div>
+<div class="paragraph">
+<p>The following units implement the scheme:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 14.2857%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Unit</th>
+<th class="tableblock halign-left valign-top">Source</th>
+<th class="tableblock halign-left valign-top">Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rpi-persist-files.service</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">template</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Runs the save. Started at boot by <code>multi-user.target</code>, by <code>rpi-persist-files.path</code>, and by <code>systemctl start rpi-persist-files</code>. Removes the pending flag before it saves.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rpi-persist-files-changed.path</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">generated from the manifest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One <code>PathChanged=</code> for each <code>EarlyPersistFile=</code>. Starts <code>rpi-persist-files-changed.service</code> when one changes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rpi-persist-files-changed.service</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">template</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Creates the pending flag, <code>/run/rpi-persist-files.pending</code>, and exits.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rpi-persist-files.path</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">template</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PathExists=</code> on the pending flag. Starts <code>rpi-persist-files.service</code> while the flag exists.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rpi-persist-files-shutdown.service</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">template</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Runs the save at shutdown.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The units only run when <code>/etc</code> is the overlay (<code>ConditionPathIsMountPoint=/etc</code>). Without it, <code>/etc</code> holds the image&#8217;s files and there is nothing to save.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_why_there_are_two_path_units"><a class="anchor" href="#_why_there_are_two_path_units"></a><a class="link" href="#_why_there_are_two_path_units">Why there are two path units</a></h3>
+<div class="paragraph">
+<p>A path unit does not watch while the service it started is running. When that service exits, systemd checks the paths again, but only catches conditions that describe a state, such as <code>PathExists=</code>. A <em>changed</em> (<code>PathChanged=</code>) event that happened while the service ran is not seen, so it&#8217;s lost. This means a single path unit that started the save directly would miss any file changes made <em>during</em> the save. See <a href="https://www.freedesktop.org/software/systemd/man/latest/systemd.path.html">systemd.path(5)</a>.</p>
+</div>
+<div class="paragraph">
+<p>So that a change made during a save is still saved, the work is split in two:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>A file changes. <code>rpi-persist-files-changed.path</code> starts <code>rpi-persist-files-changed.service</code>, which creates a flag file in <code>/run</code> and exits. The path unit is watching again almost immediately.</p>
+</li>
+<li>
+<p><code>rpi-persist-files.path</code> sees the flag and starts <code>rpi-persist-files.service</code>.</p>
+</li>
+<li>
+<p><code>rpi-persist-files.service</code> removes the flag, then copies the files.</p>
+</li>
+<li>
+<p>A change during the save creates the flag again.</p>
+</li>
+<li>
+<p>When the save exits, systemd checks <code>rpi-persist-files.path</code> again, finds the flag, and runs the save again.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Any number of changes during one save lead to one more save. The same applies to a save started at boot or by hand. It relies only on documented systemd behaviour.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_limits"><a class="anchor" href="#_limits"></a><a class="link" href="#_limits">Limits</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p>A change made before the path units start, during <code>sysinit.target</code>, is saved by the save at boot. This covers <code>machine-id</code> being committed, accounts added by <code>systemd-sysusers</code> and the stamp written by <code>systemd-update-done</code>.</p>
+</li>
+<li>
+<p>A change made in the moment <code>rpi-persist-files-changed.service</code> is running is not seen. It is saved with the next change or at shutdown.</p>
+</li>
+<li>
+<p>A change is in RAM until its save completes. A power loss before then means it&#8217;s lost.</p>
+</li>
+<li>
+<p>Account files are reconciled at boot by <code>rpi-persist-accounts.service</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_checking"><a class="anchor" href="#_checking"></a><a class="link" href="#_checking">Checking</a></h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sh" data-lang="sh"># Watched files, and the units' state
+systemctl cat rpi-persist-files-changed.path
+systemctl status rpi-persist-files-changed.path rpi-persist-files.path
+
+# Saves on this boot
+journalctl -b -o short-precise -u rpi-persist-files-changed -u rpi-persist-files
+
+# Present only between a change and the start of its save
+ls -l /run/rpi-persist-files.pending
+
+# What the device sees, and what is stored
+ls -A /run/rpi-etc-overlay/upper
+ls -A /persistent/common/etc</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+        </div>
+    </div>
+    <div class="section">
+        <h2>Relationships</h2>
+        <p><strong>Required by:</strong></p>
+        <div class="deps">
+            
+            <a href="image-rota.html" class="dep-badge">image-rota</a>
+            
+        </div>
+        <p><strong>Requires Provider:</strong> systemd, boot:gpt</p>
+    </div>
+    <div class="section">
+        <h2>Configuration Variables</h2>
+        <p><strong>Declares</strong> (prefix: <code>image</code>):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Default</th>
+                    <th>Validation</th>
+                    <th>Policy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>IGconf_image_persistent_dir</code></td>
+                    <td>Directory holding slot state beneath it.
+ Must be writable and persist across slot rotations. Normally the mount
+ point of a data partition set by the image layout.</td>
+                    <td>
+                           <code>/persistent</code>
+                    </td>
+                    <td>Must match regex pattern: ^(?!/(var|home)(/|$))(/[A-Za-z0-9_][A-Za-z0-9._-]*)+$</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>mmdebstrap</h2>
+        
+        <h3>Packages</h3>
+        <p>Installs:</p>
+        <ul>
+            <li><code>rsync</code></li>
+            <li><code>passwd</code></li>
+        </ul>
+    </div>
+    <div class="section">
+        <h2>Overlays</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Overlay</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>customize</code></td>
+                    <td><code>customize.overlay</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Hooks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>customize</code></td>
+                    <td>customize10-templates</td>
+                </tr>
+                <tr>
+                    <td><code>preimage</code></td>
+                    <td>preimage10-slots</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Late Hooks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 1%; white-space: nowrap;">Phase</th>
+                    <th>Hooks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>postbuild</code></td>
+                    <td>postbuild05-manifest</td>
+                </tr>
+                <tr>
+                    <td><code>preimage</code></td>
+                    <td>preimage10-update-done</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Attributes</h2>
+        <p><strong>File:</strong> <code>common/slot-state.yaml</code></p>
+        <p><strong>Type:</strong> <code>static</code></p>
+    </div>
+</body>
+</html>

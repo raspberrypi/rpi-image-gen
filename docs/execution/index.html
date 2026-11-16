@@ -528,7 +528,7 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Per-layer</strong>, in build plan order - each layer&#8217;s overlay for this phase, then that layer&#8217;s own <code>&lt;phase&gt;*</code> hooks</p>
+<p><strong>Per-layer</strong>, in build plan order - each layer&#8217;s overlay for this phase, then that layer&#8217;s own <code>&lt;phase&gt;*</code> hooks, then its generated overlay</p>
 </li>
 <li>
 <p><strong>Source tree overlays</strong> for this phase</p>
@@ -813,6 +813,9 @@ $ rpi-image-gen build -S ./my-project/ -c kiosk.cfg</code></pre>
 </div>
 <div class="paragraph">
 <p><code>customize.overlay</code> is the one runner does not apply itself; it is applied by the layer&#8217;s synthesised pre-config, which is what buys it the position ahead of that layer&#8217;s own <code>customize-hooks</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Generated overlays</strong> are written by a layer&#8217;s hooks to <code>$LAYER_WORKDIR/&lt;phase&gt;.overlay/</code>. Runner applies one immediately after that layer&#8217;s own hooks for the phase, so YAML hooks can&#8217;t use it. They are removed each time the filesystem is built.</p>
 </div>
 <div class="admonitionblock caution">
 <table>
