@@ -124,7 +124,7 @@
     <div class="header">
         <h1>image-rota</h1>
         <span class="badge">image</span>
-        <span class="badge">v6.4.0</span>
+        <span class="badge">v7.0.0</span>
         <p>Immutable GPT A/B layout for rotational OTA updates,
  boot/system redundancy, and a shared persistent data partition.</p>
     </div>
@@ -177,32 +177,11 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock">ext4</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">rw Shared persistent storage</p></td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/home</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/home</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">User data shared across slots</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/var</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/slots/&lt;slot&gt;/var</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Per‑slot runtime state (systemd, caches, etc.)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/var/log/journal</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/log/journal</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Single log directory used by both slots</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;slot-shared paths&gt;</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/persistent/shared/&lt;path&gt;</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bind</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Application data shared across slots (layer-declared, see <a href="#slot-shared">Slot-shared application data</a>)</p></td>
-</tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>The persistent mount point is set by <code>IGconf_image_persistent_dir</code> (default <code>/persistent</code>). The partition is checked and mounted in the initramfs.</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
@@ -219,15 +198,6 @@
 <p>Reduced write amplification and storage wear, clearer separation of state.</p>
 </li>
 <li>
-<p>Predictable per‑slot state in <code>/var</code>.</p>
-</li>
-<li>
-<p>Shared <code>/home</code> for slot agnostic user storage.</p>
-</li>
-<li>
-<p>Shared journalling: centralised point for device logging.</p>
-</li>
-<li>
 <p>Preserves SBOM accuracy: executing software matches the manifest exactly.</p>
 </li>
 <li>
@@ -239,162 +209,10 @@
 </ul>
 </div>
 </li>
-<li>
-<p><strong>Logging</strong></p>
-<div class="ulist">
-<ul>
-<li>
-<p>A single persistent journal directory at <code>/persistent/log/journal</code> stores logs from either slot.</p>
-</li>
-<li>
-<p>Journaling is configured for endurance and reliability.</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><strong>Machine Identity (systemd)</strong></p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>/etc/machine-id</code> is synchronised early with <code>/persistent/common/etc/machine-id</code> using a oneshot unit.</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Slot partition GPT labels are mandatory to associate the immutable root with its matching persistent storage.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Root slots must have stable PARTLABELs: e.g. <code>system_a</code> and <code>system_b</code>.</p>
-</li>
-<li>
-<p>At boot, a generator reads the root slot’s <code>PARTLABEL</code> to select <code>/persistent/slots/&lt;slot&gt;/var</code>.</p>
-</li>
 </ul>
 </div>
 <div class="paragraph">
-<p>If slot GPT labels are missing/duplicated, <code>/var</code> binding will fail.</p>
-</div>
-<div class="paragraph">
-<p>If slot GPT labels can’t be guaranteed, this layout is not suitable for your device.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="slot-shared"><a class="anchor" href="#slot-shared"></a><a class="link" href="#slot-shared">Slot-shared application data</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Any layer can declare filesystem paths whose application data should be shared across slots. At boot, each declared path is bind-mounted from a common location on the persistent partition so the same data is visible regardless of which slot is active.</p>
-</div>
-<div class="sect2">
-<h3 id="_why_var_is_slot_local_by_default"><a class="anchor" href="#_why_var_is_slot_local_by_default"></a><a class="link" href="#_why_var_is_slot_local_by_default">Why /var is slot-local by default</a></h3>
-<div class="paragraph">
-<p>Read literally, FHS supports sharing most of <code>/var</code> across slots: <code>/var/lib</code> is explicitly persistent per-host application state (unlike <code>/run</code>, which FHS separates out precisely because it is <strong>not</strong> meant to survive), and <code>/var/log</code>, <code>/var/spool</code>, and most software that keeps working state under <code>/var/lib</code> (NetworkManager, databases, container runtimes) expect that state to survive an upgrade.</p>
-</div>
-<div class="paragraph">
-<p>But "survives an upgrade" and "survives a rollback" are different guarantees, and rollback is the reason this layout exists. State shared across slots can be written or migrated by a newer slot into a form the older slot&#8217;s software cannot read. If a rollback then hits state it doesn&#8217;t understand, the rollback - the main safety mechanism this A/B layout provides - is compromised.</p>
-</div>
-<div class="paragraph">
-<p>Enumerating every <code>/var</code> path that is safe to share, and keeping that list correct as packages change what they write, is more failure-prone than making sharing an explicit, per-layer decision. Slot-local by default means a layer&#8217;s on-disk state is simply absent/reset after a slot change unless the layer says otherwise. That makes the safe outcome the automatic one: a layer author who forgets to declare sharing ends up with reset state, not a silently shared state that a rollback can&#8217;t read. Sharing is therefore opt-in, applied only where a maintainer has actually verified the application&#8217;s state is safe (or required) to carry across slots - e.g. <code>machine-id</code> for identity stability, or NetworkManager&#8217;s connection profiles and secret key for network continuity.</p>
-</div>
-<div class="paragraph">
-<p>If you are writing a layer whose software keeps state under <code>/var</code> that users would reasonably expect to survive an update - credentials, device identity, accumulated data, long-lived queues - assume it will be wiped or reset on the next slot flip unless you add a <code>slot-shared.d</code> entry for it.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a><a class="link" href="#_how_it_works">How it works</a></h3>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><code>slot-shared-generator</code> runs at early boot, reads every <code>/etc/rpi-image-gen/slot-shared.d/*.conf</code> file and emits a <code>.mount</code> systemd unit for each declared path, mounting <code>/persistent/shared/&lt;path&gt;</code> over <code>&lt;path&gt;</code> as a bind mount.</p>
-</li>
-<li>
-<p><code>persistent-shared-init.service</code> runs before the bind mounts activate. It creates any missing <code>/persistent/shared/&lt;path&gt;</code> directories on the persistent partition, handling first boot and disaster-recovery scenarios where the partition has been re-initialised.</p>
-</li>
-<li>
-<p>Bind mounts are guarded by <code>ConditionPathIsDirectory</code> on the source. If the directory is absent the mount is skipped and the service falls back to its local path - safe degradation with no boot failure.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_declaring_a_shared_path"><a class="anchor" href="#_declaring_a_shared_path"></a><a class="link" href="#_declaring_a_shared_path">Declaring a shared path</a></h3>
-<div class="paragraph">
-<p>Drop a <code>.conf</code> file into <code>/etc/rpi-image-gen/slot-shared.d/</code>, eg via the layer&#8217;s rootfs overlay or script:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>Version=1
-Path=/var/lib/myapp
-Path=/etc/myapp/state</code></pre>
-</div>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>Version=1</code></dt>
-<dd>
-<p>Required. A generator that does not recognise the version skips the file with a warning rather than misprocessing it.</p>
-</dd>
-<dt class="hdlist1"><code>Path=</code></dt>
-<dd>
-<p>One or more absolute paths to share. Multiple <code>Path=</code> entries are supported in a single file. A missing leading <code>/</code> is corrected automatically. Only directory paths are supported.</p>
-</dd>
-<dt class="hdlist1"><code>StaticPath=</code></dt>
-<dd>
-<p>Optional. A file or directory inside a shared path that the image owns rather than the device. The shared path may be declared by a <code>Path=</code> in any <code>.conf</code> file, not only this one. It is replaced from the active slot on every boot, so it always matches the running image, and anything written to it at runtime is discarded. Multiple <code>StaticPath=</code> entries are supported.</p>
-</dd>
-</dl>
-</div>
-<div class="paragraph">
-<p>For example, the device&#8217;s SSH host keys are shared across slots, while the SSH configuration follows the active slot:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>Version=1
-Path=/etc/ssh
-StaticPath=/etc/ssh/sshd_config
-StaticPath=/etc/ssh/sshd_config.d</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Unknown keys are silently ignored, providing forward compatibility within version 1.
-A version increment signals a breaking change.
-The files are inert in non-AB configurations.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_persistent_partition_layout"><a class="anchor" href="#_persistent_partition_layout"></a><a class="link" href="#_persistent_partition_layout">Persistent partition layout</a></h3>
-<div class="paragraph">
-<p>Shared data is stored under <code>/persistent/shared/</code>, mirroring the full path hierarchy:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>/persistent/
-└── shared/
-    └── var/
-        └── lib/
-            └── myapp/    &lt;-- bind-mounted over /var/lib/myapp</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Because the immutable root retains a copy of each declared path, files baked into the image are pushed into the shared location by <code>rpi-persistent-shared-init</code>, before the bind mounts activate. Files are only pushed if missing from the destination. Existing files are never overwritten, so changes made at runtime are preserved. The exception is <code>StaticPath=</code> entries, which are removed from the shared location first and so are always replaced from the active slot. This means an OTA update can deliver new shared application data simply by including it in the rootfs - no separate data partition update is required.</p>
-</div>
+<p>State on the persistent partition is handled by layer <code>slot-state</code>.</p>
 </div>
 </div>
 </div>
@@ -489,6 +307,7 @@ The files are inert in non-AB configurations.</p>
             <a href="device-base.html" class="dep-badge">device-base</a>
             <a href="rpi-ab-slot-mapper.html" class="dep-badge">rpi-ab-slot-mapper</a>
             <a href="systemd-min.html" class="dep-badge">systemd-min</a>
+            <a href="slot-state.html" class="dep-badge">slot-state</a>
         </div>
         <p><strong>Provides:</strong> image, boot:slotted</p>
     </div>
@@ -540,6 +359,17 @@ The files are inert in non-AB configurations.</p>
                            <code>1G</code>
                     </td>
                     <td>Size value with optional unit (bytes, k/K/M/G/s) or percentage</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_image_persistent_dir</code></td>
+                    <td>Mount point of the data partition.</td>
+                    <td>
+                           <code>/persistent</code>
+                    </td>
+                    <td>Must match regex pattern: ^(?!/(var|home)(/|$))(/[A-Za-z0-9_][A-Za-z0-9._-]*)+$</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-immediate" title="Click for policy and validation help">immediate</a>
                     </td>
@@ -642,8 +472,7 @@ The files are inert in non-AB configurations.</p>
         <ul>
             <li><code>dosfstools</code></li>
             <li><code>e2fsprogs</code></li>
-            <li><code>initramfs-tools</code></li>
-            <li><code>rsync</code></li>
+            <li><code>dracut</code></li>
         </ul>
     </div>
     <div class="section">
@@ -657,8 +486,8 @@ The files are inert in non-AB configurations.</p>
             </thead>
             <tbody>
                 <tr>
-                    <td><code>postbuild</code></td>
-                    <td><code>postbuild.overlay</code></td>
+                    <td><code>customize</code></td>
+                    <td><code>customize.overlay</code></td>
                 </tr>
             </tbody>
         </table>
@@ -675,11 +504,11 @@ The files are inert in non-AB configurations.</p>
             <tbody>
                 <tr>
                     <td><code>customize</code></td>
-                    <td>customize03-emmc-ops, customize05-pmap, customize10-kernel, customize15-cryptroot</td>
+                    <td>customize03-emmc-ops, customize05-pmap, customize10-kernel, customize10-templates, customize15-cryptroot</td>
                 </tr>
                 <tr>
                     <td><code>preimage</code></td>
-                    <td>preimage05-templates, preimage10-slots, preimage15-persistent-skel</td>
+                    <td>preimage05-templates, preimage10-immutable-root, preimage15-persistent-skel</td>
                 </tr>
                 <tr>
                     <td><code>postimage</code></td>
