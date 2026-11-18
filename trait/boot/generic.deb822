@@ -3,3 +3,8 @@ X-Env-Trait-gpt-Valid: bool
 
 X-Env-Trait-slotted-Desc: Device boots from one of several slots, eg A/B, and each boot may use a different slot
 X-Env-Trait-slotted-Valid: bool
+
+X-Env-Trait-os-customisation-Desc: Boot-time OS customisation support. An agent in the
+ image customises each instance of it from data supplied for that instance.
+X-Env-Trait-os-customisation-Valid: bool
+X-Env-Trait-os-customisation-Include: generic/os-customisation.deb822

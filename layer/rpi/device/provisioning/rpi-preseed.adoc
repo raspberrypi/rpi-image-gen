@@ -1,0 +1,22 @@
+= rpi-preseed
+:persistent_dir: /persistent
+
+This layer installs https://github.com/raspberrypi/rpi-preseed[rpi-preseed], which applies a per-device configuration from file once at first boot. The configuration file is supplied for each device. This layer does not install one.
+
+== Slotted images
+
+On a slotted image, this layer automatically pulls in `rpi-preseed-slotted` which ensures the files written by the domains in `IGconf_rpipreseed_domains` are retained across reboots and slot updates. rpi-preseed's state is shared by all slots, meaning a configuration is applied once per device, not once per slot. Files rpi-preseed writes that are owned by other software are declared by other applicable layers, eg NetworkManager Connections by network-manager. Files of a domain that isn't selected do not persist.
+
+Typically, the configuration file is installed at device provisioning rather than image build, so it has to be supplied on a writable partition. See the rpi-preseed documentation for where it can read its configuration from. An example drop-in for `rpi-preseed.service` that sets the location:
+
+[source,ini,subs="attributes+"]
+----
+# /usr/lib/systemd/system/rpi-preseed.service.d/config.conf
+[Unit]
+ConditionPathExists=
+ConditionPathExists={persistent_dir}/rpi-preseed.toml
+ConditionPathExists=!/var/lib/rpi-preseed/applied
+
+[Service]
+Environment=RPI_PRESEED_CONFIG={persistent_dir}/rpi-preseed.toml
+----
