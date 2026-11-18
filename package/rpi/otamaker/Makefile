@@ -1,5 +1,5 @@
 PKG_NAME := rpi/otamaker
-PKG_VER := cb9565144528ceee9e560ac852d85e39f7f4eb6d
+PKG_VER := 0855e3c148caea6814420fc3cf8b68cf92c6a97f
 PKG_BUILD_SCHEME := cmake
 PKG_SUBDIR := otamaker
 include ../../shared/pkg.mk
