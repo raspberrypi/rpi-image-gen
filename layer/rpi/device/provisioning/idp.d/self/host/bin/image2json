@@ -339,7 +339,7 @@ def parse_genimage_config(config_path):
     # https://github.com/pengutronix/genimage?tab=readme-ov-file#the-image-configuration-options
     gtypes = ["android-sparse", "btrfs", "cpio", "cramfs", "ext2", "ext3",
               "ext4", "f2fs", "file", "FIT", "fip", "flash", "iso", "jffs2",
-              "qemu", "rauc", "squashfs," "tar", "ubi", "vfat", "erofs"]
+              "qemu", "rauc", "squashfs", "tar", "ubi", "vfat", "erofs"]
 
     is_gpt = pt_header.get("label", "").lower() == "gpt"
 
