@@ -25,3 +25,57 @@ The variables defined here are *defaults for convenience*. An image layout is in
 * These variables are only meaningful when an image layout chooses to reference them.
 
 See the link:../../../../provisioning/index.html[IDP Provisioning Documentation] for a full description of the PMAP format and how it is embedded in the IDP document.
+
+[[provisioning-stores]]
+== Provisioning stores (IDP 2.3.0)
+
+A store is somewhere on the device that a provisioning tool can write per-device data to after flashing the image, for example OS customisation configuration or identity data. The image decides where its stores are, and the section for each purpose decides what goes in them.
+
+A `filesystem` store's partition must have a mountpoint. On the device, the store's data is at that mountpoint followed by `location`.
+
+[source,json]
+----
+"stores": {
+  "customisation": { "type": "filesystem", "partition": "persistent", "location": "/" }
+}
+----
+
+New purposes are added to the schema as minor versions, together with the section that describes their data. For example, identity data on a raw partition:
+
+[source,json]
+----
+"stores": {
+  "customisation": { "type": "filesystem", "partition": "persistent", "location": "/" },
+  "identity": { "type": "raw", "partition": "provision" }
+}
+----
+
+[[os-customisation]]
+== OS customisation (IDP 2.3.0)
+
+Describes how the image accepts a per-device OS customisation: the mechanism it runs determines the configuration a provisioning tool writes to the `customisation` store.
+
+New mechanisms are added to the schema as minor versions.
+
+A single-slot image, with the configuration on the boot partition:
+
+[source,json]
+----
+"stores": {
+  "customisation": { "type": "filesystem", "partition": "boot", "location": "/" }
+},
+"customisation": { "mechanism": "rpi-preseed" }
+----
+
+A slotted image, with the configuration on the persistent partition:
+
+[source,json]
+----
+"stores": {
+  "customisation": { "type": "filesystem", "partition": "persistent", "location": "/" }
+},
+"customisation": {
+  "mechanism": "rpi-preseed",
+  "rpi-preseed": { "domains": ["system", "user", "time", "locale"] }
+}
+----
