@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Tell the IDP which rpi-preseed domains the image can support
+
+set -eu
+
+dir="${LAYER_WORKDIR}/for/rpi-idp@1/customisation"
+install -d "$dir"
+
+IFS=, read -ra domains <<< "$IGconf_rpipreseed_domains"
+items=$(printf '"%s", ' "${domains[@]}")
+printf '{\n  "rpi-preseed": { "domains": [%s] }\n}\n' "${items%, }" > "${dir}/60-domains.json"
