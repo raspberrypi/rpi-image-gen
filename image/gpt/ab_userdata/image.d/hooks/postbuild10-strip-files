@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -eu
+
+fs=$1
+
+# AB doesn't need any of these
+rm -f -- "$fs"/boot/vmlinuz-* "$fs"/boot/initrd.img-* \
+   "$fs"/boot/config-* "$fs"/boot/System.map-* \
+   "$fs"/boot/overlays
