@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# IDP doc generation
 
 set -eu
 
@@ -21,6 +23,39 @@ fi
 
 # Only genimage output is supported for IDP flow
 if [ "${IGconf_image_provider:-}" = "genimage" ] && [ -f ${1}/genimage.cfg ] ; then
+   # Sections the IDP schema marks as taking drop-ins
+   mapfile -t sections < <(python3 -c '
+import json, sys
+for key, value in json.load(open(sys.argv[1])).get("properties", {}).items():
+    if isinstance(value, dict) and value.get("x-dropin") is True:
+        print(key)
+' "$IGconf_image_idp_schema")
+
+   # A fragment replaces an earlier layer's fragment of the same name, in its
+   # place. An empty fragment removes it.
+   add_fragment() {
+      local frag=$1 layer=$2 name=${1##*/}
+
+      if [[ -n ${frags[$name]+x} ]]; then
+         msg "IDP: ${section}: ${name}: ${frags[$name]} replaced by ${frag} (${layer})"
+      else
+         names+=("$name")
+      fi
+      frags[$name]=$frag
+   }
+
+   # The remaining fragments are merged by image2json in this order
+   for section in "${sections[@]}"; do
+      names=()
+      declare -A frags=()
+      foreach_dropin "$LAYER_NAME" "$LAYER_VERSION" "$section" add_fragment
+      for name in "${names[@]}"; do
+         if [[ -s ${frags[$name]} ]]; then
+            opts+=('--section' "$section" "${frags[$name]}")
+         fi
+      done
+   done
+
    image2json -g ${1}/genimage.cfg "${opts[@]}" > ${1}/image.json ||
       die "IDP: Doc generation failed."
 
