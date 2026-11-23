@@ -47,9 +47,65 @@
         "partitionimages": { "description": "A map of partition entries keyed by partition name, each describing a partition's geometry, filesystem type, and attributes.", "$ref": "#/$defs/partitionImages" },
         "provisionmap":    { "description": "The embedded Provisioning Map (PMAP), defining how partitions are assigned, ordered, and optionally encrypted on the target device. See the PMAP schema for full details.", "type": "array" }
       }
+    },
+    "stores": {
+      "x-dropin": true,
+      "description": "Where a provisioning tool may write per-device data on the device after flashing, one store per purpose. The section describing that purpose says what the data is.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "customisation": { "description": "The store for the OS customisation configuration described by the customisation section.", "$ref": "#/$defs/store" }
+      }
+    },
+    "customisation": {
+      "x-dropin": true,
+      "description": "How the image accepts a per-device OS customisation, so that a provisioning tool can supply a configuration in the form the image expects. The configuration is placed in stores.customisation. It is per device and is not part of this document.",
+      "type": "object",
+      "required": ["mechanism"],
+      "additionalProperties": false,
+      "properties": {
+        "mechanism": { "description": "The customisation mechanism the image runs. It defines the format and file names of the configuration.", "enum": ["rpi-preseed", "cloud-init"] },
+        "rpi-preseed": {
+          "description": "Details that apply only when mechanism is rpi-preseed.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "domains": {
+              "description": "The configuration domains whose settings the image retains. When absent, no restriction applies.",
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "enum": ["system", "user", "time", "locale"] }
+            }
+          }
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "mechanism": { "const": "rpi-preseed" } } }, "else": { "not": { "required": ["rpi-preseed"] } } }
+      ]
+    }
+  },
+  "dependencies": {
+    "customisation": {
+      "required": ["stores"],
+      "properties": { "stores": { "required": ["customisation"], "properties": { "customisation": { "properties": { "type": { "const": "filesystem" } } } } } }
     }
   },
   "$defs": {
+    "store": {
+      "description": "A place on the device a provisioning tool may write to after flashing. A filesystem store is written as files in the partition's filesystem, under location. A raw store is the whole partition, written as the provisioning tool requires.",
+      "type": "object",
+      "required": ["type", "partition"],
+      "additionalProperties": false,
+      "properties": {
+        "type":      { "description": "How the store is written: as files in a filesystem, or as a raw partition.", "enum": ["filesystem", "raw"] },
+        "partition": { "description": "The partition, by its name in layout.partitionimages, that holds the store.", "type": "string", "minLength": 1 },
+        "location":  { "description": "For a filesystem store, the directory on the partition, relative to its root, under which data is written.", "type": "string", "pattern": "^/" }
+      },
+      "if": { "properties": { "type": { "const": "filesystem" } } },
+      "then": { "required": ["location"] },
+      "else": { "not": { "required": ["location"] } }
+    },
     "uuidGPT": {
       "description": "A standard UUID string (case-insensitive), e.g. F5C56D0D-B6D9-4353-9F7C-9E8FBF89D864.",
       "type": "string",
