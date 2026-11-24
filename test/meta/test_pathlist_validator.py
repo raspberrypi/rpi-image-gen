@@ -14,13 +14,15 @@ VALID = (
     "usr/lib/modules",
     "/usr/lib/modules",
     "usr/lib/modules,usr/share/doc",
-    "usr/lib/modules, /usr/share/doc",
     "usr/lib/modules,usr/lib/modules-load.d",
     "opt/libstdc++,var/lib/app@1",
 )
 INVALID = (
     "",
     " ",
+    " usr/lib/modules",
+    "usr/lib/modules ",
+    "usr/lib/modules, /usr/share/doc",
     "usr/lib/modules,",
     "usr/lib/modules/",
     "//usr/lib",

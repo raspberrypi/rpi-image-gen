@@ -478,6 +478,11 @@ run_test "pathlist-validator" \
     0 \
     "Path list validator should accept well-formed lists, and reject unset, empty, malformed or overlapping ones"
 
+run_test "list-validator" \
+    "python3 ${META}/test_list_validator.py" \
+    0 \
+    "List validator should accept a subset of its values, and reject unset, empty, spaced, duplicated or unknown ones"
+
 # ---------------------------------------------------------------------------
 print_header "OTHER TESTS"
 

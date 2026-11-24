@@ -149,7 +149,7 @@ class ListEnumValidator(BaseValidator):
     def validate(self, value: Optional[str]) -> list[str]:
         if value is None:
             return ["Value cannot be None"]
-        items = [x.strip() for x in value.split(",")]
+        items = value.split(",")
         if items == [""]:
             return ["Value cannot be empty"]
         errors = []
@@ -166,11 +166,11 @@ class ListEnumValidator(BaseValidator):
         return errors
 
     def describe(self) -> str:
-        return f"Comma-separated subset of: {', '.join(self.options)}"
+        return f"Comma-separated subset, without spaces, of: {','.join(self.options)}"
 
     @classmethod
     def get_help_text(cls) -> str:
-        return """list:value1,value2,value3  - Comma-separated subset of the listed values (one or more, no duplicates)
+        return """list:value1,value2,value3  - Comma-separated subset of the listed values (one or more, no duplicates, no spaces)
   Examples:
     list:rsa,ecdsa,ed25519          - One or more SSH host key types
     list:eth0,wlan0,usb0            - One or more network interfaces"""
@@ -278,11 +278,11 @@ class PathListValidator(BaseValidator):
     def validate(self, value: Optional[str]) -> list[str]:
         if value is None:
             return ["Value cannot be None"]
-        if value.strip() == "":
+        if value == "":
             return ["Value cannot be empty"]
         errors = []
         seen = []
-        for item in (x.strip() for x in value.split(",")):
+        for item in value.split(","):
             if not item:
                 errors.append("Value contains an empty entry")
                 continue
@@ -317,11 +317,11 @@ class PathListValidator(BaseValidator):
         return errors
 
     def describe(self) -> str:
-        return "Comma-separated list of paths"
+        return "Comma-separated list of paths, without spaces"
 
     @classmethod
     def get_help_text(cls) -> str:
-        return """pathlist               - Comma-separated list of one or more paths
+        return """pathlist               - Comma-separated list of one or more paths, without spaces
   Paths may be absolute or relative, depending on their use, and are made
   of letters, digits and . _ + @ - with / between components. Entries may
   not end with /, have empty, '.' or '..' components, be listed twice, or
