@@ -71,11 +71,11 @@
           "additionalProperties": false,
           "properties": {
             "domains": {
-              "description": "The configuration domains whose settings the image retains. When absent, no restriction applies.",
+              "description": "The configuration domains whose settings the image supports. A domain on its own covers all of its keys. An entry of the form domain.key covers one key. When absent, no restriction applies.",
               "type": "array",
               "minItems": 1,
               "uniqueItems": true,
-              "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+              "items": { "type": "string", "pattern": "^[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?$" }
             }
           }
         }
