@@ -2818,7 +2818,7 @@
             />
         </svg>
     <a href="#customisation_rpi-preseed_domains" onclick="anchorLink('customisation_rpi-preseed_domains')">domains</a></div><span class="badge badge-dark value-type">Type: array of string</span><br/>
-<span class="description"><p>The configuration domains whose settings the image retains. When absent, no restriction applies.</p>
+<span class="description"><p>The configuration domains whose settings the image supports. A domain on its own covers all of its keys. An entry of the form domain.key covers one key. When absent, no restriction applies.</p>
 </span>
         
 
@@ -2859,7 +2859,7 @@
             />
         </svg>
     <a href="#customisation_rpi-preseed_domains_items" onclick="anchorLink('customisation_rpi-preseed_domains_items')">domains items</a></div><span class="badge badge-dark value-type">Type: string</span><br/>
-<span class="pattern-value" id="customisation_rpi-preseed_domains_items_pattern">Must match regular expression: <code>^[a-z][a-z0-9_]*$</code></span>
+<span class="pattern-value" id="customisation_rpi-preseed_domains_items_pattern">Must match regular expression: <code>^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)?$</code></span>
         
 
         
@@ -2882,6 +2882,6 @@
 </div>
 
     <footer>
-        <p class="generated-by-footer">Generated using <a href="https://github.com/coveooss/json-schema-for-humans">json-schema-for-humans</a> on 2026-11-24 at 14:53:19 +0000</p>
+        <p class="generated-by-footer">Generated using <a href="https://github.com/coveooss/json-schema-for-humans">json-schema-for-humans</a> on 2026-11-25 at 15:54:32 +0000</p>
     </footer></body>
 </html>
