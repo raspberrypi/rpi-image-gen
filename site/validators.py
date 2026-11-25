@@ -331,6 +331,40 @@ class PathListValidator(BaseValidator):
     pathlist            - usr/lib/modules,/usr/share/doc"""
 
 
+class NameListValidator(BaseValidator):
+    def __init__(self):
+        self.chars_re = re.compile(r"[A-Za-z0-9._-]+")
+
+    def validate(self, value: Optional[str]) -> list[str]:
+        if value is None:
+            return ["Value cannot be None"]
+        if value == "":
+            return ["Value cannot be empty"]
+        errors = []
+        seen = set()
+        for item in value.split(","):
+            if not item:
+                errors.append("Value contains an empty entry")
+                continue
+            if not self.chars_re.fullmatch(item):
+                errors.append(f"'{item}' contains characters other than letters, digits and . _ -")
+                continue
+            if item in seen:
+                errors.append(f"'{item}' is listed more than once")
+            seen.add(item)
+        return errors
+
+    def describe(self) -> str:
+        return "Comma-separated list of names, without spaces"
+
+    @classmethod
+    def get_help_text(cls) -> str:
+        return """namelist               - Comma-separated list of one or more names, without spaces
+  Names are made of letters, digits and . _ - and may not be listed twice.
+  Examples:
+    namelist            - system,user,wlan.ssid"""
+
+
 class CapacityValidator(BaseValidator):
     def __init__(self):
         # Accept: K, M, G, T, (1024-based) and KiB, MiB, GiB, TiB
@@ -449,6 +483,8 @@ def parse_validator(rule_str: str) -> BaseValidator:
         return PathValidator('dir')
     elif rule_str == "pathlist":
         return PathListValidator()
+    elif rule_str == "namelist":
+        return NameListValidator()
     elif rule_str == "size":
         return SizeValidator()
     elif rule_str == "capacity":
@@ -459,7 +495,7 @@ def parse_validator(rule_str: str) -> BaseValidator:
         return EnumValidator(options)
     else:
         # Single value without comma - reject unless it's a known type
-        if rule_str in ["string", "string-or-empty", "string-or-unset", "bool", "int", "size", "capacity", "file", "file-nzero", "dir", "pathlist"]:
+        if rule_str in ["string", "string-or-empty", "string-or-unset", "bool", "int", "size", "capacity", "file", "file-nzero", "dir", "pathlist", "namelist"]:
             raise ValueError(f"Unknown validation rule: {rule_str}")
         else:
             raise ValueError(f"Single value '{rule_str}' must use trailing comma ('{rule_str},') or keywords: prefix ('keywords:{rule_str}')")

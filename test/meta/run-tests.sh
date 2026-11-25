@@ -483,6 +483,11 @@ run_test "list-validator" \
     0 \
     "List validator should accept a subset of its values, and reject unset, empty, spaced, duplicated or unknown ones"
 
+run_test "namelist-validator" \
+    "python3 ${META}/test_namelist_validator.py" \
+    0 \
+    "Name list validator should accept well-formed lists, and reject unset, empty, spaced, duplicated or malformed ones"
+
 # ---------------------------------------------------------------------------
 print_header "OTHER TESTS"
 
