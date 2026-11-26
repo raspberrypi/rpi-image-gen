@@ -727,9 +727,9 @@ Must be one of:
 
 **Description:** Details that apply only when mechanism is rpi-preseed.
 
-| Property                                         | Pattern | Type            | Deprecated | Definition | Title/Description                                                                                |
-| ------------------------------------------------ | ------- | --------------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------ |
-| - [domains](#customisation_rpi-preseed_domains ) | No      | array of string | No         | -          | The configuration domains whose settings the image retains. When absent, no restriction applies. |
+| Property                                         | Pattern | Type            | Deprecated | Definition | Title/Description                                                                                                                                                                             |
+| ------------------------------------------------ | ------- | --------------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| - [domains](#customisation_rpi-preseed_domains ) | No      | array of string | No         | -          | The configuration domains whose settings the image supports. A domain on its own covers all of its keys. An entry of the form domain.key covers one key. When absent, no restriction applies. |
 
 #### <a name="customisation_rpi-preseed_domains"></a>6.3.1. Property `Raspberry Pi Image Description Provisioning > customisation > rpi-preseed > domains`
 
@@ -738,7 +738,7 @@ Must be one of:
 | **Type**     | `array of string` |
 | **Required** | No                |
 
-**Description:** The configuration domains whose settings the image retains. When absent, no restriction applies.
+**Description:** The configuration domains whose settings the image supports. A domain on its own covers all of its keys. An entry of the form domain.key covers one key. When absent, no restriction applies.
 
 |                      | Array restrictions |
 | -------------------- | ------------------ |
@@ -759,9 +759,9 @@ Must be one of:
 | **Type**     | `string` |
 | **Required** | No       |
 
-| Restrictions                      |                                                                                             |
-| --------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Must match regular expression** | ```^[a-z][a-z0-9_]*$``` [Test](https://regex101.com/?regex=%5E%5Ba-z%5D%5Ba-z0-9_%5D%2A%24) |
+| Restrictions                      |                                                                                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Must match regular expression** | ```^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)?$``` [Test](https://regex101.com/?regex=%5E%5BA-Za-z0-9_-%5D%2B%28%5C.%5BA-Za-z0-9_-%5D%2B%29%3F%24) |
 
 ----------------------------------------------------------------------------------------------------------------------------
-Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-11-24 at 14:53:18 +0000
+Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-11-25 at 15:54:32 +0000
