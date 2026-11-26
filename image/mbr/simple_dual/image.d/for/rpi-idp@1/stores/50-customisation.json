@@ -1,0 +1,3 @@
+{
+  "customisation": { "type": "filesystem", "partition": "boot", "location": "/" }
+}

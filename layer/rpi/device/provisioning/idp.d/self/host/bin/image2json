@@ -339,7 +339,7 @@ def parse_genimage_config(config_path):
     # https://github.com/pengutronix/genimage?tab=readme-ov-file#the-image-configuration-options
     gtypes = ["android-sparse", "btrfs", "cpio", "cramfs", "ext2", "ext3",
               "ext4", "f2fs", "file", "FIT", "fip", "flash", "iso", "jffs2",
-              "qemu", "rauc", "squashfs," "tar", "ubi", "vfat", "erofs"]
+              "qemu", "rauc", "squashfs", "tar", "ubi", "vfat", "erofs"]
 
     is_gpt = pt_header.get("label", "").lower() == "gpt"
 
@@ -434,6 +434,18 @@ def get_image_meta():
     return image_vars
 
 
+# Merge src into dst. Objects merge, arrays append, and any other value in src
+# replaces the one in dst.
+def merge(dst, src):
+    if isinstance(dst, dict) and isinstance(src, dict):
+        for key, value in src.items():
+            dst[key] = merge(dst[key], value) if key in dst else copy.deepcopy(value)
+        return dst
+    if isinstance(dst, list) and isinstance(src, list):
+        return dst + copy.deepcopy(src)
+    return copy.deepcopy(src)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='JSON layout generator')
@@ -446,6 +458,12 @@ if __name__ == '__main__':
                         help="Path to the JSON provisioning map",
                         type=argparse.FileType('r'),
                         required=False)
+
+    parser.add_argument("--section",
+                        help="Merge the JSON in FILE into section NAME. "
+                             "Files are merged in the order given.",
+                        nargs=2, metavar=("NAME", "FILE"),
+                        action="append", default=[])
 
     args = parser.parse_args()
     genimage_file = args.genimage;
@@ -463,5 +481,17 @@ if __name__ == '__main__':
     if args.provisionmap:
         with args.provisionmap as f:
             top_template["layout"]["provisionmap"] = json.load(f)
+
+    sections = {}
+    for name, path in args.section:
+        if name in top_template:
+            sys.exit(f"image2json: {path}: section '{name}' is generated, it can't be supplied")
+        try:
+            with open(path) as f:
+                value = json.load(f)
+        except (OSError, ValueError) as e:
+            sys.exit(f"image2json: {path}: {e}")
+        sections[name] = merge(sections[name], value) if name in sections else value
+    top_template.update(sections)
 
     print(json.dumps(top_template, indent=4))

@@ -79,3 +79,8 @@ A slotted image, with the configuration on the persistent partition:
   "rpi-preseed": { "domains": ["system", "user", "time", "locale"] }
 }
 ----
+=======
+
+== Contributing to the IDP document
+
+Layers can contribute to sections that the IDP schema marks as `"x-dropin": true` using drop-ins for `rpi-idp` in a directory named after the section, eg `for/rpi-idp/stores/`. Each file holds JSON for part of the section. A later layer's file replaces an earlier layer's file of the same name, and an empty file removes it. The remaining files are then merged in order: objects are merged, arrays are appended, and any other value from a later file replaces an earlier one. The result is validated against the schema.

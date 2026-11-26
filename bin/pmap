@@ -87,6 +87,16 @@ def validate(data, schema_path=None):
                     sys.stderr.write(f"  at $: {e.message}\n")
             sys.exit(1)
 
+        # An IDP store must be on a partition in the layout, with a mountpoint
+        # if it's a filesystem
+        stores = data.get("stores", {}) if isinstance(data, dict) else {}
+        for purpose, store in stores.items():
+            part = data["layout"]["partitionimages"].get(store["partition"])
+            if part is None or (store["type"] == "filesystem" and not part.get("mountpoint")):
+                sys.stderr.write(f"Error: stores.{purpose}: partition {store['partition']} "
+                                 "is not in the layout or has no mountpoint\n")
+                sys.exit(1)
+
     return pmap_version(data)
 
 
