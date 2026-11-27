@@ -99,4 +99,54 @@ while IFS= read -r -d '' pmap; do
     echo ""
 done < <(find "${IGTOP}/image" -name 'provisionmap-*.json' -print0 | sort -z)
 
+
+print_header "LUKS2 SECTOR SIZE"
+
+# Set luks2.sector_size on every encrypted container of a substituted PMAP
+# and check the result against the schema.
+check_sector_size() {
+    local value=$1 expect=$2 output exit_code
+    local pmap="${IGTOP}/image/gpt/ab_userdata/image.d/device/provisionmap-crypt.json"
+
+    ((TOTAL_TESTS++))
+    print_test "luks2.sector_size $value"
+
+    output=$(envsubst '${BOOT_UUID} ${SYSTEM_UUID} ${CRYPT_UUID} ${LUKS_CIPHER} ${LUKS_KEYSIZE} ${LUKS_HASH} ' < "$pmap" |
+        python3 -I -c '
+import json, sys
+data = json.load(sys.stdin)
+value = json.loads(sys.argv[1])
+def walk(node):
+    if isinstance(node, dict):
+        if isinstance(node.get("luks2"), dict):
+            node["luks2"]["sector_size"] = value
+        for child in node.values():
+            walk(child)
+    elif isinstance(node, list):
+        for child in node:
+            walk(child)
+walk(data)
+json.dump(data, sys.stdout)
+' "$value" > "$PMAP_TMP" &&
+        pmap --schema "$SCHEMA" --file "$PMAP_TMP" 2>&1)
+    exit_code=$?
+
+    if [ "$expect" = valid ] && [ "$exit_code" -eq 0 ]; then
+        print_pass "luks2.sector_size $value should validate"
+    elif [ "$expect" = invalid ] && [ "$exit_code" -ne 0 ]; then
+        print_pass "luks2.sector_size $value should be rejected"
+    else
+        print_fail "luks2.sector_size $value should be $expect" "$output"
+    fi
+
+    echo ""
+}
+
+for size in 512 1024 2048 4096; do
+    check_sector_size "$size" valid
+done
+for size in 0 256 3000 8192 '"4096"'; do
+    check_sector_size "$size" invalid
+done
+
 print_summary
