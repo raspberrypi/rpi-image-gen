@@ -124,7 +124,7 @@
     <div class="header">
         <h1>rpi-idp-luks2</h1>
         <span class="badge">device</span>
-        <span class="badge">v2.1.0</span>
+        <span class="badge">v2.2.0</span>
         <p>Device specific LUKS2 provisioning attributes for IDP.
  A device layer may use these to describe preferences for its LUKS2
  encrypted volumes. Values are passed through to libcryptsetup.
@@ -184,6 +184,24 @@
                            <code>256</code>
                     </td>
                     <td>Must be one of: 128, 256, 512</td>
+                    <td>
+                        <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>IGconf_device_luks2_sector_size</code></td>
+                    <td>The LUKS2 encryption sector size in bytes:
+ the unit dm-crypt encrypts, which the opened volume reports as its logical
+ sector size. Larger sectors cost less CPU per byte. This is not the storage
+ device&#39;s sector size (device_sector_size), but must not be smaller than it.
+ Filesystems inside the volume need a block size of at least this value;
+ the image layouts make their ext4 filesystems with at least this size.
+ When empty, it is left out of the PMAP and the provisioning side uses the
+ device&#39;s logical sector size.</td>
+                    <td>
+                           <code>&lt;not set&gt;</code>
+                    </td>
+                    <td>Must match regex pattern: ^(512|1024|2048|4096)?$</td>
                     <td>
                         <a href="variable-validation.html#set-policies" class="badge policy-lazy" title="Click for policy and validation help">lazy</a>
                     </td>
