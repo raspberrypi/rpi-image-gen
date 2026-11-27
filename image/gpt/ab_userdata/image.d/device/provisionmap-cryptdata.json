@@ -84,6 +84,7 @@
             "key_size": ${LUKS_KEYSIZE},
             "cipher": "${LUKS_CIPHER}",
             "hash": "${LUKS_HASH}",
+            ${LUKS_SECTOR_SIZE_ATTR}
             "label": "USERDATA_CRYPT",
             "uuid": "${CRYPT_UUID}",
             "mname": "userdata_crypt",

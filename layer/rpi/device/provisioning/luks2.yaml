@@ -8,7 +8,7 @@
 #  Downstream layer implementation-dependent.
 # X-Env-Layer-Requires:
 # X-Env-Layer-RequiresProvider: rpi-device
-# X-Env-Layer-Version: 2.1.0
+# X-Env-Layer-Version: 2.2.0
 #
 # X-Env-VarPrefix: device
 #
@@ -35,6 +35,18 @@
 # X-Env-Var-luks2_keysize-Triggers:
 #  when=IGconf_device_luks2_cipher == 'aes-xts-plain64' set IGconf_device_luks2_keysize=512 policy=lazy
 #  when=IGconf_device_luks2_cipher == 'xchacha12,aes-adiantum-plain64' set IGconf_device_luks2_keysize=256 policy=lazy
+#
+# X-Env-Var-luks2_sector_size:
+# X-Env-Var-luks2_sector_size-Desc: The LUKS2 encryption sector size in bytes:
+#  the unit dm-crypt encrypts, which the opened volume reports as its logical
+#  sector size. Larger sectors cost less CPU per byte. This is not the storage
+#  device's sector size (device_sector_size), but must not be smaller than it.
+#  Filesystems inside the volume need a block size of at least this value.
+#  When empty, it is left out of the PMAP and the provisioning side uses the
+#  device's logical sector size.
+# X-Env-Var-luks2_sector_size-Required: n
+# X-Env-Var-luks2_sector_size-Valid: regex:^(512|1024|2048|4096)?$
+# X-Env-Var-luks2_sector_size-Set: lazy
 #
 # METAEND
 ---
