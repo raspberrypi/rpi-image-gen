@@ -37,7 +37,30 @@ mkdir -p "$LAYER_WORKDIR/for/linux-base/cmdline.d"
 echo "-root=* root=$CMDLINE_ROOTDEV" > "$LAYER_WORKDIR/for/linux-base/cmdline.d/50-root"
 
 
-MKE2FS_ARGS_STR="-U $ROOT_UUID ${IGconf_fs_ext4_mkfs_args:-}"
+# ext4 blocks must not be smaller than the sectors under them: the device's
+# logical sectors, and the LUKS2 encryption sectors if the PMAP encrypts the
+# filesystem. A set IGconf_device_luks2_sector_size counts for every ext4
+# filesystem. mke2fs is asked for at least that size (-b -N) ahead of the
+# configured arguments, so an explicit -b still decides, but one that is too
+# small is refused.
+EXT4_MIN_BLOCK=$IGconf_device_sector_size
+if (( ${IGconf_device_luks2_sector_size:-0} > EXT4_MIN_BLOCK )); then
+   EXT4_MIN_BLOCK=$IGconf_device_luks2_sector_size
+fi
+EXT4_BLOCK_ARGS=
+if (( EXT4_MIN_BLOCK > 1024 )); then
+   EXT4_BLOCK_ARGS="-b -$EXT4_MIN_BLOCK"
+fi
+read -ra ext4_args <<< "${IGconf_fs_ext4_mkfs_args:-}"
+OPTIND=1
+while getopts ":b:cd:e:g:i:jl:m:no:qr:s:t:vC:DE:FG:I:J:KL:M:N:O:R:ST:U:Vz:" opt "${ext4_args[@]}"; do
+   if [[ $opt == b && $OPTARG =~ ^[0-9]+$ ]] && (( OPTARG < EXT4_MIN_BLOCK )); then
+      echo "IGconf_fs_ext4_mkfs_args: -b $OPTARG is smaller than the $EXT4_MIN_BLOCK byte sectors under the filesystem" >&2
+      exit 1
+   fi
+done
+
+MKE2FS_ARGS_STR="-U $ROOT_UUID $EXT4_BLOCK_ARGS ${IGconf_fs_ext4_mkfs_args:-}"
 BTRFS_ARGS_STR="-U $ROOT_UUID ${IGconf_fs_btrfs_mkfs_args:-}"
 VFAT_ARGS_STR="-S $IGconf_device_sector_size -i $BOOT_LABEL ${IGconf_fs_vfat_mkfs_args:-}"
 
