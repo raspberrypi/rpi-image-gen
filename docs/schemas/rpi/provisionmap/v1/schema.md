@@ -28,10 +28,11 @@
               - [1.1.3.1.1.2.1.1. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > key_size`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_key_size)
               - [1.1.3.1.1.2.1.2. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > cipher`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_cipher)
               - [1.1.3.1.1.2.1.3. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > hash`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_hash)
-              - [1.1.3.1.1.2.1.4. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > label`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label)
-              - [1.1.3.1.1.2.1.5. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > uuid`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid)
-              - [1.1.3.1.1.2.1.6. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > mname`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_mname)
-              - [1.1.3.1.1.2.1.7. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > etype`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_etype)
+              - [1.1.3.1.1.2.1.4. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > sector_size`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_sector_size)
+              - [1.1.3.1.1.2.1.5. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > label`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label)
+              - [1.1.3.1.1.2.1.6. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > uuid`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid)
+              - [1.1.3.1.1.2.1.7. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > mname`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_mname)
+              - [1.1.3.1.1.2.1.8. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > etype`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_etype)
             - [1.1.3.1.1.2.2. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > partitions`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_partitions)
               - [1.1.3.1.1.2.2.1. Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > partitions > partitionRef](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_partitions_items)
             - [1.1.3.1.1.2.3. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > expand-to-fit`](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_expand-to-fit)
@@ -433,15 +434,16 @@ Must be one of:
 
 **Description:** The LUKS2 configuration for this encrypted container.
 
-| Property                                                                 | Pattern | Type              | Deprecated | Definition | Title/Description                                                                                                                                   |
-| ------------------------------------------------------------------------ | ------- | ----------------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| + [key_size](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_key_size ) | No      | enum (of integer) | No         | -          | The encryption key size in bits.                                                                                                                    |
-| + [cipher](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_cipher )     | No      | string            | No         | -          | The cipher and mode used for encryption, e.g. aes-xts-plain64.                                                                                      |
-| + [hash](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_hash )         | No      | string            | No         | -          | The hash algorithm used for metadata integrity, e.g. sha256.                                                                                        |
-| - [label](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label )       | No      | string            | No         | -          | An optional human-readable label for the LUKS2 container.                                                                                           |
-| + [uuid](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid )         | No      | string            | No         | -          | The UUID assigned to the LUKS2 container. Required so that the container can be identified and unlocked at runtime.                                 |
-| + [mname](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_mname )       | No      | string            | No         | -          | The device mapper name for the LUKS2 container, used as the mapped device name under /dev/mapper.                                                   |
-| + [etype](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_etype )       | No      | enum (of string)  | No         | -          | The encrypted container type. 'raw' for a directly encrypted block device, 'partitioned' for a LUKS2 container that itself holds a partition table. |
+| Property                                                                       | Pattern | Type              | Deprecated | Definition | Title/Description                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------ | ------- | ----------------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| + [key_size](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_key_size )       | No      | enum (of integer) | No         | -          | The encryption key size in bits.                                                                                                                                                                                                                                                                 |
+| + [cipher](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_cipher )           | No      | string            | No         | -          | The cipher and mode used for encryption, e.g. aes-xts-plain64.                                                                                                                                                                                                                                   |
+| + [hash](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_hash )               | No      | string            | No         | -          | The hash algorithm used for metadata integrity, e.g. sha256.                                                                                                                                                                                                                                     |
+| - [sector_size](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_sector_size ) | No      | enum (of integer) | No         | -          | The encryption sector size in bytes: the unit dm-crypt encrypts, which the opened container reports as its logical sector size. This is not the storage device's sector size (IGconf_device_sector_size), but must not be smaller than it. If omitted, the device's logical sector size is used. |
+| - [label](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label )             | No      | string            | No         | -          | An optional human-readable label for the LUKS2 container.                                                                                                                                                                                                                                        |
+| + [uuid](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid )               | No      | string            | No         | -          | The UUID assigned to the LUKS2 container. Required so that the container can be identified and unlocked at runtime.                                                                                                                                                                              |
+| + [mname](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_mname )             | No      | string            | No         | -          | The device mapper name for the LUKS2 container, used as the mapped device name under /dev/mapper.                                                                                                                                                                                                |
+| + [etype](#oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_etype )             | No      | enum (of string)  | No         | -          | The encrypted container type. 'raw' for a directly encrypted block device, 'partitioned' for a LUKS2 container that itself holds a partition table.                                                                                                                                              |
 
 ###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_key_size"></a>1.1.3.1.1.2.1.1. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > key_size`
 
@@ -475,7 +477,22 @@ Must be one of:
 
 **Description:** The hash algorithm used for metadata integrity, e.g. sha256.
 
-###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label"></a>1.1.3.1.1.2.1.4. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > label`
+###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_sector_size"></a>1.1.3.1.1.2.1.4. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > sector_size`
+
+|              |                     |
+| ------------ | ------------------- |
+| **Type**     | `enum (of integer)` |
+| **Required** | No                  |
+
+**Description:** The encryption sector size in bytes: the unit dm-crypt encrypts, which the opened container reports as its logical sector size. This is not the storage device's sector size (IGconf_device_sector_size), but must not be smaller than it. If omitted, the device's logical sector size is used.
+
+Must be one of:
+* 512
+* 1024
+* 2048
+* 4096
+
+###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_label"></a>1.1.3.1.1.2.1.5. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > label`
 
 |              |          |
 | ------------ | -------- |
@@ -488,7 +505,7 @@ Must be one of:
 | -------------- | -- |
 | **Max length** | 36 |
 
-###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid"></a>1.1.3.1.1.2.1.5. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > uuid`
+###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_uuid"></a>1.1.3.1.1.2.1.6. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > uuid`
 
 |              |          |
 | ------------ | -------- |
@@ -501,7 +518,7 @@ Must be one of:
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Must match regular expression** | ```^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$``` [Test](https://regex101.com/?regex=%5E%5B0-9A-Fa-f%5D%7B8%7D%28-%5B0-9A-Fa-f%5D%7B4%7D%29%7B3%7D-%5B0-9A-Fa-f%5D%7B12%7D%24) |
 
-###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_mname"></a>1.1.3.1.1.2.1.6. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > mname`
+###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_mname"></a>1.1.3.1.1.2.1.7. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > mname`
 
 |              |          |
 | ------------ | -------- |
@@ -510,7 +527,7 @@ Must be one of:
 
 **Description:** The device mapper name for the LUKS2 container, used as the mapped device name under /dev/mapper.
 
-###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_etype"></a>1.1.3.1.1.2.1.7. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > etype`
+###### <a name="oneOf_i0_items_oneOf_i2_slots_A_encrypted_luks2_etype"></a>1.1.3.1.1.2.1.8. Property `Raspberry Pi Image Description Provisioning Map > oneOf > item 0 > item 0 items > oneOf > item 2 > slots > A > encrypted > luks2 > etype`
 
 |              |                    |
 | ------------ | ------------------ |
@@ -810,4 +827,4 @@ Must be one of:
 **Description:** A single PMAP entry.
 
 ----------------------------------------------------------------------------------------------------------------------------
-Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-04-17 at 10:37:20 +0100
+Generated using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on 2026-11-27 at 20:38:42 +0200

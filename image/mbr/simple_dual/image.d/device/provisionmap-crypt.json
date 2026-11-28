@@ -22,6 +22,7 @@
             "label": "OSROOT_CRYPT",
             "uuid": "${CRYPT_UUID}",
             "hash": "${LUKS_HASH}",
+            ${LUKS_SECTOR_SIZE_ATTR}
             "mname": "osroot_crypt",
             "etype": "raw"
          },

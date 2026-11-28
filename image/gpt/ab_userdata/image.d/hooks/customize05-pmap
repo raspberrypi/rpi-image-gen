@@ -25,6 +25,12 @@ for v in BOOT_LABEL BOOT_UUID SYSTEM_UUID CRYPT_UUID VERITY_UUID VERITY_SALT; do
 done
 
 
+# Optional LUKS2 attributes are substituted as a whole member, or nothing
+LUKS_SECTOR_SIZE_ATTR=
+if [ -n "${IGconf_device_luks2_sector_size:-}" ]; then
+   LUKS_SECTOR_SIZE_ATTR="\"sector_size\": ${IGconf_device_luks2_sector_size},"
+fi
+
 # Install provision map, populating placeholders
 pmap="../device/provisionmap-${IGconf_image_pmap:-}.json"
 if [ -f "$pmap" ]; then
@@ -35,7 +41,8 @@ if [ -f "$pmap" ]; then
       LUKS_CIPHER="$IGconf_device_luks2_cipher" \
       LUKS_KEYSIZE="$IGconf_device_luks2_keysize" \
       LUKS_HASH="$IGconf_device_luks2_hash" \
+      LUKS_SECTOR_SIZE_ATTR="$LUKS_SECTOR_SIZE_ATTR" \
    envsubst \
-      '${BOOT_UUID} ${SYSTEM_UUID} ${CRYPT_UUID} ${LUKS_CIPHER} ${LUKS_KEYSIZE} ${LUKS_HASH}' \
+      '${BOOT_UUID} ${SYSTEM_UUID} ${CRYPT_UUID} ${LUKS_CIPHER} ${LUKS_KEYSIZE} ${LUKS_HASH} ${LUKS_SECTOR_SIZE_ATTR}' \
       < "$pmap" > "${IGconf_image_outputdir}/provisionmap.json"
 fi
